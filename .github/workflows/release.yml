@@ -189,6 +189,7 @@ jobs:
       - name: frontend
         id: codecc-frontend
         run: |
+          export NODE_OPTIONS=--openssl-legacy-provider
           cd src/frontend/devops-codecc
           rm -rf dist
           npm i
