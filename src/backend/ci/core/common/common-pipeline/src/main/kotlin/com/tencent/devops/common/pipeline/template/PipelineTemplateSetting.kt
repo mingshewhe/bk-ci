@@ -50,7 +50,7 @@ data class PipelineTemplateSetting(
     @get:Schema(title = "描述", required = false)
     val desc: String,
     @get:Schema(title = "版本号", required = true)
-    val version: Int,
+    val settingVersion: Int,
     @get:Schema(title = "版本名称", required = true)
     val versionName: String,
     @get:Schema(title = "标签ID列表", required = false)
@@ -112,7 +112,7 @@ data class PipelineTemplateSetting(
                 projectId = projectId,
                 templateId = templateId,
                 name = templateName,
-                version = 1,
+                settingVersion = 1,
                 versionName = "init",
                 desc = templateName,
                 maxPipelineResNum = maxPipelineResNum ?: PIPELINE_RES_NUM_MIN,

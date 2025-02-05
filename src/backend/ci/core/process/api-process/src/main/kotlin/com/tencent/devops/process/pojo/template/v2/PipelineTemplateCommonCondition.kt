@@ -19,11 +19,11 @@ data class PipelineTemplateCommonCondition(
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean? = null,
     @get:Schema(title = "最新版本号", required = true)
-    val lastedVersion: Long? = null,
+    val lastedVersion: Int? = null,
     @get:Schema(title = "最新版本名称", required = true)
     val lastedVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = true)
-    val lastedSettingVersion: Long? = null,
+    val lastedSettingVersion: Int? = null,
     @get:Schema(title = "模板来源", required = true)
     val source: PipelineTemplateSource? = null,
     @get:Schema(title = "是否关联研发商店", required = true)

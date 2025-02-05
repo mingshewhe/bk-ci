@@ -25,11 +25,11 @@ data class PipelineTemplateInfo(
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
     @get:Schema(title = "最新版本号", required = true)
-    val lastedVersion: Long,
+    val lastedVersion: Int,
     @get:Schema(title = "最新版本名称", required = true)
     val lastedVersionName: String,
     @get:Schema(title = "最新设置版本号", required = true)
-    val lastedSettingVersion: Long,
+    val lastedSettingVersion: Int,
     @get:Schema(title = "模板来源", required = true)
     val source: PipelineTemplateSource,
     @get:Schema(title = "是否关联研发商店", required = true)

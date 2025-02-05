@@ -30,7 +30,7 @@ class PipelineTemplateSettingDao {
                 TEMPLATE_ID,
                 NAME,
                 DESC,
-                VERSION,
+                SETTING_VERSION,
                 VERSION_NAME,
                 LABELS,
                 WAIT_QUEUE_TIME_SECOND,
@@ -50,7 +50,7 @@ class PipelineTemplateSettingDao {
                 record.templateId,
                 record.name,
                 record.desc,
-                record.version,
+                record.settingVersion,
                 record.versionName,
                 record.labels?.let { self -> JsonUtil.toJson(self) },
                 DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute),
@@ -79,7 +79,7 @@ class PipelineTemplateSettingDao {
                 .apply {
                     record.name?.let { set(NAME, it) }
                     record.desc?.let { set(DESC, it) }
-                    record.version?.let { set(VERSION, it) }
+                    record.settingVersion?.let { set(SETTING_VERSION, it) }
                     record.versionName?.let { set(VERSION_NAME, it) }
                     record.labels?.let { set(LABELS, it) }
                     record.waitQueueTimeSecond?.let { set(WAIT_QUEUE_TIME_SECOND, it) }
@@ -144,7 +144,7 @@ class PipelineTemplateSettingDao {
                 conditions.add(PROJECT_ID.eq(projectId))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (name != null) conditions.add(NAME.like("%$name%"))
-                if (version != null) conditions.add(VERSION.eq(version))
+                if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
                 if (versionName != null) conditions.add(VERSION_NAME.eq(versionName))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
@@ -168,7 +168,7 @@ class PipelineTemplateSettingDao {
             runLockType = this.runLockType?.let { PipelineRunLockType.valueOf(it) },
             successSubscriptionList = successSubscriptionList,
             failSubscriptionList = failSubscriptionList,
-            version = this.version,
+            settingVersion = this.settingVersion,
             versionName = this.versionName,
             labels = this.labels?.let {
                 JsonUtil.to(it, object : TypeReference<List<String>>() {})
