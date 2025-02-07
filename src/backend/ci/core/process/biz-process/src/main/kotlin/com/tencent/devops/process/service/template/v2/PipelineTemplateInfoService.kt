@@ -2,7 +2,7 @@ package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
-import com.tencent.devops.common.pipeline.template.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,6 +32,22 @@ class PipelineTemplateInfoService @Autowired constructor(
             commonCondition = commonCondition
         ) ?: throw ErrorCodeException(
             errorCode = ""
+        )
+    }
+
+    fun get(templateId: String): PipelineTemplateInfo {
+        return pipelineTemplateInfoDao.get(
+            dslContext = dslContext,
+            templateId = templateId
+        ) ?: throw ErrorCodeException(
+            errorCode = ""
+        )
+    }
+
+    fun count(commonCondition: PipelineTemplateCommonCondition): Int {
+        return pipelineTemplateInfoDao.count(
+            dslContext = dslContext,
+            commonCondition = commonCondition
         )
     }
 

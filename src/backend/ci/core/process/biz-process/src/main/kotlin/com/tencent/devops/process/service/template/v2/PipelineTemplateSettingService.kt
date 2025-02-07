@@ -1,10 +1,8 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.pipeline.template.PipelineTemplateResource
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
 import com.tencent.devops.process.dao.template.PipelineTemplateSettingDao
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,7 +16,7 @@ class PipelineTemplateSettingService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateSettingDao: PipelineTemplateSettingDao
 ) {
-    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineTemplateSetting {
+    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineTemplateSettingVersion {
         return pipelineTemplateSettingDao.get(
             commonCondition = commonCondition,
             dslContext = dslContext
@@ -27,14 +25,17 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
-    fun delete(commonCondition: PipelineTemplateSettingCommonCondition) {
+    fun delete(
+        transactionContext: DSLContext? = null,
+        commonCondition: PipelineTemplateSettingCommonCondition
+    ) {
         pipelineTemplateSettingDao.get(
             dslContext = dslContext,
             commonCondition = commonCondition
         )
     }
 
-    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineTemplateSetting> {
+    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineTemplateSettingVersion> {
         return pipelineTemplateSettingDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
@@ -43,11 +44,11 @@ class PipelineTemplateSettingService @Autowired constructor(
 
     fun create(
         transactionContext: DSLContext? = null,
-        pipelineTemplateSetting: PipelineTemplateSetting
+        pipelineTemplateSettingVersion: PipelineTemplateSettingVersion
     ) {
         pipelineTemplateSettingDao.create(
             dslContext = transactionContext ?: dslContext,
-            record = pipelineTemplateSetting
+            record = pipelineTemplateSettingVersion
         )
     }
 }

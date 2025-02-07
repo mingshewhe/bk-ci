@@ -1,5 +1,6 @@
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import org.springframework.stereotype.Service
 
 /**
@@ -7,4 +8,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplatePACService {
+    fun getDefaultTemplateModelYaml(request: PipelineTemplateBasicCreateReq): String {
+        TODO()
+    }
 }

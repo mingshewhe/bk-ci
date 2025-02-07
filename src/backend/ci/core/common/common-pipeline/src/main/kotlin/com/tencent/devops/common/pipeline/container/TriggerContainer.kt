@@ -87,7 +87,7 @@ data class TriggerContainer(
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: Int? = null
+    override var templateVersion: Long? = null
 ) : Container {
     companion object {
         const val classType = "trigger"

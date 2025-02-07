@@ -32,8 +32,9 @@ enum class PipelineTemplateSource(
     val alias: String
 ) {
     CUSTOM("custom", "自定义"),
-    REPERTORY("repertory", "代码库"),
-    STORE("store", "研发商店");
+    REPOSITORY("repository", "代码库"),
+    MARKET("market", "研发商店"),
+    YAML("yaml", "yaml导入");
 
     companion object {
         fun get(value: String): PipelineTemplateSource {

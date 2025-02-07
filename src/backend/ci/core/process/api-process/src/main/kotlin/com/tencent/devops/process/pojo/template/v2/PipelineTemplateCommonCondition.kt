@@ -1,15 +1,21 @@
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import io.swagger.v3.oas.annotations.media.Schema
+import kotlin.reflect.full.memberProperties
 
 @Schema(title = "流水线模板通用条件")
 data class PipelineTemplateCommonCondition(
     @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "模板名称", required = true)
-    val name: String? = null,
+    val projectId: String? = null,
+    @get:Schema(title = "模板ID", required = true)
+    val templateId: String? = null,
+    @get:Schema(title = "根据名称模糊搜索", required = true)
+    val fuzzySearchName: String? = null,
+    @get:Schema(title = "根据名称精准搜索", required = true)
+    val exactSearchName: String? = null,
     @get:Schema(title = "公共/约束/自定义模式", required = true)
     val mode: String? = null,
     @get:Schema(title = "应用范畴", required = true)
@@ -19,7 +25,7 @@ data class PipelineTemplateCommonCondition(
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean? = null,
     @get:Schema(title = "最新版本号", required = true)
-    val lastedVersion: Int? = null,
+    val lastedVersion: Long? = null,
     @get:Schema(title = "最新版本名称", required = true)
     val lastedVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = true)
@@ -40,4 +46,16 @@ data class PipelineTemplateCommonCondition(
     val creator: String? = null,
     @get:Schema(title = "更新人", required = true)
     val updater: String? = null
-)
+) {
+    fun checkAllFieldsAreNull() {
+        val isAllFieldsAreNull = this::class.memberProperties.all {
+            it.call(this) == null
+        }
+        // TODO
+        if (isAllFieldsAreNull) {
+            throw ErrorCodeException(
+                errorCode = ""
+            )
+        }
+    }
+}

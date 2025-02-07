@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.template
+package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
@@ -44,17 +44,19 @@ data class PipelineTemplateResource(
     @get:Schema(title = "模板类型", required = true)
     val type: PipelineTemplateType,
     @get:Schema(title = "版本号", required = true)
-    val version: Int,
+    val version: Long,
+    @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
+    val number: Int,
     @get:Schema(title = "版本名称", required = true)
     val versionName: String,
     @get:Schema(title = "模板发布版本号", required = true)
-    val versionNum: Int?,
+    val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = true)
-    val modelVersion: Int?,
+    val modelVersion: Int? = null,
     @get:Schema(title = "模板触发器版本号", required = true)
-    val triggerVersion: Int?,
+    val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
-    val draftSourceVersion: Int?,
+    val draftSourceVersion: Int? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty> = listOf(),
     @get:Schema(title = "原始编排,局部模版没有解析", required = true)
@@ -66,13 +68,41 @@ data class PipelineTemplateResource(
     @get:Schema(title = "状态", required = true)
     val status: VersionStatus,
     @get:Schema(title = "分支状态", required = true)
-    val branchAction: BranchVersionAction?,
+    val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本描述", required = true)
-    val description: String?,
+    val description: String? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = true)
-    val updater: String?,
+    val updater: String? = null,
     @get:Schema(title = "发布时间", required = true)
-    val releaseTime: LocalDateTime
-)
+    val releaseTime: LocalDateTime? = null
+) {
+    companion object {
+        fun defaultTemplateResource(
+            projectId: String,
+            templateId: String,
+            type: PipelineTemplateType,
+            version: Long,
+            templateModel: ITemplateModel,
+            yaml: String,
+            creator: String
+        ): PipelineTemplateResource {
+            return PipelineTemplateResource(
+                projectId = projectId,
+                templateId = templateId,
+                type = type,
+                version = version,
+                number = 1,
+                versionName = "init",
+                params = emptyList(),
+                originalModel = templateModel,
+                model = templateModel,
+                yaml = yaml,
+                status = VersionStatus.COMMITTING,
+                description = "init",
+                creator = creator
+            )
+        }
+    }
+}

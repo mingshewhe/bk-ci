@@ -80,7 +80,7 @@ data class JobTemplateContainer(
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: Int? = null,
+    override var templateVersion: Long? = null,
     @get:Schema(title = "模板参数构建", required = false)
     override var templateParams: List<BuildFormProperty>? = null
 ) : Container {

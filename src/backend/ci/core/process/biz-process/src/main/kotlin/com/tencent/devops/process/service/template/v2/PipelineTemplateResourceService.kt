@@ -2,7 +2,7 @@ package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
-import com.tencent.devops.common.pipeline.template.PipelineTemplateResource
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,8 +19,12 @@ class PipelineTemplateResourceService @Autowired constructor(
 
     fun getTemplateResourceVersion(
         templateId: String,
-        version: Int
+        version: Long
     ): PipelineTemplateResource? {
+        TODO("")
+    }
+
+    fun getLatestTemplateResource(templateId: String): PipelineTemplateResource? {
         TODO("")
     }
 
@@ -33,7 +37,17 @@ class PipelineTemplateResourceService @Autowired constructor(
         )
     }
 
-    fun delete(commonCondition: PipelineTemplateResourceCommonCondition) {
+    fun count(commonCondition: PipelineTemplateResourceCommonCondition): Int {
+        return pipelineTemplateResourceDao.count(
+            commonCondition = commonCondition,
+            dslContext = dslContext
+        )
+    }
+
+    fun delete(
+        transactionContext: DSLContext? = null,
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ) {
         pipelineTemplateResourceDao.get(
             dslContext = dslContext,
             commonCondition = commonCondition

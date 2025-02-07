@@ -32,6 +32,7 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.JobTemplateContainer
 import com.tencent.devops.common.pipeline.container.Stage
+import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.StepTemplateElement
 import com.tencent.devops.common.pipeline.template.ITemplateModel
@@ -76,6 +77,16 @@ class PipelineTemplateModelParser @Autowired constructor(
 
             else -> model
         }
+    }
+
+    fun getDefaultTemplateModel(
+        projectId: String,
+        name: String,
+        desc: String?,
+        type: PipelineTemplateType,
+        creator: String
+    ): ITemplateModel {
+        TODO()
     }
 
     private fun parseStages(stages: List<Stage>): List<Stage> {

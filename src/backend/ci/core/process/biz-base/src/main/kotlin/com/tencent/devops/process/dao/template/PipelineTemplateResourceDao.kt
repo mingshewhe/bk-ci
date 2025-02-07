@@ -7,9 +7,9 @@ import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
-import com.tencent.devops.common.pipeline.template.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -29,6 +29,7 @@ class PipelineTemplateResourceDao {
                 TEMPLATE_ID,
                 TYPE,
                 VERSION,
+                NUMBER,
                 VERSION_NAME,
                 VERSION_NUM,
                 MODEL_VERSION,
@@ -49,6 +50,7 @@ class PipelineTemplateResourceDao {
                 record.templateId,
                 record.type.value,
                 record.version,
+                record.number,
                 record.versionName,
                 record.versionNum,
                 record.modelVersion,
@@ -115,6 +117,17 @@ class PipelineTemplateResourceDao {
         }
     }
 
+    fun count(
+        dslContext: DSLContext,
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ): Int {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            dslContext.selectCount().from(this)
+                .where(buildQueryCondition(commonCondition))
+                .fetchOne(0, Int::class.java)!!
+        }
+    }
+
     fun get(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateResourceCommonCondition
@@ -166,6 +179,7 @@ class PipelineTemplateResourceDao {
             templateId = this.templateId,
             type = PipelineTemplateType.get(this.type),
             version = this.version,
+            number = this.number,
             versionName = this.versionName,
             versionNum = this.versionNum,
             modelVersion = this.modelVersion,

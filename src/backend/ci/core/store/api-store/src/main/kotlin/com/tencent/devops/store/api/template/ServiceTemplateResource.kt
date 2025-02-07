@@ -32,6 +32,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
+import com.tencent.devops.store.pojo.template.TemplateDetail
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -101,4 +102,16 @@ interface ServiceTemplateResource {
         @PathParam("projectCode")
         projectCode: String
     ): Result<Boolean>
+
+    @Operation(summary = "根据模板代码查看模板详情")
+    @GET
+    @Path("/templateCodes/{templateCode}")
+    fun getTemplateDetailByCode(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String
+    ): Result<TemplateDetail?>
 }

@@ -6,7 +6,7 @@ import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.TPipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateSettingVersionRecord
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 class PipelineTemplateSettingDao {
     fun create(
         dslContext: DSLContext,
-        record: PipelineTemplateSetting
+        record: PipelineTemplateSettingVersion
     ) {
         val successSubscriptionList = record.successSubscriptionList ?: emptyList()
         val failSubscriptionList = record.failSubscriptionList ?: emptyList()
@@ -104,7 +104,7 @@ class PipelineTemplateSettingDao {
         commonCondition: PipelineTemplateSettingCommonCondition,
         limit: Int? = null,
         offset: Int? = null
-    ): List<PipelineTemplateSetting> {
+    ): List<PipelineTemplateSettingVersion> {
         return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
@@ -116,7 +116,7 @@ class PipelineTemplateSettingDao {
     fun get(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateSettingCommonCondition,
-    ): PipelineTemplateSetting? {
+    ): PipelineTemplateSettingVersion? {
         return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
@@ -153,14 +153,14 @@ class PipelineTemplateSettingDao {
         }
     }
 
-    fun TPipelineTemplateSettingVersionRecord.convert(): PipelineTemplateSetting {
+    fun TPipelineTemplateSettingVersionRecord.convert(): PipelineTemplateSettingVersion {
         val successSubscriptionList = this.successSubscription?.let {
             JsonUtil.to(it, object : TypeReference<List<Subscription>>() {})
         }
         val failSubscriptionList = this.failureSubscription?.let {
             JsonUtil.to(it, object : TypeReference<List<Subscription>>() {})
         }
-        return PipelineTemplateSetting(
+        return PipelineTemplateSettingVersion(
             projectId = this.projectId,
             templateId = this.templateId,
             name = this.name,

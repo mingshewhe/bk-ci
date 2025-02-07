@@ -1,4 +1,4 @@
-package com.tencent.devops.common.pipeline.template
+package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
@@ -17,27 +17,27 @@ data class PipelineTemplateInfo(
     @get:Schema(title = "公共/约束/自定义模式", required = true)
     val mode: String,
     @get:Schema(title = "应用范畴", required = true)
-    val category: String?,
+    val category: String? = null,
     @get:Schema(title = "模板类型", required = true)
     val type: PipelineTemplateType,
     @get:Schema(title = "logo地址", required = true)
-    val logoUrl: String?,
+    val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
     @get:Schema(title = "最新版本号", required = true)
-    val lastedVersion: Int,
+    val lastedVersion: Long,
     @get:Schema(title = "最新版本名称", required = true)
     val lastedVersionName: String,
     @get:Schema(title = "最新设置版本号", required = true)
     val lastedSettingVersion: Int,
     @get:Schema(title = "模板来源", required = true)
     val source: PipelineTemplateSource,
-    @get:Schema(title = "是否关联研发商店", required = true)
+    @get:Schema(title = "是否从研发商店安装至项目", required = true)
     val storeFlag: Boolean,
     @get:Schema(title = "父模板ID", required = true)
-    val srcTemplateId: String?,
+    val srcTemplateId: String? = null,
     @get:Schema(title = "父模板项目ID", required = true)
-    val srcTemplateProjectId: String?,
+    val srcTemplateProjectId: String? = null,
     @get:Schema(title = "调试流水线数", required = true)
     val debugPipelineCount: Int? = 0,
     @get:Schema(title = "实例流水线数", required = true)
@@ -45,5 +45,5 @@ data class PipelineTemplateInfo(
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = true)
-    val updater: String?
+    val updater: String? = null
 )

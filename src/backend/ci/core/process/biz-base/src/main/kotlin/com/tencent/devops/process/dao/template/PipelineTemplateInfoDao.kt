@@ -2,10 +2,10 @@ package com.tencent.devops.process.dao.template
 
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.common.pipeline.template.PipelineTemplateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
@@ -112,6 +112,17 @@ class PipelineTemplateInfoDao {
         }
     }
 
+    fun count(
+        dslContext: DSLContext,
+        commonCondition: PipelineTemplateCommonCondition,
+    ): Int {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.selectCount().from(this)
+                .where(buildQueryCondition(commonCondition))
+                .fetchOne(0, Int::class.java)!!
+        }
+    }
+
     fun get(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateCommonCondition
@@ -119,6 +130,17 @@ class PipelineTemplateInfoDao {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
+                .fetchOne()?.convert()
+        }
+    }
+
+    fun get(
+        dslContext: DSLContext,
+        templateId: String
+    ): PipelineTemplateInfo? {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.selectFrom(this)
+                .where(ID.eq(templateId))
                 .fetchOne()?.convert()
         }
     }
@@ -136,10 +158,13 @@ class PipelineTemplateInfoDao {
 
     fun buildQueryCondition(commonCondition: PipelineTemplateCommonCondition): MutableList<Condition> {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            commonCondition.checkAllFieldsAreNull()
             with(commonCondition) {
                 val conditions = mutableListOf<Condition>()
-                conditions.add(PROJECT_ID.eq(projectId))
-                if (name != null) conditions.add(NAME.like("%${name}%"))
+                if (projectId != null) conditions.add(PROJECT_ID.eq(projectId))
+                if (templateId != null) conditions.add(ID.eq(templateId))
+                if (fuzzySearchName != null) conditions.add(NAME.like("%${fuzzySearchName}%"))
+                if (exactSearchName != null) conditions.add(NAME.eq(exactSearchName))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (enablePac != null) conditions.add(PAC.eq(enablePac))
                 if (lastedVersion != null) conditions.add(LASTED_VERSION.eq(lastedVersion))

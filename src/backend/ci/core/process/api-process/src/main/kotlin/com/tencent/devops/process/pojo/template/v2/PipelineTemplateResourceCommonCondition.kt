@@ -15,17 +15,17 @@ data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "模板类型", required = true)
     val type: PipelineTemplateType? = null,
     @get:Schema(title = "版本号", required = true)
-    val version: Int? = null,
+    val version: Long? = null,
     @get:Schema(title = "版本名称", required = true)
     val versionName: String? = null,
     @get:Schema(title = "模板发布版本号", required = true)
-    val versionNum: Int?,
+    val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = true)
-    val modelVersion: Int?,
+    val modelVersion: Int? = null,
     @get:Schema(title = "模板触发器版本号", required = true)
-    val triggerVersion: Int?,
+    val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
-    val draftSourceVersion: Int?,
+    val draftSourceVersion: Int? = null,
     @get:Schema(title = "状态", required = true)
     val status: VersionStatus? = null,
     @get:Schema(title = "分支状态", required = true)

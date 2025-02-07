@@ -34,6 +34,7 @@ import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
+import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -97,5 +98,12 @@ class ServiceTemplateResourceImpl @Autowired constructor(
             model = model,
             projectCodeList = projectCodeList
         )
+    }
+
+    override fun getTemplateDetailByCode(
+        userId: String,
+        templateCode: String
+    ): Result<TemplateDetail?> {
+        return marketTemplateService.getTemplateDetailByCode(userId, templateCode)
     }
 }

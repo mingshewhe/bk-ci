@@ -37,7 +37,7 @@ interface ITemplateFunction {
     @get:Schema(title = "模板ID", required = false)
     var templateId: String?
     @get:Schema(title = "版本", required = false)
-    var templateVersion: Int?
+    var templateVersion: Long?
     @get:Schema(title = "模板参数构建", required = false)
     var templateParams: List<BuildFormProperty>?
 }
