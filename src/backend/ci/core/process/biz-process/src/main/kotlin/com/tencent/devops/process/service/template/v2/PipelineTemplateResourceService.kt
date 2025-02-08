@@ -4,6 +4,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -24,8 +25,17 @@ class PipelineTemplateResourceService @Autowired constructor(
         TODO("")
     }
 
-    fun getLatestTemplateResource(templateId: String): PipelineTemplateResource? {
-        TODO("")
+    fun getLatestTemplateResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId
+        ) ?: throw ErrorCodeException(
+            errorCode = ""
+        )
     }
 
     fun get(commonCondition: PipelineTemplateResourceCommonCondition): PipelineTemplateResource {
@@ -68,6 +78,18 @@ class PipelineTemplateResourceService @Autowired constructor(
         pipelineTemplateResourceDao.create(
             dslContext = transactionContext ?: dslContext,
             record = pipelineTemplateResource
+        )
+    }
+
+    fun update(
+        transactionContext: DSLContext? = null,
+        record: PipelineTemplateResourceUpdateInfo,
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ) {
+        pipelineTemplateResourceDao.update(
+            dslContext = transactionContext ?: dslContext,
+            record = record,
+            commonCondition = commonCondition
         )
     }
 }

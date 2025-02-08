@@ -2,6 +2,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板基础信息")
@@ -26,8 +27,10 @@ data class PipelineTemplateInfo(
     val enablePac: Boolean,
     @get:Schema(title = "最新版本号", required = true)
     val lastedVersion: Long,
+    @get:Schema(title = "最新版本状态", required = true)
+    val lastedVersionStatus: VersionStatus,
     @get:Schema(title = "最新版本名称", required = true)
-    val lastedVersionName: String,
+    val lastedVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = true)
     val lastedSettingVersion: Int,
     @get:Schema(title = "模板来源", required = true)

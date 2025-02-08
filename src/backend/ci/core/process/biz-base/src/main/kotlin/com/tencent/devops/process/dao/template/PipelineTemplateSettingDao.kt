@@ -6,10 +6,11 @@ import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.TPipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateSettingVersionRecord
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
@@ -31,7 +32,6 @@ class PipelineTemplateSettingDao {
                 NAME,
                 DESC,
                 SETTING_VERSION,
-                VERSION_NAME,
                 LABELS,
                 WAIT_QUEUE_TIME_SECOND,
                 MAX_QUEUE_SIZE,
@@ -51,7 +51,6 @@ class PipelineTemplateSettingDao {
                 record.name,
                 record.desc,
                 record.settingVersion,
-                record.versionName,
                 record.labels?.let { self -> JsonUtil.toJson(self) },
                 DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute),
                 record.maxQueueSize,
@@ -71,7 +70,8 @@ class PipelineTemplateSettingDao {
 
     fun update(
         dslContext: DSLContext,
-        record: TPipelineTemplateSettingVersionRecord
+        record: PipelineTemplateSettingUpdateInfo,
+        commonCondition: PipelineTemplateSettingCommonCondition
     ) {
         with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             val now = LocalDateTime.now()
@@ -80,22 +80,25 @@ class PipelineTemplateSettingDao {
                     record.name?.let { set(NAME, it) }
                     record.desc?.let { set(DESC, it) }
                     record.settingVersion?.let { set(SETTING_VERSION, it) }
-                    record.versionName?.let { set(VERSION_NAME, it) }
-                    record.labels?.let { set(LABELS, it) }
-                    record.waitQueueTimeSecond?.let { set(WAIT_QUEUE_TIME_SECOND, it) }
+                    record.labels?.let { set(LABELS, JsonUtil.toJson(it)) }
+                    record.waitQueueTimeMinute?.let { set(WAIT_QUEUE_TIME_SECOND, DateTimeUtil.minuteToSecond(it)) }
                     record.maxQueueSize?.let { set(MAX_QUEUE_SIZE, it) }
                     record.buildNumRule?.let { set(BUILD_NUM_RULE, it) }
                     record.concurrencyGroup?.let { set(CONCURRENCY_GROUP, it) }
                     record.concurrencyCancelInProgress?.let { set(CONCURRENCY_CANCEL_IN_PROGRESS, it) }
-                    record.pipelineAsCodeSettings?.let { set(PIPELINE_AS_CODE_SETTINGS, it) }
-                    record.successSubscription?.let { set(SUCCESS_SUBSCRIPTION, it) }
-                    record.failureSubscription?.let { set(FAILURE_SUBSCRIPTION, it) }
-                    record.runLockType?.let { set(RUN_LOCK_TYPE, it) }
+                    record.pipelineAsCodeSettings?.let { set(PIPELINE_AS_CODE_SETTINGS, JsonUtil.toJson(it)) }
+                    record.runLockType?.let { set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType)) }
                     record.maxConRunningQueueSize?.let { set(MAX_CON_RUNNING_QUEUE_SIZE, it) }
+                    if (!record.successSubscriptionList.isNullOrEmpty()) {
+                        set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(record.successSubscriptionList!!))
+                    }
+                    if (!record.failSubscriptionList.isNullOrEmpty()) {
+                        set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(record.failSubscriptionList!!))
+                    }
                 }
                 .set(UPDATE_TIME, now)
-                .where(PROJECT_ID.eq(record.projectId))
-                .and(TEMPLATE_ID.eq(record.templateId))
+                .set(UPDATER, record.updater)
+                .where(buildQueryCondition(commonCondition))
         }
     }
 
@@ -145,7 +148,6 @@ class PipelineTemplateSettingDao {
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (name != null) conditions.add(NAME.like("%$name%"))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
-                if (versionName != null) conditions.add(VERSION_NAME.eq(versionName))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
                 conditions
@@ -169,7 +171,6 @@ class PipelineTemplateSettingDao {
             successSubscriptionList = successSubscriptionList,
             failSubscriptionList = failSubscriptionList,
             settingVersion = this.settingVersion,
-            versionName = this.versionName,
             labels = this.labels?.let {
                 JsonUtil.to(it, object : TypeReference<List<String>>() {})
             },

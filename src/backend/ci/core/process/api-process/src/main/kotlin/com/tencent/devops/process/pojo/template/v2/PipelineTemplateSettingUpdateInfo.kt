@@ -31,89 +31,96 @@ import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.pipeline.utils.PIPELINE_RES_NUM_MIN
-import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT
-import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_MAX_QUEUE_SIZE_DEFAULT
-import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_WAIT_QUEUE_TIME_MINUTE_DEFAULT
 import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "模板配置")
-open class PipelineTemplateSetting(
-    /* 模板基础配置 */
-    @get:Schema(title = "项目id", required = true)
-    open val projectId: String,
+@Schema(title = "模板配置更新")
+data class PipelineTemplateSettingUpdateInfo(
+    @get:Schema(title = "版本号", required = true)
+    val settingVersion: Int? = null,
+
     @get:Schema(title = "模板名称", required = true)
-    open val name: String,
+    val name: String? = null,
     @get:Schema(title = "描述", required = false)
-    open val desc: String,
+    val desc: String? = null,
+
     @get:Schema(title = "标签ID列表", required = false)
-    open val labels: List<String>?,
+    val labels: List<String>? = null,
     @get:Schema(title = "标签名称列表（仅用于前端展示，不参与数据保存）", required = false)
-    open val labelNames: List<String> = emptyList(),
+    val labelNames: List<String>? = null,
     @field:BkField(patternStyle = BkStyleEnum.BUILD_NUM_RULE_STYLE, required = false)
     @get:Schema(title = "构建号生成规则", required = false)
-    open val buildNumRule: String? = null, // 构建号生成规则
+    val buildNumRule: String? = null, // 构建号生成规则
 
     /* 通知订阅相关配置 */
     @get:Schema(title = "订阅成功通知组", required = false)
-    open val successSubscriptionList: List<Subscription>? = null,
+    val successSubscriptionList: List<Subscription>? = null,
     @get:Schema(title = "订阅失败通知组", required = false)
-    open val failSubscriptionList: List<Subscription>? = null,
+    val failSubscriptionList: List<Subscription>? = null,
 
     /* 运行控制、流水线禁用相关配置 */
     @get:Schema(title = "Lock 类型", required = false)
-    open val runLockType: PipelineRunLockType?,
+    val runLockType: PipelineRunLockType? = null,
     @get:Schema(title = "最大排队时长", required = false)
-    open val waitQueueTimeMinute: Int = PIPELINE_SETTING_WAIT_QUEUE_TIME_MINUTE_DEFAULT,
+    val waitQueueTimeMinute: Int? = null,
     @get:Schema(title = "最大排队数量", required = false)
-    open val maxQueueSize: Int = PIPELINE_SETTING_MAX_QUEUE_SIZE_DEFAULT,
+    val maxQueueSize: Int? = null,
     @field:BkField(patternStyle = BkStyleEnum.PIPELINE_CONCURRENCY_GROUP_STYLE, required = false)
     @get:Schema(title = "并发时,设定的group", required = false)
-    open val concurrencyGroup: String? = PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT,
+    val concurrencyGroup: String? = null,
     @get:Schema(title = "并发时,是否相同group取消正在执行的流水线", required = false)
-    open val concurrencyCancelInProgress: Boolean = false,
+    val concurrencyCancelInProgress: Boolean? = null,
     @get:Schema(title = "并发构建数量限制", required = false)
-    open val maxConRunningQueueSize: Int? = null, // MULTIPLE类型时，并发构建数量限制
+    val maxConRunningQueueSize: Int? = null, // MULTIPLE类型时，并发构建数量限制
 
     /* 平台系统控制相关配置 —— 不作为生成版本的配置 */
     @get:Schema(title = "保存流水线编排的最大个数", required = false)
-    open val maxPipelineResNum: Int = PIPELINE_RES_NUM_MIN, // 保存流水线编排的最大个数
+    val maxPipelineResNum: Int = PIPELINE_RES_NUM_MIN, // 保存流水线编排的最大个数
     @get:Schema(title = "重试时清理引擎变量表", required = false)
-    open val cleanvaliablesWhenRetry: Boolean? = false,
+    val cleanvaliablesWhenRetry: Boolean? = null,
     @get:Schema(title = "YAML流水线特殊配置", required = false)
-    open val pipelineAsCodeSettings: PipelineAsCodeSettings?,
-    @get:Schema(title = "创建人", required = true)
-    open val creator: String,
+    val pipelineAsCodeSettings: PipelineAsCodeSettings? = null,
     @get:Schema(title = "更新人", required = false)
-    open val updater: String?
+    val updater: String
 ) {
-    fun toSettingVersion(
-        templateId: String,
-        settingVersion: Int,
-    ): PipelineTemplateSettingVersion {
-        return PipelineTemplateSettingVersion(
-            templateId = templateId,
-            settingVersion = settingVersion,
-            projectId = projectId,
-            name = name,
-            desc = desc,
-            labels = labels,
-            labelNames = labelNames,
-            buildNumRule = buildNumRule,
-            successSubscriptionList = successSubscriptionList,
-            failSubscriptionList = failSubscriptionList,
-            runLockType = runLockType,
-            waitQueueTimeMinute = waitQueueTimeMinute,
-            maxQueueSize = maxQueueSize,
-            concurrencyGroup = concurrencyGroup,
-            concurrencyCancelInProgress = concurrencyCancelInProgress,
-            maxConRunningQueueSize = maxConRunningQueueSize,
-            maxPipelineResNum = maxPipelineResNum,
-            cleanvaliablesWhenRetry = cleanvaliablesWhenRetry,
-            pipelineAsCodeSettings = pipelineAsCodeSettings,
-            creator = creator,
-            updater = updater
-        )
+    companion object {
+        fun toPipelineTemplateSettingVersion(
+            projectId: String,
+            templateId: String,
+            settingVersion: Int,
+            templateSetting: PipelineTemplateSettingUpdateInfo?,
+            sourceTemplateSetting: PipelineTemplateSettingVersion,
+            operator: String
+        ): PipelineTemplateSettingVersion {
+            return PipelineTemplateSettingVersion(
+                templateId = templateId,
+                settingVersion = settingVersion,
+                projectId = projectId,
+                name = templateSetting?.name ?: sourceTemplateSetting.name,
+                desc = templateSetting?.desc ?: sourceTemplateSetting.desc,
+                labels = templateSetting?.labels ?: sourceTemplateSetting.labels,
+                buildNumRule = templateSetting?.buildNumRule ?: sourceTemplateSetting.buildNumRule,
+                successSubscriptionList = templateSetting?.successSubscriptionList
+                    ?: sourceTemplateSetting.successSubscriptionList,
+                failSubscriptionList = templateSetting?.failSubscriptionList
+                    ?: sourceTemplateSetting.failSubscriptionList,
+                runLockType = templateSetting?.runLockType ?: sourceTemplateSetting.runLockType,
+                waitQueueTimeMinute = templateSetting?.waitQueueTimeMinute
+                    ?: sourceTemplateSetting.waitQueueTimeMinute,
+                maxQueueSize = templateSetting?.maxQueueSize ?: sourceTemplateSetting.maxQueueSize,
+                concurrencyGroup = templateSetting?.concurrencyGroup ?: sourceTemplateSetting.concurrencyGroup,
+                concurrencyCancelInProgress = templateSetting?.concurrencyCancelInProgress
+                    ?: sourceTemplateSetting.concurrencyCancelInProgress,
+                maxConRunningQueueSize = templateSetting?.maxConRunningQueueSize
+                    ?: sourceTemplateSetting.maxConRunningQueueSize,
+                maxPipelineResNum = templateSetting?.maxPipelineResNum ?: sourceTemplateSetting.maxPipelineResNum,
+                cleanvaliablesWhenRetry = templateSetting?.cleanvaliablesWhenRetry
+                    ?: sourceTemplateSetting.cleanvaliablesWhenRetry,
+                pipelineAsCodeSettings = templateSetting?.pipelineAsCodeSettings
+                    ?: sourceTemplateSetting.pipelineAsCodeSettings,
+                creator = operator
+            )
+        }
     }
 }

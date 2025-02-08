@@ -4,6 +4,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -65,6 +66,18 @@ class PipelineTemplateInfoService @Autowired constructor(
         return pipelineTemplateInfoDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
+        )
+    }
+
+    fun update(
+        transactionContext: DSLContext? = null,
+        record: PipelineTemplateInfoUpdateInfo,
+        commonCondition: PipelineTemplateCommonCondition
+    ) {
+        pipelineTemplateInfoDao.update(
+            dslContext = transactionContext ?: dslContext,
+            commonCondition = commonCondition,
+            record = record
         )
     }
 }

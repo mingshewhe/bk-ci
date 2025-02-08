@@ -45,8 +45,6 @@ data class PipelineTemplateSettingVersion(
     val templateId: String,
     @get:Schema(title = "版本号", required = true)
     val settingVersion: Int,
-    @get:Schema(title = "版本名称", required = true)
-    val versionName: String,
 
     @get:Schema(title = "项目id", required = true)
     override val projectId: String,
@@ -95,7 +93,7 @@ data class PipelineTemplateSettingVersion(
     @get:Schema(title = "创建人", required = true)
     override val creator: String,
     @get:Schema(title = "更新人", required = false)
-    override val updater: String?
+    override val updater: String? = null
 ) : PipelineTemplateSetting(
     projectId = projectId,
     name = name,
@@ -135,7 +133,6 @@ data class PipelineTemplateSettingVersion(
                 templateId = templateId,
                 name = templateName,
                 settingVersion = 1,
-                versionName = "init",
                 desc = templateName,
                 maxPipelineResNum = maxPipelineResNum ?: PIPELINE_RES_NUM_MIN,
                 waitQueueTimeMinute = PIPELINE_SETTING_WAIT_QUEUE_TIME_MINUTE_DEFAULT,

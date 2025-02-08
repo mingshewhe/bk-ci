@@ -11,13 +11,16 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
@@ -56,7 +59,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         }
     }
 
-    fun createByCustom(request: PipelineTemplateCustomCreateReq) {
+    private fun createByCustom(request: PipelineTemplateCustomCreateReq) {
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = request.projectId,
             name = request.name
@@ -86,7 +89,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = request.type,
             enablePac = false,
             lastedVersion = version,
-            lastedVersionName = PipelineTemplateCommonService.INIT_VERSION_NAME,
+            lastedVersionStatus = VersionStatus.COMMITTING,
             lastedSettingVersion = 1,
             source = PipelineTemplateSource.CUSTOM,
             storeFlag = false,
@@ -115,7 +118,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun createByMarket(request: PipelineTemplateMarketCreateReq) {
+    private fun createByMarket(request: PipelineTemplateMarketCreateReq) {
         val marketTemplateInfo = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
             userId = request.creator,
             templateCode = request.marketTemplateId
@@ -137,6 +140,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = templateInfo.type,
             enablePac = false,
             lastedVersion = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
+            lastedVersionStatus = VersionStatus.RELEASED,
             lastedVersionName = templateInfo.lastedVersionName,
             lastedSettingVersion = 1,
             source = PipelineTemplateSource.MARKET,
@@ -166,11 +170,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun createByRepository(request: PipelineTemplateRepositoryCreateReq) {
+    private fun createByRepository(request: PipelineTemplateRepositoryCreateReq) {
 
     }
 
-    fun createByYaml(request: PipelineTemplateYamlCreateReq) {
+    private fun createByYaml(request: PipelineTemplateYamlCreateReq) {
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
         // TODO 校验
         pipelineTemplateCommonService.checkTemplateBasicInfo(
@@ -187,25 +191,24 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = request.type,
             enablePac = false,
             lastedVersion = version,
-            lastedVersionName = PipelineTemplateCommonService.INIT_VERSION_NAME,
+            lastedVersionStatus = VersionStatus.COMMITTING,
             lastedSettingVersion = 1,
             source = PipelineTemplateSource.YAML,
-            storeFlag = true,
+            storeFlag = false,
             creator = request.creator
         )
         val pipelineTemplateSettingVersion = request.setting.toSettingVersion(
             templateId = templateId,
-            versionName = PipelineTemplateCommonService.INIT_VERSION_NAME,
             settingVersion = 1
         )
         val model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel)
         val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
+            settingVersion = 1,
             type = request.type,
             version = version,
             number = 1,
-            versionName = PipelineTemplateCommonService.INIT_VERSION_NAME,
             params = request.params,
             originalModel = request.originalModel,
             model = model,
@@ -328,14 +331,121 @@ class PipelineTemplateFacadeService @Autowired constructor(
         }
     }
 
-    // 复制模板
+    fun saveDraft(request: PipelineTemplateDraftSaveReq) {
+        logger.info("save template draft {}|{}|{}", request.projectId, request.operator, request)
+        val templateInfo = pipelineTemplateInfoService.get(
+            PipelineTemplateCommonCondition(
+                projectId = request.projectId,
+                templateId = request.templateId
+            )
+        )
+        val isTemplateExistDraft = pipelineTemplateResourceService.count(
+            PipelineTemplateResourceCommonCondition(
+                projectId = request.projectId,
+                templateId = request.templateId,
+                status = VersionStatus.COMMITTING
+            )
+        ) > 0
+        // todo 检查模型，模板参数，配置检查
+        if (isTemplateExistDraft) {
+            val draftVersionTemplate = pipelineTemplateResourceService.get(
+                PipelineTemplateResourceCommonCondition(
+                    projectId = request.projectId,
+                    templateId = request.templateId,
+                    status = VersionStatus.COMMITTING
+                )
+            )
+            val originalModel = request.originalModel
+
+            val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                draftSourceVersion = request.draftSourceVersion,
+                params = request.params,
+                originalModel = originalModel,
+                model = originalModel?.let { pipelineTemplateModelParser.parseTemplateModel(originalModel) },
+                yaml = request.yaml,
+                updater = request.operator
+            )
+            dslContext.transaction { configuration ->
+                val context = DSL.using(configuration)
+                pipelineTemplateResourceService.update(
+                    transactionContext = context,
+                    record = templateResourceUpdateInfo,
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = draftVersionTemplate.projectId,
+                        templateId = draftVersionTemplate.templateId,
+                        status = VersionStatus.COMMITTING
+                    )
+                )
+                request.templateSetting?.let {
+                    pipelineTemplateSettingService.update(
+                        transactionContext = context,
+                        record = it,
+                        commonCondition = PipelineTemplateSettingCommonCondition(
+                            projectId = request.projectId,
+                            templateId = request.templateId,
+                            settingVersion = draftVersionTemplate.settingVersion
+                        )
+                    )
+                }
+            }
+        } else {
+            // 不存在草稿版本，则基于某个正式版本进行创建草稿
+            val sourceVersionTemplateResource = pipelineTemplateResourceService.get(
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = request.projectId,
+                    templateId = request.templateId,
+                    version = request.draftSourceVersion
+                )
+            )
+            val sourceTemplateSetting = pipelineTemplateSettingService.get(
+                commonCondition = PipelineTemplateSettingCommonCondition(
+                    projectId = request.projectId,
+                    templateId = request.templateId,
+                    settingVersion = sourceVersionTemplateResource.settingVersion
+                )
+            )
+            val latestTemplateResource = pipelineTemplateResourceService.getLatestTemplateResource(
+                projectId = request.projectId,
+                templateId = request.templateId
+            )
+            val pipelineTemplateResource = PipelineTemplateResource(
+                projectId = request.projectId,
+                templateId = request.templateId,
+                type = templateInfo.type,
+                settingVersion = latestTemplateResource.settingVersion + 1,
+                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
+                number = latestTemplateResource.number + 1,
+                draftSourceVersion = request.draftSourceVersion,
+                params = request.params,
+                originalModel = request.originalModel ?: sourceVersionTemplateResource.originalModel,
+                model = request.originalModel?.let { pipelineTemplateModelParser.parseTemplateModel(it) }
+                    ?: sourceVersionTemplateResource.model,
+                yaml = request.yaml ?: sourceVersionTemplateResource.yaml,
+                status = VersionStatus.COMMITTING,
+                creator = request.operator
+            )
+            val pipelineTemplateSetting = PipelineTemplateSettingUpdateInfo.toPipelineTemplateSettingVersion(
+                projectId = request.projectId,
+                templateId = request.templateId,
+                settingVersion = latestTemplateResource.settingVersion + 1,
+                templateSetting = request.templateSetting,
+                sourceTemplateSetting = sourceTemplateSetting,
+                operator = request.operator
+            )
+            saveTemplate(
+                pipelineTemplateSettingVersion = pipelineTemplateSetting,
+                pipelineTemplateResource = pipelineTemplateResource
+            )
+        }
+    }
+
+    // 获取模板列表
     // 导出模板
     // 编辑模板
     // 保存草稿
     // 发布模板
     // 复制模板
     // 获取用户最近打开的模板类型
-    // 获取模板列表
     // 查看模板详情
     // 流水线模板检查
     // 模板版本对比

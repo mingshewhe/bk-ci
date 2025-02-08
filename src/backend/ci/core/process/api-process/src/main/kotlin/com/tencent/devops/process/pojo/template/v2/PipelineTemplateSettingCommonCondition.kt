@@ -12,8 +12,6 @@ data class PipelineTemplateSettingCommonCondition(
     val name: String? = null,
     @get:Schema(title = "模板配置版本", required = true)
     val settingVersion: Int? = null,
-    @get:Schema(title = "模板名称", required = true)
-    val versionName: String? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String? = null,
     @get:Schema(title = "更新人", required = true)

@@ -7,10 +7,11 @@ import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
@@ -28,6 +29,7 @@ class PipelineTemplateResourceDao {
                 PROJECT_ID,
                 TEMPLATE_ID,
                 TYPE,
+                SETTING_VERSION,
                 VERSION,
                 NUMBER,
                 VERSION_NAME,
@@ -41,7 +43,7 @@ class PipelineTemplateResourceDao {
                 YAML,
                 STATUS,
                 BRANCH_ACTION,
-                DESCRIPTION,
+                RELEASE_COMMENT,
                 CREATOR,
                 UPDATER,
                 RELEASE_TIME
@@ -49,6 +51,7 @@ class PipelineTemplateResourceDao {
                 record.projectId,
                 record.templateId,
                 record.type.value,
+                record.settingVersion,
                 record.version,
                 record.number,
                 record.versionName,
@@ -56,13 +59,13 @@ class PipelineTemplateResourceDao {
                 record.modelVersion,
                 record.triggerVersion,
                 record.draftSourceVersion,
-                JsonUtil.toJson(record.params),
+                record.params?.let { JsonUtil.toJson(it) },
                 JsonUtil.toJson(record.originalModel),
                 JsonUtil.toJson(record.model),
                 record.yaml,
                 record.status.name,
                 record.branchAction?.name,
-                record.description,
+                record.releaseComment,
                 record.creator,
                 record.updater,
                 record.releaseTime
@@ -72,47 +75,51 @@ class PipelineTemplateResourceDao {
 
     fun update(
         dslContext: DSLContext,
-        record: TPipelineTemplateResourceVersionRecord
+        record: PipelineTemplateResourceUpdateInfo,
+        commonCondition: PipelineTemplateResourceCommonCondition
     ) {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val now = LocalDateTime.now()
             dslContext.update(this)
                 .apply {
-                    record.type?.let { set(TYPE, it) }
                     record.version?.let { set(VERSION, it) }
+                    record.number?.let { set(NUMBER, it) }
                     record.versionName?.let { set(VERSION_NAME, it) }
                     record.versionNum?.let { set(VERSION_NUM, it) }
                     record.modelVersion?.let { set(MODEL_VERSION, it) }
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
                     record.draftSourceVersion?.let { set(DRAFT_SOURCE_VERSION, it) }
-                    record.model?.let { set(MODEL, it) }
+                    record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
+                    record.originalModel?.let { set(ORIGINAL_MODEL, JsonUtil.toJson(it)) }
+                    record.model?.let { set(MODEL, JsonUtil.toJson(it)) }
                     record.yaml?.let { set(YAML, it) }
-                    record.status?.let { set(STATUS, it) }
-                    record.branchAction?.let { set(BRANCH_ACTION, it) }
-                    record.description?.let { set(DESCRIPTION, it) }
+                    record.status?.let { set(STATUS, it.name) }
+                    record.branchAction?.let { set(BRANCH_ACTION, it.name) }
+                    record.releaseComment?.let { set(RELEASE_COMMENT, it) }
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
-                    record.originalModel?.let { set(ORIGINAL_MODEL, it) }
-                    record.params?.let { set(PARAMS, it) }
                 }
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, now)
-                .where(PROJECT_ID.eq(record.projectId))
-                .and(TEMPLATE_ID.eq(record.templateId))
+                .where(buildQueryCondition(commonCondition))
                 .execute()
         }
     }
 
     fun list(
         dslContext: DSLContext,
-        commonCondition: PipelineTemplateResourceCommonCondition,
-        limit: Int? = null,
-        offset: Int? = null
+        commonCondition: PipelineTemplateResourceCommonCondition
     ): List<PipelineTemplateResource> {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
-                .limit(limit)
-                .offset(offset)
+                .let {
+                    if (commonCondition.page != null && commonCondition.pageSize != null) {
+                        it.offset((commonCondition.page!! - 1) * commonCondition.pageSize!!)
+                            .limit(commonCondition.pageSize)
+                    } else {
+                        it
+                    }
+                }
                 .fetch().map { it.convert() }
         }
     }
@@ -139,6 +146,20 @@ class PipelineTemplateResourceDao {
         }
     }
 
+    fun getLatestRecord(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            dslContext.selectFrom(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(TEMPLATE_ID.eq(templateId))
+                .orderBy(NUMBER.desc())
+                .fetchOne()?.convert()
+        }
+    }
+
     fun delete(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateResourceCommonCondition
@@ -157,6 +178,7 @@ class PipelineTemplateResourceDao {
                 conditions.add(PROJECT_ID.eq(projectId))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
+                if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
                 if (version != null) conditions.add(VERSION.eq(version))
                 if (versionName != null) conditions.add(VERSION_NAME.eq(versionName))
                 if (versionNum != null) conditions.add(VERSION_NUM.eq(versionNum))
@@ -178,6 +200,7 @@ class PipelineTemplateResourceDao {
             projectId = this.projectId,
             templateId = this.templateId,
             type = PipelineTemplateType.get(this.type),
+            settingVersion = this.settingVersion,
             version = this.version,
             number = this.number,
             versionName = this.versionName,
@@ -191,7 +214,7 @@ class PipelineTemplateResourceDao {
             yaml = this.yaml,
             status = VersionStatus.get(this.status),
             branchAction = this.branchAction?.let { BranchVersionAction.get(it) },
-            description = this.description,
+            releaseComment = this.releaseComment,
             creator = this.creator,
             updater = this.updater,
             releaseTime = this.releaseTime

@@ -28,27 +28,18 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@Schema(title = "流水线模版资源")
-data class PipelineTemplateResource(
-    @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "模板ID", required = true)
-    val templateId: String,
-    @get:Schema(title = "模板类型", required = true)
-    val type: PipelineTemplateType,
-    @get:Schema(title = "配置版本号", required = true)
-    val settingVersion: Int,
+@Schema(title = "流水线模版资源更新请求体")
+data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "版本号", required = true)
-    val version: Long,
+    val version: Long? = null,
     @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
-    val number: Int,
+    val number: Int? = null,
     @get:Schema(title = "版本名称", required = true)
     val versionName: String? = null,
     @get:Schema(title = "模板发布版本号", required = true)
@@ -60,50 +51,21 @@ data class PipelineTemplateResource(
     @get:Schema(title = "草稿来源版本", required = true)
     val draftSourceVersion: Long? = null,
     @get:Schema(title = "构建参数", required = false)
-    val params: List<BuildFormProperty>? = emptyList(),
+    val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "原始编排,局部模版没有解析", required = true)
-    val originalModel: ITemplateModel,
+    val originalModel: ITemplateModel? = null,
     @get:Schema(title = "实际编排,局部模版已经全部解析成具体的流水线编排", required = true)
-    val model: ITemplateModel,
+    val model: ITemplateModel? = null,
     @get:Schema(title = "编排yaml", required = true)
-    val yaml: String?,
+    val yaml: String? = null,
     @get:Schema(title = "状态", required = true)
-    val status: VersionStatus,
+    val status: VersionStatus? = null,
     @get:Schema(title = "分支状态", required = true)
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本发布描述", required = true)
     val releaseComment: String? = null,
-    @get:Schema(title = "创建人", required = true)
-    val creator: String,
     @get:Schema(title = "更新人", required = true)
-    val updater: String? = null,
+    val updater: String,
     @get:Schema(title = "发布时间", required = true)
     val releaseTime: LocalDateTime? = null
-) {
-    companion object {
-        fun defaultTemplateResource(
-            projectId: String,
-            templateId: String,
-            type: PipelineTemplateType,
-            version: Long,
-            templateModel: ITemplateModel,
-            yaml: String,
-            creator: String
-        ): PipelineTemplateResource {
-            return PipelineTemplateResource(
-                projectId = projectId,
-                templateId = templateId,
-                type = type,
-                settingVersion = 1,
-                version = version,
-                number = 1,
-                params = emptyList(),
-                originalModel = templateModel,
-                model = templateModel,
-                yaml = yaml,
-                status = VersionStatus.COMMITTING,
-                creator = creator
-            )
-        }
-    }
-}
+)
