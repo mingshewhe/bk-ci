@@ -75,14 +75,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = request.name
         )
         val templateId = UUIDUtil.generate()
-        val templateModel = pipelineTemplateModelParser.getDefaultTemplateModel(
-            projectId = request.projectId,
-            name = request.name,
-            desc = request.desc,
-            type = request.type,
-            creator = request.creator
-        )
-        val templateModelYaml = pipelineTemplatePACService.getDefaultTemplateModelYaml(request)
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
         val (settingVersion, setting) = if (request.type == PipelineTemplateType.PIPELINE) {
             val setting = PipelineTemplateSettingVersion.defaultSetting(
@@ -118,9 +110,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
             settingVersion = settingVersion,
             version = version,
             number = 1,
-            model = templateModel,
-            originalModel = templateModel,
-            yaml = templateModelYaml,
+            model = null,
+            originalModel = null,
+            yaml = null,
             creator = request.creator,
             status = VersionStatus.COMMITTING
         )
@@ -646,7 +638,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
         val templateId = UUIDUtil.generate()
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
-
 
         val (settingVersion, setting) = if (copySetting && srcTemplateInfo.type == PipelineTemplateType.PIPELINE) {
             val srcTemplateSetting = pipelineTemplateSettingService.get(

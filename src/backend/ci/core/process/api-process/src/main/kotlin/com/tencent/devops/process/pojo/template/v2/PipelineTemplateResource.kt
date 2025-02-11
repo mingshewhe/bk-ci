@@ -68,9 +68,9 @@ data class PipelineTemplateResource(
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "原始编排,局部模版没有解析", required = true)
-    val originalModel: ITemplateModel,
+    val originalModel: ITemplateModel?,
     @get:Schema(title = "实际编排,局部模版已经全部解析成具体的流水线编排", required = true)
-    val model: ITemplateModel,
+    val model: ITemplateModel?,
     @get:Schema(title = "编排yaml", required = true)
     val yaml: String?,
     @get:Schema(title = "状态", required = true)

@@ -1,6 +1,10 @@
 package com.tencent.devops.process.service.template.v2
 
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
+import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.common.pipeline.template.JobTemplateModel
+import com.tencent.devops.common.pipeline.template.StageTemplateModel
+import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import org.springframework.stereotype.Service
 
 /**
@@ -8,7 +12,31 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplatePACService {
-    fun getDefaultTemplateModelYaml(request: PipelineTemplateBasicCreateReq): String {
+    fun yamlTransferToModel(yaml: String): ITemplateModel {
         TODO()
+    }
+
+    fun modelTransferToYaml(model: ITemplateModel): String {
+        return when (model) {
+            is Model -> {
+                ""
+            }
+
+            is StageTemplateModel -> {
+                ""
+            }
+
+            is JobTemplateModel -> {
+                ""
+            }
+
+            is StepTemplateModel -> {
+                ""
+            }
+
+            else -> {
+                ""
+            }
+        }
     }
 }

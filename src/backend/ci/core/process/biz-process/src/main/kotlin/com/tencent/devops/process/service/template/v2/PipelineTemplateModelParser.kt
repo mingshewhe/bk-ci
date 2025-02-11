@@ -79,16 +79,6 @@ class PipelineTemplateModelParser @Autowired constructor(
         }
     }
 
-    fun getDefaultTemplateModel(
-        projectId: String,
-        name: String,
-        desc: String?,
-        type: PipelineTemplateType,
-        creator: String
-    ): ITemplateModel {
-        TODO()
-    }
-
     private fun parseStages(stages: List<Stage>): List<Stage> {
         val newStages = mutableListOf<Stage>()
         stages.forEach { stage ->
