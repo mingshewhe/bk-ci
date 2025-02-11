@@ -3,6 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
+import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板自定义创建请求体")
@@ -24,5 +25,7 @@ open class PipelineTemplateBasicCreateReq(
     @get:Schema(title = "创建人", required = true)
     open val creator: String,
     @get:Schema(title = "来源", required = true)
-    open val source: PipelineTemplateSource
+    open val source: PipelineTemplateSource,
+    @get:Schema(title = "模板类型", required = true)
+    open val type: PipelineTemplateType = PipelineTemplateType.UNKNOWN
 )

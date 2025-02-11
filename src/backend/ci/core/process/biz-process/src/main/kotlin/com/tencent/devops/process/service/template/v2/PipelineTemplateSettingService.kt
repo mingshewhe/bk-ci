@@ -26,6 +26,21 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
+    fun get(
+        projectId: String,
+        templateId: String,
+        settingVersion: Int
+    ): PipelineTemplateSettingVersion? {
+        return pipelineTemplateSettingDao.get(
+            commonCondition = PipelineTemplateSettingCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = settingVersion
+            ),
+            dslContext = dslContext
+        )
+    }
+
     fun delete(
         transactionContext: DSLContext? = null,
         commonCondition: PipelineTemplateSettingCommonCondition

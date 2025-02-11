@@ -13,6 +13,8 @@ data class PipelineTemplateCommonCondition(
     val projectId: String? = null,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
+    @get:Schema(title = "过滤模板ID", required = true)
+    val filterTemplateIds: List<String>? = null,
     @get:Schema(title = "根据名称模糊搜索", required = true)
     val fuzzySearchName: String? = null,
     @get:Schema(title = "根据名称精准搜索", required = true)

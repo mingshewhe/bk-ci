@@ -1,18 +1,25 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.util.UUIDUtil
+import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
+import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
@@ -22,6 +29,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdat
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import com.tencent.devops.store.api.common.ServiceStoreResource
@@ -32,6 +40,7 @@ import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
  * 流水线模版门面类
@@ -43,6 +52,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateModelParser: PipelineTemplateModelParser,
     private val pipelineTemplatePACService: PipelineTemplatePACService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
+    private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val dslContext: DSLContext,
@@ -74,12 +84,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
         val templateModelYaml = pipelineTemplatePACService.getDefaultTemplateModelYaml(request)
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
-        val templateSettingVersion = PipelineTemplateSettingVersion.defaultSetting(
-            projectId = request.projectId,
-            templateId = templateId,
-            templateName = request.name,
-            creator = request.creator
-        )
+        val (settingVersion, setting) = if (request.type == PipelineTemplateType.PIPELINE) {
+            val setting = PipelineTemplateSettingVersion.defaultSetting(
+                projectId = request.projectId,
+                templateId = templateId,
+                templateName = request.name,
+                creator = request.creator
+            )
+            Pair(1, setting)
+        } else {
+            Pair(null, null)
+        }
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
             projectId = request.projectId,
@@ -90,20 +105,26 @@ class PipelineTemplateFacadeService @Autowired constructor(
             enablePac = false,
             lastedVersion = version,
             lastedVersionStatus = VersionStatus.COMMITTING,
-            lastedSettingVersion = 1,
+            lastedSettingVersion = settingVersion,
             source = PipelineTemplateSource.CUSTOM,
             storeFlag = false,
             creator = request.creator
         )
-        val pipelineTemplateResource = PipelineTemplateResource.defaultTemplateResource(
+
+        val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
             type = request.type,
+            settingVersion = settingVersion,
             version = version,
-            templateModel = templateModel,
+            number = 1,
+            model = templateModel,
+            originalModel = templateModel,
             yaml = templateModelYaml,
-            creator = request.creator
+            creator = request.creator,
+            status = VersionStatus.COMMITTING
         )
+
         val pipelineTemplatePermission = PipelineTemplatePermission(
             projectId = request.projectId,
             id = templateId,
@@ -113,60 +134,93 @@ class PipelineTemplateFacadeService @Autowired constructor(
         saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateResource = pipelineTemplateResource,
-            pipelineTemplateSettingVersion = templateSettingVersion,
+            pipelineTemplateSettingVersion = setting,
             pipelineTemplatePermission = pipelineTemplatePermission
         )
     }
 
     private fun createByMarket(request: PipelineTemplateMarketCreateReq) {
-        val marketTemplateInfo = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
+        val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
             userId = request.creator,
             templateCode = request.marketTemplateId
         ).data ?: throw ErrorCodeException(errorCode = "")
-        val templateInfo = pipelineTemplateInfoService.get(
+        val marketTemplateInfo = pipelineTemplateInfoService.get(
             templateId = request.marketTemplateId
         )
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = request.projectId,
-            name = templateInfo.name
+            name = marketTemplateInfo.name
         )
+        val marketTemplateResource = pipelineTemplateResourceService.get(
+            PipelineTemplateResourceCommonCondition(
+                projectId = request.marketTemplateProjectId,
+                templateId = request.marketTemplateId,
+                version = request.marketTemplateVersion
+            )
+        )
+
         val templateId = UUIDUtil.generate()
+        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+
+        val (settingVersion, setting) = if (request.type == PipelineTemplateType.PIPELINE) {
+            val setting = PipelineTemplateSettingVersion.defaultSetting(
+                projectId = request.projectId,
+                templateId = templateId,
+                templateName = marketTemplateInfo.name,
+                creator = request.creator
+            )
+            Pair(1, setting)
+        } else {
+            Pair(null, null)
+        }
+
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
             projectId = request.projectId,
-            name = templateInfo.name,
-            desc = templateInfo.desc,
+            name = marketTemplateInfo.name,
+            desc = marketTemplateInfo.desc,
             mode = TemplateType.CONSTRAINT.name,
-            type = templateInfo.type,
+            type = marketTemplateInfo.type,
             enablePac = false,
-            lastedVersion = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
+            lastedVersion = version,
             lastedVersionStatus = VersionStatus.RELEASED,
-            lastedVersionName = templateInfo.lastedVersionName,
-            lastedSettingVersion = 1,
+            lastedVersionName = marketTemplateInfo.lastedVersionName,
+            lastedSettingVersion = settingVersion,
             source = PipelineTemplateSource.MARKET,
             storeFlag = true,
             creator = request.creator,
-            srcTemplateProjectId = templateInfo.projectId,
-            srcTemplateId = templateInfo.id,
-            category = marketTemplateInfo.classifyCode,
-            logoUrl = marketTemplateInfo.logoUrl
+            srcTemplateProjectId = marketTemplateInfo.projectId,
+            srcTemplateId = marketTemplateInfo.id,
+            category = marketTemplateDetails.classifyCode,
+            logoUrl = marketTemplateDetails.logoUrl
         )
-        val templateSettingVersion = PipelineTemplateSettingVersion.defaultSetting(
+        val templateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
-            templateName = templateInfo.name,
-            creator = request.creator
+            type = marketTemplateInfo.type,
+            settingVersion = settingVersion,
+            version = version,
+            number = 1,
+            srcTemplateProjectId = marketTemplateInfo.projectId,
+            srcTemplateId = marketTemplateInfo.id,
+            srcTemplateVersion = marketTemplateResource.version,
+            model = marketTemplateResource.model,
+            originalModel = marketTemplateResource.originalModel,
+            yaml = marketTemplateResource.yaml,
+            creator = request.creator,
+            status = VersionStatus.RELEASED
         )
         val pipelineTemplatePermission = PipelineTemplatePermission(
             projectId = request.projectId,
             id = templateId,
-            name = templateInfo.name,
+            name = marketTemplateInfo.name,
             creator = request.creator
         )
         saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
-            pipelineTemplateSettingVersion = templateSettingVersion,
-            pipelineTemplatePermission = pipelineTemplatePermission
+            pipelineTemplateSettingVersion = setting,
+            pipelineTemplatePermission = pipelineTemplatePermission,
+            pipelineTemplateResource = templateResource
         )
     }
 
@@ -182,6 +236,19 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = request.name
         )
         val templateId = UUIDUtil.generate()
+        val model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel)
+        // todo 需要进一步判断是否是流水线模板类型
+
+        val (settingVersion, pipelineTemplateSettingVersion) = if (request.setting != null) {
+            val setting = request.setting!!.toSettingVersion(
+                templateId = templateId,
+                settingVersion = 1
+            )
+            Pair(1, setting)
+        } else {
+            Pair(null, null)
+        }
+
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
             projectId = request.projectId,
@@ -192,20 +259,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
             enablePac = false,
             lastedVersion = version,
             lastedVersionStatus = VersionStatus.COMMITTING,
-            lastedSettingVersion = 1,
+            lastedSettingVersion = settingVersion,
             source = PipelineTemplateSource.YAML,
             storeFlag = false,
             creator = request.creator
         )
-        val pipelineTemplateSettingVersion = request.setting.toSettingVersion(
-            templateId = templateId,
-            settingVersion = 1
-        )
-        val model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel)
+
         val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
-            settingVersion = 1,
+            settingVersion = settingVersion,
             type = request.type,
             version = version,
             number = 1,
@@ -270,10 +333,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun deleteTemplate(projectId: String, templateId: String) {
         logger.info("Start to delete the template $projectId|$templateId")
         val templateInfo = pipelineTemplateInfoService.get(
-            PipelineTemplateCommonCondition(
-                projectId = projectId,
-                templateId = templateId
-            )
+            projectId = projectId,
+            templateId = templateId
         )
         // todo 校验该模板是否已经有实例化的流水线，若有的话，不允许直接删除
         if (templateInfo.mode == TemplateType.CUSTOMIZE.name && templateInfo.storeFlag) {
@@ -334,10 +395,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun saveDraft(request: PipelineTemplateDraftSaveReq) {
         logger.info("save template draft {}|{}|{}", request.projectId, request.operator, request)
         val templateInfo = pipelineTemplateInfoService.get(
-            PipelineTemplateCommonCondition(
-                projectId = request.projectId,
-                templateId = request.templateId
-            )
+            projectId = request.projectId,
+            templateId = request.templateId
         )
         val isTemplateExistDraft = pipelineTemplateResourceService.count(
             PipelineTemplateResourceCommonCondition(
@@ -397,22 +456,23 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     version = request.draftSourceVersion
                 )
             )
-            val sourceTemplateSetting = pipelineTemplateSettingService.get(
-                commonCondition = PipelineTemplateSettingCommonCondition(
+            val sourceTemplateSetting = sourceVersionTemplateResource.settingVersion?.let {
+                pipelineTemplateSettingService.get(
                     projectId = request.projectId,
                     templateId = request.templateId,
-                    settingVersion = sourceVersionTemplateResource.settingVersion
+                    settingVersion = it
                 )
-            )
+            }
             val latestTemplateResource = pipelineTemplateResourceService.getLatestTemplateResource(
                 projectId = request.projectId,
                 templateId = request.templateId
             )
+
             val pipelineTemplateResource = PipelineTemplateResource(
                 projectId = request.projectId,
                 templateId = request.templateId,
                 type = templateInfo.type,
-                settingVersion = latestTemplateResource.settingVersion + 1,
+                settingVersion = latestTemplateResource.settingVersion?.let { it + 1 },
                 version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
                 number = latestTemplateResource.number + 1,
                 draftSourceVersion = request.draftSourceVersion,
@@ -424,14 +484,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 status = VersionStatus.COMMITTING,
                 creator = request.operator
             )
-            val pipelineTemplateSetting = PipelineTemplateSettingUpdateInfo.toPipelineTemplateSettingVersion(
-                projectId = request.projectId,
-                templateId = request.templateId,
-                settingVersion = latestTemplateResource.settingVersion + 1,
-                templateSetting = request.templateSetting,
-                sourceTemplateSetting = sourceTemplateSetting,
-                operator = request.operator
-            )
+            val pipelineTemplateSetting = sourceTemplateSetting?.let {
+                PipelineTemplateSettingUpdateInfo.toPipelineTemplateSettingVersion(
+                    projectId = request.projectId,
+                    templateId = request.templateId,
+                    settingVersion = latestTemplateResource.settingVersion!! + 1,
+                    templateSetting = request.templateSetting,
+                    sourceTemplateSetting = sourceTemplateSetting,
+                    operator = request.operator
+                )
+            }
             saveTemplate(
                 pipelineTemplateSettingVersion = pipelineTemplateSetting,
                 pipelineTemplateResource = pipelineTemplateResource
@@ -440,16 +502,222 @@ class PipelineTemplateFacadeService @Autowired constructor(
     }
 
     // 获取模板列表
-    // 导出模板
-    // 编辑模板
-    // 保存草稿
-    // 发布模板
-    // 复制模板
-    // 获取用户最近打开的模板类型
+    fun listTemplateInfos(
+        userId: String,
+        commonCondition: PipelineTemplateCommonCondition
+    ): SQLPage<PipelineTemplateInfoWithPermission> {
+        val projectId = commonCondition.projectId!!
+        val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
+
+        val (count, templateInfoWithPermission) = if (enableTemplatePermissionManage) {
+            val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
+                userId = userId,
+                projectId = projectId,
+                permissions = setOf(
+                    AuthPermission.VIEW,
+                    AuthPermission.LIST,
+                    AuthPermission.DELETE,
+                    AuthPermission.EDIT
+                )
+            )
+            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST] ?: return SQLPage(
+                count = 0L,
+                records = emptyList()
+            )
+
+            val queryCondition = commonCondition.copy(filterTemplateIds = templatesWithListPermIds)
+            val templateInfoList = pipelineTemplateInfoService.list(queryCondition)
+            val count = pipelineTemplateInfoService.count(queryCondition)
+
+            val templateInfoWithPermission = templateInfoList.map { templateInfo ->
+                PipelineTemplateInfoWithPermission.buildTemplateInfoWithPermission(
+                    templateInfo = templateInfo,
+                    canView = permission2TemplatesMap[AuthPermission.VIEW]?.contains(templateInfo.id) ?: false,
+                    canEdit = permission2TemplatesMap[AuthPermission.EDIT]?.contains(templateInfo.id) ?: false,
+                    canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(templateInfo.id) ?: false
+                )
+            }
+            Pair(count.toLong(), templateInfoWithPermission)
+        } else {
+            val templateInfoList = pipelineTemplateInfoService.list(commonCondition)
+            val count = pipelineTemplateInfoService.count(commonCondition)
+            val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
+
+            val templateInfoWithPermission = templateInfoList.map { templateInfo ->
+                PipelineTemplateInfoWithPermission.buildTemplateInfoWithPermission(
+                    templateInfo = templateInfo,
+                    canView = isProjectManager,
+                    canEdit = isProjectManager,
+                    canDelete = isProjectManager
+                )
+            }
+            Pair(count.toLong(), templateInfoWithPermission)
+        }
+
+        return SQLPage(
+            count = count,
+            records = templateInfoWithPermission
+        )
+    }
+
     // 查看模板详情
-    // 流水线模板检查
-    // 模板版本对比
+    fun getTemplateDetails(
+        projectId: String,
+        templateId: String,
+        version: Long?
+    ): PipelineTemplateDetailsResponse {
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        val templateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = version ?: templateInfo.lastedVersion
+        )
+        val setting = templateResource.settingVersion?.let {
+            pipelineTemplateSettingService.get(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = it
+            )
+        }
+        return PipelineTemplateDetailsResponse(
+            basicInfo = templateInfo,
+            resource = templateResource,
+            setting = setting
+        )
+    }
+
     // 查看全部模板版本历史
+    fun getTemplateVersions(
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ): List<PipelineTemplateVersionInfo> {
+        return pipelineTemplateResourceService.getTemplateVersions(commonCondition)
+    }
+
+    // 模板版本对比
+    fun compare(
+        projectId: String,
+        templateId: String,
+        baseVersion: Long?,
+        comparedVersion: Long
+    ): PipelineTemplateCompareResponse {
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        val baseVersionResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = baseVersion ?: templateInfo.lastedVersion
+        )
+        val comparedVersionResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = comparedVersion
+        )
+        return PipelineTemplateCompareResponse(
+            baseVersionResource = baseVersionResource,
+            comparedVersionResource = comparedVersionResource
+        )
+    }
+
+    // 复制模板
+    fun copy(
+        userId: String,
+        projectId: String,
+        srcTemplateId: String,
+        copySetting: Boolean
+    ) {
+        val srcTemplateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = srcTemplateId
+        )
+        val templateName = srcTemplateInfo.name.plus("_copy")
+        pipelineTemplateCommonService.checkTemplateBasicInfo(
+            projectId = projectId,
+            name = templateName
+        )
+        val srcTemplateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = srcTemplateId,
+            version = srcTemplateInfo.lastedVersion
+        )
+        val templateId = UUIDUtil.generate()
+        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+
+
+        val (settingVersion, setting) = if (copySetting && srcTemplateInfo.type == PipelineTemplateType.PIPELINE) {
+            val srcTemplateSetting = pipelineTemplateSettingService.get(
+                projectId = projectId,
+                templateId = srcTemplateId,
+                settingVersion = srcTemplateInfo.lastedSettingVersion!!
+            ) ?: throw ErrorCodeException(errorCode = "")
+            val setting = srcTemplateSetting.copy(
+                templateId = templateId,
+                projectId = projectId,
+                settingVersion = 1,
+                name = templateName,
+                creator = userId
+            )
+            Pair(1, setting)
+        } else {
+            Pair(null, null)
+        }
+
+        val templateInfo = PipelineTemplateInfo(
+            id = templateId,
+            projectId = projectId,
+            name = templateName,
+            desc = srcTemplateInfo.desc,
+            mode = srcTemplateInfo.mode,
+            category = srcTemplateInfo.category,
+            type = srcTemplateInfo.type,
+            logoUrl = srcTemplateInfo.logoUrl,
+            enablePac = srcTemplateInfo.enablePac,
+            lastedVersion = version,
+            lastedVersionStatus = VersionStatus.RELEASED,
+            lastedVersionName = "V1(P1.T1.1)",
+            lastedSettingVersion = settingVersion,
+            source = srcTemplateInfo.source,
+            storeFlag = srcTemplateInfo.storeFlag,
+            creator = userId
+        )
+
+        val templateResource = srcTemplateResource.copy(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = settingVersion,
+            version = version,
+            number = 1,
+            versionName = "V1(P1.T1.1)",
+            versionNum = 1,
+            modelVersion = 1,
+            triggerVersion = 1,
+            creator = userId,
+            releaseTime = LocalDateTime.now()
+        )
+
+        val pipelineTemplatePermission = PipelineTemplatePermission(
+            projectId = projectId,
+            id = templateId,
+            name = templateName,
+            creator = userId
+        )
+        saveTemplate(
+            pipelineTemplateInfo = templateInfo,
+            pipelineTemplateResource = templateResource,
+            pipelineTemplateSettingVersion = setting,
+            pipelineTemplatePermission = pipelineTemplatePermission
+        )
+    }
+
+
+    // 导出模板
+    // 发布模板
+    // 流水线模板检查
+
     companion object {
         private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
         private val logger = LoggerFactory.getLogger(PipelineTemplateFacadeService::class.java)

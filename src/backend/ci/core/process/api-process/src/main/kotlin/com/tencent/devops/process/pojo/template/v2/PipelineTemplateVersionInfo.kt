@@ -28,21 +28,12 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
-import com.tencent.devops.common.pipeline.template.ITemplateModel
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@Schema(title = "流水线模版资源")
-data class PipelineTemplateResource(
-    @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "模板ID", required = true)
-    val templateId: String,
-    @get:Schema(title = "模板类型", required = true)
-    val type: PipelineTemplateType,
+@Schema(title = "流水线模版版本信息")
+data class PipelineTemplateVersionInfo(
     @get:Schema(title = "配置版本号", required = true)
     val settingVersion: Int? = null,
     @get:Schema(title = "版本号", required = true)
@@ -57,22 +48,8 @@ data class PipelineTemplateResource(
     val modelVersion: Int? = null,
     @get:Schema(title = "模板发布-模板触发器版本号", required = true)
     val triggerVersion: Int? = null,
-    @get:Schema(title = "源模板项目ID", required = true)
-    val srcTemplateProjectId: String? = null,
-    @get:Schema(title = "源模板ID", required = true)
-    val srcTemplateId: String? = null,
-    @get:Schema(title = "源模板版本", required = true)
-    val srcTemplateVersion: Long? = null,
     @get:Schema(title = "草稿来源版本", required = true)
     val draftSourceVersion: Long? = null,
-    @get:Schema(title = "构建参数", required = false)
-    val params: List<BuildFormProperty>? = emptyList(),
-    @get:Schema(title = "原始编排,局部模版没有解析", required = true)
-    val originalModel: ITemplateModel,
-    @get:Schema(title = "实际编排,局部模版已经全部解析成具体的流水线编排", required = true)
-    val model: ITemplateModel,
-    @get:Schema(title = "编排yaml", required = true)
-    val yaml: String?,
     @get:Schema(title = "状态", required = true)
     val status: VersionStatus,
     @get:Schema(title = "分支状态", required = true)

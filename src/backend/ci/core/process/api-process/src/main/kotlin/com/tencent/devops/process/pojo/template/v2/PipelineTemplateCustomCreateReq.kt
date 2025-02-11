@@ -12,18 +12,19 @@ data class PipelineTemplateCustomCreateReq(
     override val creator: String,
     @get:Schema(title = "来源", required = true)
     override val source: PipelineTemplateSource,
+    @get:Schema(title = "类型", required = true)
+    override val type: PipelineTemplateType,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
     @get:Schema(title = "简介", required = true)
-    val desc: String?,
-    @get:Schema(title = "模板类型", required = true)
-    val type: PipelineTemplateType
+    val desc: String?
 ) : PipelineTemplateBasicCreateReq(
     projectId = projectId,
     creator = creator,
-    source = source
-){
-    companion object{
+    source = source,
+    type = type
+) {
+    companion object {
         const val SOURCE = "CUSTOM"
     }
 }

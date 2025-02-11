@@ -14,24 +14,25 @@ data class PipelineTemplateYamlCreateReq(
     override val creator: String,
     @get:Schema(title = "来源", required = true)
     override val source: PipelineTemplateSource,
+    @get:Schema(title = "类型", required = true)
+    override val type: PipelineTemplateType,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
     @get:Schema(title = "简介", required = true)
     val desc: String?,
-    @get:Schema(title = "模板类型", required = true)
-    val type: PipelineTemplateType,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty> = listOf(),
     @get:Schema(title = "模板原始模型", required = true)
     val originalModel: ITemplateModel,
     @get:Schema(title = "模板配置", required = true)
-    val setting: PipelineTemplateSetting,
+    val setting: PipelineTemplateSetting?,
     @get:Schema(title = "模板YAML", required = true)
     val yaml: String
 ) : PipelineTemplateBasicCreateReq(
     projectId = projectId,
     creator = creator,
-    source = source
+    source = source,
+    type = type
 ) {
     companion object {
         const val SOURCE = "YAML"

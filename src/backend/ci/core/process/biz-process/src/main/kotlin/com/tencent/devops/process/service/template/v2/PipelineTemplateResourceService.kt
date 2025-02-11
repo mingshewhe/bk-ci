@@ -5,6 +5,7 @@ import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -38,9 +39,35 @@ class PipelineTemplateResourceService @Autowired constructor(
         )
     }
 
+    fun getTemplateVersions(
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ): List<PipelineTemplateVersionInfo> {
+        return pipelineTemplateResourceDao.getVersions(
+            dslContext = dslContext,
+            commonCondition = commonCondition
+        )
+    }
+
     fun get(commonCondition: PipelineTemplateResourceCommonCondition): PipelineTemplateResource {
         return pipelineTemplateResourceDao.get(
             commonCondition = commonCondition,
+            dslContext = dslContext
+        ) ?: throw ErrorCodeException(
+            errorCode = ""
+        )
+    }
+
+    fun get(
+        projectId: String,
+        templateId: String,
+        version: Long
+    ): PipelineTemplateResource {
+        return pipelineTemplateResourceDao.get(
+            commonCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            ),
             dslContext = dslContext
         ) ?: throw ErrorCodeException(
             errorCode = ""

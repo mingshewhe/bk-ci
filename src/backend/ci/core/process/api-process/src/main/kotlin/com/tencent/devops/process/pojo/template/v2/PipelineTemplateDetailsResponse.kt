@@ -25,21 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.pojo.template.v2
 
-enum class PipelineTemplateType(val value: String) {
-    PIPELINE("pipeline"),
-    STAGE("stage"),
-    JOB("job"),
-    STEP("step"),
-    UNKNOWN("unknown");
+import io.swagger.v3.oas.annotations.media.Schema
 
-    companion object {
-        fun get(value: String): PipelineTemplateType {
-            PipelineTemplateType.values().forEach {
-                if (value == it.value) return it
-            }
-            throw IllegalArgumentException("No enum for constant $value")
-        }
-    }
-}
+@Schema(title = "流水线模版详情")
+data class PipelineTemplateDetailsResponse(
+    @get:Schema(title = "模板基本信息", required = true)
+    val basicInfo: PipelineTemplateInfo,
+    @get:Schema(title = "模板模型信息", required = true)
+    val resource: PipelineTemplateResource,
+    @get:Schema(title = "模板配置信息", required = true)
+    val setting: PipelineTemplateSettingVersion?
+)

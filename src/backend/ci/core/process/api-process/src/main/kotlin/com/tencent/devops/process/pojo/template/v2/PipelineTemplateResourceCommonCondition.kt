@@ -24,6 +24,12 @@ data class PipelineTemplateResourceCommonCondition(
     val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = true)
     val modelVersion: Int? = null,
+    @get:Schema(title = "源模板项目ID", required = true)
+    val srcTemplateProjectId: String? = null,
+    @get:Schema(title = "源模板ID", required = true)
+    val srcTemplateId: String? = null,
+    @get:Schema(title = "源模板版本", required = true)
+    val srcTemplateVersion: Long? = null,
     @get:Schema(title = "模板触发器版本号", required = true)
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
@@ -38,6 +44,8 @@ data class PipelineTemplateResourceCommonCondition(
     val updater: String? = null,
     @get:Schema(title = "发布时间", required = true)
     val releaseTime: LocalDateTime? = null,
+    @get:Schema(title = "版本发布描述", required = true)
+    val releaseComment: String? = null,
     @get:Schema(title = "page", required = true)
     val page: Int? = null,
     @get:Schema(title = "pageSize", required = true)

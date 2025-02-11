@@ -12,6 +12,7 @@ import com.tencent.devops.model.process.tables.records.TPipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
@@ -34,6 +35,9 @@ class PipelineTemplateResourceDao {
                 NUMBER,
                 VERSION_NAME,
                 VERSION_NUM,
+                SRC_TEMPLATE_PROJECT_ID,
+                SRC_TEMPLATE_ID,
+                SRC_TEMPLATE_VERSION,
                 MODEL_VERSION,
                 TRIGGER_VERSION,
                 DRAFT_SOURCE_VERSION,
@@ -56,6 +60,9 @@ class PipelineTemplateResourceDao {
                 record.number,
                 record.versionName,
                 record.versionNum,
+                record.srcTemplateProjectId,
+                record.srcTemplateId,
+                record.srcTemplateVersion,
                 record.modelVersion,
                 record.triggerVersion,
                 record.draftSourceVersion,
@@ -146,6 +153,49 @@ class PipelineTemplateResourceDao {
         }
     }
 
+    fun getVersions(
+        dslContext: DSLContext,
+        commonCondition: PipelineTemplateResourceCommonCondition
+    ): List<PipelineTemplateVersionInfo> {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            dslContext.select(
+                SETTING_VERSION,
+                VERSION,
+                NUMBER,
+                VERSION_NAME,
+                VERSION_NUM,
+                MODEL_VERSION,
+                TRIGGER_VERSION,
+                DRAFT_SOURCE_VERSION,
+                STATUS,
+                BRANCH_ACTION,
+                RELEASE_COMMENT,
+                CREATOR,
+                UPDATER,
+                RELEASE_TIME
+            ).from(this)
+                .where(buildQueryCondition(commonCondition))
+                .fetch().map {
+                    PipelineTemplateVersionInfo(
+                        settingVersion = it.value1(),
+                        version = it.value2(),
+                        number = it.value3(),
+                        versionName = it.value4(),
+                        versionNum = it.value5(),
+                        modelVersion = it.value6(),
+                        triggerVersion = it.value7(),
+                        draftSourceVersion = it.value8(),
+                        status = VersionStatus.get(it.value9()),
+                        branchAction = it.value10()?.let { self -> BranchVersionAction.get(self) },
+                        releaseComment = it.value11(),
+                        creator = it.value12(),
+                        updater = it.value13(),
+                        releaseTime = it.value14()
+                    )
+                }
+        }
+    }
+
     fun getLatestRecord(
         dslContext: DSLContext,
         projectId: String,
@@ -190,6 +240,10 @@ class PipelineTemplateResourceDao {
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
                 if (releaseTime != null) conditions.add(RELEASE_TIME.eq(releaseTime))
+                if (srcTemplateProjectId != null) conditions.add(SRC_TEMPLATE_PROJECT_ID.eq(srcTemplateProjectId))
+                if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
+                if (srcTemplateVersion != null) conditions.add(SRC_TEMPLATE_VERSION.eq(srcTemplateVersion))
+                if (releaseComment != null) conditions.add(RELEASE_COMMENT.like("%${releaseComment}%"))
                 return conditions
             }
         }
@@ -207,6 +261,9 @@ class PipelineTemplateResourceDao {
             versionNum = this.versionNum,
             modelVersion = this.modelVersion,
             triggerVersion = this.triggerVersion,
+            srcTemplateProjectId = this.srcTemplateProjectId,
+            srcTemplateId = this.srcTemplateId,
+            srcTemplateVersion = this.srcTemplateVersion,
             draftSourceVersion = this.draftSourceVersion,
             params = JsonUtil.to(this.params, object : TypeReference<List<BuildFormProperty>>() {}),
             originalModel = JsonUtil.to(this.originalModel, ITemplateModel::class.java),

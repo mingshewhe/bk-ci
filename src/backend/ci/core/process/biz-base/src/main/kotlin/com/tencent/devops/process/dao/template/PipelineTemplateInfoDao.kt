@@ -184,6 +184,7 @@ class PipelineTemplateInfoDao {
                 if (instancePipelineCount != null) conditions.add(INSTANCE_PIPELINE_COUNT.eq(instancePipelineCount))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
+                if (!filterTemplateIds.isNullOrEmpty()) conditions.add(ID.`in`(filterTemplateIds))
                 conditions
             }
         }
