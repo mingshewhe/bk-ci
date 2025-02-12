@@ -8,8 +8,6 @@ data class PipelineTemplateSettingCommonCondition(
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
-    @get:Schema(title = "模板名称", required = true)
-    val name: String? = null,
     @get:Schema(title = "模板配置版本", required = true)
     val settingVersion: Int? = null,
     @get:Schema(title = "创建人", required = true)

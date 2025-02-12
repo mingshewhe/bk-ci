@@ -36,5 +36,5 @@ data class PipelineTemplateDetailsResponse(
     @get:Schema(title = "模板模型信息", required = true)
     val resource: PipelineTemplateResource,
     @get:Schema(title = "模板配置信息", required = true)
-    val setting: PipelineTemplateSettingVersion?
+    val setting: PipelineTemplateSetting?
 )

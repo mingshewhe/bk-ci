@@ -41,6 +41,10 @@ data class PipelineTemplateResource(
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String,
+    @get:Schema(title = "模板名称", required = true)
+    val name: String,
+    @get:Schema(title = "模板描述", required = true)
+    val desc: String? = null,
     @get:Schema(title = "模板类型", required = true)
     val type: PipelineTemplateType,
     @get:Schema(title = "配置版本号", required = true)

@@ -37,14 +37,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板配置更新")
 data class PipelineTemplateSettingUpdateInfo(
-    @get:Schema(title = "版本号", required = true)
-    val settingVersion: Int? = null,
-
-    @get:Schema(title = "模板名称", required = true)
-    val name: String? = null,
-    @get:Schema(title = "描述", required = false)
-    val desc: String? = null,
-
     @get:Schema(title = "标签ID列表", required = false)
     val labels: List<String>? = null,
     @get:Schema(title = "标签名称列表（仅用于前端展示，不参与数据保存）", required = false)
@@ -83,44 +75,4 @@ data class PipelineTemplateSettingUpdateInfo(
     val pipelineAsCodeSettings: PipelineAsCodeSettings? = null,
     @get:Schema(title = "更新人", required = false)
     val updater: String
-) {
-    companion object {
-        fun toPipelineTemplateSettingVersion(
-            projectId: String,
-            templateId: String,
-            settingVersion: Int,
-            templateSetting: PipelineTemplateSettingUpdateInfo?,
-            sourceTemplateSetting: PipelineTemplateSettingVersion,
-            operator: String
-        ): PipelineTemplateSettingVersion {
-            return PipelineTemplateSettingVersion(
-                templateId = templateId,
-                settingVersion = settingVersion,
-                projectId = projectId,
-                name = templateSetting?.name ?: sourceTemplateSetting.name,
-                desc = templateSetting?.desc ?: sourceTemplateSetting.desc,
-                labels = templateSetting?.labels ?: sourceTemplateSetting.labels,
-                buildNumRule = templateSetting?.buildNumRule ?: sourceTemplateSetting.buildNumRule,
-                successSubscriptionList = templateSetting?.successSubscriptionList
-                    ?: sourceTemplateSetting.successSubscriptionList,
-                failSubscriptionList = templateSetting?.failSubscriptionList
-                    ?: sourceTemplateSetting.failSubscriptionList,
-                runLockType = templateSetting?.runLockType ?: sourceTemplateSetting.runLockType,
-                waitQueueTimeMinute = templateSetting?.waitQueueTimeMinute
-                    ?: sourceTemplateSetting.waitQueueTimeMinute,
-                maxQueueSize = templateSetting?.maxQueueSize ?: sourceTemplateSetting.maxQueueSize,
-                concurrencyGroup = templateSetting?.concurrencyGroup ?: sourceTemplateSetting.concurrencyGroup,
-                concurrencyCancelInProgress = templateSetting?.concurrencyCancelInProgress
-                    ?: sourceTemplateSetting.concurrencyCancelInProgress,
-                maxConRunningQueueSize = templateSetting?.maxConRunningQueueSize
-                    ?: sourceTemplateSetting.maxConRunningQueueSize,
-                maxPipelineResNum = templateSetting?.maxPipelineResNum ?: sourceTemplateSetting.maxPipelineResNum,
-                cleanvaliablesWhenRetry = templateSetting?.cleanvaliablesWhenRetry
-                    ?: sourceTemplateSetting.cleanvaliablesWhenRetry,
-                pipelineAsCodeSettings = templateSetting?.pipelineAsCodeSettings
-                    ?: sourceTemplateSetting.pipelineAsCodeSettings,
-                creator = operator
-            )
-        }
-    }
-}
+)

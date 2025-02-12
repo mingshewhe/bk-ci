@@ -119,7 +119,7 @@ class PipelineTemplateInfoDao {
 
     fun count(
         dslContext: DSLContext,
-        commonCondition: PipelineTemplateCommonCondition,
+        commonCondition: PipelineTemplateCommonCondition
     ): Int {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectCount().from(this)

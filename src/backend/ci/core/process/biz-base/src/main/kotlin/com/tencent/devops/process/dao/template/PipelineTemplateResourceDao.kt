@@ -29,6 +29,8 @@ class PipelineTemplateResourceDao {
                 this,
                 PROJECT_ID,
                 TEMPLATE_ID,
+                NAME,
+                DESC,
                 TYPE,
                 SETTING_VERSION,
                 VERSION,
@@ -54,6 +56,8 @@ class PipelineTemplateResourceDao {
             ).values(
                 record.projectId,
                 record.templateId,
+                record.name,
+                record.desc,
                 record.type.value,
                 record.settingVersion,
                 record.version,
@@ -89,6 +93,7 @@ class PipelineTemplateResourceDao {
             val now = LocalDateTime.now()
             dslContext.update(this)
                 .apply {
+                    record.name?.let { set(NAME, it) }
                     record.version?.let { set(VERSION, it) }
                     record.number?.let { set(NUMBER, it) }
                     record.versionName?.let { set(VERSION_NAME, it) }
@@ -227,6 +232,7 @@ class PipelineTemplateResourceDao {
                 val conditions = mutableListOf<Condition>()
                 conditions.add(PROJECT_ID.eq(projectId))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
+                if (name != null) conditions.add(NAME.eq(name))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
                 if (version != null) conditions.add(VERSION.eq(version))
@@ -243,7 +249,7 @@ class PipelineTemplateResourceDao {
                 if (srcTemplateProjectId != null) conditions.add(SRC_TEMPLATE_PROJECT_ID.eq(srcTemplateProjectId))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
                 if (srcTemplateVersion != null) conditions.add(SRC_TEMPLATE_VERSION.eq(srcTemplateVersion))
-                if (releaseComment != null) conditions.add(RELEASE_COMMENT.like("%${releaseComment}%"))
+                if (releaseComment != null) conditions.add(RELEASE_COMMENT.like("%$releaseComment%"))
                 return conditions
             }
         }
@@ -253,6 +259,8 @@ class PipelineTemplateResourceDao {
         return PipelineTemplateResource(
             projectId = this.projectId,
             templateId = this.templateId,
+            name = this.name,
+            desc = this.name,
             type = PipelineTemplateType.get(this.type),
             settingVersion = this.settingVersion,
             version = this.version,

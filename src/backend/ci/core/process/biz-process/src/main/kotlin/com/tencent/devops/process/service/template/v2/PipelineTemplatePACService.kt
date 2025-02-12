@@ -5,6 +5,7 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
 import org.springframework.stereotype.Service
 
 /**
@@ -16,7 +17,10 @@ class PipelineTemplatePACService {
         TODO()
     }
 
-    fun modelTransferToYaml(model: ITemplateModel): String {
+    fun modelTransferToYaml(
+        model: ITemplateModel,
+        setting: PipelineTemplateSetting? = null
+    ): String {
         return when (model) {
             is Model -> {
                 ""

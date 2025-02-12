@@ -1,7 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingVersion
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
 import com.tencent.devops.process.dao.template.PipelineTemplateSettingDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
@@ -17,7 +17,7 @@ class PipelineTemplateSettingService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateSettingDao: PipelineTemplateSettingDao
 ) {
-    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineTemplateSettingVersion {
+    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineTemplateSetting {
         return pipelineTemplateSettingDao.get(
             commonCondition = commonCondition,
             dslContext = dslContext
@@ -30,7 +30,7 @@ class PipelineTemplateSettingService @Autowired constructor(
         projectId: String,
         templateId: String,
         settingVersion: Int
-    ): PipelineTemplateSettingVersion? {
+    ): PipelineTemplateSetting? {
         return pipelineTemplateSettingDao.get(
             commonCondition = PipelineTemplateSettingCommonCondition(
                 projectId = projectId,
@@ -51,7 +51,7 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
-    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineTemplateSettingVersion> {
+    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineTemplateSetting> {
         return pipelineTemplateSettingDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
@@ -60,11 +60,11 @@ class PipelineTemplateSettingService @Autowired constructor(
 
     fun create(
         transactionContext: DSLContext? = null,
-        pipelineTemplateSettingVersion: PipelineTemplateSettingVersion
+        pipelineTemplateSetting: PipelineTemplateSetting
     ) {
         pipelineTemplateSettingDao.create(
             dslContext = transactionContext ?: dslContext,
-            record = pipelineTemplateSettingVersion
+            record = pipelineTemplateSetting
         )
     }
 
