@@ -33,11 +33,11 @@ class PipelineTemplateCommonService(
                 errorCode = ProcessMessageCode.TEMPLATE_NAME_CAN_NOT_NULL
             )
         }
-        val count = pipelineTemplateInfoDao.count(
+        val count = pipelineTemplateResourceDao.count(
             dslContext = dslContext,
-            commonCondition = PipelineTemplateCommonCondition(
+            commonCondition = PipelineTemplateResourceCommonCondition(
                 projectId = projectId,
-                exactSearchName = name
+                name = name
             )
         )
         if (count > 0) {
