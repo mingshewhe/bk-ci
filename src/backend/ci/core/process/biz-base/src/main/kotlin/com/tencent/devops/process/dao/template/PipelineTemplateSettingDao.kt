@@ -75,6 +75,7 @@ class PipelineTemplateSettingDao {
                 .set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(failSubscriptionList))
                 .set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType))
                 .set(MAX_CON_RUNNING_QUEUE_SIZE, record.maxConRunningQueueSize)
+                .set(CREATOR, record.creator)
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, LocalDateTime.now())
                 .execute()

@@ -452,7 +452,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
                         transactionContext = dslContext,
                         pipelineTemplateSetting = request.templateSetting!!.copy(
                             templateId = request.templateId,
-                            settingVersion = draftVersionResource.settingVersion!!
+                            settingVersion = draftVersionResource.settingVersion!!,
+                            creator = draftVersionResource.creator
                         )
                     )
                 }
@@ -686,7 +687,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateResource = srcTemplateResource.copy(
             projectId = projectId,
             templateId = templateId,
-            name =  templateName,
+            name = templateName,
             settingVersion = settingVersion,
             version = version,
             number = 1,
