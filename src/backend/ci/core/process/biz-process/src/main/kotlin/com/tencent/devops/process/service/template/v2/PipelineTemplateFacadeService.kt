@@ -58,8 +58,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client
 ) {
-    fun createTemplate(request: PipelineTemplateBasicCreateReq): Boolean {
+    fun createTemplate(request: PipelineTemplateBasicCreateReq): String {
         logger.info("create template in project ${request.projectId} by ${request.source} ,body is {}", request)
+        val templateId = request.generateId()
         when (request) {
             is PipelineTemplateCustomCreateReq -> createByCustom(request)
             is PipelineTemplateMarketCreateReq -> createByMarket(request)
@@ -67,7 +68,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             is PipelineTemplateRepositoryCreateReq -> createByRepository(request)
             else -> {}
         }
-        return true
+        return templateId
     }
 
     private fun createByCustom(request: PipelineTemplateCustomCreateReq) {
@@ -75,7 +76,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = request.projectId,
             name = request.name
         )
-        val templateId = UUIDUtil.generate()
+        val templateId = request.id!!
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
         val (setting, settingVersion) = getDefaultSettingAndVersion(
             type = request.type,
@@ -149,7 +150,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             )
         )
 
-        val templateId = UUIDUtil.generate()
+        val templateId = request.id!!
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
 
         val (setting, settingVersion) = getDefaultSettingAndVersion(
@@ -221,7 +222,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = request.projectId,
             name = request.name
         )
-        val templateId = UUIDUtil.generate()
+        val templateId = request.id!!
         val model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel)
 
         // todo 需要进一步判断是否是流水线模板类型
