@@ -44,7 +44,7 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateBasicCreateReq
-    ): Result<Boolean>
+    ): Result<String>
 
     @Operation(summary = "删除流水线模板")
     @DELETE
