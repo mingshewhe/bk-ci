@@ -169,7 +169,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         srcTemplateId: String,
         copySetting: Boolean
-    ): Result<Boolean> {
+    ): Result<String> {
         logger.info("copy template {}|{}|{}|{}", userId, projectId, srcTemplateId, copySetting)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,

@@ -629,7 +629,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         projectId: String,
         srcTemplateId: String,
         copySetting: Boolean
-    ): Boolean {
+    ): String {
         val srcTemplateInfo = pipelineTemplateInfoService.get(
             projectId = projectId,
             templateId = srcTemplateId
@@ -686,6 +686,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateResource = srcTemplateResource.copy(
             projectId = projectId,
             templateId = templateId,
+            name =  templateName,
             settingVersion = settingVersion,
             version = version,
             number = 1,
@@ -709,7 +710,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             pipelineTemplateSetting = setting,
             pipelineTemplatePermission = pipelineTemplatePermission
         )
-        return true
+        return templateId
     }
 
     // 发布模板

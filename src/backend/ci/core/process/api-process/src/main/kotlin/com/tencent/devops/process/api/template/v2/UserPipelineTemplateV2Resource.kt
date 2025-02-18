@@ -164,5 +164,5 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "是否同步配置", required = false)
         @QueryParam("copySetting")
         copySetting: Boolean
-    ): Result<Boolean>
+    ): Result<String>
 }
