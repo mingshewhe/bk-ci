@@ -9,6 +9,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
@@ -132,7 +133,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
             userId = request.creator,
             templateCode = request.marketTemplateId
-        ).data ?: throw ErrorCodeException(errorCode = "")
+        ).data ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
         val marketTemplateInfo = pipelineTemplateInfoService.get(
             templateId = request.marketTemplateId
         )
@@ -650,7 +651,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 projectId = projectId,
                 templateId = srcTemplateId,
                 settingVersion = srcTemplateInfo.lastedSettingVersion!!
-            ) ?: throw ErrorCodeException(errorCode = "")
+            ) ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
             val setting = srcTemplateSetting.copy(
                 templateId = templateId,
                 projectId = projectId,

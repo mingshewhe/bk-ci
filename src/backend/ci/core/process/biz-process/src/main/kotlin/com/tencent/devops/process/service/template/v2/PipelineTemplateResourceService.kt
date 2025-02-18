@@ -1,6 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -23,7 +24,11 @@ class PipelineTemplateResourceService @Autowired constructor(
         templateId: String,
         version: Long
     ): PipelineTemplateResource? {
-        TODO("")
+        return pipelineTemplateResourceDao.get(
+            dslContext = dslContext,
+            templateId = templateId,
+            version = version
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
     fun getLatestTemplateResource(
@@ -34,9 +39,7 @@ class PipelineTemplateResourceService @Autowired constructor(
             dslContext = dslContext,
             projectId = projectId,
             templateId = templateId
-        ) ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
     fun getTemplateVersions(
@@ -52,9 +55,7 @@ class PipelineTemplateResourceService @Autowired constructor(
         return pipelineTemplateResourceDao.get(
             commonCondition = commonCondition,
             dslContext = dslContext
-        ) ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
     fun get(
@@ -69,9 +70,7 @@ class PipelineTemplateResourceService @Autowired constructor(
                 version = version
             ),
             dslContext = dslContext
-        ) ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
     fun count(commonCondition: PipelineTemplateResourceCommonCondition): Int {

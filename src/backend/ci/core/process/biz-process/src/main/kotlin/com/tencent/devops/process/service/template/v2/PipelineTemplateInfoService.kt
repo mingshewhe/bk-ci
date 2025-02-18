@@ -1,6 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -32,7 +33,7 @@ class PipelineTemplateInfoService @Autowired constructor(
             dslContext = dslContext,
             commonCondition = commonCondition
         ) ?: throw ErrorCodeException(
-            errorCode = ""
+            errorCode = ERROR_TEMPLATE_NOT_EXISTS
         )
     }
 
@@ -41,7 +42,7 @@ class PipelineTemplateInfoService @Autowired constructor(
             dslContext = dslContext,
             templateId = templateId
         ) ?: throw ErrorCodeException(
-            errorCode = ""
+            errorCode = ERROR_TEMPLATE_NOT_EXISTS
         )
     }
 
@@ -56,7 +57,7 @@ class PipelineTemplateInfoService @Autowired constructor(
                 templateId = templateId
             )
         ) ?: throw ErrorCodeException(
-            errorCode = ""
+            errorCode = ERROR_TEMPLATE_NOT_EXISTS
         )
     }
 

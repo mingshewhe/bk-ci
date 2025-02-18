@@ -158,6 +158,19 @@ class PipelineTemplateResourceDao {
         }
     }
 
+    fun get(
+        dslContext: DSLContext,
+        templateId: String,
+        version: Long
+    ): PipelineTemplateResource? {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            dslContext.selectFrom(this)
+                .where(TEMPLATE_ID.eq(templateId))
+                .and(VERSION.eq(version))
+                .fetchOne()?.convert()
+        }
+    }
+
     fun getVersions(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateResourceCommonCondition
@@ -273,9 +286,9 @@ class PipelineTemplateResourceDao {
             srcTemplateId = this.srcTemplateId,
             srcTemplateVersion = this.srcTemplateVersion,
             draftSourceVersion = this.draftSourceVersion,
-            params = JsonUtil.to(this.params, object : TypeReference<List<BuildFormProperty>>() {}),
-            originalModel = JsonUtil.to(this.originalModel, ITemplateModel::class.java),
-            model = JsonUtil.to(this.model, ITemplateModel::class.java),
+            params = this.params?.let { JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {}) },
+            originalModel = this.originalModel?.let { JsonUtil.to(it, ITemplateModel::class.java) },
+            model = this.model?.let { JsonUtil.to(this.model, ITemplateModel::class.java) },
             yaml = this.yaml,
             status = VersionStatus.get(this.status),
             branchAction = this.branchAction?.let { BranchVersionAction.get(it) },

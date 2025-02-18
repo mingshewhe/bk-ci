@@ -1,6 +1,6 @@
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.exception.InvalidParamException
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -60,11 +60,8 @@ data class PipelineTemplateCommonCondition(
         val isAllFieldsAreNull = this::class.memberProperties.all {
             it.call(this) == null
         }
-        // TODO
         if (isAllFieldsAreNull) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
+            throw InvalidParamException(message = "all parameters cannot be null.")
         }
     }
 }
