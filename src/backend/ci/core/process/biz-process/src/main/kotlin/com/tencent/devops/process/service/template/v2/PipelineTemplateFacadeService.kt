@@ -57,7 +57,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client
 ) {
-    fun createTemplate(request: PipelineTemplateBasicCreateReq) {
+    fun createTemplate(request: PipelineTemplateBasicCreateReq): Boolean {
         logger.info("create template in project ${request.projectId} by ${request.source} ,body is {}", request)
         when (request) {
             is PipelineTemplateCustomCreateReq -> createByCustom(request)
@@ -66,6 +66,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             is PipelineTemplateRepositoryCreateReq -> createByRepository(request)
             else -> {}
         }
+        return true
     }
 
     private fun createByCustom(request: PipelineTemplateCustomCreateReq) {
@@ -334,7 +335,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         }
     }
 
-    fun deleteTemplate(projectId: String, templateId: String) {
+    fun deleteTemplate(projectId: String, templateId: String): Boolean {
         logger.info("Start to delete the template $projectId|$templateId")
         val templateInfo = pipelineTemplateInfoService.get(
             projectId = projectId,
@@ -394,9 +395,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 templateId = templateId
             )
         }
+        return true
     }
 
-    fun saveDraft(request: PipelineTemplateDraftSaveReq) {
+    fun saveDraft(request: PipelineTemplateDraftSaveReq): Boolean {
         logger.info("save template draft {}|{}|{}", request.projectId, request.operator, request)
         val templateInfo = pipelineTemplateInfoService.get(
             projectId = request.projectId,
@@ -494,6 +496,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 pipelineTemplateResource = pipelineTemplateResource
             )
         }
+        return true
     }
 
     // 获取模板列表
@@ -624,7 +627,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         projectId: String,
         srcTemplateId: String,
         copySetting: Boolean
-    ) {
+    ): Boolean {
         val srcTemplateInfo = pipelineTemplateInfoService.get(
             projectId = projectId,
             templateId = srcTemplateId
@@ -704,6 +707,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             pipelineTemplateSetting = setting,
             pipelineTemplatePermission = pipelineTemplatePermission
         )
+        return true
     }
 
     // 发布模板
