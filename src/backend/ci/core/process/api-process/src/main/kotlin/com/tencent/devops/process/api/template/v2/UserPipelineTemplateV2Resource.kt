@@ -1,4 +1,4 @@
-package com.tencent.devops.process.api.user
+package com.tencent.devops.process.api.template.v2
 
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
@@ -27,8 +27,8 @@ import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
 import javax.ws.rs.core.MediaType
 
-@Tag(name = "USER_PIPELINE_TEMPLATE", description = "用户-流水线-模板")
-@Path("/user/pipeline/template/{projectId}")
+@Tag(name = "USER_PIPELINE_TEMPLATE_V2", description = "用户-流水线-模板")
+@Path("/user/pipeline/template/v2/{projectId}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 interface UserPipelineTemplateV2Resource {
