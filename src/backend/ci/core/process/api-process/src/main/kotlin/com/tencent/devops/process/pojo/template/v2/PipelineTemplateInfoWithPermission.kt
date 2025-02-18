@@ -32,7 +32,7 @@ data class PipelineTemplateInfoWithPermission(
     @get:Schema(title = "最新版本名称", required = true)
     override val lastedVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = true)
-    override val lastedSettingVersion: Int,
+    override val lastedSettingVersion: Int?,
     @get:Schema(title = "模板来源", required = true)
     override val source: PipelineTemplateSource,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
