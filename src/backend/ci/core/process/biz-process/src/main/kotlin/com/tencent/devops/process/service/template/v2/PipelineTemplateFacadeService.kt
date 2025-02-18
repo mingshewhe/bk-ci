@@ -452,7 +452,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                         transactionContext = dslContext,
                         pipelineTemplateSetting = request.templateSetting!!.copy(
                             templateId = request.templateId,
-                            settingVersion = draftVersionResource.settingVersion!! + 1
+                            settingVersion = draftVersionResource.settingVersion!!
                         )
                     )
                 }

@@ -84,7 +84,7 @@ class PipelineTemplateResourceService @Autowired constructor(
         transactionContext: DSLContext? = null,
         commonCondition: PipelineTemplateResourceCommonCondition
     ) {
-        pipelineTemplateResourceDao.get(
+        pipelineTemplateResourceDao.delete(
             dslContext = dslContext,
             commonCondition = commonCondition
         )

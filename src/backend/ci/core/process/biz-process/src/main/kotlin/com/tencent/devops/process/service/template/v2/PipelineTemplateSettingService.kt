@@ -46,7 +46,7 @@ class PipelineTemplateSettingService @Autowired constructor(
         transactionContext: DSLContext? = null,
         commonCondition: PipelineTemplateSettingCommonCondition
     ) {
-        pipelineTemplateSettingDao.get(
+        pipelineTemplateSettingDao.delete(
             dslContext = dslContext,
             commonCondition = commonCondition
         )
