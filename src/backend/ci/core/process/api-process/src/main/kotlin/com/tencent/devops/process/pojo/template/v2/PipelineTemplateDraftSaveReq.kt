@@ -23,12 +23,12 @@ data class PipelineTemplateDraftSaveReq(
     val enablePac: Boolean? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
-    @get:Schema(title = "原始编排,局部模版没有解析", required = true)
+    @get:Schema(title = "原始编排,局部模版没有解析", required = false)
     val originalModel: ITemplateModel? = null,
     @get:Schema(title = "模板配置", required = false)
     val templateSetting: PipelineTemplateSetting? = null,
-    @get: Schema(title = "编排yaml", required = true)
+    @get: Schema(title = "编排yaml", required = false)
     val yaml: String? = null,
-    @get:Schema(title = "存储格式", required = false)
+    @get:Schema(title = "存储格式", required = true)
     val storageType: PipelineStorageType? = PipelineStorageType.MODEL
 )
