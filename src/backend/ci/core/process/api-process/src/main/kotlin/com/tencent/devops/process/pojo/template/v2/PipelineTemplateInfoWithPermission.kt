@@ -13,15 +13,15 @@ data class PipelineTemplateInfoWithPermission(
     override val projectId: String,
     @get:Schema(title = "模板名称", required = true)
     override val name: String,
-    @get:Schema(title = "简介", required = true)
+    @get:Schema(title = "简介", required = false)
     override val desc: String?,
     @get:Schema(title = "公共/约束/自定义模式", required = true)
     override val mode: String,
-    @get:Schema(title = "应用范畴", required = true)
+    @get:Schema(title = "应用范畴", required = false)
     override val category: String? = null,
     @get:Schema(title = "模板类型", required = true)
     override val type: PipelineTemplateType,
-    @get:Schema(title = "logo地址", required = true)
+    @get:Schema(title = "logo地址", required = false)
     override val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     override val enablePac: Boolean,
@@ -29,17 +29,17 @@ data class PipelineTemplateInfoWithPermission(
     override val lastedVersion: Long,
     @get:Schema(title = "最新版本状态", required = true)
     override val lastedVersionStatus: VersionStatus,
-    @get:Schema(title = "最新版本名称", required = true)
+    @get:Schema(title = "最新版本名称", required = false)
     override val lastedVersionName: String? = null,
-    @get:Schema(title = "最新设置版本号", required = true)
+    @get:Schema(title = "最新设置版本号", required = false)
     override val lastedSettingVersion: Int?,
     @get:Schema(title = "模板来源", required = true)
     override val source: PipelineTemplateSource,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
     override val storeFlag: Boolean,
-    @get:Schema(title = "父模板ID", required = true)
+    @get:Schema(title = "父模板ID", required = false)
     override val srcTemplateId: String? = null,
-    @get:Schema(title = "父模板项目ID", required = true)
+    @get:Schema(title = "父模板项目ID", required = false)
     override val srcTemplateProjectId: String? = null,
     @get:Schema(title = "调试流水线数", required = true)
     override val debugPipelineCount: Int? = 0,
@@ -47,14 +47,14 @@ data class PipelineTemplateInfoWithPermission(
     override val instancePipelineCount: Int? = 0,
     @get:Schema(title = "创建人", required = true)
     override val creator: String,
-    @get:Schema(title = "更新人", required = true)
+    @get:Schema(title = "更新人", required = false)
     override val updater: String? = null,
     @get:Schema(title = "是否有模版查看权限", required = true)
-    val canView: Boolean? = null,
+    val canView: Boolean,
     @get:Schema(title = "是否有模版编辑权限", required = true)
-    val canEdit: Boolean? = null,
+    val canEdit: Boolean,
     @get:Schema(title = "是否有模版删除权限", required = true)
-    val canDelete: Boolean? = null
+    val canDelete: Boolean
 ) : PipelineTemplateInfo(
     id = id,
     projectId = projectId,

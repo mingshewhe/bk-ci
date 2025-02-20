@@ -18,13 +18,13 @@ data class PipelineTemplateYamlCreateReq(
     override val type: PipelineTemplateType,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
-    @get:Schema(title = "简介", required = true)
+    @get:Schema(title = "简介", required = false)
     val desc: String?,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty> = listOf(),
     @get:Schema(title = "模板原始模型", required = true)
     val originalModel: ITemplateModel,
-    @get:Schema(title = "模板配置", required = true)
+    @get:Schema(title = "模板配置", required = false)
     val setting: PipelineTemplateSetting?,
     @get:Schema(title = "模板YAML", required = true)
     val yaml: String

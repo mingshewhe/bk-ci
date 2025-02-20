@@ -29,7 +29,7 @@ open class PipelineTemplateBasicCreateReq(
     open val source: PipelineTemplateSource,
     @get:Schema(title = "模板类型", required = true)
     open val type: PipelineTemplateType = PipelineTemplateType.UNKNOWN,
-    @get:Schema(title = "模板Id", required = true)
+    @get:Schema(title = "模板Id", required = false)
     open var id: String? = null
 ) {
     fun generateId(): String {

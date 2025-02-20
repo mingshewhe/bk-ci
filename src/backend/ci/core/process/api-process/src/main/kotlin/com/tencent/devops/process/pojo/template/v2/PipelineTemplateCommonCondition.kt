@@ -11,45 +11,45 @@ import kotlin.reflect.full.memberProperties
 data class PipelineTemplateCommonCondition(
     @get:Schema(title = "项目ID", required = true)
     val projectId: String? = null,
-    @get:Schema(title = "模板ID", required = true)
+    @get:Schema(title = "模板ID", required = false)
     val templateId: String? = null,
-    @get:Schema(title = "过滤模板ID", required = true)
+    @get:Schema(title = "过滤模板ID", required = false)
     val filterTemplateIds: List<String>? = null,
-    @get:Schema(title = "根据名称模糊搜索", required = true)
+    @get:Schema(title = "根据名称模糊搜索", required = false)
     val fuzzySearchName: String? = null,
-    @get:Schema(title = "根据名称精准搜索", required = true)
+    @get:Schema(title = "根据名称精准搜索", required = false)
     val exactSearchName: String? = null,
-    @get:Schema(title = "公共/约束/自定义模式", required = true)
+    @get:Schema(title = "公共/约束/自定义模式", required = false)
     val mode: String? = null,
-    @get:Schema(title = "应用范畴", required = true)
+    @get:Schema(title = "应用范畴", required = false)
     val category: String? = null,
-    @get:Schema(title = "模板类型", required = true)
+    @get:Schema(title = "模板类型", required = false)
     val type: PipelineTemplateType? = null,
-    @get:Schema(title = "是否开启PAC", required = true)
+    @get:Schema(title = "是否开启PAC", required = false)
     val enablePac: Boolean? = null,
-    @get:Schema(title = "最新版本号", required = true)
+    @get:Schema(title = "最新版本号", required = false)
     val lastedVersion: Long? = null,
-    @get:Schema(title = "最新版本状态", required = true)
+    @get:Schema(title = "最新版本状态", required = false)
     val lastedVersionStatus: VersionStatus? = null,
-    @get:Schema(title = "最新版本名称", required = true)
+    @get:Schema(title = "最新版本名称", required = false)
     val lastedVersionName: String? = null,
-    @get:Schema(title = "最新设置版本号", required = true)
+    @get:Schema(title = "最新设置版本号", required = false)
     val lastedSettingVersion: Int? = null,
-    @get:Schema(title = "模板来源", required = true)
+    @get:Schema(title = "模板来源", required = false)
     val source: PipelineTemplateSource? = null,
-    @get:Schema(title = "是否关联研发商店", required = true)
+    @get:Schema(title = "是否关联研发商店", required = false)
     val storeFlag: Boolean? = null,
-    @get:Schema(title = "父模板ID", required = true)
+    @get:Schema(title = "父模板ID", required = false)
     val srcTemplateId: String? = null,
-    @get:Schema(title = "父模板项目ID", required = true)
+    @get:Schema(title = "父模板项目ID", required = false)
     val srcTemplateProjectId: String? = null,
-    @get:Schema(title = "调试流水线数", required = true)
+    @get:Schema(title = "调试流水线数", required = false)
     val debugPipelineCount: Int? = null,
-    @get:Schema(title = "实例流水线数", required = true)
+    @get:Schema(title = "实例流水线数", required = false)
     val instancePipelineCount: Int? = null,
-    @get:Schema(title = "创建人", required = true)
+    @get:Schema(title = "创建人", required = false)
     val creator: String? = null,
-    @get:Schema(title = "更新人", required = true)
+    @get:Schema(title = "更新人", required = false)
     val updater: String? = null,
     @get:Schema(title = "page", required = true)
     val page: Int? = null,

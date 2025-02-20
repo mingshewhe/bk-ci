@@ -34,32 +34,32 @@ import java.time.LocalDateTime
 
 @Schema(title = "流水线模版版本信息")
 data class PipelineTemplateVersionInfo(
-    @get:Schema(title = "配置版本号", required = true)
+    @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int? = null,
     @get:Schema(title = "版本号", required = true)
     val version: Long,
     @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
     val number: Int,
-    @get:Schema(title = "模板发布-版本名称", required = true)
+    @get:Schema(title = "模板发布-版本名称", required = false)
     val versionName: String? = null,
-    @get:Schema(title = "模板发布-版本号", required = true)
+    @get:Schema(title = "模板发布-版本号", required = false)
     val versionNum: Int? = null,
-    @get:Schema(title = "模板发布-模板编排版本号", required = true)
+    @get:Schema(title = "模板发布-模板编排版本号", required = false)
     val modelVersion: Int? = null,
-    @get:Schema(title = "模板发布-模板触发器版本号", required = true)
+    @get:Schema(title = "模板发布-模板触发器版本号", required = false)
     val triggerVersion: Int? = null,
-    @get:Schema(title = "草稿来源版本", required = true)
+    @get:Schema(title = "草稿来源版本", required = false)
     val draftSourceVersion: Long? = null,
     @get:Schema(title = "状态", required = true)
     val status: VersionStatus,
-    @get:Schema(title = "分支状态", required = true)
+    @get:Schema(title = "分支状态", required = false)
     val branchAction: BranchVersionAction? = null,
-    @get:Schema(title = "版本发布描述", required = true)
+    @get:Schema(title = "版本发布描述", required = false)
     val releaseComment: String? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
-    @get:Schema(title = "更新人", required = true)
+    @get:Schema(title = "更新人", required = false)
     val updater: String? = null,
-    @get:Schema(title = "发布时间", required = true)
+    @get:Schema(title = "发布时间", required = false)
     val releaseTime: LocalDateTime? = null
 )

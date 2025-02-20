@@ -16,7 +16,7 @@ data class PipelineTemplateCustomCreateReq(
     override val type: PipelineTemplateType,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
-    @get:Schema(title = "简介", required = true)
+    @get:Schema(title = "简介", required = false)
     val desc: String?
 ) : PipelineTemplateBasicCreateReq(
     projectId = projectId,

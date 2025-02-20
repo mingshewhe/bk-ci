@@ -21,7 +21,7 @@ open class PipelineTemplateInfo(
     open val category: String? = null,
     @get:Schema(title = "模板类型", required = true)
     open val type: PipelineTemplateType,
-    @get:Schema(title = "logo地址", required = true)
+    @get:Schema(title = "logo地址", required = false)
     open val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     open val enablePac: Boolean,
@@ -29,17 +29,17 @@ open class PipelineTemplateInfo(
     open val lastedVersion: Long,
     @get:Schema(title = "最新版本状态", required = true)
     open val lastedVersionStatus: VersionStatus,
-    @get:Schema(title = "最新版本名称", required = true)
+    @get:Schema(title = "最新版本名称", required = false)
     open val lastedVersionName: String? = null,
-    @get:Schema(title = "最新设置版本号", required = true)
+    @get:Schema(title = "最新设置版本号", required = false)
     open val lastedSettingVersion: Int? = null,
     @get:Schema(title = "模板来源", required = true)
     open val source: PipelineTemplateSource,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
     open val storeFlag: Boolean,
-    @get:Schema(title = "父模板ID", required = true)
+    @get:Schema(title = "父模板ID", required = false)
     open val srcTemplateId: String? = null,
-    @get:Schema(title = "父模板项目ID", required = true)
+    @get:Schema(title = "父模板项目ID", required = false)
     open val srcTemplateProjectId: String? = null,
     @get:Schema(title = "调试流水线数", required = true)
     open val debugPipelineCount: Int? = 0,
@@ -47,6 +47,6 @@ open class PipelineTemplateInfo(
     open val instancePipelineCount: Int? = 0,
     @get:Schema(title = "创建人", required = true)
     open val creator: String,
-    @get:Schema(title = "更新人", required = true)
+    @get:Schema(title = "更新人", required = false)
     open val updater: String? = null
 )
