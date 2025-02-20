@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
-    @get:Schema(title = "模板ID", required = false)
+    @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
     @get:Schema(title = "模板名称", required = false)
     val name: String? = null,
