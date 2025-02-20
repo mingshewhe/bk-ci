@@ -168,8 +168,10 @@ class PipelineTemplateInfoDao {
                 val conditions = mutableListOf<Condition>()
                 if (projectId != null) conditions.add(PROJECT_ID.eq(projectId))
                 if (templateId != null) conditions.add(ID.eq(templateId))
-                if (fuzzySearchName != null) conditions.add(NAME.like("%${fuzzySearchName}%"))
-                if (exactSearchName != null) conditions.add(NAME.eq(exactSearchName))
+                if (fuzzySearchName != null && fuzzySearchName!!.isNotBlank()) {
+                    conditions.add(NAME.like("%${fuzzySearchName}%"))
+                }
+                if (exactSearchName != null&& exactSearchName!!.isNotBlank()) conditions.add(NAME.eq(exactSearchName))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (enablePac != null) conditions.add(PAC.eq(enablePac))
                 if (lastedVersion != null) conditions.add(LASTED_VERSION.eq(lastedVersion))

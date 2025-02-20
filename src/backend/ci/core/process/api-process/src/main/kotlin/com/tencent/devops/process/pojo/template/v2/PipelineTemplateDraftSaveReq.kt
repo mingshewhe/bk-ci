@@ -1,5 +1,6 @@
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import io.swagger.v3.oas.annotations.media.Schema
@@ -23,11 +24,11 @@ data class PipelineTemplateDraftSaveReq(
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "原始编排,局部模版没有解析", required = true)
-    val originalModel: ITemplateModel,
+    val originalModel: ITemplateModel? = null,
     @get:Schema(title = "模板配置", required = false)
     val templateSetting: PipelineTemplateSetting? = null,
     @get: Schema(title = "编排yaml", required = true)
-    val yaml: String,
-    @get:Schema(title = "操作人", required = true)
-    val operator: String
+    val yaml: String? = null,
+    @get:Schema(title = "存储格式", required = false)
+    val storageType: PipelineStorageType? = PipelineStorageType.MODEL
 )

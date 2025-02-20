@@ -400,12 +400,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun saveDraft(request: PipelineTemplateDraftSaveReq): Boolean {
-        logger.info("save template draft {}|{}|{}", request.projectId, request.operator, request)
+    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Boolean {
+        logger.info("save template draft {}|{}|{}", request.projectId, userId, request)
         val templateInfo = pipelineTemplateInfoService.get(
             projectId = request.projectId,
             templateId = request.templateId
         )
+        // todo yaml方式 或者 model方式
+        val originalModel = request.originalModel!!
+        var newYaml = ""
+
         val isTemplateExistDraft = pipelineTemplateResourceService.count(
             PipelineTemplateResourceCommonCondition(
                 projectId = request.projectId,
@@ -425,7 +429,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     status = VersionStatus.COMMITTING
                 )
             )
-            val originalModel = request.originalModel
 
             val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
                 name = request.name,
@@ -434,7 +437,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 originalModel = originalModel,
                 model = pipelineTemplateModelParser.parseTemplateModel(originalModel),
                 yaml = request.yaml,
-                updater = request.operator
+                updater = userId
             )
             dslContext.transaction { configuration ->
                 val context = DSL.using(configuration)
@@ -476,10 +479,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 draftSourceVersion = request.draftSourceVersion,
                 params = request.params,
                 originalModel = request.originalModel,
-                model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel),
+                model = pipelineTemplateModelParser.parseTemplateModel(originalModel),
                 yaml = request.yaml,
                 status = VersionStatus.COMMITTING,
-                creator = request.operator
+                creator = userId
             )
             val pipelineTemplateSetting = if (templateInfo.type == PipelineTemplateType.PIPELINE) {
                 request.templateSetting?.let { setting ->

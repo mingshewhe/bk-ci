@@ -90,7 +90,7 @@ class UserPipelineTemplateV2ResourceImpl(
             permission = AuthPermission.EDIT,
             templateId = templateId
         )
-        return Result(templateFacadeService.saveDraft(request))
+        return Result(templateFacadeService.saveDraft(userId, request))
     }
 
     override fun listTemplateInfos(
