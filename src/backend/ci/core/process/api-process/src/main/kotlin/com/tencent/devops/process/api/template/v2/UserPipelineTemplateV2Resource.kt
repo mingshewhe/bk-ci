@@ -3,7 +3,9 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.model.SQLPage
+import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
@@ -125,7 +127,7 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "请求体", required = false)
         request: PipelineTemplateResourceCommonCondition
-    ): Result<List<PipelineTemplateVersionInfo>>
+    ): Result<Page<PipelineVersionSimple>>
 
     @Operation(summary = "版本对比")
     @GET

@@ -3,6 +3,7 @@ package com.tencent.devops.process.service.template.v2
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
@@ -44,7 +45,7 @@ class PipelineTemplateResourceService @Autowired constructor(
 
     fun getTemplateVersions(
         commonCondition: PipelineTemplateResourceCommonCondition
-    ): List<PipelineTemplateVersionInfo> {
+    ): List<PipelineVersionSimple> {
         return pipelineTemplateResourceDao.getVersions(
             dslContext = dslContext,
             commonCondition = commonCondition

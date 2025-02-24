@@ -2,6 +2,7 @@ package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
+import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
@@ -12,6 +13,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
@@ -29,7 +31,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import com.tencent.devops.store.api.common.ServiceStoreResource
@@ -596,8 +597,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
     // 查看全部模板版本历史
     fun getTemplateVersions(
         commonCondition: PipelineTemplateResourceCommonCondition
-    ): List<PipelineTemplateVersionInfo> {
-        return pipelineTemplateResourceService.getTemplateVersions(commonCondition)
+    ): Page<PipelineVersionSimple> {
+        val records = pipelineTemplateResourceService.getTemplateVersions(commonCondition)
+        val count = pipelineTemplateResourceService.count(commonCondition)
+        return Page(
+            page = commonCondition.page ?: -1,
+            pageSize = commonCondition.pageSize ?: -1,
+            records = records,
+            count = count.toLong()
+        )
     }
 
     // 模板版本对比

@@ -2,6 +2,7 @@ package com.tencent.devops.process.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -9,10 +10,10 @@ import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
@@ -174,41 +175,42 @@ class PipelineTemplateResourceDao {
     fun getVersions(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateResourceCommonCondition
-    ): List<PipelineTemplateVersionInfo> {
+    ): List<PipelineVersionSimple> {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.select(
+                TEMPLATE_ID,
                 SETTING_VERSION,
                 VERSION,
-                NUMBER,
                 VERSION_NAME,
                 VERSION_NUM,
                 MODEL_VERSION,
                 TRIGGER_VERSION,
                 DRAFT_SOURCE_VERSION,
                 STATUS,
-                BRANCH_ACTION,
                 RELEASE_COMMENT,
                 CREATOR,
                 UPDATER,
-                RELEASE_TIME
+                CREATED_TIME,
+                UPDATE_TIME
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
                 .fetch().map {
-                    PipelineTemplateVersionInfo(
-                        settingVersion = it.value1(),
-                        version = it.value2(),
-                        number = it.value3(),
+                    PipelineVersionSimple(
+                        pipelineId = it.value1(),
+                        settingVersion = it.value2(),
+                        version = it.value3().toInt(),
                         versionName = it.value4(),
                         versionNum = it.value5(),
-                        modelVersion = it.value6(),
+                        pipelineVersion = it.value6(),
                         triggerVersion = it.value7(),
-                        draftSourceVersion = it.value8(),
+                        baseVersion = it.value8()?.toInt(),
                         status = VersionStatus.get(it.value9()),
-                        branchAction = it.value10()?.let { self -> BranchVersionAction.get(self) },
-                        releaseComment = it.value11(),
-                        creator = it.value12(),
-                        updater = it.value13(),
-                        releaseTime = it.value14()
+                        description = it.value10(),
+                        creator = it.value11(),
+                        updater = it.value12(),
+                        createTime = it.value13().timestampmilli(),
+                        updateTime = it.value14().timestampmilli(),
+                        yamlVersion = null
                     )
                 }
         }
