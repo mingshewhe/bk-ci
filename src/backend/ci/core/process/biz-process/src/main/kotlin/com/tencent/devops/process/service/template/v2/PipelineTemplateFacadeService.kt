@@ -438,7 +438,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 originalModel = originalModel,
                 model = pipelineTemplateModelParser.parseTemplateModel(originalModel),
                 yaml = request.yaml,
-                updater = userId
+                updater = userId,
+                sortWeight = 100
             )
             dslContext.transaction { configuration ->
                 val context = DSL.using(configuration)

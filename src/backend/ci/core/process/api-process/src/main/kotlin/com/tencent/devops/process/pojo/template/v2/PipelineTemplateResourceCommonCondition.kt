@@ -48,6 +48,8 @@ data class PipelineTemplateResourceCommonCondition(
     val releaseTime: LocalDateTime? = null,
     @get:Schema(title = "版本发布描述", required = false)
     val releaseComment: String? = null,
+    @get:Schema(title = "是否包含草稿版本", required = false)
+    val includeDraft: Boolean? = null,
     @get:Schema(title = "page", required = true)
     val page: Int? = null,
     @get:Schema(title = "pageSize", required = true)

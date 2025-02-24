@@ -83,6 +83,8 @@ data class PipelineTemplateResource(
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本发布描述", required = false)
     val releaseComment: String? = null,
+    @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的权重为0", required = false)
+    val sortWeight: Int? = 100,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = false)

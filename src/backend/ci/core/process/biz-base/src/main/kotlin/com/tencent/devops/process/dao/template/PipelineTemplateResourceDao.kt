@@ -51,6 +51,7 @@ class PipelineTemplateResourceDao {
                 STATUS,
                 BRANCH_ACTION,
                 RELEASE_COMMENT,
+                SORT_WEIGHT,
                 CREATOR,
                 UPDATER,
                 RELEASE_TIME
@@ -78,6 +79,7 @@ class PipelineTemplateResourceDao {
                 record.status.name,
                 record.branchAction?.name,
                 record.releaseComment,
+                record.sortWeight,
                 record.creator,
                 record.updater,
                 record.releaseTime
@@ -194,7 +196,9 @@ class PipelineTemplateResourceDao {
                 UPDATE_TIME
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
-                .fetch().map {
+                .orderBy(SORT_WEIGHT.desc())
+                .fetch()
+                .map {
                     PipelineVersionSimple(
                         pipelineId = it.value1(),
                         settingVersion = it.value2(),
@@ -265,6 +269,7 @@ class PipelineTemplateResourceDao {
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
                 if (srcTemplateVersion != null) conditions.add(SRC_TEMPLATE_VERSION.eq(srcTemplateVersion))
                 if (releaseComment != null) conditions.add(RELEASE_COMMENT.like("%$releaseComment%"))
+                if (includeDraft == false) conditions.add(STATUS.notEqual(VersionStatus.COMMITTING.name))
                 return conditions
             }
         }
@@ -297,7 +302,8 @@ class PipelineTemplateResourceDao {
             releaseComment = this.releaseComment,
             creator = this.creator,
             updater = this.updater,
-            releaseTime = this.releaseTime
+            releaseTime = this.releaseTime,
+            sortWeight = this.sortWeight
         )
     }
 }
