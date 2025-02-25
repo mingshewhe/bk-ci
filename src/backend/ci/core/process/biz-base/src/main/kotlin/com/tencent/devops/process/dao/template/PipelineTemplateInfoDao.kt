@@ -31,10 +31,10 @@ class PipelineTemplateInfoDao {
                 TYPE,
                 LOGO_URL,
                 PAC,
-                LASTED_VERSION,
-                LASTED_VERSION_STATUS,
-                LASTED_VERSION_NAME,
-                LASTED_SETTING_VERSION,
+                LATEST_VERSION,
+                LATEST_VERSION_STATUS,
+                LATEST_VERSION_NAME,
+                LATEST_SETTING_VERSION,
                 SOURCE,
                 STORE_FLAG,
                 SRC_TEMPLATE_ID,
@@ -53,10 +53,10 @@ class PipelineTemplateInfoDao {
                 record.type.value,
                 record.logoUrl,
                 record.enablePac,
-                record.lastedVersion,
-                record.lastedVersionStatus.name,
-                record.lastedVersionName,
-                record.lastedSettingVersion,
+                record.latestVersion,
+                record.latestVersionStatus.name,
+                record.latestVersionName,
+                record.latestSettingVersion,
                 record.source.value,
                 record.storeFlag,
                 record.srcTemplateId,
@@ -83,10 +83,10 @@ class PipelineTemplateInfoDao {
                     record.category?.let { set(CATEGORY, it) }
                     record.logoUrl?.let { set(LOGO_URL, it) }
                     record.enablePac?.let { set(PAC, it) }
-                    record.lastedVersion?.let { set(LASTED_VERSION, it) }
-                    record.lastedVersionStatus?.let { set(LASTED_VERSION_STATUS, it.name) }
-                    record.lastedVersionName?.let { set(LASTED_VERSION_NAME, it) }
-                    record.lastedSettingVersion?.let { set(LASTED_SETTING_VERSION, it) }
+                    record.latestVersion?.let { set(LATEST_VERSION, it) }
+                    record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
+                    record.latestVersionName?.let { set(LATEST_VERSION_NAME, it) }
+                    record.latestSettingVersion?.let { set(LATEST_SETTING_VERSION, it) }
                     record.storeFlag?.let { set(STORE_FLAG, it) }
                     record.debugPipelineCount?.let { set(DEBUG_PIPELINE_COUNT, it) }
                     record.instancePipelineCount?.let { set(INSTANCE_PIPELINE_COUNT, it) }
@@ -171,13 +171,14 @@ class PipelineTemplateInfoDao {
                 if (fuzzySearchName != null && fuzzySearchName!!.isNotBlank()) {
                     conditions.add(NAME.like("%${fuzzySearchName}%"))
                 }
-                if (exactSearchName != null&& exactSearchName!!.isNotBlank()) conditions.add(NAME.eq(exactSearchName))
+                if (desc != null && desc!!.isNotBlank()) conditions.add(DESC.like("%${desc}%"))
+                if (exactSearchName != null && exactSearchName!!.isNotBlank()) conditions.add(NAME.eq(exactSearchName))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (enablePac != null) conditions.add(PAC.eq(enablePac))
-                if (lastedVersion != null) conditions.add(LASTED_VERSION.eq(lastedVersion))
-                if (lastedVersionStatus != null) conditions.add(LASTED_VERSION_STATUS.eq(lastedVersionStatus!!.name))
-                if (lastedVersionName != null) conditions.add(LASTED_VERSION_NAME.eq(lastedVersionName))
-                if (lastedSettingVersion != null) conditions.add(LASTED_SETTING_VERSION.eq(lastedSettingVersion))
+                if (latestVersion != null) conditions.add(LATEST_VERSION.eq(latestVersion))
+                if (latestVersionStatus != null) conditions.add(LATEST_VERSION_STATUS.eq(latestVersionStatus!!.name))
+                if (latestVersionName != null) conditions.add(LATEST_VERSION_NAME.eq(latestVersionName))
+                if (latestSettingVersion != null) conditions.add(LATEST_SETTING_VERSION.eq(latestSettingVersion))
                 if (source != null) conditions.add(SOURCE.eq(source!!.value))
                 if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
@@ -203,10 +204,10 @@ class PipelineTemplateInfoDao {
             type = PipelineTemplateType.get(this.type),
             logoUrl = this.logoUrl,
             enablePac = this.pac,
-            lastedVersion = this.lastedVersion,
-            lastedVersionStatus = VersionStatus.get(this.lastedVersionStatus),
-            lastedVersionName = this.lastedVersionName,
-            lastedSettingVersion = this.lastedSettingVersion,
+            latestVersion = this.latestVersion,
+            latestVersionStatus = VersionStatus.get(this.latestVersionStatus),
+            latestVersionName = this.latestVersionName,
+            latestSettingVersion = this.latestSettingVersion,
             source = PipelineTemplateSource.get(this.source),
             storeFlag = this.storeFlag,
             srcTemplateId = this.srcTemplateId,
@@ -214,7 +215,9 @@ class PipelineTemplateInfoDao {
             debugPipelineCount = this.debugPipelineCount,
             instancePipelineCount = this.instancePipelineCount,
             creator = this.creator,
-            updater = this.updater
+            updater = this.updater,
+            createdTime = this.createdTime,
+            updateTime = this.updateTime
         )
     }
 }

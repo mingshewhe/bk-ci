@@ -19,6 +19,8 @@ data class PipelineTemplateCommonCondition(
     val fuzzySearchName: String? = null,
     @get:Schema(title = "根据名称精准搜索", required = false)
     val exactSearchName: String? = null,
+    @get:Schema(title = "描述", required = false)
+    val desc: String? = null,
     @get:Schema(title = "公共/约束/自定义模式", required = false)
     val mode: String? = null,
     @get:Schema(title = "应用范畴", required = false)
@@ -28,13 +30,13 @@ data class PipelineTemplateCommonCondition(
     @get:Schema(title = "是否开启PAC", required = false)
     val enablePac: Boolean? = null,
     @get:Schema(title = "最新版本号", required = false)
-    val lastedVersion: Long? = null,
+    val latestVersion: Long? = null,
     @get:Schema(title = "最新版本状态", required = false)
-    val lastedVersionStatus: VersionStatus? = null,
+    val latestVersionStatus: VersionStatus? = null,
     @get:Schema(title = "最新版本名称", required = false)
-    val lastedVersionName: String? = null,
+    val latestVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = false)
-    val lastedSettingVersion: Int? = null,
+    val latestSettingVersion: Int? = null,
     @get:Schema(title = "模板来源", required = false)
     val source: PipelineTemplateSource? = null,
     @get:Schema(title = "是否关联研发商店", required = false)

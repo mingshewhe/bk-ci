@@ -93,9 +93,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CUSTOMIZE.name,
             type = request.type,
             enablePac = false,
-            lastedVersion = version,
-            lastedVersionStatus = VersionStatus.COMMITTING,
-            lastedSettingVersion = settingVersion,
+            latestVersion = version,
+            latestVersionStatus = VersionStatus.COMMITTING,
+            latestSettingVersion = settingVersion,
             source = PipelineTemplateSource.CUSTOM,
             storeFlag = false,
             creator = request.creator
@@ -169,10 +169,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CONSTRAINT.name,
             type = marketTemplateInfo.type,
             enablePac = false,
-            lastedVersion = version,
-            lastedVersionStatus = VersionStatus.RELEASED,
-            lastedVersionName = marketTemplateInfo.lastedVersionName,
-            lastedSettingVersion = settingVersion,
+            latestVersion = version,
+            latestVersionStatus = VersionStatus.RELEASED,
+            latestVersionName = marketTemplateInfo.latestVersionName,
+            latestSettingVersion = settingVersion,
             source = PipelineTemplateSource.MARKET,
             storeFlag = true,
             creator = request.creator,
@@ -245,9 +245,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CUSTOMIZE.name,
             type = request.type,
             enablePac = false,
-            lastedVersion = version,
-            lastedVersionStatus = VersionStatus.COMMITTING,
-            lastedSettingVersion = settingVersion,
+            latestVersion = version,
+            latestVersionStatus = VersionStatus.COMMITTING,
+            latestSettingVersion = settingVersion,
             source = PipelineTemplateSource.YAML,
             storeFlag = false,
             creator = request.creator
@@ -579,7 +579,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = version ?: templateInfo.lastedVersion
+            version = version ?: templateInfo.latestVersion
         )
         val setting = templateResource.settingVersion?.let {
             pipelineTemplateSettingService.get(
@@ -623,7 +623,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val baseVersionResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = baseVersion ?: templateInfo.lastedVersion
+            version = baseVersion ?: templateInfo.latestVersion
         )
         val comparedVersionResource = pipelineTemplateResourceService.get(
             projectId = projectId,
@@ -655,7 +655,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val srcTemplateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = srcTemplateId,
-            version = srcTemplateInfo.lastedVersion
+            version = srcTemplateInfo.latestVersion
         )
         val templateId = UUIDUtil.generate()
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
@@ -664,7 +664,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val srcTemplateSetting = pipelineTemplateSettingService.get(
                 projectId = projectId,
                 templateId = srcTemplateId,
-                settingVersion = srcTemplateInfo.lastedSettingVersion!!
+                settingVersion = srcTemplateInfo.latestSettingVersion!!
             ) ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
             val setting = srcTemplateSetting.copy(
                 templateId = templateId,
@@ -687,10 +687,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = srcTemplateInfo.type,
             logoUrl = srcTemplateInfo.logoUrl,
             enablePac = srcTemplateInfo.enablePac,
-            lastedVersion = version,
-            lastedVersionStatus = VersionStatus.RELEASED,
-            lastedVersionName = "V1(P1.T1.1)",
-            lastedSettingVersion = settingVersion,
+            latestVersion = version,
+            latestVersionStatus = VersionStatus.RELEASED,
+            latestVersionName = "V1(P1.T1.1)",
+            latestSettingVersion = settingVersion,
             source = srcTemplateInfo.source,
             storeFlag = srcTemplateInfo.storeFlag,
             creator = userId

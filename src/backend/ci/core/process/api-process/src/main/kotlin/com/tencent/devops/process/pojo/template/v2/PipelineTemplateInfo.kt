@@ -4,6 +4,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDateTime
 
 @Schema(title = "流水线模板基础信息")
 open class PipelineTemplateInfo(
@@ -26,13 +27,13 @@ open class PipelineTemplateInfo(
     @get:Schema(title = "是否开启PAC", required = true)
     open val enablePac: Boolean,
     @get:Schema(title = "最新版本号", required = true)
-    open val lastedVersion: Long,
+    open val latestVersion: Long,
     @get:Schema(title = "最新版本状态", required = true)
-    open val lastedVersionStatus: VersionStatus,
+    open val latestVersionStatus: VersionStatus,
     @get:Schema(title = "最新版本名称", required = false)
-    open val lastedVersionName: String? = null,
+    open val latestVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = false)
-    open val lastedSettingVersion: Int? = null,
+    open val latestSettingVersion: Int? = null,
     @get:Schema(title = "模板来源", required = true)
     open val source: PipelineTemplateSource,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
@@ -48,5 +49,9 @@ open class PipelineTemplateInfo(
     @get:Schema(title = "创建人", required = true)
     open val creator: String,
     @get:Schema(title = "更新人", required = false)
-    open val updater: String? = null
+    open val updater: String? = null,
+    @get:Schema(title = "更新人", required = false)
+    open val createdTime: LocalDateTime? = null,
+    @get:Schema(title = "更新人", required = false)
+    open val updateTime: LocalDateTime? = null
 )

@@ -61,7 +61,7 @@ class PipelineTemplateAtomService @Autowired constructor(
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = version ?: templateInfo.lastedVersion
+            version = version ?: templateInfo.latestVersion
         )
 
         val model = templateResource.model ?: return Result(null)

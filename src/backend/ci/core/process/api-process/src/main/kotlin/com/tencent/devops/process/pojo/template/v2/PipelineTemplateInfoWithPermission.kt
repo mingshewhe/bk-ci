@@ -4,6 +4,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
 import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDateTime
 
 @Schema(title = "流水线模板基础信息-权限")
 data class PipelineTemplateInfoWithPermission(
@@ -26,13 +27,13 @@ data class PipelineTemplateInfoWithPermission(
     @get:Schema(title = "是否开启PAC", required = true)
     override val enablePac: Boolean,
     @get:Schema(title = "最新版本号", required = true)
-    override val lastedVersion: Long,
+    override val latestVersion: Long,
     @get:Schema(title = "最新版本状态", required = true)
-    override val lastedVersionStatus: VersionStatus,
+    override val latestVersionStatus: VersionStatus,
     @get:Schema(title = "最新版本名称", required = false)
-    override val lastedVersionName: String? = null,
+    override val latestVersionName: String? = null,
     @get:Schema(title = "最新设置版本号", required = false)
-    override val lastedSettingVersion: Int?,
+    override val latestSettingVersion: Int?,
     @get:Schema(title = "模板来源", required = true)
     override val source: PipelineTemplateSource,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
@@ -49,6 +50,10 @@ data class PipelineTemplateInfoWithPermission(
     override val creator: String,
     @get:Schema(title = "更新人", required = false)
     override val updater: String? = null,
+    @get:Schema(title = "更新人", required = false)
+    override val createdTime: LocalDateTime? = null,
+    @get:Schema(title = "更新人", required = false)
+    override val updateTime: LocalDateTime? = null,
     @get:Schema(title = "是否有模版查看权限", required = true)
     val canView: Boolean,
     @get:Schema(title = "是否有模版编辑权限", required = true)
@@ -65,10 +70,10 @@ data class PipelineTemplateInfoWithPermission(
     type = type,
     logoUrl = logoUrl,
     enablePac = enablePac,
-    lastedVersion = lastedVersion,
-    lastedVersionStatus = lastedVersionStatus,
-    lastedVersionName = lastedVersionName,
-    lastedSettingVersion = lastedSettingVersion,
+    latestVersion = latestVersion,
+    latestVersionStatus = latestVersionStatus,
+    latestVersionName = latestVersionName,
+    latestSettingVersion = latestSettingVersion,
     source = source,
     storeFlag = storeFlag,
     srcTemplateId = srcTemplateId,
@@ -96,10 +101,10 @@ data class PipelineTemplateInfoWithPermission(
                     type = type,
                     logoUrl = logoUrl,
                     enablePac = enablePac,
-                    lastedVersion = lastedVersion,
-                    lastedVersionStatus = lastedVersionStatus,
-                    lastedVersionName = lastedVersionName,
-                    lastedSettingVersion = lastedSettingVersion,
+                    latestVersion = latestVersion,
+                    latestVersionStatus = latestVersionStatus,
+                    latestVersionName = latestVersionName,
+                    latestSettingVersion = latestSettingVersion,
                     source = source,
                     storeFlag = storeFlag,
                     srcTemplateId = srcTemplateId,
@@ -108,6 +113,8 @@ data class PipelineTemplateInfoWithPermission(
                     instancePipelineCount = instancePipelineCount,
                     creator = creator,
                     updater = updater,
+                    createdTime = createdTime,
+                    updateTime = updateTime,
                     canView = canView,
                     canEdit = canEdit,
                     canDelete = canDelete
