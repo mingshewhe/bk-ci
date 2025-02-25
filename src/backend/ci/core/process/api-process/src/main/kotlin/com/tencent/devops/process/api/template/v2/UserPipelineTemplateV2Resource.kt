@@ -5,6 +5,7 @@ import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
@@ -182,4 +183,34 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("copySetting")
         copySetting: Boolean
     ): Result<String>
+
+    @Operation(summary = "是否有模板特定权限")
+    @GET
+    @Path("/hasPipelineTemplatePermission")
+    fun hasPipelineTemplatePermission(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @QueryParam("templateId")
+        templateId: String?,
+        @Parameter(description = "操作", required = true)
+        @QueryParam("permission")
+        permission: AuthPermission
+    ): Result<Boolean>
+
+    @Operation(summary = "是否开启模板管理权限")
+    @GET
+    @Path("/enableTemplatePermissionManage")
+    fun enableTemplatePermissionManage(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String
+    ): Result<Boolean>
 }

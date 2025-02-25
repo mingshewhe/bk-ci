@@ -206,6 +206,29 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    override fun hasPipelineTemplatePermission(
+        userId: String,
+        projectId: String,
+        templateId: String?,
+        permission: AuthPermission
+    ): Result<Boolean> {
+        return Result(
+            permissionService.checkPipelineTemplatePermission(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                permission = permission
+            )
+        )
+    }
+
+    override fun enableTemplatePermissionManage(
+        userId: String,
+        projectId: String
+    ): Result<Boolean> {
+        return Result(permissionService.enableTemplatePermissionManage(projectId))
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(UserPipelineTemplateV2ResourceImpl::class.java)
     }
