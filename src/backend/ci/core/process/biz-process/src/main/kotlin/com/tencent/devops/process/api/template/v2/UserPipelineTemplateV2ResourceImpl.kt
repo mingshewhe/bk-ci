@@ -39,16 +39,18 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonConditi
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import org.slf4j.LoggerFactory
 
 @RestResource
 class UserPipelineTemplateV2ResourceImpl(
     private val permissionService: PipelineTemplatePermissionService,
-    private val templateFacadeService: PipelineTemplateFacadeService
+    private val templateFacadeService: PipelineTemplateFacadeService,
+    private val templateInfoService: PipelineTemplateInfoService
 ) : UserPipelineTemplateV2Resource {
     override fun create(
         userId: String,
@@ -124,6 +126,21 @@ class UserPipelineTemplateV2ResourceImpl(
                 version = version
             )
         )
+    }
+
+    override fun getTemplateInfo(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<PipelineTemplateInfo> {
+        logger.info("get template info {}|{}|{}", userId, projectId, templateId)
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
+        return Result(templateInfoService.get(projectId, templateId))
     }
 
     override fun getTemplateVersions(

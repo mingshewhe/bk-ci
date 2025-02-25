@@ -203,7 +203,7 @@ class PipelineTemplateResourceDao {
                         pipelineId = it.value1(),
                         settingVersion = it.value2(),
                         version = it.value3().toInt(),
-                        versionName = it.value4(),
+                        versionName = it.value4() ?: "",
                         versionNum = it.value5(),
                         pipelineVersion = it.value6(),
                         triggerVersion = it.value7(),

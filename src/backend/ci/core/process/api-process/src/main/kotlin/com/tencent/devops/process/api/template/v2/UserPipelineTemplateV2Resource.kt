@@ -11,9 +11,9 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonConditi
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -111,6 +111,21 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("version")
         version: Long?
     ): Result<PipelineTemplateDetailsResponse>
+
+    @Operation(summary = "查看模板基本信息")
+    @GET
+    @Path("/{templateId}/info/")
+    fun getTemplateInfo(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<PipelineTemplateInfo>
 
     @Operation(summary = "查看模板的版本历史")
     @POST
