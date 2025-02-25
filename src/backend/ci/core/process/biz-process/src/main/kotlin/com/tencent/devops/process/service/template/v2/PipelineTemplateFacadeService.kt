@@ -111,7 +111,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             version = version,
             number = 1,
             model = null,
-            originalModel = null,
             yaml = null,
             creator = request.creator,
             status = VersionStatus.COMMITTING
@@ -194,7 +193,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             srcTemplateId = marketTemplateInfo.id,
             srcTemplateVersion = marketTemplateResource.version,
             model = marketTemplateResource.model,
-            originalModel = marketTemplateResource.originalModel,
             yaml = marketTemplateResource.yaml,
             creator = request.creator,
             status = VersionStatus.RELEASED
@@ -224,7 +222,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = request.name
         )
         val templateId = request.id!!
-        val model = pipelineTemplateModelParser.parseTemplateModel(request.originalModel)
 
         // todo 需要进一步判断是否是流水线模板类型
         val (settingVersion, pipelineTemplateSettingVersion) = if (request.setting != null) {
@@ -263,8 +260,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             version = version,
             number = 1,
             params = request.params,
-            originalModel = request.originalModel,
-            model = model,
+            model = request.model,
             yaml = request.yaml,
             status = VersionStatus.COMMITTING,
             creator = request.creator
@@ -408,7 +404,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = request.templateId
         )
         // todo yaml方式 或者 model方式
-        val originalModel = request.originalModel!!
         var newYaml = ""
 
         val isTemplateExistDraft = pipelineTemplateResourceService.count(
@@ -435,8 +430,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 name = request.name,
                 desc = request.desc,
                 params = request.params,
-                originalModel = originalModel,
-                model = pipelineTemplateModelParser.parseTemplateModel(originalModel),
+                model = request.model!!,
                 yaml = request.yaml,
                 updater = userId,
                 sortWeight = 100
@@ -480,8 +474,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 number = latestTemplateResource.number + 1,
                 draftSourceVersion = request.draftSourceVersion,
                 params = request.params,
-                originalModel = request.originalModel,
-                model = pipelineTemplateModelParser.parseTemplateModel(originalModel),
+                model = request.model,
                 yaml = request.yaml,
                 status = VersionStatus.COMMITTING,
                 creator = userId

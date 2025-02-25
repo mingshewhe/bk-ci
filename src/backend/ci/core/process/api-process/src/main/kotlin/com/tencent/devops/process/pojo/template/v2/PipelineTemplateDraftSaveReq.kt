@@ -24,7 +24,7 @@ data class PipelineTemplateDraftSaveReq(
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "原始编排,局部模版没有解析", required = false)
-    val originalModel: ITemplateModel? = null,
+    val model: ITemplateModel? = null,
     @get:Schema(title = "模板配置", required = false)
     val templateSetting: PipelineTemplateSetting? = null,
     @get: Schema(title = "编排yaml", required = false)

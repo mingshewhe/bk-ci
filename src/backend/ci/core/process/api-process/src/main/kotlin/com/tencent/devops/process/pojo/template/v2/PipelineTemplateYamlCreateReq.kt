@@ -22,8 +22,8 @@ data class PipelineTemplateYamlCreateReq(
     val desc: String?,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty> = listOf(),
-    @get:Schema(title = "模板原始模型", required = true)
-    val originalModel: ITemplateModel,
+    @get:Schema(title = "编排", required = true)
+    val model: ITemplateModel,
     @get:Schema(title = "模板配置", required = false)
     val setting: PipelineTemplateSetting?,
     @get:Schema(title = "模板YAML", required = true)

@@ -45,7 +45,6 @@ class PipelineTemplateResourceDao {
                 TRIGGER_VERSION,
                 DRAFT_SOURCE_VERSION,
                 PARAMS,
-                ORIGINAL_MODEL,
                 MODEL,
                 YAML,
                 STATUS,
@@ -73,7 +72,6 @@ class PipelineTemplateResourceDao {
                 record.triggerVersion,
                 record.draftSourceVersion,
                 record.params?.let { JsonUtil.toJson(it) },
-                record.originalModel?.let { JsonUtil.toJson(it) },
                 record.model?.let { JsonUtil.toJson(it) },
                 record.yaml,
                 record.status.name,
@@ -105,7 +103,6 @@ class PipelineTemplateResourceDao {
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
                     record.draftSourceVersion?.let { set(DRAFT_SOURCE_VERSION, it) }
                     record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
-                    record.originalModel?.let { set(ORIGINAL_MODEL, JsonUtil.toJson(it)) }
                     record.model?.let { set(MODEL, JsonUtil.toJson(it)) }
                     record.yaml?.let { set(YAML, it) }
                     record.status?.let { set(STATUS, it.name) }
@@ -294,7 +291,6 @@ class PipelineTemplateResourceDao {
             srcTemplateVersion = this.srcTemplateVersion,
             draftSourceVersion = this.draftSourceVersion,
             params = this.params?.let { JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {}) },
-            originalModel = this.originalModel?.let { JsonUtil.to(it, ITemplateModel::class.java) },
             model = this.model?.let { JsonUtil.to(this.model, ITemplateModel::class.java) },
             yaml = this.yaml,
             status = VersionStatus.get(this.status),
