@@ -10,6 +10,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonConditi
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -136,6 +137,19 @@ class PipelineTemplateInfoDao {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
                 .fetchOne()?.convert()
+        }
+    }
+
+    fun getType2Count(
+        dslContext: DSLContext,
+        projectId: String
+    ): Map<String, Int> {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.select(TYPE, DSL.count())
+                .from(this)
+                .where(PROJECT_ID.eq(projectId))
+                .groupBy(TYPE)
+                .fetch().map { Pair(it.value1(), it.value2()) }.toMap()
         }
     }
 

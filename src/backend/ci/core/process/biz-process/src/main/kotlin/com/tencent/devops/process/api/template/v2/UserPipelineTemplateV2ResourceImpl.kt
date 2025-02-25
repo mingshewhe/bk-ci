@@ -143,6 +143,10 @@ class UserPipelineTemplateV2ResourceImpl(
         return Result(templateInfoService.get(projectId, templateId))
     }
 
+    override fun getType2Count(userId: String, projectId: String): Result<Map<String, Int>> {
+        return Result(templateInfoService.getType2Count(projectId))
+    }
+
     override fun getTemplateVersions(
         userId: String,
         projectId: String,

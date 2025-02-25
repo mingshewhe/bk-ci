@@ -128,6 +128,18 @@ interface UserPipelineTemplateV2Resource {
         templateId: String
     ): Result<PipelineTemplateInfo>
 
+    @Operation(summary = "获取项目模板类型对应的数量")
+    @GET
+    @Path("/getType2Count/")
+    fun getType2Count(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String
+    ): Result<Map<String, Int>>
+
     @Operation(summary = "查看模板的版本历史")
     @POST
     @Path("/{templateId}/versions/")

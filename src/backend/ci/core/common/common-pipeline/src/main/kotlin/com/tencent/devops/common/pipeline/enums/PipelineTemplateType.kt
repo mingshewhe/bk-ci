@@ -28,6 +28,7 @@
 package com.tencent.devops.common.pipeline.enums
 
 enum class PipelineTemplateType(val value: String) {
+    All("all"),
     PIPELINE("pipeline"),
     STAGE("stage"),
     JOB("job"),
