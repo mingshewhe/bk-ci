@@ -72,19 +72,18 @@ class PipelineTemplateResourceService @Autowired constructor(
         projectId: String,
         templateId: String
     ): PipelineTemplateResource? {
-        val draftVersionResource = pipelineTemplateResourceDao.get(
+        val draftBaseVersion = pipelineTemplateResourceDao.get(
             commonCondition = PipelineTemplateResourceCommonCondition(
                 projectId = projectId,
                 templateId = templateId,
                 status = VersionStatus.COMMITTING
             ),
             dslContext = dslContext
-        ) ?: return null
-        val baseVersion = draftVersionResource.baseVersion!!
+        )?.baseVersion ?: return null
         val baseVersionResource = get(
             projectId = projectId,
             templateId = templateId,
-            version = baseVersion
+            version = draftBaseVersion
         )
         return baseVersionResource
     }
