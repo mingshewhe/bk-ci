@@ -40,7 +40,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -101,7 +101,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         request: PipelineTemplateCommonCondition
-    ): Result<SQLPage<PipelineTemplateInfoWithPermission>> {
+    ): Result<SQLPage<PipelineTemplateInfo>> {
         logger.info("list template infos {}|{}|{}", userId, projectId, request)
         return Result(templateFacadeService.listTemplateInfos(userId, request))
     }
@@ -110,7 +110,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Long?
+        version: Long
     ): Result<PipelineTemplateDetailsResponse> {
         logger.info("get template details {}|{}|{}|{}", userId, projectId, templateId, version)
         permissionService.checkPipelineTemplatePermissionWithMessage(
@@ -132,7 +132,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String
-    ): Result<PipelineTemplateInfo> {
+    ): Result<PipelineTemplateInfoResponse> {
         logger.info("get template info {}|{}|{}", userId, projectId, templateId)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -140,7 +140,13 @@ class UserPipelineTemplateV2ResourceImpl(
             permission = AuthPermission.VIEW,
             templateId = templateId
         )
-        return Result(templateInfoService.get(projectId, templateId))
+        return Result(
+            templateFacadeService.getTemplateInfo(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId
+            )
+        )
     }
 
     override fun getType2Count(userId: String, projectId: String): Result<Map<String, Int>> {
@@ -167,7 +173,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        baseVersion: Long?,
+        baseVersion: Long,
         comparedVersion: Long
     ): Result<PipelineTemplateCompareResponse> {
         logger.info("compare template {}|{}|{}|{}|{}", userId, projectId, templateId, baseVersion, comparedVersion)
@@ -191,7 +197,8 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         srcTemplateId: String,
-        copySetting: Boolean
+        copySetting: Boolean,
+        name: String
     ): Result<String> {
         logger.info("copy template {}|{}|{}|{}", userId, projectId, srcTemplateId, copySetting)
         permissionService.checkPipelineTemplatePermissionWithMessage(
@@ -205,7 +212,8 @@ class UserPipelineTemplateV2ResourceImpl(
                 userId = userId,
                 projectId = projectId,
                 srcTemplateId = srcTemplateId,
-                copySetting = copySetting
+                copySetting = copySetting,
+                name = name
             )
         )
     }

@@ -13,7 +13,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -93,11 +93,11 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateCommonCondition
-    ): Result<SQLPage<PipelineTemplateInfoWithPermission>>
+    ): Result<SQLPage<PipelineTemplateInfo>>
 
     @Operation(summary = "查看模板详情")
     @GET
-    @Path("/{templateId}/details/")
+    @Path("/{templateId}/{version}/details/")
     fun getTemplateDetails(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -109,8 +109,8 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("templateId")
         templateId: String,
         @Parameter(description = "版本", required = false)
-        @QueryParam("version")
-        version: Long?
+        @PathParam("version")
+        version: Long
     ): Result<PipelineTemplateDetailsResponse>
 
     @Operation(summary = "查看模板基本信息")
@@ -126,7 +126,7 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "模板ID", required = true)
         @PathParam("templateId")
         templateId: String
-    ): Result<PipelineTemplateInfo>
+    ): Result<PipelineTemplateInfoResponse>
 
     @Operation(summary = "获取项目模板类型对应的数量")
     @GET
@@ -172,7 +172,7 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "基准版本", required = false)
         @QueryParam("baseVersion")
-        baseVersion: Long?,
+        baseVersion: Long,
         @Parameter(description = "比较版本", required = false)
         @QueryParam("comparedVersion")
         comparedVersion: Long
@@ -193,7 +193,10 @@ interface UserPipelineTemplateV2Resource {
         srcTemplateId: String,
         @Parameter(description = "是否同步配置", required = false)
         @QueryParam("copySetting")
-        copySetting: Boolean
+        copySetting: Boolean,
+        @Parameter(description = "模板名称", required = false)
+        @QueryParam("name")
+        name: String
     ): Result<String>
 
     @Operation(summary = "是否有模板特定权限")

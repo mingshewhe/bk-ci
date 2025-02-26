@@ -1,12 +1,12 @@
 package com.tencent.devops.process.dao.template
 
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -32,10 +32,10 @@ class PipelineTemplateInfoDao {
                 TYPE,
                 LOGO_URL,
                 PAC,
-                LATEST_VERSION,
+                RELEASED_VERSION,
+                RELEASED_VERSION_NAME,
+                RELEASED_SETTING_VERSION,
                 LATEST_VERSION_STATUS,
-                LATEST_VERSION_NAME,
-                LATEST_SETTING_VERSION,
                 SOURCE,
                 STORE_FLAG,
                 SRC_TEMPLATE_ID,
@@ -54,10 +54,10 @@ class PipelineTemplateInfoDao {
                 record.type.value,
                 record.logoUrl,
                 record.enablePac,
-                record.latestVersion,
+                record.releasedVersion,
+                record.releasedVersionName,
+                record.releasedSettingVersion,
                 record.latestVersionStatus.name,
-                record.latestVersionName,
-                record.latestSettingVersion,
                 record.source.value,
                 record.storeFlag,
                 record.srcTemplateId,
@@ -84,13 +84,13 @@ class PipelineTemplateInfoDao {
                     record.category?.let { set(CATEGORY, it) }
                     record.logoUrl?.let { set(LOGO_URL, it) }
                     record.enablePac?.let { set(PAC, it) }
-                    record.latestVersion?.let { set(LATEST_VERSION, it) }
-                    record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
-                    record.latestVersionName?.let { set(LATEST_VERSION_NAME, it) }
-                    record.latestSettingVersion?.let { set(LATEST_SETTING_VERSION, it) }
+                    record.releasedVersion?.let { set(RELEASED_VERSION, it) }
+                    record.releasedVersionName?.let { set(RELEASED_VERSION_NAME, it) }
+                    record.releasedSettingVersion?.let { set(RELEASED_SETTING_VERSION, it) }
                     record.storeFlag?.let { set(STORE_FLAG, it) }
                     record.debugPipelineCount?.let { set(DEBUG_PIPELINE_COUNT, it) }
                     record.instancePipelineCount?.let { set(INSTANCE_PIPELINE_COUNT, it) }
+                    record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
                 }
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, now)
@@ -189,10 +189,9 @@ class PipelineTemplateInfoDao {
                 if (exactSearchName != null && exactSearchName!!.isNotBlank()) conditions.add(NAME.eq(exactSearchName))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (enablePac != null) conditions.add(PAC.eq(enablePac))
-                if (latestVersion != null) conditions.add(LATEST_VERSION.eq(latestVersion))
-                if (latestVersionStatus != null) conditions.add(LATEST_VERSION_STATUS.eq(latestVersionStatus!!.name))
-                if (latestVersionName != null) conditions.add(LATEST_VERSION_NAME.eq(latestVersionName))
-                if (latestSettingVersion != null) conditions.add(LATEST_SETTING_VERSION.eq(latestSettingVersion))
+                if (releasedVersion != null) conditions.add(RELEASED_VERSION.eq(releasedVersion))
+                if (releasedVersionName != null) conditions.add(RELEASED_VERSION_NAME.eq(releasedVersionName))
+                if (releasedSettingVersion != null) conditions.add(RELEASED_SETTING_VERSION.eq(releasedSettingVersion))
                 if (source != null) conditions.add(SOURCE.eq(source!!.value))
                 if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
@@ -202,6 +201,7 @@ class PipelineTemplateInfoDao {
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
                 if (!filterTemplateIds.isNullOrEmpty()) conditions.add(ID.`in`(filterTemplateIds))
+                if (latestVersionStatus != null) conditions.add(LATEST_VERSION_STATUS.eq(latestVersionStatus!!.name))
                 conditions
             }
         }
@@ -219,10 +219,10 @@ class PipelineTemplateInfoDao {
             type = PipelineTemplateType.get(this.type),
             logoUrl = this.logoUrl,
             enablePac = this.pac,
-            latestVersion = this.latestVersion,
+            releasedVersion = this.releasedVersion,
+            releasedVersionName = releasedVersionName,
+            releasedSettingVersion = this.releasedSettingVersion,
             latestVersionStatus = VersionStatus.get(this.latestVersionStatus),
-            latestVersionName = this.latestVersionName,
-            latestSettingVersion = this.latestSettingVersion,
             source = source,
             sourceName = PipelineTemplateSource.getSourceName(source),
             storeFlag = this.storeFlag,

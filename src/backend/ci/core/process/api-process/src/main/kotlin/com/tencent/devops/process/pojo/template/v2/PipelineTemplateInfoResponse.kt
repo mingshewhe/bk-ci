@@ -1,13 +1,16 @@
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 @Schema(title = "流水线模板基础信息")
-data class PipelineTemplateInfo(
+data class PipelineTemplateInfoResponse(
+    /*基本信息相关*/
     @get:Schema(title = "模板ID", required = true)
     val id: String,
     @get:Schema(title = "项目ID", required = true)
@@ -26,14 +29,6 @@ data class PipelineTemplateInfo(
     val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
-    @get:Schema(title = "最新发布版本号", required = true)
-    val releasedVersion: Long? = null,
-    @get:Schema(title = "最新发布版本名称", required = false)
-    val releasedVersionName: String? = null,
-    @get:Schema(title = "最新发布配置版本号", required = false)
-    val releasedSettingVersion: Int? = null,
-    @get:Schema(title = "模板状态", required = false)
-    val latestVersionStatus: VersionStatus,
     @get:Schema(title = "模板来源", required = true)
     val source: PipelineTemplateSource,
     @get:Schema(title = "来源名称", required = true)
@@ -56,10 +51,36 @@ data class PipelineTemplateInfo(
     val createdTime: LocalDateTime? = null,
     @get:Schema(title = "更新人", required = false)
     val updateTime: LocalDateTime? = null,
+    /*权限相关*/
     @get:Schema(title = "是否有模版查看权限", required = true)
     val canView: Boolean? = null,
     @get:Schema(title = "是否有模版编辑权限", required = true)
     val canEdit: Boolean? = null,
     @get:Schema(title = "是否有模版删除权限", required = true)
-    val canDelete: Boolean? = null
+    val canDelete: Boolean? = null,
+    /*版本状态相关*/
+    @get:Schema(title = "是否可以发布")
+    val canRelease: Boolean,
+    @get:Schema(title = "用于前端交互的版本号")
+    val version: Long?,
+    @get:Schema(title = "用于前端交互的版本名称")
+    val versionName: String?,
+    @get:Schema(title = "草稿的基准版本（存在草稿才有值）", required = false)
+    val baseVersion: Long?,
+    @get:Schema(title = "草稿的基准版本的状态（存在草稿才有值）", required = false)
+    val baseVersionStatus: VersionStatus?,
+    @get:Schema(title = "基准版本的版本名称")
+    val baseVersionName: String?,
+    @get:Schema(title = "最新的发布版本，如果为空则说明没有过发布版本")
+    val releaseVersion: Long?,
+    @get:Schema(title = "最新的发布版本名称，如果为空则说明没有过发布版本")
+    val releaseVersionName: String?,
+    @get:Schema(title = "最新流水线版本状态（如有任何发布版本则为发布版本）", required = false)
+    var latestVersionStatus: VersionStatus? = VersionStatus.RELEASED,
+    @get:Schema(title = "PAC配置", required = false)
+    val pipelineAsCodeSettings: PipelineAsCodeSettings?,
+    @get:Schema(title = "流水线YAML信息", required = false)
+    val yamlInfo: PipelineYamlVo?,
+    @get:Schema(title = "yaml文件在默认分支是否存在", required = false)
+    var yamlExist: Boolean? = false
 )

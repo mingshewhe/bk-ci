@@ -43,7 +43,7 @@ class PipelineTemplateResourceDao {
                 SRC_TEMPLATE_VERSION,
                 MODEL_VERSION,
                 TRIGGER_VERSION,
-                DRAFT_SOURCE_VERSION,
+                BASE_VERSION,
                 PARAMS,
                 MODEL,
                 YAML,
@@ -70,7 +70,7 @@ class PipelineTemplateResourceDao {
                 record.srcTemplateVersion,
                 record.modelVersion,
                 record.triggerVersion,
-                record.draftSourceVersion,
+                record.baseVersion,
                 record.params?.let { JsonUtil.toJson(it) },
                 record.model?.let { JsonUtil.toJson(it) },
                 record.yaml,
@@ -101,7 +101,7 @@ class PipelineTemplateResourceDao {
                     record.versionNum?.let { set(VERSION_NUM, it) }
                     record.modelVersion?.let { set(MODEL_VERSION, it) }
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
-                    record.draftSourceVersion?.let { set(DRAFT_SOURCE_VERSION, it) }
+                    record.baseVersion?.let { set(BASE_VERSION, it) }
                     record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
                     record.model?.let { set(MODEL, JsonUtil.toJson(it)) }
                     record.yaml?.let { set(YAML, it) }
@@ -184,7 +184,7 @@ class PipelineTemplateResourceDao {
                 VERSION_NUM,
                 MODEL_VERSION,
                 TRIGGER_VERSION,
-                DRAFT_SOURCE_VERSION,
+                BASE_VERSION,
                 STATUS,
                 RELEASE_COMMENT,
                 CREATOR,
@@ -220,12 +220,14 @@ class PipelineTemplateResourceDao {
     fun getLatestRecord(
         dslContext: DSLContext,
         projectId: String,
-        templateId: String
+        templateId: String,
+        status: VersionStatus
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
                 .where(PROJECT_ID.eq(projectId))
                 .and(TEMPLATE_ID.eq(templateId))
+                .and(STATUS.eq(status.name))
                 .orderBy(NUMBER.desc())
                 .fetchOne()?.convert()
         }
@@ -256,7 +258,7 @@ class PipelineTemplateResourceDao {
                 if (versionNum != null) conditions.add(VERSION_NUM.eq(versionNum))
                 if (modelVersion != null) conditions.add(MODEL_VERSION.eq(modelVersion))
                 if (triggerVersion != null) conditions.add(TRIGGER_VERSION.eq(triggerVersion))
-                if (draftSourceVersion != null) conditions.add(DRAFT_SOURCE_VERSION.eq(draftSourceVersion))
+                if (baseVersion != null) conditions.add(BASE_VERSION.eq(baseVersion))
                 if (status != null) conditions.add(STATUS.eq(status!!.name))
                 if (branchAction != null) conditions.add(BRANCH_ACTION.eq(branchAction!!.name))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
@@ -289,7 +291,7 @@ class PipelineTemplateResourceDao {
             srcTemplateProjectId = this.srcTemplateProjectId,
             srcTemplateId = this.srcTemplateId,
             srcTemplateVersion = this.srcTemplateVersion,
-            draftSourceVersion = this.draftSourceVersion,
+            baseVersion = this.baseVersion,
             params = this.params?.let { JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {}) },
             model = this.model?.let { JsonUtil.to(this.model, ITemplateModel::class.java) },
             yaml = this.yaml,

@@ -12,7 +12,7 @@ data class PipelineTemplateDraftSaveReq(
     @get:Schema(title = "模板Id", required = true)
     val templateId: String,
     @get:Schema(title = "草稿源版本", required = true)
-    val draftSourceVersion: Long,
+    val baseVersion: Long,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
     @get:Schema(title = "简介", required = false)

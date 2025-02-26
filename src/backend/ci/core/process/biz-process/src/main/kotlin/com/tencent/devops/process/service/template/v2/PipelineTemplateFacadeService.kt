@@ -3,16 +3,17 @@ package com.tencent.devops.process.service.template.v2
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
@@ -22,7 +23,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoWithPermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
@@ -93,12 +94,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CUSTOMIZE.name,
             type = request.type,
             enablePac = false,
-            latestVersion = version,
-            latestVersionStatus = VersionStatus.COMMITTING,
-            latestSettingVersion = settingVersion,
             source = PipelineTemplateSource.CUSTOM,
             storeFlag = false,
-            creator = request.creator
+            creator = request.creator,
+            latestVersionStatus = VersionStatus.COMMITTING
         )
 
         val pipelineTemplateResource = PipelineTemplateResource(
@@ -168,17 +167,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CONSTRAINT.name,
             type = marketTemplateInfo.type,
             enablePac = false,
-            latestVersion = version,
-            latestVersionStatus = VersionStatus.RELEASED,
-            latestVersionName = marketTemplateInfo.latestVersionName,
-            latestSettingVersion = settingVersion,
+            releasedVersion = version,
+            releasedVersionName = marketTemplateInfo.releasedVersionName,
+            releasedSettingVersion = settingVersion,
             source = PipelineTemplateSource.MARKET,
             storeFlag = true,
             creator = request.creator,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
             category = marketTemplateDetails.classifyCode,
-            logoUrl = marketTemplateDetails.logoUrl
+            logoUrl = marketTemplateDetails.logoUrl,
+            latestVersionStatus = VersionStatus.RELEASED
         )
         val templateResource = PipelineTemplateResource(
             projectId = request.projectId,
@@ -242,12 +241,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             mode = TemplateType.CUSTOMIZE.name,
             type = request.type,
             enablePac = false,
-            latestVersion = version,
-            latestVersionStatus = VersionStatus.COMMITTING,
-            latestSettingVersion = settingVersion,
             source = PipelineTemplateSource.YAML,
             storeFlag = false,
-            creator = request.creator
+            creator = request.creator,
+            latestVersionStatus = VersionStatus.COMMITTING
         )
 
         val pipelineTemplateResource = PipelineTemplateResource(
@@ -403,21 +400,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = request.projectId,
             templateId = request.templateId
         )
-        val version: Long
         // todo yaml方式 或者 model方式
         var newYaml = ""
 
-        val isTemplateExistDraft = pipelineTemplateResourceService.count(
-            PipelineTemplateResourceCommonCondition(
-                projectId = request.projectId,
-                templateId = request.templateId,
-                status = VersionStatus.COMMITTING
-            )
-        ) > 0
+        val isExistDraft = pipelineTemplateResourceService.getDraftVersionResource(
+            projectId = request.projectId,
+            templateId = request.templateId
+        ) != null
 
         // todo 检查模型，模板参数，配置检查
 
-        if (isTemplateExistDraft) {
+        val version = if (isExistDraft) {
             // 若存在草稿，则在原草稿版本上更新
             val draftVersionResource = pipelineTemplateResourceService.get(
                 PipelineTemplateResourceCommonCondition(
@@ -426,7 +419,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     status = VersionStatus.COMMITTING
                 )
             )
-            version = draftVersionResource.version
             val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
                 name = request.name,
                 desc = request.desc,
@@ -458,13 +450,19 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     )
                 }
             }
+            draftVersionResource.version
         } else {
-            // 若不存在草稿版本，则基于某个正式版本进行创建新版本草稿
-            val latestTemplateResource = pipelineTemplateResourceService.getLatestTemplateResource(
+            // 若不存在草稿版本，则基于版本进行创建新版本草稿
+            val latestTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
                 projectId = request.projectId,
                 templateId = request.templateId
             )
-            version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+            val baseVersionResource = pipelineTemplateResourceService.get(
+                projectId = request.projectId,
+                templateId = request.templateId,
+                version = request.baseVersion
+            )
+
             val pipelineTemplateResource = PipelineTemplateResource(
                 projectId = request.projectId,
                 templateId = request.templateId,
@@ -472,9 +470,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 desc = request.desc,
                 type = templateInfo.type,
                 settingVersion = latestTemplateResource.settingVersion?.let { it + 1 },
-                version = version,
+                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
                 number = latestTemplateResource.number + 1,
-                draftSourceVersion = request.draftSourceVersion,
+                baseVersion = baseVersionResource.version,
                 params = request.params,
                 model = request.model,
                 yaml = request.yaml,
@@ -493,11 +491,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             } else {
                 null
             }
-
             saveTemplate(
                 pipelineTemplateSetting = pipelineTemplateSetting,
                 pipelineTemplateResource = pipelineTemplateResource
             )
+            pipelineTemplateResource.version
         }
         return version
     }
@@ -506,7 +504,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun listTemplateInfos(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): SQLPage<PipelineTemplateInfoWithPermission> {
+    ): SQLPage<PipelineTemplateInfo> {
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
 
@@ -531,8 +529,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val count = pipelineTemplateInfoService.count(queryCondition)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
-                PipelineTemplateInfoWithPermission.buildTemplateInfoWithPermission(
-                    templateInfo = templateInfo,
+                templateInfo.copy(
                     canView = permission2TemplatesMap[AuthPermission.VIEW]?.contains(templateInfo.id) ?: false,
                     canEdit = permission2TemplatesMap[AuthPermission.EDIT]?.contains(templateInfo.id) ?: false,
                     canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(templateInfo.id) ?: false
@@ -545,8 +542,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
-                PipelineTemplateInfoWithPermission.buildTemplateInfoWithPermission(
-                    templateInfo = templateInfo,
+                templateInfo.copy(
                     canView = isProjectManager,
                     canEdit = isProjectManager,
                     canDelete = isProjectManager
@@ -565,16 +561,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateDetails(
         projectId: String,
         templateId: String,
-        version: Long?
+        version: Long
     ): PipelineTemplateDetailsResponse {
-        val templateInfo = pipelineTemplateInfoService.get(
-            projectId = projectId,
-            templateId = templateId
-        )
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = version ?: templateInfo.latestVersion
+            version = version
         )
         val setting = templateResource.settingVersion?.let {
             pipelineTemplateSettingService.get(
@@ -584,9 +576,81 @@ class PipelineTemplateFacadeService @Autowired constructor(
             )
         }
         return PipelineTemplateDetailsResponse(
-            basicInfo = templateInfo,
             resource = templateResource,
             setting = setting
+        )
+    }
+
+    fun getTemplateInfo(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateInfoResponse {
+        val basicInfo = pipelineTemplateInfoService.get(projectId, templateId)
+        val draftVersionResource = pipelineTemplateResourceService.getDraftVersionResource(projectId, templateId)
+        val draftBaseVersionResource = pipelineTemplateResourceService.getDraftBaseVersionResource(
+            projectId = projectId, templateId = templateId
+        )
+        // 配合前端的展示需要，version有以下几种情况的返回值：
+        // 1 发布过且有草稿：version取草稿的版本号
+        // 2 发布过且有分支版本：version取最新正式的版本号
+        // 3 未发布过仅有草稿版本：version取草稿的版本号
+        // 4 未发布过仅有分支版本：version取最新的分支版本号
+        var versionName = basicInfo.releasedVersionName
+        val version = when (basicInfo.latestVersionStatus) {
+            VersionStatus.COMMITTING -> {
+                draftVersionResource?.version
+            }
+
+            VersionStatus.BRANCH -> {
+                val latestBranchResource = pipelineTemplateResourceService.getLatestBranchResource(
+                    projectId = projectId, templateId = templateId
+                )
+                versionName = latestBranchResource?.versionName
+                latestBranchResource?.version
+            }
+
+            else -> {
+                draftVersionResource?.version
+            }
+        } ?: basicInfo.releasedVersion
+
+        return PipelineTemplateInfoResponse(
+            id = basicInfo.id,
+            projectId = basicInfo.projectId,
+            name = basicInfo.name,
+            desc = basicInfo.desc,
+            mode = basicInfo.mode,
+            category = basicInfo.category,
+            type = basicInfo.type,
+            logoUrl = basicInfo.logoUrl,
+            enablePac = basicInfo.enablePac,
+            source = basicInfo.source,
+            sourceName = basicInfo.sourceName,
+            storeFlag = basicInfo.storeFlag,
+            srcTemplateId = basicInfo.srcTemplateId,
+            srcTemplateProjectId = basicInfo.srcTemplateProjectId,
+            debugPipelineCount = basicInfo.debugPipelineCount,
+            instancePipelineCount = basicInfo.instancePipelineCount,
+            creator = basicInfo.creator,
+            updater = basicInfo.updater,
+            createdTime = basicInfo.createdTime,
+            updateTime = basicInfo.updateTime,
+            canRelease = draftVersionResource?.model != null,
+            version = version,
+            versionName = versionName,
+            baseVersion = draftBaseVersionResource?.version,
+            baseVersionName = draftBaseVersionResource?.versionName,
+            baseVersionStatus = draftBaseVersionResource?.status,
+            releaseVersion = basicInfo.releasedVersion,
+            releaseVersionName = basicInfo.releasedVersionName,
+            latestVersionStatus = basicInfo.latestVersionStatus,
+            pipelineAsCodeSettings = PipelineAsCodeSettings(
+                enable = basicInfo.enablePac
+            ),
+            // todo 补充
+            yamlInfo = null,
+            yamlExist = false
         )
     }
 
@@ -608,7 +672,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun compare(
         projectId: String,
         templateId: String,
-        baseVersion: Long?,
+        baseVersion: Long,
         comparedVersion: Long
     ): PipelineTemplateCompareResponse {
         val templateInfo = pipelineTemplateInfoService.get(
@@ -618,7 +682,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val baseVersionResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = baseVersion ?: templateInfo.latestVersion
+            version = baseVersion
         )
         val comparedVersionResource = pipelineTemplateResourceService.get(
             projectId = projectId,
@@ -636,21 +700,26 @@ class PipelineTemplateFacadeService @Autowired constructor(
         userId: String,
         projectId: String,
         srcTemplateId: String,
-        copySetting: Boolean
+        copySetting: Boolean,
+        name: String
     ): String {
         val srcTemplateInfo = pipelineTemplateInfoService.get(
             projectId = projectId,
             templateId = srcTemplateId
         )
-        val templateName = srcTemplateInfo.name.plus("_copy")
+        // todo 校验是否有正式版本
+        if (srcTemplateInfo.releasedVersion == null) {
+            throw ErrorCodeException(errorCode = "")
+        }
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = projectId,
-            name = templateName
+            name = name
         )
+        // todo 校验是否有正式版本
         val srcTemplateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = srcTemplateId,
-            version = srcTemplateInfo.latestVersion
+            version = srcTemplateInfo.releasedVersion!!
         )
         val templateId = UUIDUtil.generate()
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
@@ -659,7 +728,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val srcTemplateSetting = pipelineTemplateSettingService.get(
                 projectId = projectId,
                 templateId = srcTemplateId,
-                settingVersion = srcTemplateInfo.latestSettingVersion!!
+                settingVersion = srcTemplateInfo.releasedSettingVersion!!
             ) ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
             val setting = srcTemplateSetting.copy(
                 templateId = templateId,
@@ -675,26 +744,26 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateInfo = PipelineTemplateInfo(
             id = templateId,
             projectId = projectId,
-            name = templateName,
+            name = name,
             desc = srcTemplateInfo.desc,
             mode = srcTemplateInfo.mode,
             category = srcTemplateInfo.category,
             type = srcTemplateInfo.type,
             logoUrl = srcTemplateInfo.logoUrl,
             enablePac = srcTemplateInfo.enablePac,
-            latestVersion = version,
-            latestVersionStatus = VersionStatus.RELEASED,
-            latestVersionName = "V1(P1.T1.1)",
-            latestSettingVersion = settingVersion,
+            releasedVersion = version,
+            releasedVersionName = "V1(P1.T1.1)",
+            releasedSettingVersion = settingVersion,
             source = srcTemplateInfo.source,
             storeFlag = srcTemplateInfo.storeFlag,
-            creator = userId
+            creator = userId,
+            latestVersionStatus = VersionStatus.RELEASED
         )
 
         val templateResource = srcTemplateResource.copy(
             projectId = projectId,
             templateId = templateId,
-            name = templateName,
+            name = name,
             settingVersion = settingVersion,
             version = version,
             number = 1,
@@ -709,7 +778,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val pipelineTemplatePermission = PipelineTemplatePermission(
             projectId = projectId,
             id = templateId,
-            name = templateName,
+            name = name,
             creator = userId
         )
         saveTemplate(

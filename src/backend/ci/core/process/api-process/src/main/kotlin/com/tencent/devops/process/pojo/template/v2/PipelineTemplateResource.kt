@@ -68,7 +68,7 @@ data class PipelineTemplateResource(
     @get:Schema(title = "源模板版本", required = false)
     val srcTemplateVersion: Long? = null,
     @get:Schema(title = "草稿来源版本", required = false)
-    val draftSourceVersion: Long? = null,
+    val baseVersion: Long? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "编排", required = false)

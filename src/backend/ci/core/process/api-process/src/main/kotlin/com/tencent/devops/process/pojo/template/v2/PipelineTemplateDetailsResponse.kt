@@ -31,8 +31,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版详情")
 data class PipelineTemplateDetailsResponse(
-    @get:Schema(title = "模板基本信息", required = true)
-    val basicInfo: PipelineTemplateInfo,
     @get:Schema(title = "模板模型信息", required = true)
     val resource: PipelineTemplateResource,
     @get:Schema(title = "模板配置信息", required = true)

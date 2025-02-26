@@ -1,13 +1,13 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -32,15 +32,61 @@ class PipelineTemplateResourceService @Autowired constructor(
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
-    fun getLatestTemplateResource(
+    fun getLatestReleasedResource(
         projectId: String,
         templateId: String
     ): PipelineTemplateResource {
         return pipelineTemplateResourceDao.getLatestRecord(
             dslContext = dslContext,
             projectId = projectId,
-            templateId = templateId
+            templateId = templateId,
+            status = VersionStatus.RELEASED
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+    }
+
+    fun getLatestBranchResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            status = VersionStatus.RELEASED
+        )
+    }
+
+    fun getDraftVersionResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            status = VersionStatus.COMMITTING
+        )
+    }
+
+    fun getDraftBaseVersionResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        val draftVersionResource = pipelineTemplateResourceDao.get(
+            commonCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                status = VersionStatus.COMMITTING
+            ),
+            dslContext = dslContext
+        ) ?: return null
+        val baseVersion = draftVersionResource.baseVersion!!
+        val baseVersionResource = get(
+            projectId = projectId,
+            templateId = templateId,
+            version = baseVersion
+        )
+        return baseVersionResource
     }
 
     fun getTemplateVersions(
