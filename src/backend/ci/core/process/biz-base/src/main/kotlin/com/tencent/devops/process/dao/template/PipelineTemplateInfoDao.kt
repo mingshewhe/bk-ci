@@ -1,5 +1,6 @@
 package com.tencent.devops.process.dao.template
 
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
@@ -232,8 +233,8 @@ class PipelineTemplateInfoDao {
             instancePipelineCount = this.instancePipelineCount,
             creator = this.creator,
             updater = this.updater,
-            createdTime = this.createdTime,
-            updateTime = this.updateTime
+            createdTime = this.createdTime.timestampmilli(),
+            updateTime = this.updateTime.timestampmilli()
         )
     }
 }

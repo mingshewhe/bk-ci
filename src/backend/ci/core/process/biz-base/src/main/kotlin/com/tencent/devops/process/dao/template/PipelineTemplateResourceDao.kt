@@ -300,7 +300,7 @@ class PipelineTemplateResourceDao {
             releaseComment = this.releaseComment,
             creator = this.creator,
             updater = this.updater,
-            releaseTime = this.releaseTime,
+            releaseTime = this.releaseTime.timestampmilli(),
             sortWeight = this.sortWeight
         )
     }

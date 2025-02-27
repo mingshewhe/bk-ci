@@ -5,8 +5,10 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.UUIDUtil
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -27,6 +29,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -59,7 +62,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val dslContext: DSLContext,
-    private val client: Client
+    private val client: Client,
+    private val pipelineTemplateRelatedService: PipelineTemplateRelatedService
 ) {
     fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
         logger.info("$userId create template in project ${request.projectId} by ${request.source} ,body is {}", request)
@@ -346,7 +350,25 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        // todo 校验该模板是否已经有实例化的流水线，若有的话，不允许直接删除
+        val isTemplateExistInstances = pipelineTemplateRelatedService.isTemplateExistInstances(
+            projectId = projectId,
+            templateId = templateId
+        )
+
+        if (isTemplateExistInstances) {
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
+            )
+        }
+
+        pipelineTemplateRelatedService.count(
+            condition = PipelineTemplateRelatedCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
+            )
+        )
+
         if (templateInfo.mode == TemplateType.CUSTOMIZE.name && templateInfo.storeFlag) {
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_PUBLISH
@@ -366,7 +388,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         }
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            // todo 删除模板与流水线实例关联表数据
+            pipelineTemplateRelatedService.delete(
+                transactionContext = context,
+                condition = PipelineTemplateRelatedCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
             pipelineTemplateInfoService.delete(
                 transactionContext = context,
                 commonCondition = PipelineTemplateCommonCondition(
@@ -716,15 +744,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = srcTemplateId
         )
-        // todo 校验是否有正式版本
-        if (srcTemplateInfo.releasedVersion == null) {
+        if (srcTemplateInfo.latestVersionStatus != VersionStatus.RELEASED) {
+            // todo 错误码
             throw ErrorCodeException(errorCode = "")
         }
+
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = projectId,
             name = name
         )
-        // todo 校验是否有正式版本
         val srcTemplateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = srcTemplateId,
@@ -781,7 +809,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             modelVersion = 1,
             triggerVersion = 1,
             creator = userId,
-            releaseTime = LocalDateTime.now()
+            releaseTime = LocalDateTime.now().timestampmilli()
         )
 
         val pipelineTemplatePermission = PipelineTemplatePermission(

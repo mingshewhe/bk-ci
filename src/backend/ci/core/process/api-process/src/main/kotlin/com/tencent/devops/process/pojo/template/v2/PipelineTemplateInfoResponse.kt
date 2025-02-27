@@ -48,9 +48,9 @@ data class PipelineTemplateInfoResponse(
     @get:Schema(title = "更新人", required = false)
     val updater: String? = null,
     @get:Schema(title = "更新人", required = false)
-    val createdTime: LocalDateTime? = null,
+    val createdTime: Long? = null,
     @get:Schema(title = "更新人", required = false)
-    val updateTime: LocalDateTime? = null,
+    val updateTime: Long? = null,
     /*权限相关*/
     @get:Schema(title = "是否有模版查看权限", required = true)
     val canView: Boolean? = null,
