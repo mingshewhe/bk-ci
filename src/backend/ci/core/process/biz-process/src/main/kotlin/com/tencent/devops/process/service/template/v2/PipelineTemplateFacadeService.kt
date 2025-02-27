@@ -86,6 +86,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             creator = request.creator
         )
+        val defaultTemplateModel = pipelineTemplateModelParser.getDefaultTemplateModel(
+            name = request.name,
+            type = request.type,
+            userId = request.creator
+        )
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
             projectId = request.projectId,
@@ -109,7 +114,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             settingVersion = settingVersion,
             version = version,
             number = 1,
-            model = null,
+            model = defaultTemplateModel,
             yaml = null,
             creator = request.creator,
             status = VersionStatus.COMMITTING

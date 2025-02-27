@@ -38,6 +38,7 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -174,5 +175,21 @@ class PipelineTemplateModelParser @Autowired constructor(
             )
         }
         return templateModel.container.elements
+    }
+
+    fun getDefaultTemplateModel(
+        name: String,
+        type: PipelineTemplateType,
+        userId: String
+    ): ITemplateModel {
+        return when (type) {
+            PipelineTemplateType.PIPELINE -> Model.defaultModel(name, userId)
+            PipelineTemplateType.STAGE -> StageTemplateModel.defaultStageTemplate()
+            PipelineTemplateType.JOB -> JobTemplateModel.defaultJobTemplate()
+            PipelineTemplateType.STEP -> StepTemplateModel.defaultStepTemplate()
+            else -> {
+                throw ErrorCodeException(errorCode = "")
+            }
+        }
     }
 }

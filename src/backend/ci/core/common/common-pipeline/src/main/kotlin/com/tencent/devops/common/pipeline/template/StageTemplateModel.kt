@@ -37,5 +37,10 @@ data class StageTemplateModel(
 ) : ITemplateModel {
     companion object {
         const val classType = "stage"
+        fun defaultStageTemplate(): StageTemplateModel {
+            return StageTemplateModel(
+                stages = emptyList()
+            )
+        }
     }
 }

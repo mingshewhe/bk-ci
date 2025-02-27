@@ -59,7 +59,7 @@ class UserPipelineTemplateV2ResourceImpl(
     ): Result<String> {
         logger.info("create template {}|{}|{}", userId, projectId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
-            userId = userId,
+            userId = request.creator,
             projectId = projectId,
             permission = AuthPermission.CREATE
         )

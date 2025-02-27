@@ -37,5 +37,10 @@ data class JobTemplateModel(
 ) : ITemplateModel {
     companion object {
         const val classType = "job"
+        fun defaultJobTemplate(): JobTemplateModel {
+            return JobTemplateModel(
+                containers = emptyList()
+            )
+        }
     }
 }

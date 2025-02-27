@@ -28,6 +28,7 @@
 package com.tencent.devops.common.pipeline.template
 
 import com.tencent.devops.common.pipeline.container.Container
+import com.tencent.devops.common.pipeline.container.JobTemplateContainer
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "step模板模型")
@@ -36,5 +37,12 @@ data class StepTemplateModel(
 ) : ITemplateModel {
     companion object {
         const val classType = "step"
+        fun defaultStepTemplate(): StepTemplateModel {
+            return StepTemplateModel(
+                container = JobTemplateContainer(
+                    elements = emptyList()
+                )
+            )
+        }
     }
 }
