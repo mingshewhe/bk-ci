@@ -8,12 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class PipelineTemplateMarketCreateReq(
     @get:Schema(title = "项目ID", required = true)
     override val projectId: String,
-    @get:Schema(title = "创建人", required = true)
-    override val creator: String,
     @get:Schema(title = "来源", required = true)
     override val source: PipelineTemplateSource,
-    @get:Schema(title = "类型", required = true)
-    override val type: PipelineTemplateType,
     @get:Schema(title = "研发商店模板ID", required = true)
     val marketTemplateId: String,
     @get:Schema(title = "研发商店模板项目ID", required = true)
@@ -22,9 +18,7 @@ data class PipelineTemplateMarketCreateReq(
     val marketTemplateVersion: Long
 ) : PipelineTemplateBasicCreateReq(
     projectId = projectId,
-    creator = creator,
-    source = source,
-    type = type
+    source = source
 ) {
     companion object {
         const val SOURCE = "MARKET"

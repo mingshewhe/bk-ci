@@ -59,11 +59,11 @@ class UserPipelineTemplateV2ResourceImpl(
     ): Result<String> {
         logger.info("create template {}|{}|{}", userId, projectId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
-            userId = request.creator,
+            userId = userId,
             projectId = projectId,
             permission = AuthPermission.CREATE
         )
-        return Result(templateFacadeService.createTemplate(request))
+        return Result(templateFacadeService.createTemplate(userId, request))
     }
 
     override fun delete(

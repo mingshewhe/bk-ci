@@ -1,21 +1,16 @@
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模板商店导入创建请求体")
+@Schema(title = "流水线YAML导入创建请求体")
 data class PipelineTemplateYamlCreateReq(
     @get:Schema(title = "项目ID", required = true)
     override val projectId: String,
-    @get:Schema(title = "创建人", required = true)
-    override val creator: String,
     @get:Schema(title = "来源", required = true)
     override val source: PipelineTemplateSource,
-    @get:Schema(title = "类型", required = true)
-    override val type: PipelineTemplateType,
     @get:Schema(title = "模板名称", required = true)
     val name: String,
     @get:Schema(title = "简介", required = false)
@@ -30,9 +25,7 @@ data class PipelineTemplateYamlCreateReq(
     val yaml: String
 ) : PipelineTemplateBasicCreateReq(
     projectId = projectId,
-    creator = creator,
-    source = source,
-    type = type
+    source = source
 ) {
     companion object {
         const val SOURCE = "YAML"

@@ -23,12 +23,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 open class PipelineTemplateBasicCreateReq(
     @get:Schema(title = "项目ID", required = true)
     open val projectId: String,
-    @get:Schema(title = "创建人", required = true)
-    open val creator: String,
     @get:Schema(title = "来源", required = true)
     open val source: PipelineTemplateSource,
-    @get:Schema(title = "模板类型", required = true)
-    open val type: PipelineTemplateType = PipelineTemplateType.UNKNOWN,
     @get:Schema(title = "模板Id", required = false)
     open var id: String? = null
 ) {

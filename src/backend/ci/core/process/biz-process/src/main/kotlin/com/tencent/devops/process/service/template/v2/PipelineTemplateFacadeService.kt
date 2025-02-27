@@ -60,20 +60,20 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client
 ) {
-    fun createTemplate(request: PipelineTemplateBasicCreateReq): String {
+    fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
         logger.info("create template in project ${request.projectId} by ${request.source} ,body is {}", request)
         val templateId = request.generateId()
         when (request) {
-            is PipelineTemplateCustomCreateReq -> createByCustom(request)
-            is PipelineTemplateMarketCreateReq -> createByMarket(request)
-            is PipelineTemplateYamlCreateReq -> createByYaml(request)
-            is PipelineTemplateRepositoryCreateReq -> createByRepository(request)
+            is PipelineTemplateCustomCreateReq -> createByCustom(userId, request)
+            is PipelineTemplateMarketCreateReq -> createByMarket(userId, request)
+            is PipelineTemplateYamlCreateReq -> createByYaml(userId, request)
+            is PipelineTemplateRepositoryCreateReq -> createByRepository(userId, request)
             else -> {}
         }
         return templateId
     }
 
-    private fun createByCustom(request: PipelineTemplateCustomCreateReq) {
+    private fun createByCustom(userId: String, request: PipelineTemplateCustomCreateReq) {
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = request.projectId,
             name = request.name
@@ -84,12 +84,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = request.type,
             projectId = request.projectId,
             templateId = templateId,
-            creator = request.creator
+            creator = userId
         )
         val defaultTemplateModel = pipelineTemplateModelParser.getDefaultTemplateModel(
             name = request.name,
             type = request.type,
-            userId = request.creator
+            userId = userId
         )
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
@@ -101,7 +101,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             enablePac = false,
             source = PipelineTemplateSource.CUSTOM,
             storeFlag = false,
-            creator = request.creator,
+            creator = userId,
             latestVersionStatus = VersionStatus.COMMITTING
         )
 
@@ -116,7 +116,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             number = 1,
             model = defaultTemplateModel,
             yaml = null,
-            creator = request.creator,
+            creator = userId,
             status = VersionStatus.COMMITTING
         )
 
@@ -124,7 +124,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = request.projectId,
             id = templateId,
             name = request.name,
-            creator = request.creator
+            creator = userId
         )
         saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
@@ -134,9 +134,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    private fun createByMarket(request: PipelineTemplateMarketCreateReq) {
+    private fun createByMarket(userId: String, request: PipelineTemplateMarketCreateReq) {
         val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
-            userId = request.creator,
+            userId = userId,
             templateCode = request.marketTemplateId
         ).data ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
         val marketTemplateInfo = pipelineTemplateInfoService.get(
@@ -153,15 +153,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 version = request.marketTemplateVersion
             )
         )
+        // todo 从研发商店中获取
+        val type = PipelineTemplateType.PIPELINE
 
         val templateId = request.id!!
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
 
         val (setting, settingVersion) = getDefaultSettingAndVersion(
-            type = request.type,
+            type = type,
             projectId = request.projectId,
             templateId = templateId,
-            creator = request.creator
+            creator = userId
         )
 
         val pipelineTemplateInfo = PipelineTemplateInfo(
@@ -177,7 +179,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             releasedSettingVersion = settingVersion,
             source = PipelineTemplateSource.MARKET,
             storeFlag = true,
-            creator = request.creator,
+            creator = userId,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
             category = marketTemplateDetails.classifyCode,
@@ -198,14 +200,14 @@ class PipelineTemplateFacadeService @Autowired constructor(
             srcTemplateVersion = marketTemplateResource.version,
             model = marketTemplateResource.model,
             yaml = marketTemplateResource.yaml,
-            creator = request.creator,
+            creator = userId,
             status = VersionStatus.RELEASED
         )
         val pipelineTemplatePermission = PipelineTemplatePermission(
             projectId = request.projectId,
             id = templateId,
             name = marketTemplateInfo.name,
-            creator = request.creator
+            creator = userId
         )
         saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
@@ -215,10 +217,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    private fun createByRepository(request: PipelineTemplateRepositoryCreateReq) {
+    private fun createByRepository(userId: String, request: PipelineTemplateRepositoryCreateReq) {
     }
 
-    private fun createByYaml(request: PipelineTemplateYamlCreateReq) {
+    private fun createByYaml(userId: String, request: PipelineTemplateYamlCreateReq) {
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
         // TODO 校验
         pipelineTemplateCommonService.checkTemplateBasicInfo(
@@ -237,6 +239,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         } else {
             Pair(null, null)
         }
+        val type = PipelineTemplateType.PIPELINE
 
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
@@ -244,11 +247,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = request.name,
             desc = request.desc,
             mode = TemplateType.CUSTOMIZE.name,
-            type = request.type,
+            type = type,
             enablePac = false,
             source = PipelineTemplateSource.YAML,
             storeFlag = false,
-            creator = request.creator,
+            creator = userId,
             latestVersionStatus = VersionStatus.COMMITTING
         )
 
@@ -258,20 +261,20 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = request.name,
             desc = request.desc,
             settingVersion = settingVersion,
-            type = request.type,
+            type = type,
             version = version,
             number = 1,
             params = request.params,
             model = request.model,
             yaml = request.yaml,
             status = VersionStatus.COMMITTING,
-            creator = request.creator
+            creator = userId
         )
         val pipelineTemplatePermission = PipelineTemplatePermission(
             projectId = request.projectId,
             id = templateId,
             name = request.name,
-            creator = request.creator
+            creator = userId
         )
         saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
