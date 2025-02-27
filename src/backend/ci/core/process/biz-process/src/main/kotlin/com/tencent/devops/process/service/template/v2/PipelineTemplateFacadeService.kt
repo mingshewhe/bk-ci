@@ -8,6 +8,7 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -61,7 +62,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val client: Client
 ) {
     fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
-        logger.info("create template in project ${request.projectId} by ${request.source} ,body is {}", request)
+        logger.info("$userId create template in project ${request.projectId} by ${request.source} ,body is {}", request)
         val templateId = request.generateId()
         when (request) {
             is PipelineTemplateCustomCreateReq -> createByCustom(userId, request)
@@ -194,7 +195,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = marketTemplateInfo.type,
             settingVersion = settingVersion,
             version = version,
-            number = 1,
+            number = PipelineTemplateConstant.INIT_NUMBER,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
             srcTemplateVersion = marketTemplateResource.version,
@@ -233,9 +234,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val (settingVersion, pipelineTemplateSettingVersion) = if (request.setting != null) {
             val setting = request.setting?.copy(
                 templateId = templateId,
-                settingVersion = 1
+                settingVersion = PipelineTemplateConstant.INIT_SETTING_VERSION
             )
-            Pair(1, setting)
+            Pair(PipelineTemplateConstant.INIT_SETTING_VERSION, setting)
         } else {
             Pair(null, null)
         }
@@ -263,7 +264,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             settingVersion = settingVersion,
             type = type,
             version = version,
-            number = 1,
+            number = PipelineTemplateConstant.INIT_NUMBER,
             params = request.params,
             model = request.model,
             yaml = request.yaml,
@@ -296,7 +297,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 templateId = templateId,
                 creator = creator
             )
-            Pair(setting, 1)
+            Pair(setting, PipelineTemplateConstant.INIT_SETTING_VERSION)
         } else {
             Pair(null, null)
         }
@@ -434,7 +435,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 model = request.model!!,
                 yaml = request.yaml,
                 updater = userId,
-                sortWeight = 100
+                sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
             )
             dslContext.transaction { configuration ->
                 val context = DSL.using(configuration)
