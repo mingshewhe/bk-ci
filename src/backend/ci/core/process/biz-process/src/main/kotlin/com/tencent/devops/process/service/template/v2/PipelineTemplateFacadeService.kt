@@ -183,7 +183,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             releasedVersionName = marketTemplateInfo.releasedVersionName,
             releasedSettingVersion = settingVersion,
             source = PipelineTemplateSource.MARKET,
-            storeFlag = true,
+            storeFlag = false,
             creator = userId,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
