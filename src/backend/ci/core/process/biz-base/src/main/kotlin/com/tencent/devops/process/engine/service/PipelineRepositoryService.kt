@@ -2143,8 +2143,8 @@ class PipelineRepositoryService constructor(
                     transferService.transfer(
                         userId, projectId, pipelineId, TransferActionType.FULL_MODEL2YAML,
                         TransferBody(
-                            PipelineModelAndSetting(newModel, savedSetting),
-                            releaseResource.yaml ?: ""
+                            modelAndSetting = PipelineModelAndSetting(newModel, savedSetting),
+                            oldYaml = releaseResource.yaml ?: ""
                         )
                     ).yamlWithVersion
                 } catch (ignore: Throwable) {

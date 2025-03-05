@@ -245,9 +245,7 @@ class PipelineYamlRepositoryService @Autowired constructor(
             branchName = ref,
             isDefaultBranch = isDefaultBranch,
             description = action.data.eventCommon.commit.commitMsg,
-            aspects = PipelineTransferAspectLoader.initByDefaultTriggerOn(defaultRepo = {
-                action.data.setting.aliasName
-            }),
+            aspects = null,
             yamlInfo = yamlInfo
         )
         val pipelineId = deployPipelineResult.pipelineId
@@ -318,9 +316,7 @@ class PipelineYamlRepositoryService @Autowired constructor(
             branchName = ref,
             isDefaultBranch = isDefaultBranch,
             description = action.data.eventCommon.commit.commitMsg,
-            aspects = PipelineTransferAspectLoader.initByDefaultTriggerOn(defaultRepo = {
-                action.data.setting.aliasName
-            }),
+            aspects = null,
             yamlInfo = yamlInfo
         )
         val version = deployPipelineResult.version

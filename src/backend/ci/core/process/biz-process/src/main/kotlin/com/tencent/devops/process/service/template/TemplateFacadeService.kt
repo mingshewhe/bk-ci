@@ -1317,7 +1317,7 @@ class TemplateFacadeService @Autowired constructor(
         val versions = listTemplateVersions(latestTemplate.projectId, latestTemplate.id)
         val triggerContainer = templateResult.getTriggerContainer()
         val params = triggerContainer.params
-        val templateParams = triggerContainer.templateVariables
+        val templateParams = triggerContainer.templateParams
         return TemplateModelDetail(
             versions = versions,
             currentVersion = currentVersion,
@@ -2029,7 +2029,7 @@ class TemplateFacadeService @Autowired constructor(
         instance: Model,
         template: Model
     ): Model {
-        val templateParams = (template.getTriggerContainer()).templateVariables
+        val templateParams = (template.getTriggerContainer()).templateParams
         if (templateParams.isNullOrEmpty()) {
             return instance
         }
@@ -2058,7 +2058,7 @@ class TemplateFacadeService @Autowired constructor(
                 name = name,
                 elements = elements,
                 params = finalParams,
-                templateVariables = templateParams,
+                templateParams = templateParams,
                 buildNo = buildNo,
                 containerId = containerId,
                 containerHashId = containerHashId
@@ -2078,15 +2078,15 @@ class TemplateFacadeService @Autowired constructor(
         val triggerContainer = model.getTriggerContainer()
         val params = paramService.filterParams(userId, projectId, null, triggerContainer.params)
         val templateParams =
-            if (triggerContainer.templateVariables == null || triggerContainer.templateVariables!!.isEmpty()) {
-                triggerContainer.templateVariables
+            if (triggerContainer.templateParams == null || triggerContainer.templateParams!!.isEmpty()) {
+                triggerContainer.templateParams
             } else {
-                paramService.filterParams(userId, projectId, null, triggerContainer.templateVariables!!)
+                paramService.filterParams(userId, projectId, null, triggerContainer.templateParams!!)
             }
         val rewriteContainer = TriggerContainer(
             name = triggerContainer.name,
             elements = triggerContainer.elements,
-            params = params, templateVariables = templateParams,
+            params = params, templateParams = templateParams,
             buildNo = triggerContainer.buildNo,
             containerId = triggerContainer.containerId,
             containerHashId = triggerContainer.containerHashId
@@ -2400,12 +2400,12 @@ class TemplateFacadeService @Autowired constructor(
             return
         }
 
-        if (triggerContainer.templateVariables == null || triggerContainer.templateVariables!!.isEmpty()) {
+        if (triggerContainer.templateParams == null || triggerContainer.templateParams!!.isEmpty()) {
             return
         }
 
         triggerContainer.params.forEach { param ->
-            triggerContainer.templateVariables!!.forEach { template ->
+            triggerContainer.templateParams!!.forEach { template ->
                 if (param.id == template.id) {
                     throw ErrorCodeException(
                         errorCode = ProcessMessageCode.PIPELINE_PARAM_CONSTANTS_DUPLICATE
@@ -2434,7 +2434,7 @@ class TemplateFacadeService @Autowired constructor(
             stage.containers.forEach { container ->
                 if (container is TriggerContainer) {
                     container.params = PipelineUtils.cleanOptions(params = container.params)
-                    container.templateVariables = container.templateVariables?.let {
+                    container.templateParams = container.templateParams?.let {
                         PipelineUtils.cleanOptions(params = it)
                     }
                 }

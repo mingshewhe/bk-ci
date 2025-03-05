@@ -99,8 +99,8 @@ data class BuildRecordContainer(
                 container.buildNo?.let {
                     containerVar[container::buildNo.name] = it
                 }
-                container.templateVariables?.let {
-                    containerVar[container::templateVariables.name] = it
+                container.templateParams?.let {
+                    containerVar[container::templateParams.name] = it
                 }
             } else if (container is VMBuildContainer) {
                 container.showBuildResource?.let {
