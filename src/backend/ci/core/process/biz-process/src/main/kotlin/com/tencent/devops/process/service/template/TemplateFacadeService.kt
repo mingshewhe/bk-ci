@@ -105,7 +105,7 @@ import com.tencent.devops.process.pojo.template.OptionalTemplateList
 import com.tencent.devops.process.pojo.template.SaveAsTemplateReq
 import com.tencent.devops.process.pojo.template.TemplateCompareModel
 import com.tencent.devops.process.pojo.template.TemplateCompareModelResult
-import com.tencent.devops.process.pojo.template.TemplateInstanceBaseStatus
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceCreate
 import com.tencent.devops.process.pojo.template.TemplateInstanceItemStatus
 import com.tencent.devops.process.pojo.template.TemplateInstancePage
@@ -2006,7 +2006,7 @@ class TemplateFacadeService @Autowired constructor(
                     useTemplateSettingsFlag = useTemplateSettings,
                     projectId = projectId,
                     totalItemNum = instances.size,
-                    status = TemplateInstanceBaseStatus.INIT.name,
+                    status = TemplateInstanceStatus.INIT.name,
                     userId = userId
                 )
                 templateInstanceItemDao.createTemplateInstanceItem(

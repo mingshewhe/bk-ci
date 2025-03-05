@@ -32,10 +32,12 @@ import com.tencent.devops.common.stream.ScsConsumerBuilder
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineCreateListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineDeleteListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineRestoreListener
+import com.tencent.devops.process.engine.listener.pipeline.MQPipelineTemplateInstanceListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineUpdateListener
 import com.tencent.devops.process.engine.pojo.event.PipelineCreateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineDeleteEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineRestoreEvent
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineUpdateEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
@@ -77,4 +79,12 @@ class PipelineBaseConfiguration {
     fun pipelineRestoreConsumer(
         @Autowired restoreListener: MQPipelineRestoreListener
     ) = ScsConsumerBuilder.build<PipelineRestoreEvent> { restoreListener.run(it) }
+
+    /**
+     * 流水线模板实例--- 并发一般
+     */
+    @EventConsumer
+    fun pipelineTemplateInstanceConsumer(
+        @Autowired listener: MQPipelineTemplateInstanceListener
+    ) = ScsConsumerBuilder.build<PipelineTemplateInstanceEvent> { listener.run(it) }
 }

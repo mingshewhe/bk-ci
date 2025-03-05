@@ -25,9 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template
+package com.tencent.devops.process.engine.pojo.event
 
-enum class TemplateInstanceBaseStatus {
-    INIT,
-    INSTANCING
-}
+import com.tencent.devops.common.event.annotation.Event
+import com.tencent.devops.common.event.enums.ActionType
+import com.tencent.devops.common.event.pojo.pipeline.IPipelineEvent
+import com.tencent.devops.common.stream.constants.StreamBinding
+import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
+
+/**
+ * 流水线模板实例事件
+ *
+ * @version 1.0
+ */
+@Event(StreamBinding.PIPELINE_TEMPLATE_INSTANCE)
+data class PipelineTemplateInstanceEvent(
+    override val source: String,
+    override val projectId: String,
+    override val pipelineId: String,
+    override val userId: String,
+    val templateId: String,
+    val baseId: String,
+    val templateInstanceType: TemplateInstanceType,
+    override var actionType: ActionType = ActionType.START,
+    override var delayMills: Int = 0
+) : IPipelineEvent(actionType, source, projectId, pipelineId, userId, delayMills)

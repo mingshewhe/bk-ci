@@ -201,6 +201,26 @@ class PipelineSettingVersionDao {
         }
     }
 
+    fun listPacSettings(
+        dslContext: DSLContext,
+        projectId: String,
+        pipelineIds: List<String>
+    ): Map<String, PipelineAsCodeSettings> {
+        val result = mutableMapOf<String, PipelineAsCodeSettings>()
+        with(TPipelineSettingVersion.T_PIPELINE_SETTING_VERSION) {
+            dslContext.select(PIPELINE_ID, PIPELINE_AS_CODE_SETTINGS)
+                .from(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(PIPELINE_ID.`in`(pipelineIds))
+                .fetch().forEach {
+                    if (it.value2() != null) {
+                        result[it.value1()] = JsonUtil.to(it.value2(), PipelineAsCodeSettings::class.java)
+                    }
+                }
+            return result
+        }
+    }
+
     class PipelineSettingVersionJooqMapper : RecordMapper<TPipelineSettingVersionRecord, PipelineSettingVersion> {
         override fun map(record: TPipelineSettingVersionRecord?): PipelineSettingVersion? {
             return record?.let { t ->

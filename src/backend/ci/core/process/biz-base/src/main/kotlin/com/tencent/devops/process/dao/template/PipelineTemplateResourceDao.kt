@@ -4,12 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -221,13 +221,17 @@ class PipelineTemplateResourceDao {
         dslContext: DSLContext,
         projectId: String,
         templateId: String,
-        status: VersionStatus
+        status: VersionStatus,
+        version: Long? = null,
+        versionName: String? = null
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
                 .where(PROJECT_ID.eq(projectId))
                 .and(TEMPLATE_ID.eq(templateId))
                 .and(STATUS.eq(status.name))
+                .let { if (version != null) it.and(VERSION.eq(version)) else it }
+                .let { if (!versionName.isNullOrBlank()) it.and(VERSION_NAME.eq(versionName)) else it }
                 .orderBy(NUMBER.desc())
                 .fetchOne()?.convert()
         }

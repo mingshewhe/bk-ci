@@ -238,9 +238,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val (settingVersion, pipelineTemplateSettingVersion) = if (request.setting != null) {
             val setting = request.setting?.copy(
                 templateId = templateId,
-                settingVersion = PipelineTemplateConstant.INIT_SETTING_VERSION
+                settingVersion = PipelineTemplateConstant.INIT_VERSION
             )
-            Pair(PipelineTemplateConstant.INIT_SETTING_VERSION, setting)
+            Pair(PipelineTemplateConstant.INIT_VERSION, setting)
         } else {
             Pair(null, null)
         }
@@ -301,7 +301,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 templateId = templateId,
                 creator = creator
             )
-            Pair(setting, PipelineTemplateConstant.INIT_SETTING_VERSION)
+            Pair(setting, PipelineTemplateConstant.INIT_VERSION)
         } else {
             Pair(null, null)
         }
@@ -770,7 +770,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val setting = srcTemplateSetting.copy(
                 templateId = templateId,
                 projectId = projectId,
-                settingVersion = 1,
+                settingVersion = PipelineTemplateConstant.INIT_VERSION,
                 creator = userId
             )
             Pair(1, setting)

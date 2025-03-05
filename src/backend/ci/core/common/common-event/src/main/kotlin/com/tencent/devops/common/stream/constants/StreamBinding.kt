@@ -67,6 +67,8 @@ object StreamBinding {
 
     const val PIPELINE_ARCHIVE = "engine.pipeline.archive"
 
+    const val PIPELINE_TEMPLATE_INSTANCE = "engine.pipeline.template.instance"
+
     // 监控相关的队列
     const val PIPELINE_BUILD_MONITOR = "engine.pipeline.listener.monitor"
     const val PIPELINE_BUILD_HEART_BEAT = "engine.pipeline.build.hb"

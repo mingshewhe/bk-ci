@@ -5,6 +5,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.process.dao.template.PipelineTemplateRelatedDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedUpdateInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -58,6 +59,44 @@ class PipelineTemplateRelatedService @Autowired constructor(
         return pipelineTemplateRelatedDao.list(
             dslContext = dslContext,
             condition = condition
+        )
+    }
+
+    fun listSimple(
+        projectId: String,
+        templateId: String,
+        pipelineName: String?,
+        updater: String?,
+        instanceTypeEnum: PipelineInstanceTypeEnum,
+        limit: Int,
+        offset: Int
+    ): List<PipelineTemplateRelatedSimple> {
+        return pipelineTemplateRelatedDao.listSimple(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            pipelineName = pipelineName,
+            updater = updater,
+            instanceTypeEnum = instanceTypeEnum,
+            limit = limit,
+            offset = offset
+        )
+    }
+
+    fun countSimple(
+        projectId: String,
+        templateId: String,
+        pipelineName: String?,
+        updater: String?,
+        instanceTypeEnum: PipelineInstanceTypeEnum
+    ): Int {
+        return pipelineTemplateRelatedDao.countSimple(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            pipelineName = pipelineName,
+            updater = updater,
+            instanceTypeEnum = instanceTypeEnum
         )
     }
 

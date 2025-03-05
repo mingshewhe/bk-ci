@@ -52,7 +52,7 @@ class PipelineTemplateResourceService @Autowired constructor(
             dslContext = dslContext,
             projectId = projectId,
             templateId = templateId,
-            status = VersionStatus.RELEASED
+            status = VersionStatus.BRANCH
         )
     }
 
@@ -65,6 +65,23 @@ class PipelineTemplateResourceService @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             status = VersionStatus.COMMITTING
+        )
+    }
+
+    fun getLatestResource(
+        projectId: String,
+        templateId: String,
+        status: VersionStatus,
+        version: Long? = null,
+        versionName: String? = null
+    ): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            status = status,
+            version = version,
+            versionName = versionName
         )
     }
 

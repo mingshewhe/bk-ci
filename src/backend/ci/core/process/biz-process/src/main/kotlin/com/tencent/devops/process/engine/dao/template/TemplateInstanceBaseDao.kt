@@ -27,8 +27,15 @@
 
 package com.tencent.devops.process.engine.dao.template
 
+import com.fasterxml.jackson.core.type.TypeReference
+import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.model.process.tables.TTemplateInstanceBase
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceBaseRecord
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
+import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
 import org.jooq.DSLContext
 import org.jooq.Result
 import org.springframework.stereotype.Repository
@@ -47,22 +54,32 @@ class TemplateInstanceBaseDao {
         projectId: String,
         totalItemNum: Int,
         status: String,
-        userId: String
+        userId: String,
+        pac: Boolean? = null,
+        targetAction: String? = null,
+        type: String? = TemplateInstanceType.UPDATE.name,
+        labels: String? = null,
+        staticViews: String? = null
     ) {
         with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
-            dslContext.insertInto(
-                this,
-                ID,
-                TEMPLATE_ID,
-                TEMPLATE_VERSION,
-                USE_TEMPLATE_SETTINGS_FLAG,
-                PROJECT_ID,
-                TOTAL_ITEM_NUM,
-                STATUS,
-                CREATOR,
-                MODIFIER
-            )
-                .values(
+            setOf(
+                dslContext.insertInto(
+                    this,
+                    ID,
+                    TEMPLATE_ID,
+                    TEMPLATE_VERSION,
+                    USE_TEMPLATE_SETTINGS_FLAG,
+                    PROJECT_ID,
+                    TOTAL_ITEM_NUM,
+                    STATUS,
+                    CREATOR,
+                    MODIFIER,
+                    PAC,
+                    TARGET_ACTION,
+                    TYPE,
+                    LABELS,
+                    STATIC_VIEWS
+                ).values(
                     baseId,
                     templateId,
                     templateVersion,
@@ -71,17 +88,28 @@ class TemplateInstanceBaseDao {
                     totalItemNum,
                     status,
                     userId,
-                    userId
+                    userId,
+                    pac,
+                    targetAction,
+                    type,
+                    labels,
+                    staticViews
                 )
-                .onDuplicateKeyUpdate()
-                .set(TEMPLATE_ID, templateId)
-                .set(TEMPLATE_VERSION, templateVersion)
-                .set(USE_TEMPLATE_SETTINGS_FLAG, useTemplateSettingsFlag)
-                .set(TOTAL_ITEM_NUM, totalItemNum)
-                .set(STATUS, status)
-                .set(CREATOR, userId)
-                .set(MODIFIER, userId)
-                .execute()
+                    .onDuplicateKeyUpdate()
+                    .set(TEMPLATE_ID, templateId)
+                    .set(TEMPLATE_VERSION, templateVersion)
+                    .set(USE_TEMPLATE_SETTINGS_FLAG, useTemplateSettingsFlag)
+                    .set(TOTAL_ITEM_NUM, totalItemNum)
+                    .set(STATUS, status)
+                    .set(CREATOR, userId)
+                    .set(MODIFIER, userId)
+                    .set(PAC, pac)
+                    .set(TARGET_ACTION, targetAction)
+                    .set(TYPE, type)
+                    .set(LABELS, labels)
+                    .set(STATIC_VIEWS, staticViews)
+                    .execute()
+            )
         }
     }
 
@@ -116,11 +144,25 @@ class TemplateInstanceBaseDao {
         dslContext: DSLContext,
         projectId: String,
         baseId: String
-    ): TTemplateInstanceBaseRecord? {
+    ): PipelineTemplateInstanceBase? {
         return with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
             dslContext.selectFrom(this)
                 .where(ID.eq(baseId).and(PROJECT_ID.eq(projectId)))
-                .fetchOne()
+                .fetchOne()?.convert()
+        }
+    }
+
+    fun updateStatus(
+        dslContext: DSLContext,
+        projectId: String,
+        baseId: String,
+        status: TemplateInstanceStatus
+    ) {
+        return with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
+            dslContext.update(this)
+                .set(STATUS, status.name)
+                .where(ID.eq(baseId).and(PROJECT_ID.eq(projectId)))
+                .execute()
         }
     }
 
@@ -148,5 +190,50 @@ class TemplateInstanceBaseDao {
                 .where(ID.eq(baseId).and(PROJECT_ID.eq(projectId)))
                 .execute()
         }
+    }
+
+    fun list(
+        dslContext: DSLContext,
+        projectId: String,
+        excludeStatusList: List<String>,
+        type: TemplateInstanceType
+    ): List<PipelineTemplateInstanceBase> {
+        return with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
+            dslContext.selectFrom(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(STATUS.notIn(excludeStatusList))
+                .and(TYPE.eq(type.name))
+                .fetch().map { it.convert() }
+        }
+    }
+
+    private fun TTemplateInstanceBaseRecord.convert(): PipelineTemplateInstanceBase {
+        val labels = labels?.let {
+            JsonUtil.to(it, object : TypeReference<List<String>>() {})
+        }
+        val staticViews = staticViews?.let {
+            JsonUtil.to(it, object : TypeReference<List<String>>() {})
+        }
+        return PipelineTemplateInstanceBase(
+            baseId = id,
+            projectId = projectId,
+            templateId = templateId,
+            templateVersion = templateVersion.toLong(),
+            useTemplateSetting = useTemplateSettingsFlag,
+            totalItemNum = totalItemNum,
+            successItemNum = successItemNum,
+            failItemNum = failItemNum,
+            description = description,
+            status = TemplateInstanceStatus.valueOf(status),
+            pac = pac,
+            targetAction = CodeTargetAction.valueOf(targetAction),
+            type = TemplateInstanceType.valueOf(type),
+            labels = labels,
+            staticViews = staticViews,
+            creator = creator,
+            modifier = modifier,
+            createTime = createTime.timestampmilli(),
+            updateTime = updateTime.timestampmilli()
+        )
     }
 }

@@ -6,11 +6,12 @@ import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.model.process.tables.TPipelineInfo
 import com.tencent.devops.model.process.tables.TTemplatePipeline
 import com.tencent.devops.model.process.tables.records.TTemplatePipelineRecord
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSample
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedUpdateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
@@ -67,35 +68,134 @@ class PipelineTemplateRelatedDao {
         return with(TTemplatePipeline.T_TEMPLATE_PIPELINE) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(condition))
+                .let {
+                    if (condition.limit != null && condition.offset != null) {
+                        it.offset(condition.offset).limit(condition.limit)
+                    } else {
+                        it
+                    }
+                }
                 .fetch().map { it.convert() }
         }
     }
 
-    fun listSample(
+    fun listSimple(
         dslContext: DSLContext,
-        condition: PipelineTemplateRelatedCommonCondition
-    ): List<PipelineTemplateRelatedSample> {
-        return with(TTemplatePipeline.T_TEMPLATE_PIPELINE) {
-            dslContext.select(
-                PROJECT_ID,
-                TEMPLATE_ID,
-                VERSION,
-                VERSION_NAME,
-                PIPELINE_ID,
-                INSTANCE_TYPE
-            ).from(this)
-                .where(buildQueryCondition(condition))
-                .fetch().map {
-                    PipelineTemplateRelatedSample(
-                        projectId = it.value1(),
-                        templateId = it.value2(),
-                        version = it.value3(),
-                        versionName = it.value4(),
-                        pipelineId = it.value5(),
-                        instanceType = PipelineInstanceTypeEnum.get(it.value6())
-                    )
+        projectId: String,
+        templateId: String,
+        pipelineName: String?,
+        updater: String?,
+        instanceTypeEnum: PipelineInstanceTypeEnum,
+        limit: Int,
+        offset: Int
+    ): List<PipelineTemplateRelatedSimple> {
+        val templatePipelineTable = TTemplatePipeline.T_TEMPLATE_PIPELINE
+        val pipelineInfoTable = TPipelineInfo.T_PIPELINE_INFO
+        return dslContext.select(
+            templatePipelineTable.PROJECT_ID,
+            templatePipelineTable.TEMPLATE_ID,
+            templatePipelineTable.VERSION,
+            templatePipelineTable.VERSION_NAME,
+            templatePipelineTable.PIPELINE_ID,
+            pipelineInfoTable.PIPELINE_NAME,
+            templatePipelineTable.INSTANCE_TYPE,
+            templatePipelineTable.INSTANCE_ERROR_INFO,
+            templatePipelineTable.CREATOR,
+            templatePipelineTable.UPDATOR,
+            templatePipelineTable.CREATED_TIME,
+            templatePipelineTable.UPDATED_TIME
+        )
+            .from(templatePipelineTable)
+            .join(pipelineInfoTable)
+            .on(templatePipelineTable.PIPELINE_ID.eq(pipelineInfoTable.PIPELINE_ID))
+            .where(
+                buildCommonConditions(
+                    templatePipelineTable = templatePipelineTable,
+                    pipelineInfoTable = pipelineInfoTable,
+                    projectId = projectId,
+                    templateId = templateId,
+                    pipelineName = pipelineName,
+                    updater = updater,
+                    instanceTypeEnum = instanceTypeEnum
+                )
+            )
+            .limit(limit)
+            .offset(offset)
+            .fetch().map {
+                PipelineTemplateRelatedSimple(
+                    projectId = it.value1(),
+                    templateId = it.value2(),
+                    version = it.value3(),
+                    versionName = it.value4(),
+                    pipelineId = it.value5(),
+                    pipelineName = it.value6(),
+                    instanceType = PipelineInstanceTypeEnum.get(it.value7()),
+                    instanceErrorInfo = it.value8(),
+                    creator = it.value9(),
+                    updater = it.value10(),
+                    createdTime = it.value11().timestampmilli(),
+                    updatedTime = it.value12().timestampmilli()
+                )
+            }
+    }
+
+    fun countSimple(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String,
+        pipelineName: String?,
+        updater: String?,
+        instanceTypeEnum: PipelineInstanceTypeEnum
+    ): Int {
+        val templatePipelineTable = TTemplatePipeline.T_TEMPLATE_PIPELINE
+        val pipelineInfoTable = TPipelineInfo.T_PIPELINE_INFO
+        return dslContext.selectCount()
+            .from(templatePipelineTable)
+            .join(pipelineInfoTable)
+            .on(templatePipelineTable.PIPELINE_ID.eq(pipelineInfoTable.PIPELINE_ID))
+            .where(
+                buildCommonConditions(
+                    templatePipelineTable = templatePipelineTable,
+                    pipelineInfoTable = pipelineInfoTable,
+                    projectId = projectId,
+                    templateId = templateId,
+                    pipelineName = pipelineName,
+                    updater = updater,
+                    instanceTypeEnum = instanceTypeEnum
+                )
+            )
+            .fetchOne(0, Int::class.java)!!
+    }
+
+    private fun buildCommonConditions(
+        templatePipelineTable: TTemplatePipeline,
+        pipelineInfoTable: TPipelineInfo,
+        projectId: String,
+        templateId: String,
+        pipelineName: String?,
+        updater: String?,
+        instanceTypeEnum: PipelineInstanceTypeEnum
+    ): Condition {
+        return templatePipelineTable.PROJECT_ID.eq(projectId)
+            .and(templatePipelineTable.TEMPLATE_ID.eq(templateId))
+            .and(templatePipelineTable.DELETED.eq(false))
+            .and(templatePipelineTable.INSTANCE_TYPE.eq(instanceTypeEnum.type))
+            .and(pipelineInfoTable.PROJECT_ID.eq(projectId))
+            .and(pipelineInfoTable.DELETE.eq(false))
+            .let {
+                if (!pipelineName.isNullOrBlank()) {
+                    it.and(pipelineInfoTable.PIPELINE_NAME.like("%${pipelineName}%"))
+                } else {
+                    it
                 }
-        }
+            }
+            .let {
+                if (!updater.isNullOrBlank()) {
+                    it.and(templatePipelineTable.UPDATOR.like("%${updater}%"))
+                } else {
+                    it
+                }
+            }
     }
 
     fun delete(
@@ -144,7 +244,7 @@ class PipelineTemplateRelatedDao {
                 if (rootTemplateId != null) conditions.add(ROOT_TEMPLATE_ID.eq(rootTemplateId))
                 if (deleted != null) conditions.add(DELETED.eq(deleted))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
-                if (updater != null) conditions.add(UPDATOR.eq(updater))
+                if (!updater.isNullOrBlank()) conditions.add(UPDATOR.like("%${updater}%"))
                 conditions
             }
         }
