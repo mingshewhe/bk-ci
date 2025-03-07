@@ -28,7 +28,6 @@
 package com.tencent.devops.process.service.template.v2.handler
 
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionResp
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模版版本状态改变上下文")

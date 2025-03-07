@@ -11,6 +11,7 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionEvent
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
@@ -23,6 +24,7 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCreateResp
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
@@ -34,10 +36,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCreateResp
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSaveDraftResp
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
 import com.tencent.devops.process.service.template.v2.handler.PipelineTemplateStateMachine

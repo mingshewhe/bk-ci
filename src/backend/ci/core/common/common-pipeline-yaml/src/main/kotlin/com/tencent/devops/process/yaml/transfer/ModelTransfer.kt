@@ -37,8 +37,6 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.pipeline.pojo.transfer.IfType
-import com.tencent.devops.common.pipeline.template.ITemplateModel
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_MAX_CON_QUEUE_SIZE_MAX
 import com.tencent.devops.process.yaml.pojo.YamlVersion
@@ -48,7 +46,6 @@ import com.tencent.devops.process.yaml.transfer.pojo.ModelTransferInput
 import com.tencent.devops.process.yaml.transfer.pojo.YamlTransferInput
 import com.tencent.devops.process.yaml.v3.enums.SyntaxDialectType
 import com.tencent.devops.process.yaml.v3.models.Concurrency
-import com.tencent.devops.process.yaml.v3.models.GitNotices
 import com.tencent.devops.process.yaml.v3.models.IPreTemplateScriptBuildYamlParser
 import com.tencent.devops.process.yaml.v3.models.Notices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
@@ -88,36 +85,6 @@ class ModelTransfer @Autowired constructor(
             // 如果yaml内容缺失，先用pac文件名兜底，没有文件名才用原流水线名
             pipelineName = yaml.name ?: yamlInput.yamlFileName ?: yamlInput.pipelineInfo?.pipelineName ?: "",
             desc = yaml.desc ?: yamlInput.pipelineInfo?.pipelineDesc ?: "",
-            concurrencyGroup = yaml.concurrency?.group ?: PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT,
-            // Cancel-In-Progress 配置group后默认为true
-            concurrencyCancelInProgress = yaml.concurrency?.cancelInProgress ?: false,
-            runLockType = when {
-                yaml.disablePipeline == true -> PipelineRunLockType.LOCK
-                yaml.concurrency?.group != null -> PipelineRunLockType.GROUP_LOCK
-                else -> PipelineRunLockType.MULTIPLE
-            },
-            waitQueueTimeMinute = yaml.concurrency?.queueTimeoutMinutes
-                ?: VariableDefault.DEFAULT_WAIT_QUEUE_TIME_MINUTE,
-            maxQueueSize = yaml.concurrency?.queueLength ?: VariableDefault.DEFAULT_PIPELINE_SETTING_MAX_QUEUE_SIZE,
-            maxConRunningQueueSize = yaml.concurrency?.maxParallel ?: PIPELINE_SETTING_MAX_CON_QUEUE_SIZE_MAX,
-            labels = yaml2Labels(yamlInput),
-            pipelineAsCodeSettings = yamlSyntaxDialect2Setting(yaml.syntaxDialect),
-            successSubscriptionList = yamlNotice2Setting(
-                projectId = yamlInput.projectCode,
-                notices = yaml.notices?.filter { it.checkNotifyForSuccess() }
-            ),
-            failSubscriptionList = yamlNotice2Setting(
-                projectId = yamlInput.projectCode,
-                notices = yaml.notices?.filter { it.checkNotifyForFail() }
-            )
-        )
-    }
-
-    fun yaml2TemplateSetting(yamlInput: YamlTransferInput): PipelineTemplateSetting {
-        val yaml = yamlInput.yaml
-        return PipelineTemplateSetting(
-            projectId = yamlInput.pipelineInfo?.projectId ?: "",
-            buildNumRule = yaml.customBuildNum,
             concurrencyGroup = yaml.concurrency?.group ?: PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT,
             // Cancel-In-Progress 配置group后默认为true
             concurrencyCancelInProgress = yaml.concurrency?.cancelInProgress ?: false,
