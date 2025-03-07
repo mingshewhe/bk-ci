@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -35,5 +36,5 @@ data class PipelineTemplateDetailsResponse(
     @get:Schema(title = "模板模型信息", required = true)
     val resource: PipelineTemplateResource,
     @get:Schema(title = "模板配置信息", required = true)
-    val setting: PipelineTemplateSetting?
+    val setting: PipelineSetting
 )

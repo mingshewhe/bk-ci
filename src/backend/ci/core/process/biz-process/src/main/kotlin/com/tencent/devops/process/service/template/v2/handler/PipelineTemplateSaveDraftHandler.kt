@@ -129,8 +129,6 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = request.templateId,
-            name = request.name,
-            desc = request.desc,
             type = templateInfo.type,
             settingVersion = latestTemplateResource.settingVersion?.let { it + 1 },
             version = pipelineTemplateModelGenerator.generateVersion(),
@@ -142,17 +140,13 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             status = VersionStatus.COMMITTING,
             creator = userId
         )
-        val pipelineTemplateSetting = if (templateInfo.type == PipelineTemplateType.PIPELINE) {
-            transferResult.templateSetting?.let { setting ->
-                latestTemplateResource.settingVersion?.let { currentVersion ->
-                    setting.copy(
-                        templateId = templateInfo.id,
-                        settingVersion = currentVersion + 1
-                    )
-                }
+        val pipelineTemplateSetting = transferResult.templateSetting?.let { setting ->
+            latestTemplateResource.settingVersion?.let { currentVersion ->
+                setting.copy(
+                    pipelineId = templateInfo.id,
+                    version = currentVersion + 1
+                )
             }
-        } else {
-            null
         }
         pipelineTemplatePersistenceService.saveTemplate(
             pipelineTemplateSetting = pipelineTemplateSetting,
@@ -187,8 +181,6 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             yaml = request.yaml
         )
         val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            name = request.name,
-            desc = request.desc,
             params = request.params,
             model = transferResult.templateModel,
             yaml = transferResult.yamlWithVersion?.yamlStr,
@@ -206,12 +198,12 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
                     version = draftVersionResource.version
                 )
             )
-            if (templateInfo.type == PipelineTemplateType.PIPELINE && request.templateSetting != null) {
+            if (transferResult.templateSetting != null) {
                 pipelineTemplateSettingService.create(
                     transactionContext = dslContext,
                     pipelineTemplateSetting = transferResult.templateSetting!!.copy(
-                        templateId = request.templateId,
-                        settingVersion = draftVersionResource.settingVersion!!,
+                        pipelineId = request.templateId,
+                        version = draftVersionResource.settingVersion!!,
                         creator = draftVersionResource.creator
                     )
                 )

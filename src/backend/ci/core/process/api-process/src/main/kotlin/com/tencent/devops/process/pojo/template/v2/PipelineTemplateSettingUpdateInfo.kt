@@ -37,6 +37,10 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板配置更新")
 data class PipelineTemplateSettingUpdateInfo(
+    @get:Schema(title = "模板名称", required = false)
+    val name: String? = null,
+    @get:Schema(title = "模板描述", required = false)
+    val desc: String? = null,
     @get:Schema(title = "标签ID列表", required = false)
     val labels: List<String>? = null,
     @get:Schema(title = "标签名称列表（仅用于前端展示，不参与数据保存）", required = false)

@@ -92,7 +92,11 @@ data class PipelineSetting(
     @get:Schema(title = "重试时清理引擎变量表", required = false)
     val cleanVariablesWhenRetry: Boolean? = false,
     @get:Schema(title = "YAML流水线特殊配置", required = false)
-    var pipelineAsCodeSettings: PipelineAsCodeSettings?
+    var pipelineAsCodeSettings: PipelineAsCodeSettings?,
+    @get:Schema(title = "创建人", required = false)
+    val creator: String? = null,
+    @get:Schema(title = "更新人", required = false)
+    val updater: String? = null
 ) {
 
     companion object {
@@ -104,7 +108,9 @@ data class PipelineSetting(
             maxPipelineResNum: Int? = null,
             failSubscription: Subscription? = null,
             inheritedDialectSetting: Boolean? = null,
-            pipelineDialectSetting: String? = null
+            pipelineDialectSetting: String? = null,
+            creator: String? = null,
+            updater: String? = null
         ): PipelineSetting {
             return PipelineSetting(
                 projectId = projectId,
@@ -123,7 +129,9 @@ data class PipelineSetting(
                 pipelineAsCodeSettings = PipelineAsCodeSettings.initDialect(
                     inheritedDialect = inheritedDialectSetting,
                     pipelineDialect = pipelineDialectSetting
-                )
+                ),
+                creator = creator,
+                updater = creator
             )
         }
     }

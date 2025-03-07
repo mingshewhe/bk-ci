@@ -33,15 +33,16 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.pojo.template.v2.TemplateModelTransferResult
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
@@ -73,21 +74,33 @@ class PipelineTemplateModelGenerator @Autowired constructor(
         }
     }
 
-    fun getDefaultSettingAndVersion(
+    fun getDefaultSetting(
         type: PipelineTemplateType,
         projectId: String,
         templateId: String,
+        templateName: String,
+        desc: String?,
         creator: String
-    ): Pair<PipelineTemplateSetting?, Int?> {
+    ): PipelineSetting {
         return if (type == PipelineTemplateType.PIPELINE) {
-            val setting = PipelineTemplateSetting.defaultSetting(
+            PipelineSetting.defaultSetting(
                 projectId = projectId,
-                templateId = templateId,
-                creator = creator
+                pipelineId = templateId,
+                pipelineName = templateName,
+                creator = creator,
+                updater = creator
             )
-            Pair(setting, PipelineTemplateConstant.INIT_VERSION)
         } else {
-            Pair(null, null)
+            PipelineSetting(
+                projectId = projectId,
+                pipelineId = templateId,
+                pipelineName = templateName,
+                version = PipelineTemplateConstant.INIT_VERSION,
+                desc = desc ?: "",
+                pipelineAsCodeSettings = null,
+                creator = creator,
+                updater = creator
+            )
         }
     }
 
@@ -101,7 +114,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
         storageType: PipelineStorageType,
         templateType: PipelineTemplateType?,
         templateModel: ITemplateModel?,
-        templateSetting: PipelineTemplateSetting?,
+        templateSetting: PipelineSetting?,
         yaml: String?
     ): TemplateModelTransferResult {
         return if (storageType == PipelineStorageType.YAML) {
@@ -123,9 +136,9 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                 "The transfer data is incorrect, so the modelAndYaml.templateModel.model must not be null"
             )
             val newTemplateSetting = Preconditions.checkNotNull(
-                transferResult.templateModelAndSetting?.templateSetting,
+                transferResult.templateModelAndSetting?.setting,
                 "The transfer data is incorrect, " +
-                        "so the modelAndYaml.templateModel.templateSetting must not be null"
+                    "so the modelAndYaml.templateModel.templateSetting must not be null"
             )
             TemplateModelTransferResult(
                 templateType = PipelineTemplateType.PIPELINE,
@@ -156,7 +169,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         data = TransferBody(
                             templateModelAndSetting = TemplateModelAndSetting(
                                 templateModel = newTemplateModel,
-                                templateSetting = newTemplateSetting,
+                                setting = newTemplateSetting,
                             ),
                             oldYaml = ""
                         )
@@ -168,6 +181,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         yamlWithVersion = result.yamlWithVersion
                     )
                 }
+
                 PipelineTemplateType.STAGE -> {
                     val result = transferService.transfer(
                         userId = userId,
@@ -187,6 +201,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         yamlWithVersion = result.yamlWithVersion
                     )
                 }
+
                 PipelineTemplateType.JOB -> {
                     val result = transferService.transfer(
                         userId = userId,
@@ -206,6 +221,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         yamlWithVersion = result.yamlWithVersion
                     )
                 }
+
                 PipelineTemplateType.STEP -> {
                     val result = transferService.transfer(
                         userId = userId,
@@ -225,6 +241,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         yamlWithVersion = result.yamlWithVersion
                     )
                 }
+
                 else -> {
                     throw IllegalArgumentException("unknown template type: $templateType")
                 }

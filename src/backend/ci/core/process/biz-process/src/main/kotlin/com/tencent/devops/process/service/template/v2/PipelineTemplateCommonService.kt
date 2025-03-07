@@ -6,6 +6,7 @@ import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -17,7 +18,8 @@ import org.springframework.stereotype.Service
 class PipelineTemplateCommonService(
     val dslContext: DSLContext,
     val pipelineTemplateInfoDao: PipelineTemplateInfoDao,
-    val pipelineTemplateResourceDao: PipelineTemplateResourceDao
+    val pipelineTemplateResourceDao: PipelineTemplateResourceDao,
+    val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) {
     @Value("\${template.maxSaveVersionNum:300}")
     private val maxSaveVersionNum: Int = 300
@@ -33,9 +35,8 @@ class PipelineTemplateCommonService(
                 errorCode = ProcessMessageCode.TEMPLATE_NAME_CAN_NOT_NULL
             )
         }
-        val count = pipelineTemplateResourceDao.count(
-            dslContext = dslContext,
-            commonCondition = PipelineTemplateResourceCommonCondition(
+        val count = pipelineTemplateSettingService.count(
+            commonCondition = PipelineTemplateSettingCommonCondition(
                 projectId = projectId,
                 name = name
             )

@@ -36,10 +36,6 @@ import java.time.LocalDateTime
 
 @Schema(title = "流水线模版资源更新请求体")
 data class PipelineTemplateResourceUpdateInfo(
-    @get:Schema(title = "模板名称", required = true)
-    val name: String? = null,
-    @get:Schema(title = "模板描述", required = true)
-    val desc: String? = null,
     @get:Schema(title = "版本号", required = true)
     val version: Long? = null,
     @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)

@@ -1,10 +1,12 @@
 package com.tencent.devops.process.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.tencent.devops.common.api.constant.NAME
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.model.process.tables.TPipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateSettingVersionRecord
@@ -20,12 +22,12 @@ import java.time.LocalDateTime
 class PipelineTemplateSettingDao {
     fun create(
         dslContext: DSLContext,
-        record: PipelineTemplateSetting
+        record: PipelineSetting
     ) {
         val successSubscriptionList = record.successSubscriptionList ?: emptyList()
         val failSubscriptionList = record.failSubscriptionList ?: emptyList()
         val waitQueueTimeSecond = DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute)
-        val labelStr = record.labels?.let { self -> JsonUtil.toJson(self) }
+        val labelStr = JsonUtil.toJson(record.labels)
         val pipelineAsCodeSettings = record.pipelineAsCodeSettings?.let { self -> JsonUtil.toJson(self) }
         with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.insertInto(
@@ -33,6 +35,8 @@ class PipelineTemplateSettingDao {
                 PROJECT_ID,
                 TEMPLATE_ID,
                 SETTING_VERSION,
+                NAME,
+                DESC,
                 LABELS,
                 WAIT_QUEUE_TIME_SECOND,
                 MAX_QUEUE_SIZE,
@@ -48,8 +52,10 @@ class PipelineTemplateSettingDao {
                 UPDATER
             ).values(
                 record.projectId,
-                record.templateId,
-                record.settingVersion,
+                record.pipelineId,
+                record.version,
+                record.pipelineName,
+                record.desc,
                 labelStr,
                 waitQueueTimeSecond,
                 record.maxQueueSize,
@@ -64,6 +70,8 @@ class PipelineTemplateSettingDao {
                 record.creator,
                 record.updater
             ).onDuplicateKeyUpdate()
+                .set(NAME, record.pipelineName)
+                .set(DESC, record.desc)
                 .set(WAIT_QUEUE_TIME_SECOND, waitQueueTimeSecond)
                 .set(LABELS, labelStr)
                 .set(MAX_QUEUE_SIZE, record.maxQueueSize)
@@ -106,6 +114,12 @@ class PipelineTemplateSettingDao {
                     if (!record.failSubscriptionList.isNullOrEmpty()) {
                         set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(record.failSubscriptionList!!))
                     }
+                    if (!record.name.isNullOrBlank()) {
+                        set(NAME, record.name)
+                    }
+                    if (!record.desc.isNullOrBlank()) {
+                        set(DESC, record.desc)
+                    }
                 }
                 .set(UPDATE_TIME, now)
                 .set(UPDATER, record.updater)
@@ -118,7 +132,7 @@ class PipelineTemplateSettingDao {
         commonCondition: PipelineTemplateSettingCommonCondition,
         limit: Int? = null,
         offset: Int? = null
-    ): List<PipelineTemplateSetting> {
+    ): List<PipelineSetting> {
         return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
@@ -130,11 +144,22 @@ class PipelineTemplateSettingDao {
     fun get(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateSettingCommonCondition
-    ): PipelineTemplateSetting? {
+    ): PipelineSetting? {
         return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
                 .fetchOne()?.convert()
+        }
+    }
+
+    fun count(
+        dslContext: DSLContext,
+        commonCondition: PipelineTemplateSettingCommonCondition
+    ): Int {
+        return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
+            dslContext.selectCount().from(this)
+                .where(buildQueryCondition(commonCondition))
+                .fetchOne(0, Int::class.java)!!
         }
     }
 
@@ -158,6 +183,7 @@ class PipelineTemplateSettingDao {
                 conditions.add(PROJECT_ID.eq(projectId))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
+                if (!name.isNullOrBlank()) conditions.add(NAME.eq(name))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
                 if (updater != null) conditions.add(UPDATER.eq(updater))
                 conditions
@@ -165,23 +191,25 @@ class PipelineTemplateSettingDao {
         }
     }
 
-    fun TPipelineTemplateSettingVersionRecord.convert(): PipelineTemplateSetting {
+    fun TPipelineTemplateSettingVersionRecord.convert(): PipelineSetting {
         val successSubscriptionList = this.successSubscription?.let {
             JsonUtil.to(it, object : TypeReference<List<Subscription>>() {})
         }
         val failSubscriptionList = this.failureSubscription?.let {
             JsonUtil.to(it, object : TypeReference<List<Subscription>>() {})
         }
-        return PipelineTemplateSetting(
+        return PipelineSetting(
             projectId = this.projectId,
-            templateId = this.templateId,
-            runLockType = this.runLockType?.let { PipelineRunLockType.valueOf(it) },
+            pipelineId = this.templateId,
+            pipelineName = this.name,
+            desc = this.desc,
+            runLockType = this.runLockType?.let { PipelineRunLockType.valueOf(it) } ?: PipelineRunLockType.SINGLE_LOCK,
             successSubscriptionList = successSubscriptionList,
             failSubscriptionList = failSubscriptionList,
-            settingVersion = this.settingVersion,
+            version = this.settingVersion,
             labels = this.labels?.let {
                 JsonUtil.to(it, object : TypeReference<List<String>>() {})
-            },
+            } ?: emptyList(),
             waitQueueTimeMinute = DateTimeUtil.secondToMinute(this.waitQueueTimeSecond ?: 600000),
             maxQueueSize = this.maxQueueSize,
             buildNumRule = this.buildNumRule,

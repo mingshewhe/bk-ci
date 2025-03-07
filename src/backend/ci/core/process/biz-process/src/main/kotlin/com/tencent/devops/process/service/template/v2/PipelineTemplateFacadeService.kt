@@ -8,10 +8,8 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionEvent
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
@@ -58,8 +56,7 @@ import java.time.LocalDateTime
 class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateModelParser: PipelineTemplateModelParser,
-    private val pipelineTemplatePACService: PipelineTemplatePACService,
+    private val pipelineTemplateModelGenerator: PipelineTemplateModelGenerator,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
@@ -67,11 +64,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplateStateMachine: PipelineTemplateStateMachine
+    private val pipelineTemplateStateMachine: PipelineTemplateStateMachine,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService
 ) {
     fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
         logger.info("$userId create template in project ${request.projectId} by ${request.source} ,body is {}", request)
         val templateId = request.generateId()
+
         when (request) {
             is PipelineTemplateCustomCreateReq -> createByCustom(userId, request)
             is PipelineTemplateMarketCreateReq -> createByMarket(userId, request)
@@ -120,11 +119,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateId = request.id!!
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
 
-        val (setting, settingVersion) = getDefaultSettingAndVersion(
+        val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = type,
             projectId = request.projectId,
             templateId = templateId,
-            creator = userId
+            creator = userId,
+            templateName = marketTemplateInfo.name,
+            desc = marketTemplateInfo.desc
         )
 
         val pipelineTemplateInfo = PipelineTemplateInfo(
@@ -137,7 +138,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             enablePac = false,
             releasedVersion = version,
             releasedVersionName = marketTemplateInfo.releasedVersionName,
-            releasedSettingVersion = settingVersion,
+            releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
             source = PipelineTemplateSource.MARKET,
             storeFlag = false,
             creator = userId,
@@ -150,10 +151,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
-            name = marketTemplateInfo.name,
-            desc = marketTemplateInfo.desc,
             type = marketTemplateInfo.type,
-            settingVersion = settingVersion,
+            settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
             number = PipelineTemplateConstant.INIT_NUMBER,
             srcTemplateProjectId = marketTemplateInfo.projectId,
@@ -170,7 +169,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = marketTemplateInfo.name,
             creator = userId
         )
-        saveTemplate(
+        pipelineTemplatePersistenceService.saveTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateSetting = setting,
             pipelineTemplatePermission = pipelineTemplatePermission,
@@ -182,122 +181,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     }
 
     private fun createByYaml(userId: String, request: PipelineTemplateYamlCreateReq) {
-        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
-        // TODO 校验
-        pipelineTemplateCommonService.checkTemplateBasicInfo(
-            projectId = request.projectId,
-            name = request.name
-        )
-        val templateId = request.id!!
 
-        // todo 需要进一步判断是否是流水线模板类型
-        val (settingVersion, pipelineTemplateSettingVersion) = if (request.setting != null) {
-            val setting = request.setting?.copy(
-                templateId = templateId,
-                settingVersion = PipelineTemplateConstant.INIT_VERSION
-            )
-            Pair(PipelineTemplateConstant.INIT_VERSION, setting)
-        } else {
-            Pair(null, null)
-        }
-        val type = PipelineTemplateType.PIPELINE
-
-        val pipelineTemplateInfo = PipelineTemplateInfo(
-            id = templateId,
-            projectId = request.projectId,
-            name = request.name,
-            desc = request.desc,
-            mode = TemplateType.CUSTOMIZE.name,
-            type = type,
-            enablePac = false,
-            source = PipelineTemplateSource.YAML,
-            storeFlag = false,
-            creator = userId,
-            latestVersionStatus = VersionStatus.COMMITTING
-        )
-
-        val pipelineTemplateResource = PipelineTemplateResource(
-            projectId = request.projectId,
-            templateId = templateId,
-            name = request.name,
-            desc = request.desc,
-            settingVersion = settingVersion,
-            type = type,
-            version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
-            params = request.params,
-            model = request.model,
-            yaml = request.yaml,
-            status = VersionStatus.COMMITTING,
-            creator = userId
-        )
-        val pipelineTemplatePermission = PipelineTemplatePermission(
-            projectId = request.projectId,
-            id = templateId,
-            name = request.name,
-            creator = userId
-        )
-        saveTemplate(
-            pipelineTemplateInfo = pipelineTemplateInfo,
-            pipelineTemplateResource = pipelineTemplateResource,
-            pipelineTemplateSetting = pipelineTemplateSettingVersion,
-            pipelineTemplatePermission = pipelineTemplatePermission
-        )
-    }
-
-    private fun getDefaultSettingAndVersion(
-        type: PipelineTemplateType,
-        projectId: String,
-        templateId: String,
-        creator: String
-    ): Pair<PipelineTemplateSetting?, Int?> {
-        return if (type == PipelineTemplateType.PIPELINE) {
-            val setting = PipelineTemplateSetting.defaultSetting(
-                projectId = projectId,
-                templateId = templateId,
-                creator = creator
-            )
-            Pair(setting, PipelineTemplateConstant.INIT_VERSION)
-        } else {
-            Pair(null, null)
-        }
-    }
-
-    private fun saveTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfo? = null,
-        pipelineTemplateResource: PipelineTemplateResource? = null,
-        pipelineTemplateSetting: PipelineTemplateSetting? = null,
-        pipelineTemplatePermission: PipelineTemplatePermission? = null
-    ) {
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineTemplateInfo?.let {
-                pipelineTemplateInfoService.create(
-                    transactionContext = context,
-                    pipelineTemplateInfo = pipelineTemplateInfo
-                )
-            }
-            pipelineTemplateResource?.let {
-                pipelineTemplateResourceService.create(
-                    transactionContext = context,
-                    pipelineTemplateResource = pipelineTemplateResource
-                )
-            }
-            pipelineTemplateSetting?.let {
-                pipelineTemplateSettingService.create(
-                    transactionContext = context,
-                    pipelineTemplateSetting = pipelineTemplateSetting
-                )
-            }
-            pipelineTemplatePermission?.let {
-                pipelineTemplatePermissionService.createResource(
-                    userId = pipelineTemplatePermission.creator,
-                    projectId = pipelineTemplatePermission.projectId,
-                    templateId = pipelineTemplatePermission.id,
-                    templateName = pipelineTemplatePermission.name
-                )
-            }
-        }
     }
 
     fun deleteTemplate(projectId: String, templateId: String): Boolean {
@@ -316,14 +200,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
             )
         }
-
-        pipelineTemplateRelatedService.count(
-            condition = PipelineTemplateRelatedCommonCondition(
-                projectId = projectId,
-                templateId = templateId,
-                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
-            )
-        )
 
         if (templateInfo.mode == TemplateType.CUSTOMIZE.name && templateInfo.storeFlag) {
             throw ErrorCodeException(
@@ -468,13 +344,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             version = version
         )
-        val setting = templateResource.settingVersion?.let {
-            pipelineTemplateSettingService.get(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = it
-            )
-        }
+        val setting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = templateResource.settingVersion
+        )
+
         return PipelineTemplateDetailsResponse(
             resource = templateResource,
             setting = setting
@@ -575,7 +450,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         baseVersion: Long,
         comparedVersion: Long
     ): PipelineTemplateCompareResponse {
-        val templateInfo = pipelineTemplateInfoService.get(
+        pipelineTemplateInfoService.get(
             projectId = projectId,
             templateId = templateId
         )
@@ -624,21 +499,28 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateId = UUIDUtil.generate()
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
 
-        val (settingVersion, setting) = if (copySetting && srcTemplateInfo.type == PipelineTemplateType.PIPELINE) {
+        val setting = if (copySetting) {
             val srcTemplateSetting = pipelineTemplateSettingService.get(
                 projectId = projectId,
                 templateId = srcTemplateId,
                 settingVersion = srcTemplateInfo.releasedSettingVersion!!
-            ) ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
-            val setting = srcTemplateSetting.copy(
-                templateId = templateId,
+            )
+            srcTemplateSetting.copy(
+                pipelineId = templateId,
                 projectId = projectId,
-                settingVersion = PipelineTemplateConstant.INIT_VERSION,
+                pipelineName = name,
+                version = PipelineTemplateConstant.INIT_VERSION,
                 creator = userId
             )
-            Pair(1, setting)
         } else {
-            Pair(null, null)
+            pipelineTemplateModelGenerator.getDefaultSetting(
+                type = srcTemplateResource.type,
+                projectId = projectId,
+                templateId = templateId,
+                templateName = name,
+                desc = srcTemplateInfo.desc,
+                creator = userId
+            )
         }
 
         val templateInfo = PipelineTemplateInfo(
@@ -653,7 +535,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             enablePac = srcTemplateInfo.enablePac,
             releasedVersion = version,
             releasedVersionName = "V1(P1.T1.1)",
-            releasedSettingVersion = settingVersion,
+            releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
             source = srcTemplateInfo.source,
             storeFlag = srcTemplateInfo.storeFlag,
             creator = userId,
@@ -663,8 +545,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateResource = srcTemplateResource.copy(
             projectId = projectId,
             templateId = templateId,
-            name = name,
-            settingVersion = settingVersion,
+            settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
             number = 1,
             versionName = "V1(P1.T1.1)",
@@ -681,7 +562,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = name,
             creator = userId
         )
-        saveTemplate(
+        pipelineTemplatePersistenceService.saveTemplate(
             pipelineTemplateInfo = templateInfo,
             pipelineTemplateResource = templateResource,
             pipelineTemplateSetting = setting,

@@ -316,7 +316,7 @@ class PipelineTransferYamlService @Autowired constructor(
                 userId = userId,
                 projectId = projectId,
                 model = data.templateModelAndSetting!!.templateModel,
-                setting = data.templateModelAndSetting!!.templateSetting,
+                setting = data.templateModelAndSetting!!.setting,
                 version = defaultVersion,
                 aspectWrapper = PipelineTransferAspectWrapper(aspects)
             )

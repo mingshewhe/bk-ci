@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
@@ -52,7 +53,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     fun saveTemplate(
         pipelineTemplateInfo: PipelineTemplateInfo? = null,
         pipelineTemplateResource: PipelineTemplateResource? = null,
-        pipelineTemplateSetting: PipelineTemplateSetting? = null,
+        pipelineTemplateSetting: PipelineSetting? = null,
         pipelineTemplatePermission: PipelineTemplatePermission? = null
     ) {
         dslContext.transaction { configuration ->

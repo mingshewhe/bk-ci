@@ -12,8 +12,6 @@ data class PipelineTemplateResourceCommonCondition(
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
-    @get:Schema(title = "模板名称", required = false)
-    val name: String? = null,
     @get:Schema(title = "模板类型", required = false)
     val type: PipelineTemplateType? = null,
     @get:Schema(title = "配置版本号", required = false)

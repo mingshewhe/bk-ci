@@ -1,6 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.dao.template.PipelineTemplateSettingDao
@@ -18,7 +19,7 @@ class PipelineTemplateSettingService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateSettingDao: PipelineTemplateSettingDao
 ) {
-    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineTemplateSetting {
+    fun get(commonCondition: PipelineTemplateSettingCommonCondition): PipelineSetting {
         return pipelineTemplateSettingDao.get(
             commonCondition = commonCondition,
             dslContext = dslContext
@@ -31,13 +32,22 @@ class PipelineTemplateSettingService @Autowired constructor(
         projectId: String,
         templateId: String,
         settingVersion: Int
-    ): PipelineTemplateSetting? {
+    ): PipelineSetting {
         return pipelineTemplateSettingDao.get(
             commonCondition = PipelineTemplateSettingCommonCondition(
                 projectId = projectId,
                 templateId = templateId,
                 settingVersion = settingVersion
             ),
+            dslContext = dslContext
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+        )
+    }
+
+    fun count(commonCondition: PipelineTemplateSettingCommonCondition): Int {
+        return pipelineTemplateSettingDao.count(
+            commonCondition = commonCondition,
             dslContext = dslContext
         )
     }
@@ -46,7 +56,7 @@ class PipelineTemplateSettingService @Autowired constructor(
         projectId: String,
         templateId: String,
         settingVersion: Int
-    ): PipelineTemplateSetting {
+    ): PipelineSetting {
         return pipelineTemplateSettingDao.get(
             commonCondition = PipelineTemplateSettingCommonCondition(
                 projectId = projectId,
@@ -69,7 +79,7 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
-    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineTemplateSetting> {
+    fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineSetting> {
         return pipelineTemplateSettingDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
@@ -78,7 +88,7 @@ class PipelineTemplateSettingService @Autowired constructor(
 
     fun create(
         transactionContext: DSLContext? = null,
-        pipelineTemplateSetting: PipelineTemplateSetting
+        pipelineTemplateSetting: PipelineSetting
     ) {
         pipelineTemplateSettingDao.create(
             dslContext = transactionContext ?: dslContext,

@@ -30,6 +30,7 @@ package com.tencent.devops.process.service.template.v2.handler
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.VersionEvent
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCreateResp
@@ -70,10 +71,12 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
         )
         val templateId = request.id!!
         val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
-        val (setting, settingVersion) = pipelineTemplateModelGenerator.getDefaultSettingAndVersion(
+        val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = request.type,
             projectId = request.projectId,
             templateId = templateId,
+            templateName = request.name,
+            desc = request.desc,
             creator = userId
         )
         val defaultTemplateModel = pipelineTemplateModelGenerator.getDefaultTemplateModel(
@@ -98,12 +101,10 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
         val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
-            name = request.name,
-            desc = request.desc,
             type = request.type,
-            settingVersion = settingVersion,
+            settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
-            number = 1,
+            number = PipelineTemplateConstant.INIT_NUMBER,
             model = defaultTemplateModel,
             yaml = null,
             creator = userId,
@@ -125,7 +126,7 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
         return PipelineTemplateCreateResp(
             projectId = request.projectId,
             templateId = templateId,
-            version = 1
+            version = version
         )
     }
 

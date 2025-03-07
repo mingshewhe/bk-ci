@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
@@ -40,7 +41,7 @@ data class TemplateModelTransferResult(
     @get:Schema(title = "流水线模板模型", required = true)
     val templateModel: ITemplateModel,
     @get:Schema(title = "流水线设置", required = false)
-    val templateSetting: PipelineTemplateSetting? = null,
+    val templateSetting: PipelineSetting? = null,
     @get:Schema(title = "当前yaml内容", required = false)
     val yamlWithVersion: YamlWithVersion? = null
 )

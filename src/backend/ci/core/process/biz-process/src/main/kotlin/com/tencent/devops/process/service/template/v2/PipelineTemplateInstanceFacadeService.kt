@@ -113,9 +113,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     ): TemplateOperationRet {
         logger.info("template instance creation start $projectId|$userId|$templateId")
         val templateResource = pipelineTemplateResourceService.get(projectId, templateId, version)
-        val settingVersion = templateResource.settingVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+
         val templateModel = templateResource.model as Model
         val instances = request.instanceReleaseInfos
 
@@ -135,7 +133,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     templateModel = templateModel,
                     templateVersion = version,
                     useTemplateSettings = useTemplateSettings,
-                    templateSettingVersion = settingVersion,
+                    templateSettingVersion = templateResource.settingVersion,
                     enabledPac = request.enablePac,
                     targetAction = request.targetAction,
                     labels = request.labels,
@@ -429,9 +427,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
         )
         val templateModel = templateResource.model as Model
-        val settingVersion = templateResource.settingVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        val settingVersion = templateResource.settingVersion
 
         checkTemplateInstancesUpdate(
             projectId = projectId,
@@ -941,9 +937,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             templateId = instanceBase.templateId,
             version = instanceBase.templateVersion
         )
-        val templateSettingVersion = templateResource.settingVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        val templateSettingVersion = templateResource.settingVersion
         val templateModel = templateResource.model as Model
 
         val totalPages = PageUtil.calTotalPage(PageUtil.MAX_PAGE_SIZE, templateInstanceItemCount)
