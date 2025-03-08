@@ -25,19 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.service.template.v2
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import org.springframework.stereotype.Service
 
-interface PipelineTemplateVersionHandler<T : PipelineTemplateVersionReq, R> {
+@Service
+class PipelineTemplateModelValidator {
 
-    fun support(source: VersionStatus, event: PipelineVersionAction): Boolean
-
-    fun execute(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<T>
-    ): R
+    fun validate(
+        pipelineTemplateResource: PipelineTemplateResource?,
+        pipelineSetting: PipelineSetting?,
+    ) {
+    }
 }

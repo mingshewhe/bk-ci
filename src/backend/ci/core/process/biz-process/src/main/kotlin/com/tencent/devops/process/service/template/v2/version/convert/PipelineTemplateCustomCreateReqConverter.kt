@@ -25,52 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.service.template.v2.version.convert
 
-import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCreateResp
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelGenerator
-import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
-import com.tencent.devops.project.api.service.ServiceAllocIdResource
-import org.slf4j.LoggerFactory
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
+/**
+ * 流水线模板自定义创建请求转换
+ */
 @Service
-class PipelineTemplateInitDraftHandler @Autowired constructor(
+class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
-    private val client: Client,
-    private val pipelineTemplateModelGenerator: PipelineTemplateModelGenerator,
-    private val templatePersistenceService: PipelineTemplatePersistenceService
-) : PipelineTemplateVersionHandler<PipelineTemplateCustomCreateReq, PipelineTemplateCreateResp> {
+    private val pipelineTemplateModelGenerator: PipelineTemplateModelGenerator
+) : PipelineTemplateVersionReqConverter {
 
-    override fun support(source: VersionStatus, event: PipelineVersionAction): Boolean {
-        return source == VersionStatus.INIT && event == PipelineVersionAction.INIT_DRAFT
+    override fun support(request: PipelineTemplateVersionReq): Boolean {
+        return request is PipelineTemplateCustomCreateReq
     }
 
-    override fun execute(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<PipelineTemplateCustomCreateReq>
-    ): PipelineTemplateCreateResp {
-        val userId = context.userId
-        val request = context.request
+    override fun convert(userId: String, request: PipelineTemplateVersionReq): PipelineTemplateVersionContext {
+        request as PipelineTemplateCustomCreateReq
         pipelineTemplateCommonService.checkTemplateBasicInfo(
             projectId = request.projectId,
             name = request.name
         )
         val templateId = request.id!!
-        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+        val version = pipelineTemplateModelGenerator.generateVersion()
         val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = request.type,
             projectId = request.projectId,
@@ -98,6 +91,15 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
             latestVersionStatus = VersionStatus.COMMITTING
         )
 
+        val modelTransferResult = pipelineTemplateModelGenerator.transfer(
+            userId = userId,
+            projectId = request.projectId,
+            storageType = PipelineStorageType.MODEL,
+            templateType = request.type,
+            templateModel = defaultTemplateModel,
+            templateSetting = setting,
+            yaml = null
+        )
         val pipelineTemplateResource = PipelineTemplateResource(
             projectId = request.projectId,
             templateId = templateId,
@@ -105,33 +107,18 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
             number = PipelineTemplateConstant.INIT_NUMBER,
-            model = defaultTemplateModel,
-            yaml = null,
+            model = modelTransferResult.templateModel,
+            yaml = modelTransferResult.yamlWithVersion?.yamlStr,
             creator = userId,
             status = VersionStatus.COMMITTING
         )
-
-        val pipelineTemplatePermission = PipelineTemplatePermission(
-            projectId = request.projectId,
-            id = templateId,
-            name = request.name,
-            creator = userId
-        )
-        templatePersistenceService.saveTemplate(
-            pipelineTemplateInfo = pipelineTemplateInfo,
-            pipelineTemplateResource = pipelineTemplateResource,
-            pipelineTemplateSetting = setting,
-            pipelineTemplatePermission = pipelineTemplatePermission
-        )
-        return PipelineTemplateCreateResp(
+        return PipelineTemplateVersionContext(
+            userId = userId,
             projectId = request.projectId,
             templateId = templateId,
-            version = version
+            pipelineTemplateInfo = pipelineTemplateInfo,
+            pipelineTemplateResource = pipelineTemplateResource,
+            pipelineTemplateSetting = setting
         )
-    }
-
-    companion object {
-        private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
-        private val logger = LoggerFactory.getLogger(PipelineTemplateInitDraftHandler::class.java)
     }
 }

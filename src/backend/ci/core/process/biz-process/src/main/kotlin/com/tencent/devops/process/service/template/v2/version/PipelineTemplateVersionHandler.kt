@@ -25,24 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.service.template.v2.version
 
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 
-@Schema(title = "版本状态变更事件")
-enum class VersionEvent {
-    @Schema(title = "初始化草稿")
-    INIT_DRAFT,
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "提交到分支")
-    COMMIT_BRANCH,
-    @Schema(title = "接收普通分支推送")
-    RECEIVE_BRANCH_PUSH,
-    @Schema(title = "接收默认分支推送")
-    RECEIVE_DEFAULT_BRANCH_PUSH,
-    @Schema(title = "接收分支合并事件")
-    RECEIVE_BRANCH_MERGE;
+/**
+ * 模版版本处理类
+ */
+interface PipelineTemplateVersionHandler {
+
+    fun support(versionAction: PipelineVersionAction): Boolean
+
+    fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult
 }

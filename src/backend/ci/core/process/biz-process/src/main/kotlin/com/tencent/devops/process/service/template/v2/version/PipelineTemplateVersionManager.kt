@@ -25,32 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
+/**
+ * 流水线版本管理
+ */
 @Service
-class PipelineTemplateStateMachine @Autowired constructor(
-    private val pipelineTemplateVersionHandlers: List<PipelineTemplateVersionHandler<*, *>>
+class PipelineTemplateVersionManager @Autowired constructor(
+    private val versionHandlers: List<PipelineTemplateVersionHandler>,
+    private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
+    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator
 ) {
-    fun <T : PipelineTemplateVersionReq, R> fireEvent(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<T>
-    ): R {
-        @Suppress("UNCHECKED_CAST")
-        val handler = getHandler(source = source, event = event) as PipelineTemplateVersionHandler<T, R>
-        return handler.execute(source, event, context)
+
+    fun deployTemplate(
+        userId: String,
+        versionAction: PipelineVersionAction,
+        request: PipelineTemplateVersionReq
+    ): DeployTemplateResult {
+        val context = getConverter(request).convert(userId = userId, request = request)
+        pipelineTemplateModelValidator.validate(
+            pipelineTemplateResource = context.pipelineTemplateResource,
+            pipelineSetting = context.pipelineTemplateSetting
+        )
+        return getHandler(versionAction).handle(context = context)
     }
 
-    private fun getHandler(source: VersionStatus, event: PipelineVersionAction): PipelineTemplateVersionHandler<*, *> {
-        return pipelineTemplateVersionHandlers.firstOrNull { it.support(source, event) } ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+    private fun getHandler(versionAction: PipelineVersionAction): PipelineTemplateVersionHandler {
+        return versionHandlers.find { it.support(versionAction) }
+            ?: throw IllegalArgumentException("Unsupported version event: $versionAction")
+    }
+
+    private fun getConverter(request: PipelineTemplateVersionReq): PipelineTemplateVersionReqConverter {
+        return versionReqConverters.find { it.support(request) }
+            ?: throw IllegalArgumentException("Unsupported version request: $request")
     }
 }

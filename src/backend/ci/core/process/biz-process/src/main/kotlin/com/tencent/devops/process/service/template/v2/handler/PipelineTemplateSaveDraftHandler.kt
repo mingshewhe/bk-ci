@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2.handler
 
-import com.tencent.devops.common.pipeline.enums.VersionEvent
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
@@ -57,13 +57,13 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
     private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) : PipelineTemplateVersionHandler<PipelineTemplateDraftSaveReq, Long> {
 
-    override fun support(source: VersionStatus, event: VersionEvent): Boolean {
-        return source == VersionStatus.COMMITTING && event == VersionEvent.SAVE_DRAFT
+    override fun support(source: VersionStatus, event: PipelineVersionAction): Boolean {
+        return source == VersionStatus.COMMITTING && event == PipelineVersionAction.SAVE_DRAFT
     }
 
     override fun execute(
         source: VersionStatus,
-        event: VersionEvent,
+        event: PipelineVersionAction,
         context: PipelineTemplateVersionContext<PipelineTemplateDraftSaveReq>
     ): Long {
         val userId = context.userId

@@ -25,19 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.pojo.pipeline
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import io.swagger.v3.oas.annotations.media.Schema
 
-interface PipelineTemplateVersionHandler<T : PipelineTemplateVersionReq, R> {
-
-    fun support(source: VersionStatus, event: PipelineVersionAction): Boolean
-
-    fun execute(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<T>
-    ): R
-}
+@Schema(title = "配置流水线结果")
+data class DeployTemplateResult(
+    @get:Schema(title = "模版ID", required = true)
+    val templateId: String,
+    @get:Schema(title = "模版名称", required = true)
+    val templateName: String,
+    @get:Schema(title = "流水线版本号", required = true)
+    val version: Int,
+    @get:Schema(title = "发布版本号", required = false)
+    val versionNum: Int?,
+    @get:Schema(title = "生成版本名称", required = false)
+    val versionName: String?,
+    @get:Schema(title = "目标链接", required = false)
+    val targetUrl: String? = null,
+    @get:Schema(title = "yaml信息", required = false)
+    val yamlInfo: PipelineYamlVo? = null,
+    @get:Schema(title = "是否更新了推荐版本号基准值", required = false)
+    val updateBuildNo: Boolean? = null
+)

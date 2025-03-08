@@ -25,19 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 
-interface PipelineTemplateVersionHandler<T : PipelineTemplateVersionReq, R> {
+/**
+ * 流水线模版版本请求转换器
+ */
+interface PipelineTemplateVersionReqConverter {
 
-    fun support(source: VersionStatus, event: PipelineVersionAction): Boolean
+    fun support(request: PipelineTemplateVersionReq): Boolean
 
-    fun execute(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<T>
-    ): R
+    fun convert(userId: String, request: PipelineTemplateVersionReq): PipelineTemplateVersionContext
 }

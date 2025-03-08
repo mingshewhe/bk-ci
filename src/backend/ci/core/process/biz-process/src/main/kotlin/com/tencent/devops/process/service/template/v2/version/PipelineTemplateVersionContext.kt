@@ -25,19 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.handler
+package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import io.swagger.v3.oas.annotations.media.Schema
 
-interface PipelineTemplateVersionHandler<T : PipelineTemplateVersionReq, R> {
-
-    fun support(source: VersionStatus, event: PipelineVersionAction): Boolean
-
-    fun execute(
-        source: VersionStatus,
-        event: PipelineVersionAction,
-        context: PipelineTemplateVersionContext<T>
-    ): R
-}
+/**
+ * 模版版本上下文
+ */
+@Schema(title = "模版版本上下文")
+data class PipelineTemplateVersionContext(
+    val userId: String,
+    val projectId: String,
+    val templateId: String,
+    @get:Schema(title = "模版信息", required = true)
+    val pipelineTemplateInfo: PipelineTemplateInfo,
+    @get:Schema(title = "模版编排", required = true)
+    val pipelineTemplateResource: PipelineTemplateResource,
+    @get:Schema(title = "模版设置", required = true)
+    val pipelineTemplateSetting: PipelineSetting,
+    @get:Schema(title = "是否开启PAC", required = true)
+    val enablePac: Boolean = false,
+    @get:Schema(title = "开启PAC,yaml文件信息", required = true)
+    val yamlInfo: PipelineYamlVo? = null
+)

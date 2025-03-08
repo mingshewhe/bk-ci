@@ -8,7 +8,7 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.VersionEvent
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -89,7 +89,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
         pipelineTemplateStateMachine.fireEvent<PipelineTemplateCustomCreateReq, PipelineTemplateCreateResp>(
             source = VersionStatus.INIT,
-            event = VersionEvent.INIT_DRAFT,
+            event = PipelineVersionAction.INIT_DRAFT,
             context = context
         )
     }
@@ -271,7 +271,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
         return pipelineTemplateStateMachine.fireEvent(
             source = VersionStatus.COMMITTING,
-            event = VersionEvent.SAVE_DRAFT,
+            event = PipelineVersionAction.SAVE_DRAFT,
             context = context
         )
     }
