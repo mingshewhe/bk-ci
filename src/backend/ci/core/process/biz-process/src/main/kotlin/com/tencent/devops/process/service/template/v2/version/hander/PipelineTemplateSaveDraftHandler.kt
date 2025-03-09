@@ -28,10 +28,15 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
@@ -43,14 +48,15 @@ import org.springframework.stereotype.Service
 
 /**
  * 流水线模版保存草稿
+ *
  */
 @Service
 class PipelineTemplateSaveDraftHandler @Autowired constructor(
+    private val dslContext: DSLContext,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
-    private val dslContext: DSLContext
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService
 ) : PipelineTemplateVersionHandler {
     override fun support(versionAction: PipelineVersionAction): Boolean {
         return versionAction == PipelineVersionAction.SAVE_DRAFT
@@ -58,20 +64,32 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
 
     override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
         with(context) {
-            val pipelineTemplatePermission = PipelineTemplatePermission(
-                projectId = projectId,
-                id = templateId,
-                name = pipelineTemplateInfo.name,
-                creator = userId
-            )
-            val templateInfo = pipelineTemplateInfoService.get(
+            val templateInfo = pipelineTemplateInfoService.getOrNull(
                 projectId = projectId,
                 templateId = templateId
             )
             if (templateInfo == null) {
-                createTemplate()
+                pipelineTemplatePersistenceService.createTemplate(
+                    pipelineTemplateInfo = pipelineTemplateInfo,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting,
+                    pipelineTemplatePermission = PipelineTemplatePermission(
+                        projectId = projectId,
+                        id = templateId,
+                        name = pipelineTemplateInfo.name,
+                        creator = userId
+                    )
+                )
             } else {
-
+                val draftVersion = pipelineTemplateResourceService.getDraftVersionResource(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+                if (draftVersion == null) {
+                    createDraftVersion()
+                } else {
+                    updateDraftVersion()
+                }
             }
             return DeployTemplateResult(
                 templateId = templateId,
@@ -83,13 +101,9 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionContext.createTemplate() {
+    private fun PipelineTemplateVersionContext.createDraftVersion() {
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
-            pipelineTemplateInfoService.create(
-                transactionContext = transactionContext,
-                pipelineTemplateInfo = pipelineTemplateInfo
-            )
             pipelineTemplateResourceService.create(
                 transactionContext = transactionContext,
                 pipelineTemplateResource = pipelineTemplateResource
@@ -98,20 +112,40 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
                 transactionContext = transactionContext,
                 pipelineTemplateSetting = pipelineTemplateSetting
             )
-            pipelineTemplatePermissionService.createResource(
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = pipelineTemplateInfo.name
-            )
         }
     }
 
-    private fun PipelineTemplateVersionContext.createDraft() {
-
-    }
-
-    private fun PipelineTemplateVersionContext.updateDraft() {
-
+    private fun PipelineTemplateVersionContext.updateDraftVersion() {
+        // 若存在草稿，则在原草稿版本上更新
+        val draftVersionResource = pipelineTemplateResourceService.get(
+            PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                status = VersionStatus.COMMITTING
+            )
+        )
+        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+            params = pipelineTemplateResource.params,
+            model = pipelineTemplateResource.model,
+            yaml = pipelineTemplateResource.yaml,
+            updater = userId,
+            sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
+        )
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateResourceService.update(
+                transactionContext = context,
+                record = templateResourceUpdateInfo,
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = draftVersionResource.projectId,
+                    templateId = draftVersionResource.templateId,
+                    version = draftVersionResource.version
+                )
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = context,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
+        }
     }
 }

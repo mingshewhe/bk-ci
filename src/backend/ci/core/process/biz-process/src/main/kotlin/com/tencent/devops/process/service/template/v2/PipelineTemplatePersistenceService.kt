@@ -32,7 +32,6 @@ import com.tencent.devops.process.permission.template.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,7 +49,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     private val dslContext: DSLContext
 ) {
 
-    fun saveTemplate(
+    fun createTemplate(
         pipelineTemplateInfo: PipelineTemplateInfo? = null,
         pipelineTemplateResource: PipelineTemplateResource? = null,
         pipelineTemplateSetting: PipelineSetting? = null,

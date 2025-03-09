@@ -117,7 +117,7 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
             name = request.name,
             creator = userId
         )
-        templatePersistenceService.saveTemplate(
+        templatePersistenceService.createTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateResource = pipelineTemplateResource,
             pipelineTemplateSetting = setting,

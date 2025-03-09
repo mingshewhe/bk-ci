@@ -169,7 +169,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = marketTemplateInfo.name,
             creator = userId
         )
-        pipelineTemplatePersistenceService.saveTemplate(
+        pipelineTemplatePersistenceService.createTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateSetting = setting,
             pipelineTemplatePermission = pipelineTemplatePermission,
@@ -562,7 +562,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = name,
             creator = userId
         )
-        pipelineTemplatePersistenceService.saveTemplate(
+        pipelineTemplatePersistenceService.createTemplate(
             pipelineTemplateInfo = templateInfo,
             pipelineTemplateResource = templateResource,
             pipelineTemplateSetting = setting,

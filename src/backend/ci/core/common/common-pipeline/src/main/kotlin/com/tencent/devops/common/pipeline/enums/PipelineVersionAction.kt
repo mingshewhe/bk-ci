@@ -35,6 +35,8 @@ enum class PipelineVersionAction {
     INIT_DRAFT,
     @Schema(title = "保存草稿")
     SAVE_DRAFT,
+    @Schema(title = "创建分支版本")
+    CREATE_BRANCH_VERSION,
     @Schema(title = "发布草稿")
     RELEASE_DRAFT,
     @Schema(title = "提交到分支")

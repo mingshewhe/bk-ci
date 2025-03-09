@@ -148,7 +148,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
                 )
             }
         }
-        pipelineTemplatePersistenceService.saveTemplate(
+        pipelineTemplatePersistenceService.createTemplate(
             pipelineTemplateSetting = pipelineTemplateSetting,
             pipelineTemplateResource = pipelineTemplateResource
         )
