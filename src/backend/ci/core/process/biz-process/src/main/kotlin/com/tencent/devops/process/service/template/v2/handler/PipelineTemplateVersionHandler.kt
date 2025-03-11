@@ -25,26 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.pojo.transfer
+package com.tencent.devops.process.service.template.v2.handler
 
-import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.common.pipeline.enums.VersionEvent
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 
-@Schema(title = "流水线互转-Response")
-data class TransferResponse(
-    @get:Schema(title = "完整model、流水线级模板以及配套设置")
-    val modelAndSetting: PipelineModelAndSetting? = null,
-    @get:Schema(title = "局部模板model和setting")
-    val templateModelAndSetting: TemplateModelAndSetting? = null,
-    @get:Schema(title = "当前yaml内容")
-    val yamlWithVersion: YamlWithVersion? = null,
-    @get:Schema(title = "定位")
-    val mark: TransferMark? = null,
-    @get:Schema(title = "互转报错信息")
-    val error: String? = null,
-    @get:Schema(title = "是否支持YAML解析", required = true)
-    val yamlSupported: Boolean = true,
-    @get:Schema(title = "YAML解析异常信息")
-    val yamlInvalidMsg: String? = null
-)
+interface PipelineTemplateVersionHandler<T : PipelineTemplateVersionReq, R> {
+
+    fun support(source: VersionStatus, event: VersionEvent): Boolean
+
+    fun execute(
+        source: VersionStatus,
+        event: VersionEvent,
+        context: PipelineTemplateVersionContext<T>
+    ): R
+}

@@ -10,7 +10,7 @@ import com.tencent.devops.model.process.tables.TPipelineTemplateSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateSettingVersionRecord
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository

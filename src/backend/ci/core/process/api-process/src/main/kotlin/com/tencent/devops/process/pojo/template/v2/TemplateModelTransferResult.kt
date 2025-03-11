@@ -25,26 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.pojo.transfer
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
+import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线互转-Response")
-data class TransferResponse(
-    @get:Schema(title = "完整model、流水线级模板以及配套设置")
-    val modelAndSetting: PipelineModelAndSetting? = null,
-    @get:Schema(title = "局部模板model和setting")
-    val templateModelAndSetting: TemplateModelAndSetting? = null,
-    @get:Schema(title = "当前yaml内容")
-    val yamlWithVersion: YamlWithVersion? = null,
-    @get:Schema(title = "定位")
-    val mark: TransferMark? = null,
-    @get:Schema(title = "互转报错信息")
-    val error: String? = null,
-    @get:Schema(title = "是否支持YAML解析", required = true)
-    val yamlSupported: Boolean = true,
-    @get:Schema(title = "YAML解析异常信息")
-    val yamlInvalidMsg: String? = null
+@Schema(title = "流水线模板模型转换结果")
+data class TemplateModelTransferResult(
+    @get:Schema(title = "模版类型", required = false)
+    val templateType: PipelineTemplateType,
+    @get:Schema(title = "流水线模板模型", required = true)
+    val templateModel: ITemplateModel,
+    @get:Schema(title = "流水线设置", required = false)
+    val templateSetting: PipelineTemplateSetting? = null,
+    @get:Schema(title = "当前yaml内容", required = false)
+    val yamlWithVersion: YamlWithVersion? = null
 )

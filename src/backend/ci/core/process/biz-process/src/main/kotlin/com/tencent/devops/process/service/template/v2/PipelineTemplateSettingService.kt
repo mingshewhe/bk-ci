@@ -2,8 +2,8 @@ package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.dao.template.PipelineTemplateSettingDao
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
 import org.jooq.DSLContext

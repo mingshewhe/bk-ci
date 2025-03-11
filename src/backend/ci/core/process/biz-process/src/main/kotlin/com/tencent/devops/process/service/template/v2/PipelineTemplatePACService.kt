@@ -5,7 +5,7 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSetting
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import org.springframework.stereotype.Service
 
 /**

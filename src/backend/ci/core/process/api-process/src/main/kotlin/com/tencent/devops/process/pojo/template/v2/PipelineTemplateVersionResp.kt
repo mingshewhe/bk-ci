@@ -25,26 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.pojo.transfer
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
-import io.swagger.v3.oas.annotations.media.Schema
-
-@Schema(title = "流水线互转-Response")
-data class TransferResponse(
-    @get:Schema(title = "完整model、流水线级模板以及配套设置")
-    val modelAndSetting: PipelineModelAndSetting? = null,
-    @get:Schema(title = "局部模板model和setting")
-    val templateModelAndSetting: TemplateModelAndSetting? = null,
-    @get:Schema(title = "当前yaml内容")
-    val yamlWithVersion: YamlWithVersion? = null,
-    @get:Schema(title = "定位")
-    val mark: TransferMark? = null,
-    @get:Schema(title = "互转报错信息")
-    val error: String? = null,
-    @get:Schema(title = "是否支持YAML解析", required = true)
-    val yamlSupported: Boolean = true,
-    @get:Schema(title = "YAML解析异常信息")
-    val yamlInvalidMsg: String? = null
-)
+/**
+ * 为了统一模版版本变更返回体,所有模版版本变更返回体都应该继承该接口
+ */
+interface PipelineTemplateVersionResp

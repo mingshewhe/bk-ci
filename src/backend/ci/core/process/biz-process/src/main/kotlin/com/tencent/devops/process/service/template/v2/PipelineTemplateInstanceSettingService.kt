@@ -69,7 +69,7 @@ class PipelineTemplateInstanceSettingService @Autowired constructor(
                 maxPipelineResNum = maxPipelineResNum,
                 pipelineAsCodeSettings = pipelineAsCodeSettings?.copy(
                     enable = enabledPac
-                ) ?: PipelineAsCodeSettings(enable = enabledPac),
+                ) ?: PipelineAsCodeSettings(enable = enabledPac)
             )
         }
     }

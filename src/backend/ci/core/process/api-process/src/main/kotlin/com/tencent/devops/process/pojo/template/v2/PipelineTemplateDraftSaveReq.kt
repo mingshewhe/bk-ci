@@ -3,6 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板更新请求体")
@@ -31,4 +32,4 @@ data class PipelineTemplateDraftSaveReq(
     val yaml: String? = null,
     @get:Schema(title = "存储格式", required = true)
     val storageType: PipelineStorageType? = PipelineStorageType.MODEL
-)
+) : PipelineTemplateVersionReq

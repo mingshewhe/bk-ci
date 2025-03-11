@@ -25,26 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.pojo.transfer
+package com.tencent.devops.common.pipeline.enums
 
-import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线互转-Response")
-data class TransferResponse(
-    @get:Schema(title = "完整model、流水线级模板以及配套设置")
-    val modelAndSetting: PipelineModelAndSetting? = null,
-    @get:Schema(title = "局部模板model和setting")
-    val templateModelAndSetting: TemplateModelAndSetting? = null,
-    @get:Schema(title = "当前yaml内容")
-    val yamlWithVersion: YamlWithVersion? = null,
-    @get:Schema(title = "定位")
-    val mark: TransferMark? = null,
-    @get:Schema(title = "互转报错信息")
-    val error: String? = null,
-    @get:Schema(title = "是否支持YAML解析", required = true)
-    val yamlSupported: Boolean = true,
-    @get:Schema(title = "YAML解析异常信息")
-    val yamlInvalidMsg: String? = null
-)
+@Schema(title = "版本状态变更事件")
+enum class VersionEvent {
+    @Schema(title = "初始化草稿")
+    INIT_DRAFT,
+    @Schema(title = "保存草稿")
+    SAVE_DRAFT,
+    @Schema(title = "发布草稿")
+    RELEASE_DRAFT,
+    @Schema(title = "提交到分支")
+    COMMIT_BRANCH,
+    @Schema(title = "接收普通分支推送")
+    RECEIVE_BRANCH_PUSH,
+    @Schema(title = "接收默认分支推送")
+    RECEIVE_DEFAULT_BRANCH_PUSH,
+    @Schema(title = "接收分支合并事件")
+    RECEIVE_BRANCH_MERGE;
+}

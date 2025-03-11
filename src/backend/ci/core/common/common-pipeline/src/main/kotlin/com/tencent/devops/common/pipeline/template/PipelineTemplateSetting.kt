@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.common.pipeline.template
 
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
@@ -84,7 +84,7 @@ data class PipelineTemplateSetting(
     @get:Schema(title = "YAML流水线特殊配置", required = false)
     val pipelineAsCodeSettings: PipelineAsCodeSettings?,
     @get:Schema(title = "创建人", required = true)
-    val creator: String?,
+    val creator: String? = null,
     @get:Schema(title = "更新人", required = false)
     val updater: String? = null
 ) {

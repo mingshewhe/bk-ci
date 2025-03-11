@@ -6,7 +6,6 @@ import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import io.swagger.v3.oas.annotations.media.Schema
-import java.time.LocalDateTime
 
 @Schema(title = "流水线模板基础信息")
 data class PipelineTemplateInfoResponse(
