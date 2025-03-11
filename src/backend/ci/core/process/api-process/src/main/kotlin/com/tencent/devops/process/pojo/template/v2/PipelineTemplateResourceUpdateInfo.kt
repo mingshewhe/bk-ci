@@ -37,7 +37,7 @@ import java.time.LocalDateTime
 @Schema(title = "流水线模版资源更新请求体")
 data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "版本号", required = true)
-    val version: Long? = null,
+    val version: Int? = null,
     @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
     val number: Int? = null,
     @get:Schema(title = "版本名称", required = true)
@@ -45,11 +45,11 @@ data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "模板发布版本号", required = true)
     val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = true)
-    val modelVersion: Int? = null,
+    val pipelineVersion: Int? = null,
     @get:Schema(title = "模板触发器版本号", required = true)
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
-    val baseVersion: Long? = null,
+    val baseVersion: Int? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "编排", required = true)
@@ -61,7 +61,7 @@ data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "分支状态", required = true)
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本发布描述", required = true)
-    val releaseComment: String? = null,
+    val description: String? = null,
     @get:Schema(title = "更新人", required = true)
     val updater: String,
     @get:Schema(title = "发布时间", required = true)

@@ -110,7 +110,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Long
+        version: Int
     ): Result<PipelineTemplateDetailsResponse> {
         logger.info("get template details {}|{}|{}|{}", userId, projectId, templateId, version)
         permissionService.checkPipelineTemplatePermissionWithMessage(
@@ -173,8 +173,8 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        baseVersion: Long,
-        comparedVersion: Long
+        baseVersion: Int,
+        comparedVersion: Int
     ): Result<PipelineTemplateCompareResponse> {
         logger.info("compare template {}|{}|{}|{}|{}", userId, projectId, templateId, baseVersion, comparedVersion)
         permissionService.checkPipelineTemplatePermissionWithMessage(

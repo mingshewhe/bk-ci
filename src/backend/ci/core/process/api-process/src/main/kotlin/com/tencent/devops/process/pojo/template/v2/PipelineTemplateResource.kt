@@ -36,6 +36,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版资源")
 data class PipelineTemplateResource(
+    @get:Schema(title = "主键ID", required = true)
+    val id: Long,
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)
@@ -45,15 +47,13 @@ data class PipelineTemplateResource(
     @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int,
     @get:Schema(title = "版本号", required = true)
-    val version: Long,
-    @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
-    val number: Int,
+    val version: Int,
     @get:Schema(title = "模板发布-版本名称", required = false)
     val versionName: String? = null,
     @get:Schema(title = "模板发布-版本号", required = false)
     val versionNum: Int? = null,
     @get:Schema(title = "模板发布-模板编排版本号", required = false)
-    val modelVersion: Int? = null,
+    val pipelineVersion: Int? = null,
     @get:Schema(title = "模板发布-模板触发器版本号", required = false)
     val triggerVersion: Int? = null,
     @get:Schema(title = "源模板项目ID", required = false)
@@ -61,9 +61,9 @@ data class PipelineTemplateResource(
     @get:Schema(title = "源模板ID", required = false)
     val srcTemplateId: String? = null,
     @get:Schema(title = "源模板版本", required = false)
-    val srcTemplateVersion: Long? = null,
+    val srcTemplateVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = false)
-    val baseVersion: Long? = null,
+    val baseVersion: Int? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "编排", required = false)
@@ -75,7 +75,7 @@ data class PipelineTemplateResource(
     @get:Schema(title = "分支状态", required = false)
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本发布描述", required = false)
-    val releaseComment: String? = null,
+    val description: String? = null,
     @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的权重为0", required = false)
     val sortWeight: Int? = 100,
     @get:Schema(title = "创建人", required = true)

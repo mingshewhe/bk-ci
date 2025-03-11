@@ -51,7 +51,7 @@ class PipelineTemplateAtomService @Autowired constructor(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Long? = null
+        version: Int? = null
     ): Result<Map<String, AtomProp>?> {
         logger.info("get template atom prop list {}|{}|{}|{}", userId, projectId, templateId, version)
         val templateInfo = pipelineTemplateInfoService.get(

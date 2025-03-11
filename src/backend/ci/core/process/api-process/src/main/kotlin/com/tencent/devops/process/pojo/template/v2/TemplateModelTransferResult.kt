@@ -41,7 +41,7 @@ data class TemplateModelTransferResult(
     @get:Schema(title = "流水线模板模型", required = true)
     val templateModel: ITemplateModel,
     @get:Schema(title = "流水线设置", required = false)
-    val templateSetting: PipelineSetting? = null,
+    val templateSetting: PipelineSetting,
     @get:Schema(title = "当前yaml内容", required = false)
     val yamlWithVersion: YamlWithVersion? = null
 )

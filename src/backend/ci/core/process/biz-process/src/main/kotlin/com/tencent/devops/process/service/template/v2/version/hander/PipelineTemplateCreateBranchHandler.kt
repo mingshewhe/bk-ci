@@ -55,7 +55,7 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
             return DeployTemplateResult(
                 templateId = templateId,
                 templateName = pipelineTemplateInfo.name,
-                version = pipelineTemplateResource.number,
+                version = pipelineTemplateResource.version,
                 versionNum = pipelineTemplateResource.versionNum,
                 versionName = pipelineTemplateResource.versionName
             )

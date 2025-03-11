@@ -218,7 +218,7 @@ class TemplateInstanceBaseDao {
             baseId = id,
             projectId = projectId,
             templateId = templateId,
-            templateVersion = templateVersion.toLong(),
+            templateVersion = templateVersion.toInt(),
             useTemplateSetting = useTemplateSettingsFlag,
             totalItemNum = totalItemNum,
             successItemNum = successItemNum,

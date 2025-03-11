@@ -30,7 +30,7 @@ data class PipelineTemplateCommonCondition(
     @get:Schema(title = "是否开启PAC", required = false)
     val enablePac: Boolean? = null,
     @get:Schema(title = "最新发布版本号", required = false)
-    val releasedVersion: Long? = null,
+    val releasedVersion: Int? = null,
     @get:Schema(title = "最新发布版本名称", required = false)
     val releasedVersionName: String? = null,
     @get:Schema(title = "最新发布配置版本号", required = false)

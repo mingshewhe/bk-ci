@@ -117,7 +117,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val type = PipelineTemplateType.PIPELINE
 
         val templateId = request.id!!
-        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+        val version = PipelineTemplateConstant.INIT_VERSION
 
         val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = type,
@@ -149,12 +149,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
             latestVersionStatus = VersionStatus.RELEASED
         )
         val templateResource = PipelineTemplateResource(
+            id = pipelineTemplateModelGenerator.generateId(),
             projectId = request.projectId,
             templateId = templateId,
             type = marketTemplateInfo.type,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
             srcTemplateVersion = marketTemplateResource.version,
@@ -337,7 +337,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateDetails(
         projectId: String,
         templateId: String,
-        version: Long
+        version: Int
     ): PipelineTemplateDetailsResponse {
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
@@ -447,8 +447,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun compare(
         projectId: String,
         templateId: String,
-        baseVersion: Long,
-        comparedVersion: Long
+        baseVersion: Int,
+        comparedVersion: Int
     ): PipelineTemplateCompareResponse {
         pipelineTemplateInfoService.get(
             projectId = projectId,
@@ -497,7 +497,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             version = srcTemplateInfo.releasedVersion!!
         )
         val templateId = UUIDUtil.generate()
-        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
+        val version = PipelineTemplateConstant.INIT_VERSION
 
         val setting = if (copySetting) {
             val srcTemplateSetting = pipelineTemplateSettingService.get(
@@ -543,14 +543,14 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
 
         val templateResource = srcTemplateResource.copy(
+            id = pipelineTemplateModelGenerator.generateId(),
             projectId = projectId,
             templateId = templateId,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
-            number = 1,
             versionName = "V1(P1.T1.1)",
             versionNum = 1,
-            modelVersion = 1,
+            pipelineVersion = 1,
             triggerVersion = 1,
             creator = userId,
             releaseTime = LocalDateTime.now().timestampmilli()
@@ -576,7 +576,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
     // 回滚版本
 
     companion object {
-        private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
         private val logger = LoggerFactory.getLogger(PipelineTemplateFacadeService::class.java)
     }
 }

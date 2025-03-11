@@ -107,7 +107,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         userId: String,
         templateId: String,
-        version: Long,
+        version: Int,
         useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesReleaseRequest
     ): TemplateOperationRet {
@@ -132,6 +132,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     instance = instance,
                     templateModel = templateModel,
                     templateVersion = version,
+                    oldTemplateVersion = templateResource.id,
                     useTemplateSettings = useTemplateSettings,
                     templateSettingVersion = templateResource.settingVersion,
                     enabledPac = request.enablePac,
@@ -175,7 +176,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         targetAction: CodeTargetAction?,
         description: String?,
         templateModel: Model,
-        templateVersion: Long,
+        templateVersion: Int,
+        // todo 老版本
+        oldTemplateVersion: Long,
         templateSettingVersion: Int,
         useTemplateSettings: Boolean,
         labels: List<String>?,
@@ -219,7 +222,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
             buildNo = instance.buildNo,
             param = instance.param,
-            fixTemplateVersion = templateVersion,
+            // todo 老版本
+            fixTemplateVersion = oldTemplateVersion,
             versionStatus = VersionStatus.RELEASED,
             branchName = branchName,
             yamlInfo = instance.yamlInfo,
@@ -351,7 +355,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         userId: String,
         templateId: String,
-        version: Long,
+        version: Int,
         useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesReleaseRequest
     ): String {
@@ -411,7 +415,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         userId: String,
         templateId: String,
-        version: Long? = null,
+        version: Int? = null,
         versionName: String? = null,
         useTemplateSettings: Boolean,
         instances: List<TemplateInstanceUpdate>
@@ -481,7 +485,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         userId: String,
         templateId: String,
-        version: Long?,
+        version: Int?,
         versionName: String?,
         instanceSize: Int,
         srcTemplateId: String?
@@ -619,7 +623,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         userId: String,
         templateId: String,
-        version: Long,
+        version: Int,
         useTemplateSettings: Boolean,
         instances: List<TemplateInstanceUpdate>
     ): Boolean {
@@ -630,9 +634,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             version = version
         )
         val templateModel = templateResource.model as Model
-        val settingVersion = templateResource.settingVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        val settingVersion = templateResource.settingVersion
 
         checkTemplateAtomsForExplicitVersion(templateModel, userId)
 
@@ -978,6 +980,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                             description = instanceBase.description,
                             templateModel = templateModel,
                             templateVersion = instanceBase.templateVersion,
+                            oldTemplateVersion = templateResource.id,
                             templateSettingVersion = templateSettingVersion,
                             useTemplateSettings = instanceBase.useTemplateSetting,
                             labels = instanceBase.labels,
@@ -1061,7 +1064,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         val templateReleasedVersion = templateInfo.releasedVersion ?: throw ErrorCodeException(
             errorCode = ""
         )
-
+        val latestReleasedResource = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = templateId
+        )
         val hasPermissionList = pipelinePermissionService.getResourceByPermission(
             userId = userId,
             projectId = projectId,
@@ -1107,13 +1113,15 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             val status = generateTemplatePipelineStatus(
                 templateInstanceItem = templateInstanceItem,
                 templatePipelineId = it.pipelineId,
+                // todo 老版本，最后进行修正
                 templatePipelineVersion = it.version,
-                templateReleasedVersion = templateReleasedVersion,
+                templateReleasedVersion = latestReleasedResource.id,
             )
             val enabledPac = pipeline2PacSettings[it.pipelineId]?.enable ?: false
             PipelineTemplateRelatedResp(
                 templateId = it.templateId,
                 versionName = it.versionName,
+                // todo 老版本，最后进行修正
                 version = it.version,
                 pipelineId = it.pipelineId,
                 pipelineName = it.pipelineName,

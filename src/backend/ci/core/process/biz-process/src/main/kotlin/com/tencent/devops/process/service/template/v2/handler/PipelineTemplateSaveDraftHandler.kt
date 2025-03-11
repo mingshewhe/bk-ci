@@ -55,7 +55,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val dslContext: DSLContext,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService
-) : PipelineTemplateVersionHandler<PipelineTemplateDraftSaveReq, Long> {
+) : PipelineTemplateVersionHandler<PipelineTemplateDraftSaveReq, Int> {
 
     override fun support(source: VersionStatus, event: PipelineVersionAction): Boolean {
         return source == VersionStatus.COMMITTING && event == PipelineVersionAction.SAVE_DRAFT
@@ -65,7 +65,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         source: VersionStatus,
         event: PipelineVersionAction,
         context: PipelineTemplateVersionContext<PipelineTemplateDraftSaveReq>
-    ): Long {
+    ): Int {
         val userId = context.userId
         val request = context.request
         logger.info("save template draft {}|{}|{}", request.projectId, userId, request)
@@ -103,7 +103,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         userId: String,
         templateInfo: PipelineTemplateInfo,
         request: PipelineTemplateDraftSaveReq
-    ): Long {
+    ): Int {
         // 若不存在草稿版本，则基于版本进行创建新版本草稿
         val latestTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
             projectId = request.projectId,
@@ -124,15 +124,14 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             templateSetting = request.templateSetting,
             yaml = request.yaml
         )
-
-        val version = pipelineTemplateModelGenerator.generateVersion()
+        val version = latestTemplateResource.version + 1
         val pipelineTemplateResource = PipelineTemplateResource(
+            id = pipelineTemplateModelGenerator.generateId(),
             projectId = request.projectId,
             templateId = request.templateId,
             type = templateInfo.type,
-            settingVersion = latestTemplateResource.settingVersion?.let { it + 1 },
-            version = pipelineTemplateModelGenerator.generateVersion(),
-            number = latestTemplateResource.number + 1,
+            settingVersion = latestTemplateResource.settingVersion + 1,
+            version = version,
             baseVersion = baseVersionResource.version,
             params = request.params,
             model = transferResult.templateModel,
@@ -140,14 +139,10 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             status = VersionStatus.COMMITTING,
             creator = userId
         )
-        val pipelineTemplateSetting = transferResult.templateSetting?.let { setting ->
-            latestTemplateResource.settingVersion?.let { currentVersion ->
-                setting.copy(
-                    pipelineId = templateInfo.id,
-                    version = currentVersion + 1
-                )
-            }
-        }
+        val pipelineTemplateSetting = transferResult.templateSetting.copy(
+            pipelineId = templateInfo.id,
+            version = latestTemplateResource.settingVersion + 1
+        )
         pipelineTemplatePersistenceService.createTemplate(
             pipelineTemplateSetting = pipelineTemplateSetting,
             pipelineTemplateResource = pipelineTemplateResource
@@ -162,7 +157,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         userId: String,
         templateInfo: PipelineTemplateInfo,
         request: PipelineTemplateDraftSaveReq
-    ): Long {
+    ): Int {
         // 若存在草稿，则在原草稿版本上更新
         val draftVersionResource = pipelineTemplateResourceService.get(
             PipelineTemplateResourceCommonCondition(
@@ -198,16 +193,14 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
                     version = draftVersionResource.version
                 )
             )
-            if (transferResult.templateSetting != null) {
-                pipelineTemplateSettingService.create(
-                    transactionContext = dslContext,
-                    pipelineTemplateSetting = transferResult.templateSetting!!.copy(
-                        pipelineId = request.templateId,
-                        version = draftVersionResource.settingVersion!!,
-                        creator = draftVersionResource.creator
-                    )
+            pipelineTemplateSettingService.create(
+                transactionContext = dslContext,
+                pipelineTemplateSetting = transferResult.templateSetting.copy(
+                    pipelineId = request.templateId,
+                    version = draftVersionResource.settingVersion,
+                    creator = draftVersionResource.creator
                 )
-            }
+            )
         }
         return draftVersionResource.version
     }

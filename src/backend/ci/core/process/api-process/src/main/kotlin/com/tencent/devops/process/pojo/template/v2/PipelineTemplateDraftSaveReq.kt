@@ -4,7 +4,6 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.ITemplateModel
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板更新请求体")
@@ -14,7 +13,7 @@ data class PipelineTemplateDraftSaveReq(
     @get:Schema(title = "模板Id", required = true)
     val templateId: String,
     @get:Schema(title = "草稿源版本", required = true)
-    val baseVersion: Long,
+    val baseVersion: Int,
     @get:Schema(title = "logo地址", required = false)
     val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = false)

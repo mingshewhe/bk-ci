@@ -70,7 +70,6 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
             name = request.name
         )
         val templateId = request.id!!
-        val version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
         val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = request.type,
             projectId = request.projectId,
@@ -99,12 +98,12 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
         )
 
         val pipelineTemplateResource = PipelineTemplateResource(
+            id = pipelineTemplateModelGenerator.generateId(),
             projectId = request.projectId,
             templateId = templateId,
             type = request.type,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
-            version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
+            version = PipelineTemplateConstant.INIT_VERSION,
             model = defaultTemplateModel,
             yaml = null,
             creator = userId,
@@ -126,7 +125,7 @@ class PipelineTemplateInitDraftHandler @Autowired constructor(
         return PipelineTemplateCreateResp(
             projectId = request.projectId,
             templateId = templateId,
-            version = version
+            version = PipelineTemplateConstant.INIT_VERSION
         )
     }
 

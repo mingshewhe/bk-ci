@@ -63,7 +63,6 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
             name = request.name
         )
         val templateId = request.id!!
-        val version = pipelineTemplateModelGenerator.generateVersion()
         val setting = pipelineTemplateModelGenerator.getDefaultSetting(
             type = request.type,
             projectId = request.projectId,
@@ -101,12 +100,12 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
             yaml = null
         )
         val pipelineTemplateResource = PipelineTemplateResource(
+            id = pipelineTemplateModelGenerator.generateId(),
             projectId = request.projectId,
             templateId = templateId,
             type = request.type,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
-            version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
+            version = PipelineTemplateConstant.INIT_VERSION,
             model = modelTransferResult.templateModel,
             yaml = modelTransferResult.yamlWithVersion?.yamlStr,
             creator = userId,

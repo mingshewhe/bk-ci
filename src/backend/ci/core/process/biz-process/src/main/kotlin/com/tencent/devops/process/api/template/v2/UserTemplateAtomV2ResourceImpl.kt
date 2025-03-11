@@ -42,7 +42,7 @@ class UserTemplateAtomV2ResourceImpl @Autowired constructor(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Long?
+        version: Int?
     ): Result<Map<String, AtomProp>?> {
         return templateAtomService.getTemplateAtomPropList(
             userId = userId,

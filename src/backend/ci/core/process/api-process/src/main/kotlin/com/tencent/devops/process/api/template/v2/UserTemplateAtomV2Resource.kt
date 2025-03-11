@@ -64,6 +64,6 @@ interface UserTemplateAtomV2Resource {
         templateId: String,
         @Parameter(description = "模板版本", required = false)
         @QueryParam("version")
-        version: Long?
+        version: Int?
     ): Result<Map<String, AtomProp>?>
 }

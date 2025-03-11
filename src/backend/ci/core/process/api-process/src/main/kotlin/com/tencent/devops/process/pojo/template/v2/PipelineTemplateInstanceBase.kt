@@ -9,7 +9,7 @@ data class PipelineTemplateInstanceBase(
     val baseId: String,
     val projectId: String,
     val templateId: String,
-    val templateVersion: Long,
+    val templateVersion: Int,
     val useTemplateSetting: Boolean,
     val totalItemNum: Int,
     val successItemNum: Int,

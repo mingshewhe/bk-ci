@@ -33,13 +33,12 @@ class PipelineTemplateResourceDao {
                 TYPE,
                 SETTING_VERSION,
                 VERSION,
-                NUMBER,
                 VERSION_NAME,
                 VERSION_NUM,
                 SRC_TEMPLATE_PROJECT_ID,
                 SRC_TEMPLATE_ID,
                 SRC_TEMPLATE_VERSION,
-                MODEL_VERSION,
+                PIPELINE_VERSION,
                 TRIGGER_VERSION,
                 BASE_VERSION,
                 PARAMS,
@@ -47,7 +46,7 @@ class PipelineTemplateResourceDao {
                 YAML,
                 STATUS,
                 BRANCH_ACTION,
-                RELEASE_COMMENT,
+                DESCRIPTION,
                 SORT_WEIGHT,
                 CREATOR,
                 UPDATER,
@@ -58,13 +57,12 @@ class PipelineTemplateResourceDao {
                 record.type.value,
                 record.settingVersion,
                 record.version,
-                record.number,
                 record.versionName,
                 record.versionNum,
                 record.srcTemplateProjectId,
                 record.srcTemplateId,
                 record.srcTemplateVersion,
-                record.modelVersion,
+                record.pipelineVersion,
                 record.triggerVersion,
                 record.baseVersion,
                 record.params?.let { JsonUtil.toJson(it) },
@@ -72,7 +70,7 @@ class PipelineTemplateResourceDao {
                 record.yaml,
                 record.status.name,
                 record.branchAction?.name,
-                record.releaseComment,
+                record.description,
                 record.sortWeight,
                 record.creator,
                 record.updater,
@@ -91,10 +89,9 @@ class PipelineTemplateResourceDao {
             dslContext.update(this)
                 .apply {
                     record.version?.let { set(VERSION, it) }
-                    record.number?.let { set(NUMBER, it) }
                     record.versionName?.let { set(VERSION_NAME, it) }
                     record.versionNum?.let { set(VERSION_NUM, it) }
-                    record.modelVersion?.let { set(MODEL_VERSION, it) }
+                    record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
                     record.baseVersion?.let { set(BASE_VERSION, it) }
                     record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
@@ -102,7 +99,7 @@ class PipelineTemplateResourceDao {
                     record.yaml?.let { set(YAML, it) }
                     record.status?.let { set(STATUS, it.name) }
                     record.branchAction?.let { set(BRANCH_ACTION, it.name) }
-                    record.releaseComment?.let { set(RELEASE_COMMENT, it) }
+                    record.description?.let { set(DESCRIPTION, it) }
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
                 }
                 .set(UPDATER, record.updater)
@@ -156,7 +153,7 @@ class PipelineTemplateResourceDao {
     fun get(
         dslContext: DSLContext,
         templateId: String,
-        version: Long
+        version: Int
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
@@ -177,11 +174,11 @@ class PipelineTemplateResourceDao {
                 VERSION,
                 VERSION_NAME,
                 VERSION_NUM,
-                MODEL_VERSION,
+                PIPELINE_VERSION,
                 TRIGGER_VERSION,
                 BASE_VERSION,
                 STATUS,
-                RELEASE_COMMENT,
+                DESCRIPTION,
                 CREATOR,
                 UPDATER,
                 CREATED_TIME,
@@ -217,7 +214,7 @@ class PipelineTemplateResourceDao {
         projectId: String,
         templateId: String,
         status: VersionStatus,
-        version: Long? = null,
+        version: Int? = null,
         versionName: String? = null
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
@@ -227,7 +224,7 @@ class PipelineTemplateResourceDao {
                 .and(STATUS.eq(status.name))
                 .let { if (version != null) it.and(VERSION.eq(version)) else it }
                 .let { if (!versionName.isNullOrBlank()) it.and(VERSION_NAME.eq(versionName)) else it }
-                .orderBy(NUMBER.desc())
+                .orderBy(VERSION.desc())
                 .fetchOne()?.convert()
         }
     }
@@ -254,7 +251,7 @@ class PipelineTemplateResourceDao {
                 if (version != null) conditions.add(VERSION.eq(version))
                 if (versionName != null && versionName!!.isNotBlank()) conditions.add(VERSION_NAME.eq(versionName))
                 if (versionNum != null) conditions.add(VERSION_NUM.eq(versionNum))
-                if (modelVersion != null) conditions.add(MODEL_VERSION.eq(modelVersion))
+                if (pipelineVersion != null) conditions.add(PIPELINE_VERSION.eq(pipelineVersion))
                 if (triggerVersion != null) conditions.add(TRIGGER_VERSION.eq(triggerVersion))
                 if (baseVersion != null) conditions.add(BASE_VERSION.eq(baseVersion))
                 if (status != null) conditions.add(STATUS.eq(status!!.name))
@@ -265,7 +262,7 @@ class PipelineTemplateResourceDao {
                 if (srcTemplateProjectId != null) conditions.add(SRC_TEMPLATE_PROJECT_ID.eq(srcTemplateProjectId))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
                 if (srcTemplateVersion != null) conditions.add(SRC_TEMPLATE_VERSION.eq(srcTemplateVersion))
-                if (releaseComment != null) conditions.add(RELEASE_COMMENT.like("%$releaseComment%"))
+                if (description != null) conditions.add(DESCRIPTION.like("%$description%"))
                 if (includeDraft == false) conditions.add(STATUS.notEqual(VersionStatus.COMMITTING.name))
                 return conditions
             }
@@ -274,15 +271,15 @@ class PipelineTemplateResourceDao {
 
     fun TPipelineTemplateResourceVersionRecord.convert(): PipelineTemplateResource {
         return PipelineTemplateResource(
+            id = this.id,
             projectId = this.projectId,
             templateId = this.templateId,
             type = PipelineTemplateType.get(this.type),
             settingVersion = this.settingVersion,
             version = this.version,
-            number = this.number,
             versionName = this.versionName,
             versionNum = this.versionNum,
-            modelVersion = this.modelVersion,
+            pipelineVersion = this.pipelineVersion,
             triggerVersion = this.triggerVersion,
             srcTemplateProjectId = this.srcTemplateProjectId,
             srcTemplateId = this.srcTemplateId,
@@ -293,7 +290,7 @@ class PipelineTemplateResourceDao {
             yaml = this.yaml,
             status = VersionStatus.get(this.status),
             branchAction = this.branchAction?.let { BranchVersionAction.get(it) },
-            releaseComment = this.releaseComment,
+            description = this.description,
             creator = this.creator,
             updater = this.updater,
             releaseTime = this.releaseTime.timestampmilli(),

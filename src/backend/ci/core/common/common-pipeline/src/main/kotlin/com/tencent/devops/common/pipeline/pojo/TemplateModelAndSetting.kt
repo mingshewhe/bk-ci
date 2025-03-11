@@ -37,5 +37,5 @@ data class TemplateModelAndSetting(
     val templateModel: ITemplateModel,
     @get:Schema(title = "流水线设置", required = false)
     @field:Valid
-    val setting: PipelineSetting? = null
+    val setting: PipelineSetting
 )

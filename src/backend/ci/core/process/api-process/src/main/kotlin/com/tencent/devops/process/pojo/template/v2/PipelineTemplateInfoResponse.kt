@@ -61,17 +61,17 @@ data class PipelineTemplateInfoResponse(
     @get:Schema(title = "是否可以发布")
     val canRelease: Boolean,
     @get:Schema(title = "用于前端交互的版本号")
-    val version: Long?,
+    val version: Int?,
     @get:Schema(title = "用于前端交互的版本名称")
     val versionName: String?,
     @get:Schema(title = "草稿的基准版本（存在草稿才有值）", required = false)
-    val baseVersion: Long?,
+    val baseVersion: Int?,
     @get:Schema(title = "草稿的基准版本的状态（存在草稿才有值）", required = false)
     val baseVersionStatus: VersionStatus?,
     @get:Schema(title = "基准版本的版本名称")
     val baseVersionName: String?,
     @get:Schema(title = "最新的发布版本，如果为空则说明没有过发布版本")
-    val releaseVersion: Long?,
+    val releaseVersion: Int?,
     @get:Schema(title = "最新的发布版本名称，如果为空则说明没有过发布版本")
     val releaseVersionName: String?,
     @get:Schema(title = "最新流水线版本状态（如有任何发布版本则为发布版本）", required = false)

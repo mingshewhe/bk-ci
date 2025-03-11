@@ -38,7 +38,6 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
@@ -104,7 +103,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
         }
     }
 
-    fun generateVersion(): Long {
+    fun generateId(): Long {
         return client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
     }
 
@@ -155,12 +154,12 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                 templateModel,
                 "template model must not be null"
             )
+            val newTemplateSetting = Preconditions.checkNotNull(
+                templateSetting,
+                "template setting must not be null"
+            )
             when (templateType) {
                 PipelineTemplateType.PIPELINE -> {
-                    val newTemplateSetting = Preconditions.checkNotNull(
-                        templateSetting,
-                        "template setting must not be null"
-                    )
                     val result = transferService.transfer(
                         userId = userId,
                         projectId = projectId,
@@ -190,7 +189,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         actionType = TransferActionType.TEMPLATE_MODEL2YAML_STAGE,
                         data = TransferBody(
                             templateModelAndSetting = TemplateModelAndSetting(
-                                templateModel = templateModel!!
+                                templateModel = templateModel!!,
+                                setting = newTemplateSetting
                             ),
                             oldYaml = ""
                         )
@@ -198,7 +198,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                     TemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion
+                        yamlWithVersion = result.yamlWithVersion,
+                        templateSetting = newTemplateSetting
                     )
                 }
 
@@ -210,7 +211,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         actionType = TransferActionType.TEMPLATE_MODEL2YAML_JOB,
                         data = TransferBody(
                             templateModelAndSetting = TemplateModelAndSetting(
-                                templateModel = templateModel!!
+                                templateModel = templateModel!!,
+                                setting = newTemplateSetting
                             ),
                             oldYaml = ""
                         )
@@ -218,7 +220,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                     TemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion
+                        yamlWithVersion = result.yamlWithVersion,
+                        templateSetting = newTemplateSetting
                     )
                 }
 
@@ -230,7 +233,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         actionType = TransferActionType.TEMPLATE_MODEL2YAML_STEP,
                         data = TransferBody(
                             templateModelAndSetting = TemplateModelAndSetting(
-                                templateModel = templateModel!!
+                                templateModel = templateModel!!,
+                                setting = newTemplateSetting
                             ),
                             oldYaml = ""
                         )
@@ -238,7 +242,8 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                     TemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion
+                        yamlWithVersion = result.yamlWithVersion,
+                        templateSetting = newTemplateSetting
                     )
                 }
 

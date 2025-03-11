@@ -36,5 +36,5 @@ data class PipelineTemplateCreateResp(
     @get:Schema(title = "模版ID", required = true)
     val templateId: String,
     @get:Schema(title = "模版版本", required = true)
-    val version: Long
+    val version: Int
 )
