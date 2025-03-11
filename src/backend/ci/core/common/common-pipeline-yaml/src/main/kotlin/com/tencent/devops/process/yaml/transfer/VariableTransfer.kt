@@ -29,7 +29,7 @@ package com.tencent.devops.process.yaml.transfer
 
 import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.enums.ScmType
-import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildContainerType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
@@ -58,9 +58,9 @@ class VariableTransfer {
             listOf(MAJORVERSION, "MajorVersion", MINORVERSION, "MinorVersion", FIXVERSION, "FixVersion")
     }
 
-    fun makeVariableFromModel(model: Model): Map<String, Variable>? {
+    fun makeVariableFromModel(triggerContainer: TriggerContainer): Map<String, Variable>? {
         val result = mutableMapOf<String, Variable>()
-        model.getTriggerContainer().params.forEach {
+        triggerContainer.params.forEach {
             if (it.id in ignoredVariable) return@forEach
             val props = when {
                 // 不带
@@ -92,6 +92,7 @@ class VariableTransfer {
                     type = VariablePropType.GIT_REF.value,
                     repoHashId = it.repoHashId
                 )
+
                 CascadePropertyUtils.supportCascadeParam(it.type) -> {
                     // 级联选择器类型变量
                     VariableProps(
@@ -172,8 +173,7 @@ class VariableTransfer {
         }
     }
 
-    fun makeRecommendedVersion(model: Model): RecommendedVersion? {
-        val triggerContainer = model.getTriggerContainer()
+    fun makeRecommendedVersion(triggerContainer: TriggerContainer): RecommendedVersion? {
         val res = triggerContainer.buildNo?.let {
             RecommendedVersion(
                 enabled = true,
@@ -198,6 +198,36 @@ class VariableTransfer {
             }
         }
         return res
+    }
+
+
+    fun makeVariableFromYamlTemplate(
+        variables: Map<String, String>?
+    ): List<BuildFormProperty> {
+        if (variables.isNullOrEmpty()) {
+            return emptyList()
+        }
+        val buildFormProperties = mutableListOf<BuildFormProperty>()
+        variables.forEach { (key, value) ->
+            val type = BuildFormPropertyType.STRING
+            buildFormProperties.add(
+                BuildFormProperty(
+                    id = key,
+                    type = type,
+                    defaultValue = value,
+                    required = true,
+                    options = null,
+                    desc = null,
+                    repoHashId = null,
+                    relativePath = null,
+                    scmType = null,
+                    containerType = null,
+                    glob = null,
+                    properties = null
+                )
+            )
+        }
+        return buildFormProperties
     }
 
     fun makeVariableFromYaml(

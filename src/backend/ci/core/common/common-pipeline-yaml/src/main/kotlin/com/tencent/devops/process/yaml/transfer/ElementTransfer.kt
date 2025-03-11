@@ -39,6 +39,7 @@ import com.tencent.devops.common.pipeline.enums.CharsetType
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.RunCondition
+import com.tencent.devops.common.pipeline.pojo.element.StepTemplateElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.LinuxScriptElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.ManualReviewUserTaskElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.WindowsScriptElement
@@ -77,6 +78,7 @@ import com.tencent.devops.process.yaml.v3.models.on.TriggerOn
 import com.tencent.devops.process.yaml.v3.models.step.PreCheckoutStep
 import com.tencent.devops.process.yaml.v3.models.step.PreManualReviewUserTaskElement
 import com.tencent.devops.process.yaml.v3.models.step.Step
+import com.tencent.devops.process.yaml.v3.models.step.StepTemplate
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -311,18 +313,38 @@ class ElementTransfer @Autowired(required = false) constructor(
         val elementList = makeServiceElementList(job)
         // 解析job steps
         job.steps!!.forEach { step ->
-            yamlInput.aspectWrapper.setYamlStep4Yaml(
-                yamlStep = step,
-                aspectType = PipelineTransferAspectWrapper.AspectType.BEFORE
-            )
-            val element: Element = yaml2element(
-                userId = yamlInput.userId,
-                step = step,
-                agentSelector = job.runsOn.agentSelector?.first(),
-                jobRunsOnType = JobRunsOnType.parse(job.runsOn.poolName)
-            )
-            yamlInput.aspectWrapper.setModelElement4Model(element, PipelineTransferAspectWrapper.AspectType.AFTER)
-            elementList.add(element)
+            when (step) {
+                is Step -> {
+                    yamlInput.aspectWrapper.setYamlStep4Yaml(
+                        yamlStep = step,
+                        aspectType = PipelineTransferAspectWrapper.AspectType.BEFORE
+                    )
+                    val element: Element = yaml2element(
+                        userId = yamlInput.userId,
+                        step = step,
+                        agentSelector = job.runsOn.agentSelector?.first(),
+                        jobRunsOnType = JobRunsOnType.parse(job.runsOn.poolName)
+                    )
+                    yamlInput.aspectWrapper.setModelElement4Model(
+                        element,
+                        PipelineTransferAspectWrapper.AspectType.AFTER
+                    )
+                    elementList.add(element)
+                }
+
+                is StepTemplate -> {
+                    elementList.add(
+                        StepTemplateElement(
+                            fromTemplate = true,
+                            template = step.template,
+                            templateId = step.templateId,
+                            templateName = step.templateName,
+                            templateVersion = step.ref,
+                            templateVariables = step.variables
+                        )
+                    )
+                }
+            }
         }
 
         return elementList

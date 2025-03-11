@@ -31,7 +31,6 @@ import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.enums.VMBaseOS
 import com.tencent.devops.common.pipeline.option.JobControlOption
 import com.tencent.devops.common.pipeline.option.MatrixControlOption
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.type.DispatchType
@@ -130,12 +129,16 @@ data class VMBuildContainer(
     var groupContainers: MutableList<VMBuildContainer>? = null,
     @get:Schema(title = "来源于模版", required = false)
     override var fromTemplate: Boolean? = false,
+    @get:Schema(title = "模板路径", required = false)
+    override var template: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
+    @get:Schema(title = "模板名称", required = false)
+    override var templateName: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: Long? = null,
+    override var templateVersion: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateParams: List<BuildFormProperty>? = null
+    override var templateVariables: Map<String, Any>? = null
 ) : Container {
     companion object {
         const val classType = "vmBuild"

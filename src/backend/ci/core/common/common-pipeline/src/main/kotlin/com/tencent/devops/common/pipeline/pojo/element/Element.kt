@@ -34,7 +34,6 @@ import com.tencent.devops.common.pipeline.ITemplateFunction
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.enums.StartType
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeGitElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeGitlabElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeSvnElement
@@ -152,12 +151,16 @@ abstract class Element(
     var asyncStatus: String? = null,
     @get:Schema(title = "来源于模版", required = false)
     override var fromTemplate: Boolean? = false,
+    @get:Schema(title = "模板路径", required = false)
+    override var template: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
+    @get:Schema(title = "模板名称", required = false)
+    override var templateName: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: Long? = null,
+    override var templateVersion: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateParams: List<BuildFormProperty>? = null
+    override var templateVariables: Map<String, Any>? = null
 ) : ITemplateFunction {
 
     open fun getAtomCode() = getClassType()

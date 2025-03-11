@@ -28,8 +28,10 @@
 package com.tencent.devops.process.yaml.v3.models.stage
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.tencent.devops.process.yaml.v3.models.job.PreJob
+import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.process.yaml.v3.check.PreStageCheck
+import com.tencent.devops.process.yaml.v3.models.job.IPreJob
+import com.tencent.devops.process.yaml.v3.models.job.PreJob
 import io.swagger.v3.oas.annotations.media.Schema
 
 interface IPreStage
@@ -51,7 +53,7 @@ data class PreStage(
     @get:Schema(title = "fast-kill")
     @JsonProperty("fast-kill")
     val fastKill: Boolean? = false,
-    val jobs: LinkedHashMap<String, PreJob>?,
+    val jobs: LinkedHashMap<String, IPreJob>?,
     @get:Schema(title = "check-in")
     @JsonProperty("check-in")
     val checkIn: PreStageCheck?,
@@ -59,3 +61,11 @@ data class PreStage(
     @JsonProperty("check-out")
     val checkOut: PreStageCheck?
 ) : IPreStage
+
+data class PreStageTemplate(
+    override val template: String?,
+    override val templateId: String?,
+    override val templateName: String?,
+    override val ref: String?,
+    override val variables: Map<String, Any>?
+) : IPreStage, CodeTemplate

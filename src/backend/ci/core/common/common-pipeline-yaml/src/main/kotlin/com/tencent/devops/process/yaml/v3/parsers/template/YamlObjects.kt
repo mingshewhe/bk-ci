@@ -31,8 +31,10 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.constant.CommonMessageCode.ERROR_YAML_FORMAT_EXCEPTION_NEED_PARAM
 import com.tencent.devops.common.api.pojo.OS
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.MetaData
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
+import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.ResourcesPools
 import com.tencent.devops.common.pipeline.pojo.transfer.TemplateInfo
 import com.tencent.devops.common.pipeline.type.BuildType
@@ -51,13 +53,16 @@ import com.tencent.devops.process.yaml.v3.models.VariablePropType
 import com.tencent.devops.process.yaml.v3.models.VariableProps
 import com.tencent.devops.process.yaml.v3.models.job.Container
 import com.tencent.devops.process.yaml.v3.models.job.Credentials
+import com.tencent.devops.process.yaml.v3.models.job.IPreJob
 import com.tencent.devops.process.yaml.v3.models.job.Mutex
 import com.tencent.devops.process.yaml.v3.models.job.PreJob
+import com.tencent.devops.process.yaml.v3.models.job.PreJobTemplate
 import com.tencent.devops.process.yaml.v3.models.job.Service
 import com.tencent.devops.process.yaml.v3.models.job.ServiceWith
 import com.tencent.devops.process.yaml.v3.models.job.Strategy
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOnV3
 import com.tencent.devops.process.yaml.v3.models.stage.PreStage
+import com.tencent.devops.process.yaml.v3.models.stage.PreStageTemplate
 import com.tencent.devops.process.yaml.v3.parameter.Parameters
 import com.tencent.devops.process.yaml.v3.parsers.template.models.TemplateDeepTreeNode
 import com.tencent.devops.process.yaml.v3.utils.StreamEnvUtils
@@ -238,6 +243,16 @@ object YamlObjects {
         // 检测step env合法性
         StreamEnvUtils.checkEnv(preStep.env, fromPath)
         return preStep
+    }
+
+    fun getStepTemplate(fromPath: TemplatePath, step: Map<String, Any>, repo: TemplateInfo?): PreStepTemplate {
+        return PreStepTemplate(
+            template = step["template"]?.toString(),
+            templateId = step["template-id"]?.toString(),
+            templateName = step["template-name"]?.toString(),
+            ref = step["ref"]?.toString(),
+            variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, step["variables"])
+        )
     }
 
     fun getResourceExclusiveDeclaration(fromPath: TemplatePath, resource: Any): Mutex {
@@ -480,6 +495,21 @@ object YamlObjects {
 }
 
 @Suppress("ComplexMethod")
+fun <T> YamlTemplate<T>.getStageTemplate(
+    fromPath: TemplatePath,
+    stage: Map<String, Any>,
+    deepTree: TemplateDeepTreeNode
+): PreStageTemplate {
+    return PreStageTemplate(
+        template = stage["template"]?.toString(),
+        templateId = stage["template-id"]?.toString(),
+        templateName = stage["template-name"]?.toString(),
+        ref = stage["ref"]?.toString(),
+        variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, stage["variables"])
+    )
+}
+
+@Suppress("ComplexMethod")
 fun <T> YamlTemplate<T>.getStage(
     fromPath: TemplatePath,
     stage: Map<String, Any>,
@@ -500,14 +530,9 @@ fun <T> YamlTemplate<T>.getStage(
             null
         } else {
             val jobs = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.JOB.text, stage["jobs"])
-            val map = LinkedHashMap<String, PreJob>()
+            val map = LinkedHashMap<String, IPreJob>()
             jobs.forEach { (key, value) ->
-                // 检查根文件处jobId重复
-                val newJob = this.replaceJobTemplate(mapOf(key to value), filePath, deepTree)
-                if (key == Constants.TEMPLATE_KEY) {
-                    TemplateYamlUtil.checkDuplicateKey(filePath = filePath, keys = jobs.keys, newKeys = newJob.keys)
-                }
-                map.putAll(newJob)
+                map.putAll(this.replaceJobTemplate(mapOf(key to value), filePath, deepTree))
             }
             map
         },
@@ -531,6 +556,21 @@ fun <T> YamlTemplate<T>.getStage(
         } else {
             null
         }
+    )
+}
+
+@Suppress("ComplexMethod")
+fun <T> YamlTemplate<T>.getJobTemplate(
+    fromPath: TemplatePath,
+    job: Map<String, Any>,
+    deepTree: TemplateDeepTreeNode
+): PreJobTemplate {
+    return PreJobTemplate(
+        template = job["template"]?.toString(),
+        templateId = job["template-id"]?.toString(),
+        templateName = job["template-name"]?.toString(),
+        ref = job["ref"]?.toString(),
+        variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, job["variables"])
     )
 }
 
@@ -566,7 +606,7 @@ fun <T> YamlTemplate<T>.getJob(fromPath: TemplatePath, job: Map<String, Any>, de
             null
         } else {
             val steps = YamlObjects.transValue<List<Map<String, Any>>>(fromPath, TemplateType.STEP.text, job["steps"])
-            val list = mutableListOf<PreStep>()
+            val list = mutableListOf<IPreStep>()
             steps.forEach {
                 list.addAll(this.replaceStepTemplate(listOf(it), filePath, deepTree))
             }

@@ -29,9 +29,7 @@ package com.tencent.devops.process.yaml.v3.models
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
-import com.tencent.devops.process.yaml.v3.models.job.IPreJob
-import com.tencent.devops.process.yaml.v3.models.stage.IPreStage
+import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 
 /**
  * model
@@ -39,7 +37,9 @@ import com.tencent.devops.process.yaml.v3.models.stage.IPreStage
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Extends(
-    val template: String,
-    val ref: String?,
-    val variables: Map<String, String>?
-) : IPreStep, IPreJob, IPreStage
+    override val template: String,
+    override val templateId: String?,
+    override val templateName: String?,
+    override val ref: String?,
+    override val variables: Map<String, String>?
+) : CodeTemplate

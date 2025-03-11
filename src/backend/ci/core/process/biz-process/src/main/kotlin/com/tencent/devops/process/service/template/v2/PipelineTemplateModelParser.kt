@@ -122,10 +122,10 @@ class PipelineTemplateModelParser @Autowired constructor(
 
     private fun parseStageTemplate(stage: Stage): List<Stage> {
         val templateId = stage.templateId!!
-        val templateVersion = stage.templateVersion!!
+        val templateVersion = stage.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
             templateId = templateId,
-            version = templateVersion
+            version = TODO()
         )?.model ?: throw ErrorCodeException(
             errorCode = "",
             params = arrayOf(templateId, templateVersion.toString())
@@ -141,10 +141,10 @@ class PipelineTemplateModelParser @Autowired constructor(
 
     private fun parseJobTemplateContainer(container: JobTemplateContainer): List<Container> {
         val templateId = container.templateId!!
-        val templateVersion = container.templateVersion!!
+        val templateVersion = container.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
             templateId = templateId,
-            version = templateVersion
+            version = TODO()
         )?.model ?: throw ErrorCodeException(
             errorCode = "",
             params = arrayOf(templateId, templateVersion.toString())
@@ -160,10 +160,10 @@ class PipelineTemplateModelParser @Autowired constructor(
 
     private fun parseStepTemplateElement(element: StepTemplateElement): List<Element> {
         val templateId = element.templateId!!
-        val templateVersion = element.templateVersion!!
+        val templateVersion = element.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
             templateId = templateId,
-            version = templateVersion
+            version = TODO()
         )?.model ?: throw ErrorCodeException(
             errorCode = "",
             params = arrayOf(templateId, templateVersion.toString())
