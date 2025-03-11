@@ -31,6 +31,7 @@ import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.enums.VMBaseOS
 import com.tencent.devops.common.pipeline.option.JobControlOption
 import com.tencent.devops.common.pipeline.option.MatrixControlOption
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.type.DispatchType
@@ -88,8 +89,9 @@ data class VMBuildContainer(
     val dispatchType: DispatchType? = null,
     @get:Schema(title = "是否显示构建资源信息", required = false)
     var showBuildResource: Boolean? = false,
-    @get:Schema(title =
-        "是否可重试-仅限于构建详情展示重试，目前未作为编排的选项，暂设置为null不存储",
+    @get:Schema(
+        title =
+            "是否可重试-仅限于构建详情展示重试，目前未作为编排的选项，暂设置为null不存储",
         required = false,
         readOnly = true
     )
@@ -126,9 +128,14 @@ data class VMBuildContainer(
     var matrixContext: Map<String, String>? = null,
     @get:Schema(title = "分裂后的容器集合（分裂后的父容器特有字段）", required = false)
     var groupContainers: MutableList<VMBuildContainer>? = null,
-    override var template: String? = null,
-    override var ref: String? = null,
-    override var variables: Map<String, String>? = null
+    @get:Schema(title = "来源于模版", required = false)
+    override var fromTemplate: Boolean? = false,
+    @get:Schema(title = "模板ID", required = false)
+    override var templateId: String? = null,
+    @get:Schema(title = "版本", required = false)
+    override var templateVersion: Int? = null,
+    @get:Schema(title = "模板参数构建", required = false)
+    override var templateParams: List<BuildFormProperty>? = null
 ) : Container {
     companion object {
         const val classType = "vmBuild"
@@ -180,5 +187,9 @@ data class VMBuildContainer(
             mutexGroup?.timeoutVar = mutexGroup?.timeout.toString()
         }
         super.transformCompatibility()
+    }
+
+    override fun copyElements(elements: List<Element>): Container {
+        return this.copy(elements = elements)
     }
 }

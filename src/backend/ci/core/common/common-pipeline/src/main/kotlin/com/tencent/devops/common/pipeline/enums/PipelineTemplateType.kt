@@ -27,49 +27,18 @@
 
 package com.tencent.devops.common.pipeline.enums
 
-enum class VersionStatus(val statusName: String) {
-    RELEASED("已发布版本"),
-    COMMITTING("草稿版本"),
-    BRANCH("分支版本"),
-    BRANCH_RELEASE("通过分支版本发布（中间态）"),
-    DRAFT_RELEASE("通过草稿版本发布（中间态）"),
-    DELETE("被删除（无法查询）");
-
-    fun fix(): VersionStatus {
-        return if (this == BRANCH_RELEASE) {
-            BRANCH
-        } else if (this == DRAFT_RELEASE) {
-            RELEASED
-        } else {
-            this
-        }
-    }
-
-    fun isReleasing(): Boolean = this == RELEASED || this == BRANCH_RELEASE || this == DRAFT_RELEASE
-
-    fun isNotReleased(): Boolean = this == COMMITTING || this == BRANCH
+enum class PipelineTemplateType(val value: String) {
+    PIPELINE("pipeline"),
+    STAGE("stage"),
+    JOB("job"),
+    STEP("step");
 
     companion object {
-        fun get(name: String): VersionStatus {
-            VersionStatus.values().forEach {
-                if (name == it.name) return it
+        fun get(value: String): PipelineTemplateType {
+            PipelineTemplateType.values().forEach {
+                if (value == it.value) return it
             }
-            throw IllegalArgumentException("No enum for constant $name")
-        }
-    }
-}
-
-enum class BranchVersionAction(val statusName: String) {
-    ACTIVE("活跃分支（可以被代码推送直接更新）"),
-    INACTIVE("不活跃分支（已被发布或已被删除）"),
-    CONFLICT("有冲突分支（落后于主干无法直接合入）");
-
-    companion object {
-        fun get(name: String): BranchVersionAction {
-            BranchVersionAction.values().forEach {
-                if (name == it.name) return it
-            }
-            throw IllegalArgumentException("No enum for constant $name")
+            throw IllegalArgumentException("No enum for constant $value")
         }
     }
 }

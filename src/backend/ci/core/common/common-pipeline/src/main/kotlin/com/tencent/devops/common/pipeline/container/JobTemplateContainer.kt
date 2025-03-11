@@ -28,13 +28,12 @@
 package com.tencent.devops.common.pipeline.container
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
-import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模型-构建触发容器")
-data class TriggerContainer(
+@Schema(title = "流水线模型-模版容器")
+data class JobTemplateContainer(
     @get:Schema(title = "构建容器序号id", required = false, readOnly = true)
     override var id: String? = null,
     @get:Schema(title = "容器名称", required = true)
@@ -52,12 +51,6 @@ data class TriggerContainer(
     @get:Schema(title = "插件执行耗时", required = false, readOnly = true)
     @Deprecated("即将被timeCost代替")
     override var elementElapsed: Long? = null,
-    @get:Schema(title = "参数化构建", required = false)
-    var params: List<BuildFormProperty> = listOf(),
-    @get:Schema(title = "模板参数构建", required = false)
-    override var templateParams: List<BuildFormProperty>? = null,
-    @get:Schema(title = "构建版本号", required = false)
-    var buildNo: BuildNo? = null,
     @get:Schema(title =
         "是否可重试-仅限于构建详情展示重试，目前未作为编排的选项，暂设置为null不存储",
         required = false,
@@ -87,10 +80,12 @@ data class TriggerContainer(
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: Int? = null
+    override var templateVersion: Int? = null,
+    @get:Schema(title = "模板参数构建", required = false)
+    override var templateParams: List<BuildFormProperty>? = null
 ) : Container {
     companion object {
-        const val classType = "trigger"
+        const val classType = "jobTemplate"
     }
 
     override fun getClassType() = classType

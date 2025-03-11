@@ -30,6 +30,7 @@ package com.tencent.devops.common.pipeline.container
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.option.JobControlOption
 import com.tencent.devops.common.pipeline.option.MatrixControlOption
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
@@ -102,9 +103,14 @@ data class NormalContainer(
     var matrixContext: Map<String, String>? = null,
     @get:Schema(title = "分裂后的容器集合（分裂后的父容器特有字段）", required = false)
     var groupContainers: MutableList<NormalContainer>? = null,
-    override var template: String? = null,
-    override var ref: String? = null,
-    override var variables: Map<String, String>? = null
+    @get:Schema(title = "来源于模版", required = false)
+    override var fromTemplate: Boolean? = false,
+    @get:Schema(title = "模板ID", required = false)
+    override var templateId: String? = null,
+    @get:Schema(title = "版本", required = false)
+    override var templateVersion: Int? = null,
+    @get:Schema(title = "模板参数构建", required = false)
+    override var templateParams: List<BuildFormProperty>? = null
 ) : Container {
     companion object {
         const val classType = "normal"
@@ -150,5 +156,9 @@ data class NormalContainer(
             mutexGroup?.timeoutVar = mutexGroup?.timeout.toString()
         }
         super.transformCompatibility()
+    }
+
+    override fun copyElements(elements: List<Element>): Container {
+        return this.copy(elements = elements)
     }
 }

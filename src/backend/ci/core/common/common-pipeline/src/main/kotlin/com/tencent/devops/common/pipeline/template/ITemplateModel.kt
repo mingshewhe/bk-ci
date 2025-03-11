@@ -25,20 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline
+package com.tencent.devops.common.pipeline.template
 
-/**
- * model中报错模板信息的扩展参数
- */
-interface IModelTemplate {
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.devops.common.pipeline.Model
+import io.swagger.v3.oas.annotations.media.Schema
 
-    var template: String?
-    var ref: String?
-    var variables: Map<String, String>?
-
-    /**
-     * 判读是否来自于模板
-     * @return true 是来自于模板|false 不是来自于模板
-     */
-    fun fromTemplate() = !template.isNullOrBlank()
-}
+@Schema(title = "流水线模版模型-多态基类")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "@type",
+    defaultImpl = Model::class
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = Model::class, name = Model.classType),
+    JsonSubTypes.Type(value = StageTemplateModel::class, name = StageTemplateModel.classType),
+    JsonSubTypes.Type(value = JobTemplateModel::class, name = JobTemplateModel.classType),
+    JsonSubTypes.Type(value = StepTemplateModel::class, name = StepTemplateModel.classType)
+)
+interface ITemplateModel
