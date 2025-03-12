@@ -22,7 +22,6 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCreateResp
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
@@ -36,9 +35,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
-import com.tencent.devops.process.service.template.v2.handler.PipelineTemplateStateMachine
-import com.tencent.devops.process.service.template.v2.handler.PipelineTemplateVersionContext
-import com.tencent.devops.project.api.service.ServiceAllocIdResource
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.store.api.common.ServiceStoreResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
@@ -64,8 +61,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplateStateMachine: PipelineTemplateStateMachine,
-    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
+    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
     fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
         logger.info("$userId create template in project ${request.projectId} by ${request.source} ,body is {}", request)
@@ -82,15 +79,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
     }
 
     private fun createByCustom(userId: String, request: PipelineTemplateCustomCreateReq) {
-        val context = PipelineTemplateVersionContext(
+        pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
-            projectId = request.projectId,
-            request = request,
-        )
-        pipelineTemplateStateMachine.fireEvent<PipelineTemplateCustomCreateReq, PipelineTemplateCreateResp>(
-            source = VersionStatus.INIT,
-            event = PipelineVersionAction.INIT_DRAFT,
-            context = context
+            versionAction = PipelineVersionAction.SAVE_DRAFT,
+            request = request
         )
     }
 
@@ -263,17 +255,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Long {
-        val context = PipelineTemplateVersionContext(
+    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Int {
+        return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
-            projectId = request.projectId,
-            request = request,
-        )
-        return pipelineTemplateStateMachine.fireEvent(
-            source = VersionStatus.COMMITTING,
-            event = PipelineVersionAction.SAVE_DRAFT,
-            context = context
-        )
+            versionAction = PipelineVersionAction.SAVE_DRAFT,
+            request = request
+        ).version
     }
 
     // 获取模板列表

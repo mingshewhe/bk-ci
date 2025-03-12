@@ -79,7 +79,7 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateDraftSaveReq
-    ): Result<Long>
+    ): Result<Int>
 
     @Operation(summary = "获取模板列表")
     @POST
