@@ -27,7 +27,6 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 
 /**
@@ -35,7 +34,7 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
  */
 interface PipelineTemplateVersionHandler {
 
-    fun support(versionAction: PipelineVersionAction): Boolean
+    fun support(context: PipelineTemplateVersionContext): Boolean
 
     fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult
 }

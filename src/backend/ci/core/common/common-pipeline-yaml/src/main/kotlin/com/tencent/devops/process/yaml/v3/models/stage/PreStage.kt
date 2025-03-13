@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.process.yaml.v3.check.PreStageCheck
 import com.tencent.devops.process.yaml.v3.models.job.IPreJob
-import com.tencent.devops.process.yaml.v3.models.job.PreJob
 import io.swagger.v3.oas.annotations.media.Schema
 
 interface IPreStage

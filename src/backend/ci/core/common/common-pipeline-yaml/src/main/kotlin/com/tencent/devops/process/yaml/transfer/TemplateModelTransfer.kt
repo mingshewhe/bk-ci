@@ -219,7 +219,6 @@ class TemplateModelTransfer @Autowired constructor(
         else -> null
     }
 
-
     private fun ITemplateModel.stages() = when (this) {
         is Model -> stages
         is StageTemplateModel -> stages

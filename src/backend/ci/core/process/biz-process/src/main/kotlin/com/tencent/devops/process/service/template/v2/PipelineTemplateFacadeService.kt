@@ -8,7 +8,6 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -17,9 +16,9 @@ import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
@@ -30,11 +29,9 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRepositoryCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlCreateReq
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.store.api.common.ServiceStoreResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
@@ -53,7 +50,7 @@ import java.time.LocalDateTime
 class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateModelGenerator: PipelineTemplateModelGenerator,
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
@@ -61,32 +58,19 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val client: Client,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
+    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
-    fun createTemplate(userId: String, request: PipelineTemplateBasicCreateReq): String {
-        logger.info("$userId create template in project ${request.projectId} by ${request.source} ,body is {}", request)
-        val templateId = request.generateId()
-
-        when (request) {
-            is PipelineTemplateCustomCreateReq -> createByCustom(userId, request)
-            is PipelineTemplateMarketCreateReq -> createByMarket(userId, request)
-            is PipelineTemplateYamlCreateReq -> createByYaml(userId, request)
-            is PipelineTemplateRepositoryCreateReq -> createByRepository(userId, request)
-            else -> {}
-        }
-        return templateId
-    }
-
-    private fun createByCustom(userId: String, request: PipelineTemplateCustomCreateReq) {
-        pipelineTemplateVersionManager.deployTemplate(
+    fun create(userId: String, projectId: String, request: PipelineTemplateCustomCreateReq): DeployTemplateResult {
+        logger.info("$userId create template in project $projectId by ${request.source} ,body is $request")
+        return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
-            versionAction = PipelineVersionAction.SAVE_DRAFT,
+            projectId = projectId,
             request = request
         )
     }
 
-    private fun createByMarket(userId: String, request: PipelineTemplateMarketCreateReq) {
+    private fun createByMarket(userId: String, projectId: String, request: PipelineTemplateMarketCreateReq) {
         val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
             userId = userId,
             templateCode = request.marketTemplateId
@@ -95,7 +79,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = request.marketTemplateId
         )
         pipelineTemplateCommonService.checkTemplateBasicInfo(
-            projectId = request.projectId,
+            projectId = projectId,
             name = marketTemplateInfo.name
         )
         val marketTemplateResource = pipelineTemplateResourceService.get(
@@ -111,9 +95,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateId = request.id!!
         val version = PipelineTemplateConstant.INIT_VERSION
 
-        val setting = pipelineTemplateModelGenerator.getDefaultSetting(
+        val setting = pipelineTemplateGenerator.getDefaultSetting(
             type = type,
-            projectId = request.projectId,
+            projectId = projectId,
             templateId = templateId,
             creator = userId,
             templateName = marketTemplateInfo.name,
@@ -122,7 +106,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
 
         val pipelineTemplateInfo = PipelineTemplateInfo(
             id = templateId,
-            projectId = request.projectId,
+            projectId = projectId,
             name = marketTemplateInfo.name,
             desc = marketTemplateInfo.desc,
             mode = TemplateType.CONSTRAINT.name,
@@ -141,8 +125,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
             latestVersionStatus = VersionStatus.RELEASED
         )
         val templateResource = PipelineTemplateResource(
-            id = pipelineTemplateModelGenerator.generateId(),
-            projectId = request.projectId,
+            id = pipelineTemplateGenerator.generateId(),
+            projectId = projectId,
             templateId = templateId,
             type = marketTemplateInfo.type,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
@@ -156,24 +140,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
             status = VersionStatus.RELEASED
         )
         val pipelineTemplatePermission = PipelineTemplatePermission(
-            projectId = request.projectId,
+            projectId = projectId,
             id = templateId,
             name = marketTemplateInfo.name,
             creator = userId
         )
-        pipelineTemplatePersistenceService.createTemplate(
+        pipelineTemplateTransactionService.createTemplateAndPermission(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateSetting = setting,
             pipelineTemplatePermission = pipelineTemplatePermission,
             pipelineTemplateResource = templateResource
         )
-    }
-
-    private fun createByRepository(userId: String, request: PipelineTemplateRepositoryCreateReq) {
-    }
-
-    private fun createByYaml(userId: String, request: PipelineTemplateYamlCreateReq) {
-
     }
 
     fun deleteTemplate(projectId: String, templateId: String): Boolean {
@@ -255,12 +232,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Int {
+    fun saveDraft(userId: String, projectId: String, request: PipelineTemplateDraftSaveReq): DeployTemplateResult {
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
-            versionAction = PipelineVersionAction.SAVE_DRAFT,
+            projectId = projectId,
             request = request
-        ).version
+        )
     }
 
     // 获取模板列表
@@ -500,7 +477,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 creator = userId
             )
         } else {
-            pipelineTemplateModelGenerator.getDefaultSetting(
+            pipelineTemplateGenerator.getDefaultSetting(
                 type = srcTemplateResource.type,
                 projectId = projectId,
                 templateId = templateId,
@@ -530,7 +507,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
 
         val templateResource = srcTemplateResource.copy(
-            id = pipelineTemplateModelGenerator.generateId(),
+            id = pipelineTemplateGenerator.generateId(),
             projectId = projectId,
             templateId = templateId,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
@@ -549,7 +526,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = name,
             creator = userId
         )
-        pipelineTemplatePersistenceService.createTemplate(
+        pipelineTemplateTransactionService.createTemplateAndPermission(
             pipelineTemplateInfo = templateInfo,
             pipelineTemplateResource = templateResource,
             pipelineTemplateSetting = setting,

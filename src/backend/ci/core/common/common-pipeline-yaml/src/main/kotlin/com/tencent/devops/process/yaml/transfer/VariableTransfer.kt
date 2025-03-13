@@ -200,7 +200,6 @@ class VariableTransfer {
         return res
     }
 
-
     fun makeVariableFromYamlTemplate(
         variables: Map<String, String>?
     ): List<BuildFormProperty> {

@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.MetaData
-import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.YAME_META_DATA_JSON_FILTER
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlMetaData
 import io.swagger.v3.oas.annotations.media.Schema

@@ -8,8 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线YAML导入创建请求体")
 data class PipelineTemplateYamlCreateReq(
-    @get:Schema(title = "项目ID", required = true)
-    override val projectId: String,
     @get:Schema(title = "来源", required = true)
     override val source: PipelineTemplateSource,
     @get:Schema(title = "模板名称", required = true)
@@ -25,7 +23,6 @@ data class PipelineTemplateYamlCreateReq(
     @get:Schema(title = "模板YAML", required = true)
     val yaml: String
 ) : PipelineTemplateBasicCreateReq(
-    projectId = projectId,
     source = source
 ) {
     companion object {

@@ -28,7 +28,6 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版详情")

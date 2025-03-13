@@ -34,7 +34,6 @@ import com.tencent.devops.common.pipeline.type.agent.DockerOptions
 import com.tencent.devops.common.pipeline.type.docker.ImageType
 import com.tencent.devops.process.yaml.v3.models.IfField
 import com.tencent.devops.process.yaml.v3.models.step.IStep
-import com.tencent.devops.process.yaml.v3.models.step.Step
 import io.swagger.v3.oas.annotations.media.Schema
 
 interface IJob

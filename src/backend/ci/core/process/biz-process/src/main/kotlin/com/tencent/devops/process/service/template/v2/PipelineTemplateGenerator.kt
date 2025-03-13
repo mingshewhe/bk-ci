@@ -32,6 +32,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
@@ -42,8 +43,11 @@ import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.process.pojo.template.v2.TemplateModelTransferResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
+import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -52,7 +56,7 @@ import org.springframework.stereotype.Service
  * 生成流水线模版模型
  */
 @Service
-class PipelineTemplateModelGenerator @Autowired constructor(
+class PipelineTemplateGenerator @Autowired constructor(
     private val client: Client,
     private val transferService: PipelineTransferYamlService
 ) {
@@ -107,6 +111,62 @@ class PipelineTemplateModelGenerator @Autowired constructor(
         return client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
     }
 
+    /**
+     * 获取默认版本
+     */
+    fun getDefaultVersion(
+        versionStatus: VersionStatus,
+        branchName: String? = null
+    ): PTemplateResourceOnlyVersion {
+        return when (versionStatus) {
+            VersionStatus.COMMITTING -> {
+                PTemplateResourceOnlyVersion(
+                    version = PipelineTemplateConstant.INIT_VERSION,
+                    settingVersion = PipelineTemplateConstant.INIT_VERSION
+                )
+            }
+
+            VersionStatus.BRANCH -> {
+                PTemplateResourceOnlyVersion(
+                    version = PipelineTemplateConstant.INIT_VERSION,
+                    settingVersion = PipelineTemplateConstant.INIT_VERSION,
+                    versionName = branchName!!
+                )
+            }
+
+            else -> {
+                val versionName = PipelineVersionUtils.getVersionName(
+                    versionNum = PipelineTemplateConstant.INIT_VERSION,
+                    pipelineVersion = PipelineTemplateConstant.INIT_VERSION,
+                    triggerVersion = PipelineTemplateConstant.INIT_VERSION,
+                    settingVersion = PipelineTemplateConstant.INIT_VERSION
+                )
+                PTemplateResourceOnlyVersion(
+                    version = PipelineTemplateConstant.INIT_VERSION,
+                    versionName = versionName,
+                    versionNum = PipelineTemplateConstant.INIT_VERSION,
+                    pipelineVersion = PipelineTemplateConstant.INIT_VERSION,
+                    triggerVersion = PipelineTemplateConstant.INIT_VERSION,
+                    settingVersion = PipelineTemplateConstant.INIT_VERSION
+                )
+            }
+        }
+    }
+
+    /**
+     * 生成草稿版本
+     *
+     * 如果草稿版本,没有传入来源版本,则来源版本为最新版本
+     */
+    fun generateVersion(
+        latestVersion: PipelineTemplateResource,
+        baseVersion: Int? = null
+    ) = PTemplateResourceOnlyVersion(
+        version = latestVersion.version + 1,
+        settingVersion = latestVersion.settingVersion + 1,
+        baseVersion = baseVersion
+    )
+
     fun transfer(
         userId: String,
         projectId: String,
@@ -115,7 +175,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
         templateModel: ITemplateModel?,
         templateSetting: PipelineSetting?,
         yaml: String?
-    ): TemplateModelTransferResult {
+    ): PTemplateModelTransferResult {
         return if (storageType == PipelineStorageType.YAML) {
             val newYaml = Preconditions.checkNotNull(
                 yaml,
@@ -139,7 +199,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                 "The transfer data is incorrect, " +
                     "so the modelAndYaml.templateModel.templateSetting must not be null"
             )
-            TemplateModelTransferResult(
+            PTemplateModelTransferResult(
                 templateType = PipelineTemplateType.PIPELINE,
                 templateModel = newTemplateModel,
                 templateSetting = newTemplateSetting,
@@ -168,12 +228,12 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                         data = TransferBody(
                             templateModelAndSetting = TemplateModelAndSetting(
                                 templateModel = newTemplateModel,
-                                setting = newTemplateSetting,
+                                setting = newTemplateSetting
                             ),
                             oldYaml = ""
                         )
                     )
-                    TemplateModelTransferResult(
+                    PTemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
                         templateSetting = newTemplateSetting,
@@ -195,7 +255,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    TemplateModelTransferResult(
+                    PTemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
                         yamlWithVersion = result.yamlWithVersion,
@@ -217,7 +277,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    TemplateModelTransferResult(
+                    PTemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
                         yamlWithVersion = result.yamlWithVersion,
@@ -239,7 +299,7 @@ class PipelineTemplateModelGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    TemplateModelTransferResult(
+                    PTemplateModelTransferResult(
                         templateType = newTemplateType,
                         templateModel = newTemplateModel,
                         yamlWithVersion = result.yamlWithVersion,

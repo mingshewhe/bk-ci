@@ -27,7 +27,6 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
@@ -46,20 +45,21 @@ class PipelineTemplateVersionManager @Autowired constructor(
 
     fun deployTemplate(
         userId: String,
-        versionAction: PipelineVersionAction,
+        projectId: String,
         request: PipelineTemplateVersionReq
     ): DeployTemplateResult {
-        val context = getConverter(request).convert(userId = userId, request = request)
+        val context = getConverter(request).convert(userId = userId, projectId = projectId, request = request)
         pipelineTemplateModelValidator.validate(
-            pipelineTemplateResource = context.pipelineTemplateResource,
+            projectId = projectId,
+            pTemplateResourceWithoutVersion = context.pTemplateResourceWithoutVersion,
             pipelineSetting = context.pipelineTemplateSetting
         )
-        return getHandler(versionAction).handle(context = context)
+        return getHandler(context).handle(context = context)
     }
 
-    private fun getHandler(versionAction: PipelineVersionAction): PipelineTemplateVersionHandler {
-        return versionHandlers.find { it.support(versionAction) }
-            ?: throw IllegalArgumentException("Unsupported version event: $versionAction")
+    private fun getHandler(context: PipelineTemplateVersionContext): PipelineTemplateVersionHandler {
+        return versionHandlers.find { it.support(context) }
+            ?: throw IllegalArgumentException("Unsupported version event: ${context.versionAction}")
     }
 
     private fun getConverter(request: PipelineTemplateVersionReq): PipelineTemplateVersionReqConverter {

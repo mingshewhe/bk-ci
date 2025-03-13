@@ -32,6 +32,17 @@ class PipelineTemplateResourceService @Autowired constructor(
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 
+    fun getLatestVersionResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId
+        )
+    }
+
     fun getLatestReleasedResource(
         projectId: String,
         templateId: String
@@ -46,13 +57,15 @@ class PipelineTemplateResourceService @Autowired constructor(
 
     fun getLatestBranchResource(
         projectId: String,
-        templateId: String
+        templateId: String,
+        branchName: String? = null
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.getLatestRecord(
             dslContext = dslContext,
             projectId = projectId,
             templateId = templateId,
-            status = VersionStatus.BRANCH
+            status = VersionStatus.BRANCH,
+            versionName = branchName
         )
     }
 

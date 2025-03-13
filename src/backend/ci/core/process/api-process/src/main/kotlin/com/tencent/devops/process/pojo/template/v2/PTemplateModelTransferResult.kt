@@ -30,12 +30,11 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.common.pipeline.template.ITemplateModel
-import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板模型转换结果")
-data class TemplateModelTransferResult(
+data class PTemplateModelTransferResult(
     @get:Schema(title = "模版类型", required = false)
     val templateType: PipelineTemplateType,
     @get:Schema(title = "流水线模板模型", required = true)

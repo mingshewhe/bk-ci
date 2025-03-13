@@ -101,8 +101,8 @@ class PipelineTemplateResourceDao {
                     record.branchAction?.let { set(BRANCH_ACTION, it.name) }
                     record.description?.let { set(DESCRIPTION, it) }
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
+                    record.updater?.let { set(UPDATER, it) }
                 }
-                .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
                 .execute()
@@ -213,17 +213,29 @@ class PipelineTemplateResourceDao {
         dslContext: DSLContext,
         projectId: String,
         templateId: String,
-        status: VersionStatus,
+        status: VersionStatus? = null,
         version: Int? = null,
         versionName: String? = null
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            val conditions = mutableListOf<Condition>()
+            conditions.add(PROJECT_ID.eq(projectId))
+            conditions.add(TEMPLATE_ID.eq(templateId))
+            if (status != null) {
+                conditions.add(STATUS.eq(status.name))
+                // 获取活跃的分支版本
+                if (status == VersionStatus.BRANCH) {
+                    conditions.add(BRANCH_ACTION.eq(BranchVersionAction.ACTIVE.name))
+                }
+            }
+            if (version != null) {
+                conditions.add(VERSION.eq(version))
+            }
+            if (versionName != null) {
+                conditions.add(VERSION_NAME.eq(versionName))
+            }
             dslContext.selectFrom(this)
-                .where(PROJECT_ID.eq(projectId))
-                .and(TEMPLATE_ID.eq(templateId))
-                .and(STATUS.eq(status.name))
-                .let { if (version != null) it.and(VERSION.eq(version)) else it }
-                .let { if (!versionName.isNullOrBlank()) it.and(VERSION_NAME.eq(versionName)) else it }
+                .where(conditions)
                 .orderBy(VERSION.desc())
                 .fetchOne()?.convert()
         }

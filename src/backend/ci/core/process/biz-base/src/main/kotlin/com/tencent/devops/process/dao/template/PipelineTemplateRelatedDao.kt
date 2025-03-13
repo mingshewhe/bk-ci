@@ -184,14 +184,14 @@ class PipelineTemplateRelatedDao {
             .and(pipelineInfoTable.DELETE.eq(false))
             .let {
                 if (!pipelineName.isNullOrBlank()) {
-                    it.and(pipelineInfoTable.PIPELINE_NAME.like("%${pipelineName}%"))
+                    it.and(pipelineInfoTable.PIPELINE_NAME.like("%$pipelineName%"))
                 } else {
                     it
                 }
             }
             .let {
                 if (!updater.isNullOrBlank()) {
-                    it.and(templatePipelineTable.UPDATOR.like("%${updater}%"))
+                    it.and(templatePipelineTable.UPDATOR.like("%$updater%"))
                 } else {
                     it
                 }
@@ -244,7 +244,7 @@ class PipelineTemplateRelatedDao {
                 if (rootTemplateId != null) conditions.add(ROOT_TEMPLATE_ID.eq(rootTemplateId))
                 if (deleted != null) conditions.add(DELETED.eq(deleted))
                 if (creator != null) conditions.add(CREATOR.eq(creator))
-                if (!updater.isNullOrBlank()) conditions.add(UPDATOR.like("%${updater}%"))
+                if (!updater.isNullOrBlank()) conditions.add(UPDATOR.like("%$updater%"))
                 conditions
             }
         }

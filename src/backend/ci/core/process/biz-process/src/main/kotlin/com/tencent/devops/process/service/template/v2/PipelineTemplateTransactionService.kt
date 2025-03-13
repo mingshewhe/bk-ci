@@ -27,11 +27,16 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,7 +46,7 @@ import org.springframework.stereotype.Service
  * 负责流水线模版持久化业务逻辑
  */
 @Service
-class PipelineTemplatePersistenceService @Autowired constructor(
+class PipelineTemplateTransactionService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
@@ -49,7 +54,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     private val dslContext: DSLContext
 ) {
 
-    fun createTemplate(
+    fun createTemplateAndPermission(
         pipelineTemplateInfo: PipelineTemplateInfo? = null,
         pipelineTemplateResource: PipelineTemplateResource? = null,
         pipelineTemplateSetting: PipelineSetting? = null,
@@ -83,6 +88,76 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     templateName = pipelineTemplatePermission.name
                 )
             }
+        }
+    }
+
+    fun createDraftVersion(
+        templateResource: PipelineTemplateResource,
+        templateSetting: PipelineSetting
+    ) {
+        dslContext.transaction { configuration ->
+            val transactionContext = DSL.using(configuration)
+            pipelineTemplateResourceService.create(
+                transactionContext = transactionContext,
+                pipelineTemplateResource = templateResource
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = transactionContext,
+                pipelineTemplateSetting = templateSetting
+            )
+        }
+    }
+
+    fun updateDraftVersion(
+        templateResourceUpdateInfo: PipelineTemplateResourceUpdateInfo,
+        templateResourceCondition: PipelineTemplateResourceCommonCondition,
+        templateSettingUpdateInfo: PipelineTemplateSettingUpdateInfo,
+        templateSettingCondition: PipelineTemplateSettingCommonCondition
+    ) {
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateResourceService.update(
+                transactionContext = context,
+                record = templateResourceUpdateInfo,
+                commonCondition = templateResourceCondition
+            )
+            pipelineTemplateSettingService.update(
+                transactionContext = context,
+                record = templateSettingUpdateInfo,
+                commonCondition = templateSettingCondition
+            )
+        }
+    }
+
+    fun createBranchVersion(
+        templateResource: PipelineTemplateResource,
+        templateSetting: PipelineSetting
+    ) {
+        val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
+            branchAction = BranchVersionAction.INACTIVE
+        )
+        val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
+            projectId = templateResource.projectId,
+            templateId = templateResource.templateId,
+            versionName = templateResource.versionName,
+            branchAction = BranchVersionAction.ACTIVE
+        )
+        dslContext.transaction { configuration ->
+            val transactionContext = DSL.using(configuration)
+            // 创建分支版本,需要把原来的活跃的分支置为非活跃
+            pipelineTemplateResourceService.update(
+                transactionContext = transactionContext,
+                record = inactiveBranchUpdateInfo,
+                commonCondition = inactiveBranchCondition
+            )
+            pipelineTemplateResourceService.create(
+                transactionContext = transactionContext,
+                pipelineTemplateResource = templateResource
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = transactionContext,
+                pipelineTemplateSetting = templateSetting
+            )
         }
     }
 }

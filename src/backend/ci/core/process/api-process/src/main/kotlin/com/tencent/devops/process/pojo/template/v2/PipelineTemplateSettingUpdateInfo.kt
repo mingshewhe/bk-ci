@@ -29,6 +29,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.pipeline.utils.PIPELINE_RES_NUM_MIN
 import com.tencent.devops.common.web.annotation.BkField
@@ -79,4 +80,23 @@ data class PipelineTemplateSettingUpdateInfo(
     val pipelineAsCodeSettings: PipelineAsCodeSettings? = null,
     @get:Schema(title = "更新人", required = false)
     val updater: String
-)
+) {
+    constructor(userId: String, pipelineSetting: PipelineSetting) : this(
+        name = pipelineSetting.pipelineName,
+        desc = pipelineSetting.desc,
+        labels = pipelineSetting.labels,
+        labelNames = pipelineSetting.labelNames,
+        buildNumRule = pipelineSetting.buildNumRule,
+        successSubscriptionList = pipelineSetting.successSubscriptionList,
+        failSubscriptionList = pipelineSetting.failSubscriptionList,
+        runLockType = pipelineSetting.runLockType,
+        waitQueueTimeMinute = pipelineSetting.waitQueueTimeMinute,
+        maxQueueSize = pipelineSetting.maxQueueSize,
+        concurrencyGroup = pipelineSetting.concurrencyGroup,
+        concurrencyCancelInProgress = pipelineSetting.concurrencyCancelInProgress,
+        maxConRunningQueueSize = pipelineSetting.maxConRunningQueueSize,
+        maxPipelineResNum = pipelineSetting.maxPipelineResNum,
+        pipelineAsCodeSettings = pipelineSetting.pipelineAsCodeSettings,
+        updater = userId
+    )
+}

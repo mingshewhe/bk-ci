@@ -84,4 +84,33 @@ data class PipelineTemplateResource(
     val updater: String? = null,
     @get:Schema(title = "发布时间", required = false)
     val releaseTime: Long? = null
-)
+) {
+    constructor(
+        pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
+        pTemplateResourceOnlyVersion: PTemplateResourceOnlyVersion
+    ) : this(
+        id = pTemplateResourceWithoutVersion.id,
+        projectId = pTemplateResourceWithoutVersion.projectId,
+        templateId = pTemplateResourceWithoutVersion.templateId,
+        type = pTemplateResourceWithoutVersion.type,
+        settingVersion = pTemplateResourceOnlyVersion.settingVersion,
+        version = pTemplateResourceOnlyVersion.version,
+        versionName = pTemplateResourceOnlyVersion.versionName,
+        versionNum = pTemplateResourceOnlyVersion.versionNum,
+        pipelineVersion = pTemplateResourceOnlyVersion.pipelineVersion,
+        triggerVersion = pTemplateResourceOnlyVersion.triggerVersion,
+        srcTemplateProjectId = pTemplateResourceWithoutVersion.srcTemplateProjectId,
+        srcTemplateId = pTemplateResourceWithoutVersion.srcTemplateId,
+        srcTemplateVersion = pTemplateResourceWithoutVersion.srcTemplateVersion,
+        baseVersion = pTemplateResourceWithoutVersion.baseVersion,
+        params = pTemplateResourceWithoutVersion.params,
+        model = pTemplateResourceWithoutVersion.model,
+        yaml = pTemplateResourceWithoutVersion.yaml,
+        status = pTemplateResourceWithoutVersion.status,
+        branchAction = pTemplateResourceWithoutVersion.branchAction,
+        description = pTemplateResourceWithoutVersion.description,
+        sortWeight = pTemplateResourceWithoutVersion.sortWeight,
+        creator = pTemplateResourceWithoutVersion.creator,
+        updater = pTemplateResourceWithoutVersion.updater
+    )
+}

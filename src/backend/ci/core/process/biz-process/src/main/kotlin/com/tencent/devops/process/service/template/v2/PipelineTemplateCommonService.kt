@@ -4,7 +4,6 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import org.jooq.DSLContext

@@ -6,10 +6,11 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -46,8 +47,8 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("projectId")
         projectId: String,
         @Parameter(description = "请求体", required = true)
-        request: PipelineTemplateBasicCreateReq
-    ): Result<String>
+        request: PipelineTemplateCustomCreateReq
+    ): Result<DeployTemplateResult>
 
     @Operation(summary = "删除流水线模板")
     @DELETE
@@ -79,7 +80,7 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateDraftSaveReq
-    ): Result<Int>
+    ): Result<DeployTemplateResult>
 
     @Operation(summary = "获取模板列表")
     @POST

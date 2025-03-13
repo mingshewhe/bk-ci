@@ -33,10 +33,11 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBasicCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -55,15 +56,15 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun create(
         userId: String,
         projectId: String,
-        request: PipelineTemplateBasicCreateReq
-    ): Result<String> {
+        request: PipelineTemplateCustomCreateReq
+    ): Result<DeployTemplateResult> {
         logger.info("create template {}|{}|{}", userId, projectId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
             projectId = projectId,
             permission = AuthPermission.CREATE
         )
-        return Result(templateFacadeService.createTemplate(userId, request))
+        return Result(templateFacadeService.create(userId = userId, projectId = projectId, request = request))
     }
 
     override fun delete(
@@ -86,7 +87,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         templateId: String,
         request: PipelineTemplateDraftSaveReq
-    ): Result<Int> {
+    ): Result<DeployTemplateResult> {
         logger.info("save template draft {}|{}|{}|{}", userId, projectId, templateId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -94,7 +95,9 @@ class UserPipelineTemplateV2ResourceImpl(
             permission = AuthPermission.EDIT,
             templateId = templateId
         )
-        return Result(templateFacadeService.saveDraft(userId, request))
+        return Result(
+            templateFacadeService.saveDraft(userId = userId, projectId = projectId, request = request)
+        )
     }
 
     override fun listTemplateInfos(

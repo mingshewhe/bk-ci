@@ -1,7 +1,6 @@
 package com.tencent.devops.process.yaml.transfer.pojo
 
 import com.tencent.devops.common.api.enums.ScmType
-import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.process.engine.pojo.PipelineInfo
 import com.tencent.devops.process.pojo.BuildTemplateAcrossInfo

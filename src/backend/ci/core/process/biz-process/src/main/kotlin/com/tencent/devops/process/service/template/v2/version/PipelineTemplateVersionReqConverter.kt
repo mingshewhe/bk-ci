@@ -36,5 +36,5 @@ interface PipelineTemplateVersionReqConverter {
 
     fun support(request: PipelineTemplateVersionReq): Boolean
 
-    fun convert(userId: String, request: PipelineTemplateVersionReq): PipelineTemplateVersionContext
+    fun convert(userId: String, projectId: String, request: PipelineTemplateVersionReq): PipelineTemplateVersionContext
 }

@@ -33,9 +33,7 @@ import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.process.yaml.v3.check.StageCheck
 import com.tencent.devops.process.yaml.v3.models.IfField
 import com.tencent.devops.process.yaml.v3.models.job.IJob
-import com.tencent.devops.process.yaml.v3.models.job.Job
 import io.swagger.v3.oas.annotations.media.Schema
-
 
 interface IStage
 

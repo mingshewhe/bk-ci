@@ -27,33 +27,26 @@
 
 package com.tencent.devops.process.service.template.v2.version.convert
 
-import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
-import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
-/**
- * 流水线模板自定义创建请求转换
- */
 @Service
-class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
-    private val pipelineTemplateCommonService: PipelineTemplateCommonService,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator
+class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
-        return request is PipelineTemplateCustomCreateReq
+        return request is PipelineTemplateDraftSaveReq
     }
 
     override fun convert(
@@ -61,54 +54,26 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
         projectId: String,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
-        request as PipelineTemplateCustomCreateReq
+        request as PipelineTemplateDraftSaveReq
         with(request) {
-            pipelineTemplateCommonService.checkTemplateBasicInfo(
+            val templateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
-                name = name
+                templateId = templateId
             )
-            val templateId = request.id!!
-            val setting = pipelineTemplateGenerator.getDefaultSetting(
-                type = type,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = name,
-                desc = desc,
-                creator = userId
-            )
-            val defaultTemplateModel = pipelineTemplateGenerator.getDefaultTemplateModel(
-                name = name,
-                type = type,
-                userId = userId
-            )
-            val pipelineTemplateInfo = PipelineTemplateInfo(
-                id = templateId,
-                projectId = projectId,
-                name = request.name,
-                desc = request.desc,
-                mode = TemplateType.CUSTOMIZE.name,
-                type = request.type,
-                enablePac = false,
-                source = PipelineTemplateSource.CUSTOM,
-                storeFlag = false,
-                creator = userId,
-                latestVersionStatus = VersionStatus.COMMITTING
-            )
-
             val modelTransferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
-                storageType = PipelineStorageType.MODEL,
-                templateType = type,
-                templateModel = defaultTemplateModel,
-                templateSetting = setting,
-                yaml = null
+                storageType = storageType,
+                templateType = templateInfo.type,
+                templateModel = model,
+                templateSetting = templateSetting,
+                yaml = yaml
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 id = pipelineTemplateGenerator.generateId(),
                 projectId = projectId,
                 templateId = templateId,
-                type = type,
+                type = templateInfo.type,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
@@ -119,9 +84,9 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 templateId = templateId,
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
-                pipelineTemplateInfo = pipelineTemplateInfo,
+                pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = setting
+                pipelineTemplateSetting = modelTransferResult.templateSetting
             )
         }
     }

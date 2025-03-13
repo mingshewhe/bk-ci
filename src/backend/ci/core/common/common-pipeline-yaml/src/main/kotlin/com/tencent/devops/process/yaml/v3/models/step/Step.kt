@@ -33,7 +33,6 @@ import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.process.yaml.v3.models.IfField
 import io.swagger.v3.oas.annotations.media.Schema
 
-
 interface IStep
 
 data class Step(

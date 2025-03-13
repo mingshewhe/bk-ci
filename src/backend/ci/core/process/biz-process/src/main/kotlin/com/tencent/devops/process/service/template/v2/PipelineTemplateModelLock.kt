@@ -25,20 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.service.template.v2
 
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.common.redis.RedisLock
+import com.tencent.devops.common.redis.RedisOperation
 
-@Schema(title = "版本版本变更动作")
-enum class PipelineVersionAction {
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "创建分支版本")
-    CREATE_BRANCH,
-    @Schema(title = "创建正式版本")
-    CREATE_RELEASE,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "合并主干")
-    MERGE_MASTER
+class PipelineTemplateModelLock(redisOperation: RedisOperation, templateId: String) :
+    RedisLock(
+        redisOperation = redisOperation,
+        lockKey = "pipeline:template:model.lock.$templateId",
+        expiredTimeInSeconds = 20L
+    ) {
+    override fun decorateKey(key: String): String {
+        // templateId在各集群唯一，key无需加上集群信息前缀来区分
+        return key
+    }
 }

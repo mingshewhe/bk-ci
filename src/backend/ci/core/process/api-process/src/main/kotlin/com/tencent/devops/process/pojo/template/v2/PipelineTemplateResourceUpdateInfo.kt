@@ -63,9 +63,9 @@ data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "版本发布描述", required = true)
     val description: String? = null,
     @get:Schema(title = "更新人", required = true)
-    val updater: String,
+    val updater: String? = null,
     @get:Schema(title = "发布时间", required = true)
     val releaseTime: LocalDateTime? = null,
     @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的版本权重为0", required = false)
-    val sortWeight: Int?
+    val sortWeight: Int? = null
 )

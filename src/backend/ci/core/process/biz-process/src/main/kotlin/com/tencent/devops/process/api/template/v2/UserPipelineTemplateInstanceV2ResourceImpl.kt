@@ -35,7 +35,6 @@ import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesReleaseRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
-import org.slf4j.LoggerFactory
 
 @RestResource
 class UserPipelineTemplateInstanceV2ResourceImpl(

@@ -28,15 +28,16 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import org.springframework.stereotype.Service
 
 @Service
 class PipelineTemplateModelValidator {
 
     fun validate(
-        pipelineTemplateResource: PipelineTemplateResource?,
-        pipelineSetting: PipelineSetting?,
+        projectId: String,
+        pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion?,
+        pipelineSetting: PipelineSetting?
     ) {
     }
 }
