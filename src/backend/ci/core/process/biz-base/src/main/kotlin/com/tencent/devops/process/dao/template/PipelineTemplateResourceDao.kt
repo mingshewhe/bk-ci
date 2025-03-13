@@ -307,7 +307,7 @@ class PipelineTemplateResourceDao {
             description = this.description,
             creator = this.creator,
             updater = this.updater,
-            releaseTime = this.releaseTime.timestampmilli(),
+            releaseTime = this.releaseTime?.timestampmilli(),
             sortWeight = this.sortWeight
         )
     }
