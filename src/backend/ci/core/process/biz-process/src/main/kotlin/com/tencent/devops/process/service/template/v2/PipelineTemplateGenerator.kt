@@ -29,6 +29,7 @@ package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.check.Preconditions
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
@@ -106,6 +107,8 @@ class PipelineTemplateGenerator @Autowired constructor(
             )
         }
     }
+
+    fun generateTemplateId() = UUIDUtil.generate()
 
     fun generateId(): Long {
         return client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!

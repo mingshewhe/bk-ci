@@ -67,7 +67,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = name
             )
-            val templateId = request.id!!
+            val templateId = pipelineTemplateGenerator.generateTemplateId()
             val setting = pipelineTemplateGenerator.getDefaultSetting(
                 type = type,
                 projectId = projectId,
