@@ -28,6 +28,7 @@ class PipelineTemplateResourceDao {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.insertInto(
                 this,
+                ID,
                 PROJECT_ID,
                 TEMPLATE_ID,
                 TYPE,
@@ -52,6 +53,7 @@ class PipelineTemplateResourceDao {
                 UPDATER,
                 RELEASE_TIME
             ).values(
+                record.id,
                 record.projectId,
                 record.templateId,
                 record.type.value,
