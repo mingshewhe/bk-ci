@@ -13,10 +13,10 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedErrors
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedMsg
-import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.PipelineTemplateConstant
@@ -32,6 +32,7 @@ import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEven
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateInstanceItemStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
@@ -85,7 +86,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator
 ) {
     @Value("\${template.maxSyncInstanceNum:10}")
     private val maxSyncInstanceNum: Int = 10
@@ -199,31 +201,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         )
 
         // 转化模型生成yaml
-        val yamlWithVersion = YamlWithVersion(yamlStr = "")
-
         val branchName = getBranchName(
             enabledPac = enabledPac,
             targetAction = targetAction,
             pipelineId = pipelineId
-        )
-
-        // 创建流水线
-        pipelineInfoFacadeService.createPipeline(
-            userId = userId,
-            projectId = projectId,
-            model = instanceModel,
-            channelCode = ChannelCode.BS,
-            fixPipelineId = pipelineId,
-            checkPermission = true,
-            yaml = yamlWithVersion,
-            instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
-            buildNo = instance.buildNo,
-            param = instance.param,
-            fixTemplateVersion = templateVersion,
-            versionStatus = VersionStatus.RELEASED,
-            branchName = branchName,
-            yamlInfo = instance.yamlInfo,
-            description = description
         )
 
         val setting = if (useTemplateSettings) {
@@ -243,6 +224,33 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 pipelineName = instance.pipelineName
             )
         }
+        val transferResult = pipelineTemplateGenerator.transfer(
+            userId = userId,
+            projectId = projectId,
+            storageType = PipelineStorageType.MODEL,
+            templateType = PipelineTemplateType.PIPELINE,
+            templateModel = templateModel,
+            templateSetting = setting,
+            yaml = null
+        )
+        // 创建流水线
+        pipelineInfoFacadeService.createPipeline(
+            userId = userId,
+            projectId = projectId,
+            model = instanceModel,
+            channelCode = ChannelCode.BS,
+            fixPipelineId = pipelineId,
+            checkPermission = true,
+            yaml = transferResult.yamlWithVersion,
+            instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
+            buildNo = instance.buildNo,
+            param = instance.param,
+            fixTemplateVersion = templateVersion,
+            versionStatus = VersionStatus.RELEASED,
+            branchName = branchName,
+            yamlInfo = instance.yamlInfo,
+            description = description
+        )
 
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
@@ -279,7 +287,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 version = PipelineTemplateConstant.INIT_VERSION,
                 versionName = branchName,
                 pipelineName = instance.pipelineName,
-                content = yamlWithVersion.yamlStr ?: "",
+                content = transferResult.yamlWithVersion?.yamlStr ?: "",
                 commitMessage = description ?: "update",
                 repoHashId = yamlInfo.repoHashId,
                 scmType = yamlInfo.scmType!!,
@@ -557,7 +565,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     settingVersion = settingVersion,
                     pipelineId = templateInstanceUpdate.pipelineId,
                     pipelineName = templateInstanceUpdate.pipelineName,
-                    pipelineLabels = emptyList(),
+                    pipelineLabels = labels,
                     enabledPac = false
                 )
                 pipelineSettingFacadeService.saveSetting(
@@ -630,9 +638,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             version = version
         )
         val templateModel = templateResource.model as Model
-        val settingVersion = templateResource.settingVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
+        val settingVersion = templateResource.settingVersion
 
         checkTemplateAtomsForExplicitVersion(templateModel, userId)
 

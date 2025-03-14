@@ -62,7 +62,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
     fun create(userId: String, projectId: String, request: PipelineTemplateCustomCreateReq): DeployTemplateResult {
-        logger.info("$userId create template in project $projectId by ${request.source} ,body is $request")
+        logger.info("$userId create template in project $projectId by ${request} ,body is $request")
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
@@ -83,20 +83,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = marketTemplateInfo.name
         )
         val marketTemplateResource = pipelineTemplateResourceService.get(
-            PipelineTemplateResourceCommonCondition(
-                projectId = request.marketTemplateProjectId,
-                templateId = request.marketTemplateId,
-                version = request.marketTemplateVersion
-            )
+            projectId = request.marketTemplateProjectId,
+            templateId = request.marketTemplateId,
+            version = request.marketTemplateVersion
         )
-        // todo 从研发商店中获取
-        val type = PipelineTemplateType.PIPELINE
-
         val templateId = request.id!!
         val version = pipelineTemplateGenerator.generateTemplateVersion()
 
         val setting = pipelineTemplateGenerator.getDefaultSetting(
-            type = type,
+            type = marketTemplateResource.type,
             projectId = projectId,
             templateId = templateId,
             creator = userId,
