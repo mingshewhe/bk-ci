@@ -111,7 +111,7 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "版本", required = false)
         @PathParam("version")
-        version: Int
+        version: Long
     ): Result<PipelineTemplateDetailsResponse>
 
     @Operation(summary = "查看模板基本信息")
@@ -173,10 +173,10 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "基准版本", required = false)
         @QueryParam("baseVersion")
-        baseVersion: Int,
+        baseVersion: Long,
         @Parameter(description = "比较版本", required = false)
         @QueryParam("comparedVersion")
-        comparedVersion: Int
+        comparedVersion: Long
     ): Result<PipelineTemplateCompareResponse>
 
     @Operation(summary = "复制")

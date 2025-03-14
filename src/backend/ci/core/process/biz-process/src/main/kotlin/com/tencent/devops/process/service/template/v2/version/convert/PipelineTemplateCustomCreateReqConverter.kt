@@ -105,7 +105,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 yaml = null
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                id = pipelineTemplateGenerator.generateId(),
+                id = pipelineTemplateGenerator.generateTemplateVersion(),
                 projectId = projectId,
                 templateId = templateId,
                 type = type,

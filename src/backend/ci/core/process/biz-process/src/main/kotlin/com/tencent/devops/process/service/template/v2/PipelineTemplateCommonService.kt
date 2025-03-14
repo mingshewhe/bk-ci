@@ -61,8 +61,4 @@ class PipelineTemplateCommonService(
             }
         }
     }
-
-    companion object {
-        const val INIT_VERSION_NAME = "init"
-    }
 }

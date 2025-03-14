@@ -147,7 +147,7 @@ class PipelineTemplateModelParser @Autowired constructor(
             version = TODO()
         )?.model ?: throw ErrorCodeException(
             errorCode = "",
-            params = arrayOf(templateId, templateVersion.toString())
+            params = arrayOf(templateId, templateVersion)
         )
         if (templateModel !is JobTemplateModel) {
             // 模型不匹配
@@ -166,7 +166,7 @@ class PipelineTemplateModelParser @Autowired constructor(
             version = TODO()
         )?.model ?: throw ErrorCodeException(
             errorCode = "",
-            params = arrayOf(templateId, templateVersion.toString())
+            params = arrayOf(templateId, templateVersion)
         )
         if (templateModel !is StepTemplateModel) {
             // 模型不匹配
@@ -175,21 +175,5 @@ class PipelineTemplateModelParser @Autowired constructor(
             )
         }
         return templateModel.container.elements
-    }
-
-    fun getDefaultTemplateModel(
-        name: String,
-        type: PipelineTemplateType,
-        userId: String
-    ): ITemplateModel {
-        return when (type) {
-            PipelineTemplateType.PIPELINE -> Model.defaultModel(name, userId)
-            PipelineTemplateType.STAGE -> StageTemplateModel.defaultStageTemplate()
-            PipelineTemplateType.JOB -> JobTemplateModel.defaultJobTemplate()
-            PipelineTemplateType.STEP -> StepTemplateModel.defaultStepTemplate()
-            else -> {
-                throw ErrorCodeException(errorCode = "")
-            }
-        }
     }
 }

@@ -10,8 +10,8 @@ import java.time.LocalDateTime
 data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
-    @get:Schema(title = "主键ID", required = true)
-    val id: Int? = null,
+    @get:Schema(title = "版本排序号", required = true)
+    val number: Int? = null,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
     @get:Schema(title = "模板类型", required = false)
@@ -19,9 +19,11 @@ data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int? = null,
     @get:Schema(title = "版本号", required = false)
-    val version: Int? = null,
+    val version: Long? = null,
     @get:Schema(title = "版本名称", required = false)
     val versionName: String? = null,
+    @get:Schema(title = "模板配置发布版本号", required = false)
+    val settingVersionNum: Int? = null,
     @get:Schema(title = "模板发布版本号", required = false)
     val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = false)
@@ -31,11 +33,11 @@ data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "源模板ID", required = false)
     val srcTemplateId: String? = null,
     @get:Schema(title = "源模板版本", required = false)
-    val srcTemplateVersion: Int? = null,
+    val srcTemplateVersion: Long? = null,
     @get:Schema(title = "模板触发器版本号", required = false)
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = false)
-    val baseVersion: Int? = null,
+    val baseVersion: Long? = null,
     @get:Schema(title = "状态", required = false)
     val status: VersionStatus? = null,
     @get:Schema(title = "分支状态", required = false)

@@ -110,7 +110,7 @@ class PipelineTemplateGenerator @Autowired constructor(
 
     fun generateTemplateId() = UUIDUtil.generate()
 
-    fun generateId(): Long {
+    fun generateTemplateVersion(): Long {
         return client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
     }
 

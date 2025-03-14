@@ -93,7 +93,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val type = PipelineTemplateType.PIPELINE
 
         val templateId = request.id!!
-        val version = PipelineTemplateConstant.INIT_VERSION
+        val version = pipelineTemplateGenerator.generateTemplateVersion()
 
         val setting = pipelineTemplateGenerator.getDefaultSetting(
             type = type,
@@ -125,12 +125,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
             latestVersionStatus = VersionStatus.RELEASED
         )
         val templateResource = PipelineTemplateResource(
-            id = pipelineTemplateGenerator.generateId(),
             projectId = projectId,
             templateId = templateId,
             type = marketTemplateInfo.type,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
+            number = PipelineTemplateConstant.INIT_NUMBER,
             srcTemplateProjectId = marketTemplateInfo.projectId,
             srcTemplateId = marketTemplateInfo.id,
             srcTemplateVersion = marketTemplateResource.version,
@@ -301,7 +301,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateDetails(
         projectId: String,
         templateId: String,
-        version: Int
+        version: Long
     ): PipelineTemplateDetailsResponse {
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
@@ -326,7 +326,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
         templateId: String
     ): PipelineTemplateInfoResponse {
         val basicInfo = pipelineTemplateInfoService.get(projectId, templateId)
-        val draftVersionResource = pipelineTemplateResourceService.getDraftVersionResource(projectId, templateId)
+        val draftVersionResource = pipelineTemplateResourceService.getDraftVersionResource(
+            projectId = projectId,
+            templateId = templateId
+        )
         val draftBaseVersionResource = pipelineTemplateResourceService.getDraftBaseVersionResource(
             projectId = projectId, templateId = templateId
         )
@@ -411,8 +414,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun compare(
         projectId: String,
         templateId: String,
-        baseVersion: Int,
-        comparedVersion: Int
+        baseVersion: Long,
+        comparedVersion: Long
     ): PipelineTemplateCompareResponse {
         pipelineTemplateInfoService.get(
             projectId = projectId,
@@ -461,7 +464,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             version = srcTemplateInfo.releasedVersion!!
         )
         val templateId = UUIDUtil.generate()
-        val version = PipelineTemplateConstant.INIT_VERSION
+        val version = pipelineTemplateGenerator.generateTemplateVersion()
 
         val setting = if (copySetting) {
             val srcTemplateSetting = pipelineTemplateSettingService.get(
@@ -507,11 +510,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
 
         val templateResource = srcTemplateResource.copy(
-            id = pipelineTemplateGenerator.generateId(),
             projectId = projectId,
             templateId = templateId,
             settingVersion = PipelineTemplateConstant.INIT_VERSION,
             version = version,
+            number = PipelineTemplateConstant.INIT_NUMBER,
             versionName = "V1(P1.T1.1)",
             versionNum = 1,
             pipelineVersion = 1,

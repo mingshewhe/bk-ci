@@ -38,6 +38,10 @@ data class MarketTemplateUpdateRequest(
     val templateName: String,
     @get:Schema(title = "模板类型，FREEDOM：自由模式 CONSTRAINT：约束模式", required = true)
     val templateType: TemplateTypeEnum,
+    @get:Schema(title = "模板版本", required = false)
+    val templateVersion: Int?,
+    @get:Schema(title = "是否同步模板版本", required = false)
+    val syncTemplateVersion: Boolean?,
     @get:Schema(title = "应用范畴列表", required = true)
     val categoryIdList: ArrayList<String>,
     @get:Schema(title = "模板分类代码", required = true)

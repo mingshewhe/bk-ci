@@ -28,14 +28,15 @@ class PipelineTemplateResourceDao {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.insertInto(
                 this,
-                ID,
                 PROJECT_ID,
                 TEMPLATE_ID,
                 TYPE,
                 SETTING_VERSION,
                 VERSION,
+                NUMBER,
                 VERSION_NAME,
                 VERSION_NUM,
+                SETTING_VERSION_NUM,
                 SRC_TEMPLATE_PROJECT_ID,
                 SRC_TEMPLATE_ID,
                 SRC_TEMPLATE_VERSION,
@@ -53,14 +54,15 @@ class PipelineTemplateResourceDao {
                 UPDATER,
                 RELEASE_TIME
             ).values(
-                record.id,
                 record.projectId,
                 record.templateId,
-                record.type.value,
+                record.type.name,
                 record.settingVersion,
                 record.version,
+                record.number,
                 record.versionName,
                 record.versionNum,
+                record.settingVersionNum,
                 record.srcTemplateProjectId,
                 record.srcTemplateId,
                 record.srcTemplateVersion,
@@ -91,6 +93,7 @@ class PipelineTemplateResourceDao {
             dslContext.update(this)
                 .apply {
                     record.version?.let { set(VERSION, it) }
+                    record.settingVersionNum?.let { set(SETTING_VERSION_NUM, it) }
                     record.versionName?.let { set(VERSION_NAME, it) }
                     record.versionNum?.let { set(VERSION_NUM, it) }
                     record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
@@ -155,7 +158,7 @@ class PipelineTemplateResourceDao {
     fun get(
         dslContext: DSLContext,
         templateId: String,
-        version: Int
+        version: Long
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
@@ -216,7 +219,7 @@ class PipelineTemplateResourceDao {
         projectId: String,
         templateId: String,
         status: VersionStatus? = null,
-        version: Int? = null,
+        version: Long? = null,
         versionName: String? = null
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
@@ -238,7 +241,7 @@ class PipelineTemplateResourceDao {
             }
             dslContext.selectFrom(this)
                 .where(conditions)
-                .orderBy(VERSION.desc())
+                .orderBy(NUMBER.desc())
                 .fetchOne()?.convert()
         }
     }
@@ -263,7 +266,9 @@ class PipelineTemplateResourceDao {
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
                 if (version != null) conditions.add(VERSION.eq(version))
+                if (number != null) conditions.add(NUMBER.eq(number))
                 if (versionName != null && versionName!!.isNotBlank()) conditions.add(VERSION_NAME.eq(versionName))
+                if (settingVersionNum != null) conditions.add(SETTING_VERSION_NUM.eq(settingVersionNum))
                 if (versionNum != null) conditions.add(VERSION_NUM.eq(versionNum))
                 if (pipelineVersion != null) conditions.add(PIPELINE_VERSION.eq(pipelineVersion))
                 if (triggerVersion != null) conditions.add(TRIGGER_VERSION.eq(triggerVersion))
@@ -285,14 +290,15 @@ class PipelineTemplateResourceDao {
 
     fun TPipelineTemplateResourceVersionRecord.convert(): PipelineTemplateResource {
         return PipelineTemplateResource(
-            id = this.id,
             projectId = this.projectId,
             templateId = this.templateId,
-            type = PipelineTemplateType.get(this.type),
+            type = PipelineTemplateType.valueOf(this.type),
             settingVersion = this.settingVersion,
             version = this.version,
+            number = this.number,
             versionName = this.versionName,
             versionNum = this.versionNum,
+            settingVersionNum = this.settingVersionNum,
             pipelineVersion = this.pipelineVersion,
             triggerVersion = this.triggerVersion,
             srcTemplateProjectId = this.srcTemplateProjectId,

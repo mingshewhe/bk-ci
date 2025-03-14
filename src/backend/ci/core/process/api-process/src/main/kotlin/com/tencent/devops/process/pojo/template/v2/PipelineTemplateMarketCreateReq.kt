@@ -12,7 +12,7 @@ data class PipelineTemplateMarketCreateReq(
     @get:Schema(title = "研发商店模板项目ID", required = true)
     val marketTemplateProjectId: String,
     @get:Schema(title = "研发商店模板版本", required = true)
-    val marketTemplateVersion: Int
+    val marketTemplateVersion: Long
 ) : PipelineTemplateBasicCreateReq(
     source = source
 ) {

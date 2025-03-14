@@ -23,7 +23,7 @@ class PipelineTemplateResourceService @Autowired constructor(
 
     fun getTemplateResourceVersion(
         templateId: String,
-        version: Int
+        version: Long
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.get(
             dslContext = dslContext,
@@ -85,7 +85,7 @@ class PipelineTemplateResourceService @Autowired constructor(
         projectId: String,
         templateId: String,
         status: VersionStatus,
-        version: Int? = null,
+        version: Long? = null,
         versionName: String? = null
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.getLatestRecord(
@@ -137,7 +137,7 @@ class PipelineTemplateResourceService @Autowired constructor(
     fun get(
         projectId: String,
         templateId: String,
-        version: Int
+        version: Long
     ): PipelineTemplateResource {
         return pipelineTemplateResourceDao.get(
             commonCondition = PipelineTemplateResourceCommonCondition(

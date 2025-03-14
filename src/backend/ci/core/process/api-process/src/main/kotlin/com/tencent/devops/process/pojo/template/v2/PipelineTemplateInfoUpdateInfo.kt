@@ -16,7 +16,7 @@ data class PipelineTemplateInfoUpdateInfo(
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean? = null,
     @get:Schema(title = "最新发布版本号", required = true)
-    val releasedVersion: Int? = null,
+    val releasedVersion: Long? = null,
     @get:Schema(title = "最新发布版本名称", required = false)
     val releasedVersionName: String? = null,
     @get:Schema(title = "最新发布配置版本号", required = false)

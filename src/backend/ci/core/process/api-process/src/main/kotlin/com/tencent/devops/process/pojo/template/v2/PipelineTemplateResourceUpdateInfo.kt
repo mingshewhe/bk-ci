@@ -37,11 +37,13 @@ import java.time.LocalDateTime
 @Schema(title = "流水线模版资源更新请求体")
 data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "版本号", required = true)
-    val version: Int? = null,
+    val version: Long? = null,
     @get:Schema(title = "版本排序号-根据版本发布顺序递增", required = true)
     val number: Int? = null,
     @get:Schema(title = "版本名称", required = true)
     val versionName: String? = null,
+    @get:Schema(title = "模板配置发布版本号", required = true)
+    val settingVersionNum: Int? = null,
     @get:Schema(title = "模板发布版本号", required = true)
     val versionNum: Int? = null,
     @get:Schema(title = "模板编排版本号", required = true)
@@ -49,7 +51,7 @@ data class PipelineTemplateResourceUpdateInfo(
     @get:Schema(title = "模板触发器版本号", required = true)
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
-    val baseVersion: Int? = null,
+    val baseVersion: Long? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "编排", required = true)

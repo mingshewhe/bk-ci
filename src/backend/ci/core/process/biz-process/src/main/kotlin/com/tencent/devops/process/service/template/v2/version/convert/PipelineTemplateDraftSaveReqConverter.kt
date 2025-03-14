@@ -70,7 +70,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 yaml = yaml
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                id = pipelineTemplateGenerator.generateId(),
+                id = pipelineTemplateGenerator.generateTemplateVersion(),
                 projectId = projectId,
                 templateId = templateId,
                 type = templateInfo.type,

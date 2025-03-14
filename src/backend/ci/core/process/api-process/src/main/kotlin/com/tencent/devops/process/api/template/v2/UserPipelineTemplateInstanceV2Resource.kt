@@ -73,7 +73,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         templateId: String,
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
-        version: Int,
+        version: Long,
         @Parameter(description = "是否应用模板设置")
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
@@ -96,7 +96,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         templateId: String,
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
-        version: Int,
+        version: Long,
         @Parameter(description = "是否应用模板设置")
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
@@ -119,7 +119,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         templateId: String,
         @Parameter(description = "版本号", required = true)
         @QueryParam("version")
-        version: Int,
+        version: Long,
         @Parameter(description = "是否应用模板设置")
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
@@ -142,7 +142,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         templateId: String,
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
-        version: Int,
+        version: Long,
         @Parameter(description = "是否应用模板设置")
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,

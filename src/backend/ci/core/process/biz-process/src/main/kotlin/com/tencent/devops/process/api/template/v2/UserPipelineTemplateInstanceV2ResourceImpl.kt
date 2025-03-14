@@ -44,7 +44,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int,
+        version: Long,
         useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesReleaseRequest
     ): TemplateOperationRet {
@@ -62,7 +62,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int,
+        version: Long,
         useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesReleaseRequest
     ): Result<String> {
@@ -82,7 +82,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int,
+        version: Long,
         useTemplateSettings: Boolean,
         instances: List<TemplateInstanceUpdate>
     ): TemplateOperationRet {
@@ -100,7 +100,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int,
+        version: Long,
         useTemplateSettings: Boolean,
         instances: List<TemplateInstanceUpdate>
     ): Result<Boolean> {
