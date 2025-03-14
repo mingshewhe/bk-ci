@@ -15,7 +15,6 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPL
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
@@ -182,48 +181,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_INSTALL
             )
         }
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineTemplateRelatedService.delete(
-                transactionContext = context,
-                condition = PipelineTemplateRelatedCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId
-                )
-            )
-            pipelineTemplateInfoService.delete(
-                transactionContext = context,
-                commonCondition = PipelineTemplateCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId
-                )
-            )
-            pipelineTemplateResourceService.delete(
-                transactionContext = context,
-                commonCondition = PipelineTemplateResourceCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId
-                )
-            )
-            pipelineTemplateSettingService.delete(
-                transactionContext = context,
-                commonCondition = PipelineTemplateSettingCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId
-                )
-            )
-            if (templateInfo.mode == TemplateType.CONSTRAINT.name) {
-                client.get(ServiceStoreResource::class).uninstall(
-                    storeCode = templateInfo.srcTemplateId!!,
-                    storeType = StoreTypeEnum.TEMPLATE,
-                    projectCode = templateInfo.projectId
-                )
-            }
-            pipelineTemplatePermissionService.deleteResource(
-                projectId = projectId,
-                templateId = templateId
-            )
-        }
+        pipelineTemplateTransactionService.deleteTemplate(
+            projectId = projectId,
+            templateId = templateId
+        )
         return true
     }
 

@@ -27,16 +27,22 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
+import com.tencent.devops.store.api.common.ServiceStoreResource
+import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,7 +57,9 @@ class PipelineTemplateTransactionService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
-    private val dslContext: DSLContext
+    private val dslContext: DSLContext,
+    private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
+    private val client: Client
 ) {
 
     fun createTemplateAndPermission(
@@ -157,6 +165,58 @@ class PipelineTemplateTransactionService @Autowired constructor(
             pipelineTemplateSettingService.create(
                 transactionContext = transactionContext,
                 pipelineTemplateSetting = templateSetting
+            )
+        }
+    }
+
+    fun deleteTemplate(
+        projectId: String,
+        templateId: String
+    ) {
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            val templateInfo = pipelineTemplateInfoService.get(
+                projectId = projectId,
+                templateId = templateId
+            )
+            pipelineTemplateRelatedService.delete(
+                transactionContext = context,
+                condition = PipelineTemplateRelatedCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+            pipelineTemplateInfoService.delete(
+                transactionContext = context,
+                commonCondition = PipelineTemplateCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+            pipelineTemplateResourceService.delete(
+                transactionContext = context,
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+            pipelineTemplateSettingService.delete(
+                transactionContext = context,
+                commonCondition = PipelineTemplateSettingCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+            if (templateInfo.mode == TemplateType.CONSTRAINT.name) {
+                client.get(ServiceStoreResource::class).uninstall(
+                    storeCode = templateInfo.srcTemplateId!!,
+                    storeType = StoreTypeEnum.TEMPLATE,
+                    projectCode = templateInfo.projectId
+                )
+            }
+            pipelineTemplatePermissionService.deleteResource(
+                projectId = projectId,
+                templateId = templateId
             )
         }
     }
