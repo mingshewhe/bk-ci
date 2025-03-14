@@ -87,7 +87,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = request.marketTemplateId,
             version = request.marketTemplateVersion
         )
-        val templateId = request.id!!
+        val templateId = pipelineTemplateGenerator.generateTemplateId()
         val version = pipelineTemplateGenerator.generateTemplateVersion()
 
         val setting = pipelineTemplateGenerator.getDefaultSetting(
