@@ -25,21 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.version
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import io.swagger.v3.oas.annotations.media.Schema
 
-/**
- * 流水线模版版本请求转换器
- */
-interface PipelineTemplateVersionReqConverter {
-
-    fun support(request: PipelineTemplateVersionReq): Boolean
-
-    fun convert(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext
-}
+@Schema(title = "流水线模板发布请求体")
+data class PipelineTemplateReleaseRequest(
+    @get:Schema(title = "是否本次开启PAC", required = true)
+    var enablePac: Boolean,
+    @get:Schema(title = "版本描述", required = false)
+    var description: String? = null,
+    @get:Schema(title = "分支操作", required = false)
+    var targetAction: CodeTargetAction?,
+    @get:Schema(title = "流水线YAML信息", required = false)
+    val yamlInfo: PipelineYamlVo?
+) : PipelineTemplateVersionReq

@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版资源没有版本信息")
 data class PTemplateResourceWithoutVersion(
-    @get:Schema(title = "主键ID", required = true)
-    val id: Long,
+    @get:Schema(title = "模版全局ID", required = true)
+    val version: Long,
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)
@@ -22,11 +22,11 @@ data class PTemplateResourceWithoutVersion(
     @get:Schema(title = "源模板ID", required = false)
     val srcTemplateId: String? = null,
     @get:Schema(title = "源模板版本", required = false)
-    val srcTemplateVersion: Int? = null,
+    val srcTemplateVersion: Long? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "编排", required = false)
-    val model: ITemplateModel?,
+    val model: ITemplateModel,
     @get:Schema(title = "编排yaml", required = false)
     val yaml: String?,
     @get:Schema(title = "版本发布描述", required = false)
@@ -38,7 +38,7 @@ data class PTemplateResourceWithoutVersion(
     @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的权重为0", required = false)
     val sortWeight: Int? = 100,
     @get:Schema(title = "草稿来源版本,可以通过请求传入", required = false)
-    val baseVersion: Int? = null,
+    val baseVersion: Long? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = false)

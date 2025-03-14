@@ -44,7 +44,7 @@ data class PipelineTemplateResource(
     val type: PipelineTemplateType,
     @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int,
-    @get:Schema(title = "版本号", required = true)
+    @get:Schema(title = "模版全局ID", required = true)
     val version: Long,
     @get:Schema(title = "版本排序号", required = true)
     val number: Int,
@@ -69,7 +69,7 @@ data class PipelineTemplateResource(
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "编排", required = false)
-    val model: ITemplateModel?,
+    val model: ITemplateModel,
     @get:Schema(title = "编排yaml", required = false)
     val yaml: String?,
     @get:Schema(title = "状态", required = true)
@@ -91,16 +91,17 @@ data class PipelineTemplateResource(
         pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
         pTemplateResourceOnlyVersion: PTemplateResourceOnlyVersion
     ) : this(
-        id = pTemplateResourceWithoutVersion.id,
+        version = pTemplateResourceWithoutVersion.version,
         projectId = pTemplateResourceWithoutVersion.projectId,
         templateId = pTemplateResourceWithoutVersion.templateId,
         type = pTemplateResourceWithoutVersion.type,
         settingVersion = pTemplateResourceOnlyVersion.settingVersion,
-        version = pTemplateResourceOnlyVersion.version,
+        number = pTemplateResourceOnlyVersion.number,
         versionName = pTemplateResourceOnlyVersion.versionName,
         versionNum = pTemplateResourceOnlyVersion.versionNum,
         pipelineVersion = pTemplateResourceOnlyVersion.pipelineVersion,
         triggerVersion = pTemplateResourceOnlyVersion.triggerVersion,
+        settingVersionNum = pTemplateResourceOnlyVersion.settingVersionNum,
         srcTemplateProjectId = pTemplateResourceWithoutVersion.srcTemplateProjectId,
         srcTemplateId = pTemplateResourceWithoutVersion.srcTemplateId,
         srcTemplateVersion = pTemplateResourceWithoutVersion.srcTemplateVersion,

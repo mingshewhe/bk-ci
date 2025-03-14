@@ -31,12 +31,14 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "配置流水线结果")
 data class DeployTemplateResult(
+    @get:Schema(title = "模版全局ID", required = true)
+    val version: Long,
     @get:Schema(title = "模版ID", required = true)
     val templateId: String,
     @get:Schema(title = "模版名称", required = true)
     val templateName: String,
-    @get:Schema(title = "流水线版本号", required = true)
-    val version: Int,
+    @get:Schema(title = "版本排序号", required = true)
+    val number: Int,
     @get:Schema(title = "发布版本号", required = false)
     val versionNum: Int?,
     @get:Schema(title = "生成版本名称", required = false)

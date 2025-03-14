@@ -52,6 +52,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
     override fun convert(
         userId: String,
         projectId: String,
+        templateId: String,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
         request as PipelineTemplateDraftSaveReq
@@ -70,7 +71,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 yaml = yaml
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                id = pipelineTemplateGenerator.generateTemplateVersion(),
+                version = pipelineTemplateGenerator.generateTemplateVersion(),
                 projectId = projectId,
                 templateId = templateId,
                 type = templateInfo.type,

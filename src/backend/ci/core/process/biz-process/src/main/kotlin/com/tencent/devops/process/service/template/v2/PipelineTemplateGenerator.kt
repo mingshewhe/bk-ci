@@ -44,8 +44,10 @@ import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.utils.PipelineVersionUtils
@@ -124,14 +126,14 @@ class PipelineTemplateGenerator @Autowired constructor(
         return when (versionStatus) {
             VersionStatus.COMMITTING -> {
                 PTemplateResourceOnlyVersion(
-                    version = PipelineTemplateConstant.INIT_VERSION,
+                    number = PipelineTemplateConstant.INIT_VERSION,
                     settingVersion = PipelineTemplateConstant.INIT_VERSION
                 )
             }
 
             VersionStatus.BRANCH -> {
                 PTemplateResourceOnlyVersion(
-                    version = PipelineTemplateConstant.INIT_VERSION,
+                    number = PipelineTemplateConstant.INIT_VERSION,
                     settingVersion = PipelineTemplateConstant.INIT_VERSION,
                     versionName = branchName!!
                 )
@@ -145,12 +147,13 @@ class PipelineTemplateGenerator @Autowired constructor(
                     settingVersion = PipelineTemplateConstant.INIT_VERSION
                 )
                 PTemplateResourceOnlyVersion(
-                    version = PipelineTemplateConstant.INIT_VERSION,
+                    number = PipelineTemplateConstant.INIT_VERSION,
                     versionName = versionName,
                     versionNum = PipelineTemplateConstant.INIT_VERSION,
                     pipelineVersion = PipelineTemplateConstant.INIT_VERSION,
                     triggerVersion = PipelineTemplateConstant.INIT_VERSION,
-                    settingVersion = PipelineTemplateConstant.INIT_VERSION
+                    settingVersion = PipelineTemplateConstant.INIT_VERSION,
+                    settingVersionNum = PipelineTemplateConstant.INIT_VERSION
                 )
             }
         }
@@ -158,17 +161,119 @@ class PipelineTemplateGenerator @Autowired constructor(
 
     /**
      * 生成草稿版本
-     *
-     * 如果草稿版本,没有传入来源版本,则来源版本为最新版本
      */
-    fun generateVersion(
-        latestVersion: PipelineTemplateResource,
-        baseVersion: Int? = null
+    fun generateDraftVersion(
+        latestResource: PipelineTemplateResource,
+        baseVersion: Long? = null
     ) = PTemplateResourceOnlyVersion(
-        version = latestVersion.version + 1,
-        settingVersion = latestVersion.settingVersion + 1,
-        baseVersion = baseVersion
+        number = latestResource.number + 1,
+        settingVersion = latestResource.settingVersion + 1,
+        baseVersion = baseVersion ?: latestResource.version
     )
+
+    /**
+     * 生成分支版本
+     *
+     * @param latestResource 最新的版本
+     */
+    fun generateBranchVersion(
+        latestResource: PipelineTemplateResource,
+        branchName: String,
+        baseVersion: Long? = null
+    ) = PTemplateResourceOnlyVersion(
+        number = latestResource.number + 1,
+        versionName = branchName,
+        settingVersion = latestResource.settingVersion + 1,
+        baseVersion = baseVersion ?: latestResource.version
+    )
+
+    /**
+     * 生成正式版本信息
+     *
+     * @param draftResource 草稿版本,草稿发布时需传入,直接生成正式版本为空
+     * @param latestResource 最新的版本
+     * @param latestReleaseResource 最新的正式版本
+     * @param latestReleaseSetting 最新的正式版本设置
+     */
+    fun generateReleaseVersion(
+        draftResource: PipelineTemplateResource? = null,
+        latestResource: PipelineTemplateResource,
+        latestReleaseResource: PipelineTemplateResource?,
+        latestReleaseSetting: PipelineSetting?,
+        newResource: PTemplateResourceWithoutVersion,
+        newSetting: PipelineSetting
+    ): PTemplateResourceOnlyVersion {
+        // 如果从草稿发布,number和setting不需要生成,直接使用草稿版本,否则使用最新版本+1
+        val (number, settingVersion) = if (draftResource == null) {
+            Pair(latestResource.number + 1, latestResource.settingVersion + 1)
+        } else {
+            Pair(draftResource.number, draftResource.settingVersion)
+        }
+        // 如果没有正式版本,说明是第一次生成正式版本
+        return if (latestReleaseResource == null) {
+            val versionNum = PipelineTemplateConstant.INIT_VERSION
+            val pipelineVersion = PipelineTemplateConstant.INIT_VERSION
+            val triggerVersion = PipelineTemplateConstant.INIT_VERSION
+            val settingVersionNum = PipelineTemplateConstant.INIT_VERSION
+
+            val versionName = PipelineVersionUtils.getVersionName(
+                versionNum = versionNum,
+                pipelineVersion = pipelineVersion,
+                triggerVersion = triggerVersion,
+                settingVersion = settingVersionNum
+            )
+            PTemplateResourceOnlyVersion(
+                number = number,
+                versionName = versionName,
+                versionNum = versionNum,
+                pipelineVersion = pipelineVersion,
+                triggerVersion = triggerVersion,
+                settingVersion = settingVersion,
+                settingVersionNum = settingVersionNum
+            )
+        } else {
+            val versionNum = latestReleaseResource.versionNum?.let { it + 1 } ?: number
+            val pipelineVersion = PipelineVersionUtils.getPipelineVersion(
+                currVersion = latestReleaseResource.pipelineVersion!!,
+                originTemplateModel = latestReleaseResource.model,
+                newTemplateModel = newResource.model,
+                originParams = latestReleaseResource.params,
+                newParams = newResource.params
+            )
+            val triggerVersion = if (newResource.model is Model && latestReleaseResource.model is Model) {
+                PipelineVersionUtils.getTriggerVersion(
+                    currVersion = latestReleaseResource.triggerVersion!!,
+                    originModel = latestReleaseResource.model as Model,
+                    newModel = newResource.model as Model
+                )
+            } else {
+                PipelineTemplateConstant.INIT_VERSION
+            }
+            val settingVersionNum = latestReleaseSetting?.let {
+                PipelineVersionUtils.getSettingVersion(
+                    currVersion = latestReleaseResource.settingVersionNum!!,
+                    originSetting = PipelineSettingVersion.convertFromSetting(it),
+                    newSetting = PipelineSettingVersion.convertFromSetting(newSetting)
+                )
+            } ?: PipelineTemplateConstant.INIT_VERSION
+
+            val versionName = PipelineVersionUtils.getVersionName(
+                versionNum = versionNum,
+                pipelineVersion = pipelineVersion,
+                triggerVersion = triggerVersion,
+                settingVersion = settingVersionNum
+            )
+            PTemplateResourceOnlyVersion(
+                number = number,
+                versionName = versionName,
+                versionNum = versionNum,
+                pipelineVersion = pipelineVersion,
+                triggerVersion = triggerVersion,
+                settingVersion = settingVersion,
+                settingVersionNum = settingVersionNum
+            )
+        }
+    }
 
     fun transfer(
         userId: String,

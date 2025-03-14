@@ -28,11 +28,17 @@
 package com.tencent.devops.process.utils
 
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.NormalContainer
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.container.VMBuildContainer
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
+import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.common.pipeline.template.JobTemplateModel
+import com.tencent.devops.common.pipeline.template.StageTemplateModel
+import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -128,6 +134,63 @@ object PipelineVersionUtils {
         return if (originSetting == newSetting) currVersion else currVersion + 1
     }
 
+    /**
+     * 根据当前版本号[currVersion], 原模版编排[originTemplateResource], 新模版编排[newTemplateResource]差异计算后得到新版本号
+     */
+    fun getPipelineVersion(
+        currVersion: Int,
+        originTemplateModel: ITemplateModel,
+        newTemplateModel:  ITemplateModel,
+        originParams: List<BuildFormProperty>?,
+        newParams: List<BuildFormProperty>?,
+    ): Int {
+        return when {
+            originTemplateModel is Model && newTemplateModel is Model -> {
+                val originStages = originTemplateModel.stages.drop(1)
+                val newStages = newTemplateModel.stages.drop(1)
+                if (originStages.differ(newStages) && originParams == newParams) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+
+            originTemplateModel is StageTemplateModel && newTemplateModel is StageTemplateModel -> {
+                val originStages = originTemplateModel.stages
+                val newStages = newTemplateModel.stages
+                if (originStages.differ(newStages) && originParams == newParams) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+
+            originTemplateModel is JobTemplateModel && newTemplateModel is JobTemplateModel -> {
+                val originContainers = originTemplateModel.containers
+                val newContainers = newTemplateModel.containers
+                if (originContainers.containersDiffer(newContainers) && originParams == newParams) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+
+            originTemplateModel is StepTemplateModel && newTemplateModel is StepTemplateModel -> {
+                val originContainer = originTemplateModel.container
+                val newContainer = newTemplateModel.container
+                if (originContainer.differ(newContainer) && originParams == newParams) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+
+            else -> {
+                currVersion + 1
+            }
+        }
+    }
+
     private fun List<Stage>.differ(other: List<Stage>): Boolean {
         if (this != other && this.size != other.size) return false
         this.forEachIndexed { sIndex, thisStage ->
@@ -139,7 +202,8 @@ object PipelineVersionUtils {
                 ) {
                 return false
             }
-            thisStage.containers.forEachIndexed { cIndex, thisContainer ->
+            return thisStage.containers.containersDiffer(otherStage.containers)
+            /*thisStage.containers.forEachIndexed { cIndex, thisContainer ->
                 val otherContainer = otherStage.containers[cIndex]
                 if (thisContainer != otherContainer && thisContainer.elements.size != otherContainer.elements.size) {
                     return false
@@ -161,7 +225,46 @@ object PipelineVersionUtils {
                     if (thisElement.additionalOptions != otherElement.additionalOptions) return false
                     if (thisElement.differ(otherElement)) return false
                 }
-            }
+            }*/
+        }
+        return true
+    }
+
+    private fun List<Container>.containersDiffer(other: List<Container>): Boolean {
+        if (this != other && this.size != other.size) return false
+        this.forEachIndexed { cIndex, thisContainer ->
+            val otherContainer = other[cIndex]
+            if (thisContainer.differ(otherContainer)) return false
+        }
+        return true
+    }
+
+    fun Container.differ(other: Container): Boolean {
+        if (this != other && this.elements.size != other.elements.size) {
+            return false
+        }
+        if (this is VMBuildContainer && other is VMBuildContainer) {
+            if (this != other || this.dispatchType != other.dispatchType ||
+                this.jobControlOption != other.jobControlOption
+            ) return false
+        } else if (this is NormalContainer && other is NormalContainer) {
+            if (this != other ||
+                this.jobControlOption != other.jobControlOption
+            ) return false
+        } else {
+            return false
+        }
+        if (this.elements.elementsDiffer(other.elements)) return false
+        return true
+    }
+
+    private fun List<Element>.elementsDiffer(other: List<Element>): Boolean {
+        if (this != other && this.size != other.size) return false
+        this.forEachIndexed { eIndex, thisElement ->
+            val otherElement = other[eIndex]
+            if (thisElement != otherElement) return false
+            if (thisElement.additionalOptions != otherElement.additionalOptions) return false
+            if (thisElement.differ(otherElement)) return false
         }
         return true
     }

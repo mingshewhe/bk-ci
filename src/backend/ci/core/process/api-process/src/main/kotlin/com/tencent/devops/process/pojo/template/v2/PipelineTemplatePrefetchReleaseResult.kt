@@ -25,21 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.version
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import io.swagger.v3.oas.annotations.media.Schema
 
-/**
- * 流水线模版版本请求转换器
- */
-interface PipelineTemplateVersionReqConverter {
-
-    fun support(request: PipelineTemplateVersionReq): Boolean
-
-    fun convert(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext
-}
+@Schema(title = "流水线模版发布预览结果")
+data class PipelineTemplatePrefetchReleaseResult(
+    @get:Schema(title = "模版ID", required = true)
+    val templateId: String,
+    @get:Schema(title = "模版名称", required = true)
+    val templateName: String,
+    @get:Schema(title = "草稿版本号", required = true)
+    val version: Int,
+    @get:Schema(title = "发布版本号", required = false)
+    val newVersionNum: Int,
+    @get:Schema(title = "生成版本名称", required = false)
+    val newVersionName: String
+)

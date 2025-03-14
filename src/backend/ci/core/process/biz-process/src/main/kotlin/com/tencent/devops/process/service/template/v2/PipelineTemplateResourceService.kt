@@ -29,7 +29,7 @@ class PipelineTemplateResourceService @Autowired constructor(
             dslContext = dslContext,
             templateId = templateId,
             version = version
-        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        )
     }
 
     fun getLatestVersionResource(
@@ -46,13 +46,13 @@ class PipelineTemplateResourceService @Autowired constructor(
     fun getLatestReleasedResource(
         projectId: String,
         templateId: String
-    ): PipelineTemplateResource {
+    ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.getLatestRecord(
             dslContext = dslContext,
             projectId = projectId,
             templateId = templateId,
             status = VersionStatus.RELEASED
-        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        )
     }
 
     fun getLatestBranchResource(
@@ -161,7 +161,7 @@ class PipelineTemplateResourceService @Autowired constructor(
         commonCondition: PipelineTemplateResourceCommonCondition
     ) {
         pipelineTemplateResourceDao.delete(
-            dslContext = dslContext,
+            dslContext = transactionContext ?: dslContext,
             commonCondition = commonCondition
         )
     }

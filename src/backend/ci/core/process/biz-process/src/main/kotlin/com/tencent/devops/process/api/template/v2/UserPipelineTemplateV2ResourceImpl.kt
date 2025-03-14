@@ -42,6 +42,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -96,7 +98,12 @@ class UserPipelineTemplateV2ResourceImpl(
             templateId = templateId
         )
         return Result(
-            templateFacadeService.saveDraft(userId = userId, projectId = projectId, request = request)
+            templateFacadeService.saveDraft(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                request = request
+            )
         )
     }
 
@@ -219,6 +226,25 @@ class UserPipelineTemplateV2ResourceImpl(
                 name = name
             )
         )
+    }
+
+    override fun preFetchDraftVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Int
+    ): Result<PipelineTemplatePrefetchReleaseResult> {
+        TODO("Not yet implemented")
+    }
+
+    override fun releaseDraftVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Int,
+        request: PipelineTemplateReleaseRequest
+    ): Result<DeployTemplateResult> {
+        TODO("Not yet implemented")
     }
 
     override fun hasPipelineTemplatePermission(

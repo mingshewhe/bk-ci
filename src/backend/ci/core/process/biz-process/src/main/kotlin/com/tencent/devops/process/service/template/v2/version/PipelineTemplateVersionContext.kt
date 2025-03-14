@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
@@ -42,6 +43,8 @@ data class PipelineTemplateVersionContext(
     val userId: String,
     val projectId: String,
     val templateId: String,
+    @get:Schema(title = "模版版本,发布时才有值", required = true)
+    val version: Long? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
     @get:Schema(title = "模版信息", required = true)
@@ -54,8 +57,8 @@ data class PipelineTemplateVersionContext(
     val enablePac: Boolean = false,
     @get:Schema(title = "yaml文件分支信息", required = true)
     val yamlFileInfo: PipelineYamlFileInfo? = null,
-    @get:Schema(title = "是否需要推送到远端仓库", required = true)
-    val push: Boolean = false,
-    @get:Schema(title = "是否是merge主干", required = true)
-    val merged: Boolean = false
+    @get:Schema(title = "是否merge主干", required = true)
+    val mergedMaster: Boolean = false,
+    @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
+    var targetAction: CodeTargetAction? = null,
 )

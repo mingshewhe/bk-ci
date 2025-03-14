@@ -46,9 +46,15 @@ class PipelineTemplateVersionManager @Autowired constructor(
     fun deployTemplate(
         userId: String,
         projectId: String,
+        templateId: String,
         request: PipelineTemplateVersionReq
     ): DeployTemplateResult {
-        val context = getConverter(request).convert(userId = userId, projectId = projectId, request = request)
+        val context = getConverter(request).convert(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            request = request
+        )
         pipelineTemplateModelValidator.validate(
             projectId = projectId,
             pTemplateResourceWithoutVersion = context.pTemplateResourceWithoutVersion,

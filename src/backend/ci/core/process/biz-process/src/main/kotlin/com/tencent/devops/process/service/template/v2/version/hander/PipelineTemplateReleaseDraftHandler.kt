@@ -29,7 +29,6 @@ package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
@@ -46,11 +45,8 @@ import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVe
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
-/**
- * 流水线模版创建正式版本
- */
 @Service
-class PipelineTemplateCreateReleaseHandler @Autowired constructor(
+class PipelineTemplateReleaseDraftHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
@@ -58,44 +54,32 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionHandler {
-
     override fun support(context: PipelineTemplateVersionContext): Boolean {
-        return context.versionAction == PipelineVersionAction.CREATE_RELEASE
+        return context.versionAction == PipelineVersionAction.RELEASE_DRAFT
     }
 
     override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
         with(context) {
-            val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
-            try {
-                lock.lock()
-                return doHandle()
-            } finally {
-                lock.unlock()
+            if (version == null) {
+                throw IllegalArgumentException("version is null")
+            }
+            if (enablePac && targetAction == null) {
+                throw IllegalArgumentException("targetAction is null")
+            }
+            with(context) {
+                val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
+                try {
+                    lock.lock()
+                    return doHandle()
+                } finally {
+                    lock.unlock()
+                }
             }
         }
     }
 
     private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
-        val templateInfo = pipelineTemplateInfoService.getOrNull(
-            projectId = projectId,
-            templateId = templateId
-        )
-        val resourceOnlyVersion = if (templateInfo == null) {
-            val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.RELEASED
-            )
-            pipelineTemplateTransactionService.createTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
-                pipelineTemplateResource = PipelineTemplateResource(
-                    pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                    pTemplateResourceOnlyVersion = defaultTemplateVersion
-                ),
-                pipelineTemplateSetting = pipelineTemplateSetting
-            )
-            defaultTemplateVersion
-        } else {
-            createReleaseVersion()
-        }
+        val resourceOnlyVersion = releaseDraftVersion()
         return DeployTemplateResult(
             version = pTemplateResourceWithoutVersion.version,
             templateId = templateId,
@@ -106,23 +90,23 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
+    private fun PipelineTemplateVersionContext.releaseDraftVersion(): PTemplateResourceOnlyVersion {
+        val draftResource = pipelineTemplateResourceService.get(
+            projectId = projectId, templateId = templateId, version = version!!
+        )
         val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
-            projectId = projectId,
-            templateId = templateId
+            projectId = projectId, templateId = templateId
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val latestReleaseResource = pipelineTemplateResourceService.getLatestReleasedResource(
-            projectId = projectId,
-            templateId = templateId
+            projectId = projectId, templateId = templateId
         )
         val latestReleaseSetting = latestReleaseResource?.let {
-            pipelineTemplateSettingService.getPipelineTemplateSetting(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = it.settingVersion
+            pipelineTemplateSettingService.get(
+                projectId = projectId, templateId = templateId, settingVersion = it.settingVersion
             )
         }
         val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseVersion(
+            draftResource = draftResource,
             latestResource = latestResource,
             latestReleaseResource = latestReleaseResource,
             latestReleaseSetting = latestReleaseSetting,
@@ -131,9 +115,9 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
         )
         val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pTemplateResourceOnlyVersion = resourceOnlyVersion,
+            pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
-        pipelineTemplateTransactionService.createReleaseVersion(
+        pipelineTemplateTransactionService.releaseDraftVersion(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting

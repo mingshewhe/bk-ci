@@ -59,6 +59,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
     override fun convert(
         userId: String,
         projectId: String,
+        templateId: String,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
         request as PipelineTemplateCustomCreateReq
@@ -67,7 +68,6 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = name
             )
-            val templateId = pipelineTemplateGenerator.generateTemplateId()
             val setting = pipelineTemplateGenerator.getDefaultSetting(
                 type = type,
                 projectId = projectId,
@@ -105,7 +105,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 yaml = null
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                id = pipelineTemplateGenerator.generateTemplateVersion(),
+                version = pipelineTemplateGenerator.generateTemplateVersion(),
                 projectId = projectId,
                 templateId = templateId,
                 type = type,

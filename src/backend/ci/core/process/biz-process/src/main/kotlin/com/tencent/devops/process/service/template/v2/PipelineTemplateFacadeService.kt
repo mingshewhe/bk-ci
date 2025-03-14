@@ -26,7 +26,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -61,10 +60,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
     fun create(userId: String, projectId: String, request: PipelineTemplateCustomCreateReq): DeployTemplateResult {
-        logger.info("$userId create template in project $projectId by ${request} ,body is $request")
+        logger.info("$userId create template in project $projectId by $request ,body is $request")
+        val templateId = pipelineTemplateGenerator.generateTemplateId()
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
+            templateId = templateId,
             request = request
         )
     }
@@ -133,16 +134,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
             creator = userId,
             status = VersionStatus.RELEASED
         )
-        val pipelineTemplatePermission = PipelineTemplatePermission(
-            projectId = projectId,
-            id = templateId,
-            name = marketTemplateInfo.name,
-            creator = userId
-        )
-        pipelineTemplateTransactionService.createTemplateAndPermission(
+        pipelineTemplateTransactionService.createTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             pipelineTemplateSetting = setting,
-            pipelineTemplatePermission = pipelineTemplatePermission,
             pipelineTemplateResource = templateResource
         )
     }
@@ -188,10 +182,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun saveDraft(userId: String, projectId: String, request: PipelineTemplateDraftSaveReq): DeployTemplateResult {
+    fun saveDraft(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        request: PipelineTemplateDraftSaveReq
+    ): DeployTemplateResult {
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
+            templateId = templateId,
             request = request
         )
     }
@@ -479,17 +479,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             releaseTime = LocalDateTime.now().timestampmilli()
         )
 
-        val pipelineTemplatePermission = PipelineTemplatePermission(
-            projectId = projectId,
-            id = templateId,
-            name = name,
-            creator = userId
-        )
-        pipelineTemplateTransactionService.createTemplateAndPermission(
+        pipelineTemplateTransactionService.createTemplate(
             pipelineTemplateInfo = templateInfo,
             pipelineTemplateResource = templateResource,
-            pipelineTemplateSetting = setting,
-            pipelineTemplatePermission = pipelineTemplatePermission
+            pipelineTemplateSetting = setting
         )
         return templateId
     }

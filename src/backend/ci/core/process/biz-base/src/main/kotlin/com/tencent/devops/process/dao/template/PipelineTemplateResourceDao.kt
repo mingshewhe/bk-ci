@@ -306,7 +306,7 @@ class PipelineTemplateResourceDao {
             srcTemplateVersion = this.srcTemplateVersion,
             baseVersion = this.baseVersion,
             params = this.params?.let { JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {}) },
-            model = this.model?.let { JsonUtil.to(this.model, ITemplateModel::class.java) },
+            model = this.model.let { JsonUtil.to(this.model, ITemplateModel::class.java) },
             yaml = this.yaml,
             status = VersionStatus.get(this.status),
             branchAction = this.branchAction?.let { BranchVersionAction.get(it) },

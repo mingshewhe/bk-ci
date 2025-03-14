@@ -15,6 +15,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -199,6 +201,44 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("name")
         name: String
     ): Result<String>
+
+    @Operation(summary = "草稿发布为正式版本的信息预览")
+    @GET
+    @Path("/{templateId}/releaseVersion/{version}/prefetch")
+    fun preFetchDraftVersion(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "模版版本", required = true)
+        @PathParam("version")
+        version: Int
+    ): Result<PipelineTemplatePrefetchReleaseResult>
+
+    @Operation(summary = "将当前草稿发布为正式版本")
+    @POST
+    @Path("{templateId}/releaseVersion/{version}")
+    fun releaseDraftVersion(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "流水线编排版本", required = true)
+        @PathParam("version")
+        version: Int,
+        @Parameter(description = "流水线模版发布请求体", required = true)
+        request: PipelineTemplateReleaseRequest
+    ): Result<DeployTemplateResult>
 
     @Operation(summary = "是否有模板特定权限")
     @GET

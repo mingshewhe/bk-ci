@@ -30,11 +30,13 @@ package com.tencent.devops.process.service.template.v2
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -47,6 +49,7 @@ import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
  * 负责流水线模版持久化业务逻辑
@@ -62,40 +65,77 @@ class PipelineTemplateTransactionService @Autowired constructor(
     private val client: Client
 ) {
 
-    fun createTemplateAndPermission(
-        pipelineTemplateInfo: PipelineTemplateInfo? = null,
-        pipelineTemplateResource: PipelineTemplateResource? = null,
-        pipelineTemplateSetting: PipelineSetting? = null,
-        pipelineTemplatePermission: PipelineTemplatePermission? = null
+    /**
+     * 创建流水线模版和权限,用于新建模版
+     */
+    fun createTemplate(
+        pipelineTemplateInfo: PipelineTemplateInfo,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
     ) {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            pipelineTemplateInfo?.let {
-                pipelineTemplateInfoService.create(
-                    transactionContext = context,
-                    pipelineTemplateInfo = pipelineTemplateInfo
-                )
-            }
-            pipelineTemplateResource?.let {
-                pipelineTemplateResourceService.create(
-                    transactionContext = context,
-                    pipelineTemplateResource = pipelineTemplateResource
-                )
-            }
-            pipelineTemplateSetting?.let {
-                pipelineTemplateSettingService.create(
-                    transactionContext = context,
-                    pipelineTemplateSetting = pipelineTemplateSetting
-                )
-            }
-            pipelineTemplatePermission?.let {
-                pipelineTemplatePermissionService.createResource(
-                    userId = pipelineTemplatePermission.creator,
-                    projectId = pipelineTemplatePermission.projectId,
-                    templateId = pipelineTemplatePermission.id,
-                    templateName = pipelineTemplatePermission.name
-                )
-            }
+            pipelineTemplateInfoService.create(
+                transactionContext = context,
+                pipelineTemplateInfo = pipelineTemplateInfo
+            )
+            pipelineTemplateResourceService.create(
+                transactionContext = context,
+                pipelineTemplateResource = pipelineTemplateResource
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = context,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
+            pipelineTemplatePermissionService.createResource(
+                userId = pipelineTemplateInfo.creator,
+                projectId = pipelineTemplateInfo.projectId,
+                templateId = pipelineTemplateInfo.id,
+                templateName = pipelineTemplateInfo.name
+            )
+        }
+    }
+
+    /**
+     * 创建正式版本
+     */
+    fun createReleaseVersion(
+        userId: String,
+        templateResource: PipelineTemplateResource,
+        templateSetting: PipelineSetting
+    ) {
+        val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+            releasedVersion = templateResource.version,
+            releasedVersionName = templateResource.versionName,
+            releasedSettingVersion = templateResource.settingVersion,
+            latestVersionStatus = templateResource.status,
+            updater = userId
+        )
+        val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+            projectId = templateResource.projectId,
+            templateId = templateResource.templateId
+        )
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateInfoService.update(
+                transactionContext = context,
+                record = pipelineTemplateInfoUpdateInfo,
+                commonCondition = pipelineTemplateCommonCondition
+            )
+            pipelineTemplateResourceService.create(
+                transactionContext = context,
+                pipelineTemplateResource = templateResource
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = context,
+                pipelineTemplateSetting = templateSetting
+            )
+            pipelineTemplatePermissionService.createResource(
+                userId = userId,
+                projectId = templateResource.projectId,
+                templateId = templateResource.templateId,
+                templateName = templateSetting.pipelineName
+            )
         }
     }
 
@@ -117,11 +157,32 @@ class PipelineTemplateTransactionService @Autowired constructor(
     }
 
     fun updateDraftVersion(
-        templateResourceUpdateInfo: PipelineTemplateResourceUpdateInfo,
-        templateResourceCondition: PipelineTemplateResourceCommonCondition,
-        templateSettingUpdateInfo: PipelineTemplateSettingUpdateInfo,
-        templateSettingCondition: PipelineTemplateSettingCommonCondition
+        userId: String,
+        draftResource: PipelineTemplateResource,
+        templateResource: PTemplateResourceWithoutVersion,
+        templateSetting: PipelineSetting
     ) {
+        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+            params = templateResource.params,
+            model = templateResource.model,
+            yaml = templateResource.yaml,
+            updater = userId,
+            sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
+        )
+        val templateResourceCondition = PipelineTemplateResourceCommonCondition(
+            projectId = draftResource.projectId,
+            templateId = draftResource.templateId,
+            version = draftResource.version
+        )
+        val templateSettingUpdateInfo = PipelineTemplateSettingUpdateInfo(
+            userId = userId,
+            pipelineSetting = templateSetting
+        )
+        val templateSettingCondition = PipelineTemplateSettingCommonCondition(
+            projectId = draftResource.projectId,
+            templateId = draftResource.templateId,
+            settingVersion = draftResource.settingVersion
+        )
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
             pipelineTemplateResourceService.update(
@@ -133,6 +194,62 @@ class PipelineTemplateTransactionService @Autowired constructor(
                 transactionContext = context,
                 record = templateSettingUpdateInfo,
                 commonCondition = templateSettingCondition
+            )
+        }
+    }
+
+    /**
+     * 发布草稿版本
+     */
+    fun releaseDraftVersion(
+        userId: String,
+        templateResource: PipelineTemplateResource,
+        templateSetting: PipelineSetting
+    ) {
+        val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+            releasedVersion = templateResource.version,
+            releasedVersionName = templateResource.versionName,
+            releasedSettingVersion = templateResource.settingVersion,
+            latestVersionStatus = templateResource.status,
+            updater = userId
+        )
+        val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+            projectId = templateResource.projectId,
+            templateId = templateResource.templateId
+        )
+        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+            versionName = templateResource.versionName,
+            settingVersionNum = templateResource.settingVersionNum,
+            versionNum = templateResource.versionNum,
+            pipelineVersion = templateResource.pipelineVersion,
+            triggerVersion = templateResource.triggerVersion,
+            releaseTime = LocalDateTime.now(),
+            status = templateResource.status,
+            sortWeight = templateResource.sortWeight,
+            updater = userId
+        )
+        val templateResourceCondition = PipelineTemplateResourceCommonCondition(
+            projectId = templateResource.projectId,
+            templateId = templateResource.templateId,
+            version = templateResource.version
+        )
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateInfoService.update(
+                transactionContext = context,
+                record = pipelineTemplateInfoUpdateInfo,
+                commonCondition = pipelineTemplateCommonCondition
+            )
+            pipelineTemplateResourceService.update(
+                transactionContext = context,
+                record = templateResourceUpdateInfo,
+                commonCondition = templateResourceCondition
+            )
+            pipelineTemplatePermissionService.createResource(
+                userId = userId,
+                projectId = templateResource.projectId,
+                templateId = templateResource.templateId,
+                templateName = templateSetting.pipelineName
             )
         }
     }

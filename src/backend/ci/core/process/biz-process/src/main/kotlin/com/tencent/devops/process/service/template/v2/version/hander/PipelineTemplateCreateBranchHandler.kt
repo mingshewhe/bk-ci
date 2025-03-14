@@ -7,7 +7,6 @@ import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePermission
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -61,24 +60,18 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        val pTemplateResourceOnlyVersion = if (templateInfo == null) {
+        val resourceOnlyVersion = if (templateInfo == null) {
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.BRANCH,
                 branchName = yamlFileInfo.branch
             )
-            pipelineTemplateTransactionService.createTemplateAndPermission(
+            pipelineTemplateTransactionService.createTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
                 ),
-                pipelineTemplateSetting = pipelineTemplateSetting,
-                pipelineTemplatePermission = PipelineTemplatePermission(
-                    projectId = projectId,
-                    id = templateId,
-                    name = pipelineTemplateInfo.name,
-                    creator = userId
-                )
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
             defaultTemplateVersion
         } else {
@@ -86,31 +79,33 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         }
 
         return DeployTemplateResult(
+            version = pTemplateResourceWithoutVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
-            version = pTemplateResourceOnlyVersion.version,
-            versionNum = pTemplateResourceOnlyVersion.versionNum,
-            versionName = pTemplateResourceOnlyVersion.versionName
+            number = resourceOnlyVersion.number,
+            versionNum = resourceOnlyVersion.versionNum,
+            versionName = resourceOnlyVersion.versionName
         )
     }
 
     private fun PipelineTemplateVersionContext.createBranchVersion(): PTemplateResourceOnlyVersion {
-        val latestVersion = pipelineTemplateResourceService.getLatestVersionResource(
+        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId,
             templateId = templateId
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
-        val pTemplateResourceOnlyVersion = pipelineTemplateGenerator.generateVersion(
-            latestVersion = latestVersion
+        val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
+            latestResource = latestResource,
+            branchName = yamlFileInfo!!.branch
         )
         val pipelineTemplateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pTemplateResourceOnlyVersion = pTemplateResourceOnlyVersion
+            pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
 
         pipelineTemplateTransactionService.createBranchVersion(
             templateResource = pipelineTemplateResource,
             templateSetting = pipelineTemplateSetting
         )
-        return pTemplateResourceOnlyVersion
+        return resourceOnlyVersion
     }
 }
