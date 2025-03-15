@@ -29,43 +29,37 @@ package com.tencent.devops.process.service.template.v2.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
-import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
-import com.tencent.devops.store.api.template.ServiceTemplateResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线模板研发商店创建请求转换
+ * 流水线模板复制创建请求转换
  */
 @Service
-class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
+class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val client: Client,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
-        return request is PipelineTemplateMarketCreateReq
+        return request is PipelineTemplateCopyCreateReq
     }
 
     override fun convert(
@@ -74,69 +68,80 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
         templateId: String,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
-        request as PipelineTemplateMarketCreateReq
+        request as PipelineTemplateCopyCreateReq
         with(request) {
-            val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
-                userId = userId,
-                templateCode = marketTemplateId
-            ).data ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
-            val marketTemplateInfo = pipelineTemplateInfoService.get(
-                templateId = marketTemplateId
+            val srcTemplateInfo = pipelineTemplateInfoService.get(
+                projectId = projectId,
+                templateId = srcTemplateId
             )
+            if (srcTemplateInfo.latestVersionStatus != VersionStatus.RELEASED) {
+                throw ErrorCodeException(errorCode = "")
+            }
             pipelineTemplateCommonService.checkTemplateBasicInfo(
                 projectId = projectId,
-                name = marketTemplateInfo.name
+                name = name
             )
-            val marketTemplateResource = pipelineTemplateResourceService.get(
-                projectId = marketTemplateProjectId,
-                templateId = marketTemplateId,
-                version = marketTemplateVersion
+            val srcTemplateResource = pipelineTemplateResourceService.get(
+                projectId = projectId,
+                templateId = srcTemplateId,
+                version = srcTemplateInfo.releasedVersion!!
             )
             val version = pipelineTemplateGenerator.generateTemplateVersion()
 
-            val setting = pipelineTemplateGenerator.getDefaultSetting(
-                type = marketTemplateResource.type,
-                projectId = projectId,
-                templateId = templateId,
-                creator = userId,
-                templateName = marketTemplateInfo.name,
-                desc = marketTemplateInfo.desc
-            )
+            val setting = if (copySetting) {
+                val srcTemplateSetting = pipelineTemplateSettingService.get(
+                    projectId = projectId,
+                    templateId = srcTemplateId,
+                    settingVersion = srcTemplateInfo.releasedSettingVersion!!
+                )
+                srcTemplateSetting.copy(
+                    pipelineId = templateId,
+                    projectId = projectId,
+                    pipelineName = name,
+                    version = PipelineTemplateConstant.INIT_VERSION,
+                    creator = userId
+                )
+            } else {
+                pipelineTemplateGenerator.getDefaultSetting(
+                    type = srcTemplateResource.type,
+                    projectId = projectId,
+                    templateId = templateId,
+                    templateName = name,
+                    desc = srcTemplateInfo.desc,
+                    creator = userId
+                )
+            }
 
             val pipelineTemplateInfo = PipelineTemplateInfo(
                 id = templateId,
                 projectId = projectId,
-                name = marketTemplateInfo.name,
-                desc = marketTemplateInfo.desc,
-                mode = TemplateType.CONSTRAINT.name,
-                type = marketTemplateInfo.type,
-                enablePac = false,
+                name = name,
+                desc = srcTemplateInfo.desc,
+                mode = srcTemplateInfo.mode,
+                category = srcTemplateInfo.category,
+                type = srcTemplateInfo.type,
+                logoUrl = srcTemplateInfo.logoUrl,
+                enablePac = srcTemplateInfo.enablePac,
                 releasedVersion = version,
-                releasedVersionName = marketTemplateInfo.releasedVersionName,
+                releasedVersionName = "V1(P1.T1.1)",
                 releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
-                source = PipelineTemplateSource.MARKET,
-                storeFlag = false,
+                source = srcTemplateInfo.source,
+                storeFlag = srcTemplateInfo.storeFlag,
                 creator = userId,
-                srcTemplateProjectId = marketTemplateInfo.projectId,
-                srcTemplateId = marketTemplateInfo.id,
-                category = marketTemplateDetails.classifyCode,
-                logoUrl = marketTemplateDetails.logoUrl,
                 latestVersionStatus = VersionStatus.RELEASED
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
+                version = version,
                 projectId = projectId,
                 templateId = templateId,
-                type = marketTemplateInfo.type,
-                version = version,
-                srcTemplateProjectId = marketTemplateInfo.projectId,
-                srcTemplateId = marketTemplateInfo.id,
-                srcTemplateVersion = marketTemplateResource.version,
-                model = marketTemplateResource.model,
-                yaml = marketTemplateResource.yaml,
+                type = srcTemplateResource.type,
+                params = srcTemplateResource.params,
+                model = srcTemplateResource.model,
+                yaml = srcTemplateResource.yaml,
+                status = VersionStatus.RELEASED,
                 creator = userId,
-                status = VersionStatus.RELEASED
+                updater = userId
             )
-
             return PipelineTemplateVersionContext(
                 userId = userId,
                 projectId = projectId,

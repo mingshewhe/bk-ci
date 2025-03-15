@@ -4,63 +4,54 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
-import com.tencent.devops.common.api.util.UUIDUtil
-import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
-import com.tencent.devops.store.api.template.ServiceTemplateResource
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 /**
  * 流水线模版门面类
  */
 @Service
 class PipelineTemplateFacadeService @Autowired constructor(
-    private val pipelineTemplateCommonService: PipelineTemplateCommonService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val dslContext: DSLContext,
-    private val client: Client,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
-    fun create(userId: String, projectId: String, request: PipelineTemplateCustomCreateReq): DeployTemplateResult {
+    fun create(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateCustomCreateReq
+    ): DeployTemplateResult {
         logger.info("$userId create template in project $projectId by $request ,body is $request")
-        val templateId = pipelineTemplateGenerator.generateTemplateId()
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
-            templateId = templateId,
             request = request
         )
     }
@@ -70,7 +61,25 @@ class PipelineTemplateFacadeService @Autowired constructor(
         projectId: String,
         request: PipelineTemplateMarketCreateReq
     ): DeployTemplateResult {
+        logger.info("$userId create template in project $projectId by market ,body is $request")
+        return pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            request = request
+        )
+    }
 
+    fun copy(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateCopyCreateReq
+    ): DeployTemplateResult {
+        logger.info("$userId create template in project $projectId by copy ,body is $request")
+        return pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            request = request
+        )
     }
 
     fun deleteTemplate(projectId: String, templateId: String): Boolean {
@@ -123,7 +132,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
-            templateId = templateId,
             request = request
         )
     }
@@ -133,6 +141,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
     ): SQLPage<PipelineTemplateInfo> {
+        logger.info("list template infos {}|{}", userId, commonCondition)
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
 
@@ -323,100 +332,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             baseVersionResource = baseVersionResource,
             comparedVersionResource = comparedVersionResource
         )
-    }
-
-    // 复制模板
-    fun copy(
-        userId: String,
-        projectId: String,
-        srcTemplateId: String,
-        copySetting: Boolean,
-        name: String
-    ): String {
-        val srcTemplateInfo = pipelineTemplateInfoService.get(
-            projectId = projectId,
-            templateId = srcTemplateId
-        )
-        if (srcTemplateInfo.latestVersionStatus != VersionStatus.RELEASED) {
-            // todo 错误码
-            throw ErrorCodeException(errorCode = "")
-        }
-
-        pipelineTemplateCommonService.checkTemplateBasicInfo(
-            projectId = projectId,
-            name = name
-        )
-        val srcTemplateResource = pipelineTemplateResourceService.get(
-            projectId = projectId,
-            templateId = srcTemplateId,
-            version = srcTemplateInfo.releasedVersion!!
-        )
-        val templateId = UUIDUtil.generate()
-        val version = pipelineTemplateGenerator.generateTemplateVersion()
-
-        val setting = if (copySetting) {
-            val srcTemplateSetting = pipelineTemplateSettingService.get(
-                projectId = projectId,
-                templateId = srcTemplateId,
-                settingVersion = srcTemplateInfo.releasedSettingVersion!!
-            )
-            srcTemplateSetting.copy(
-                pipelineId = templateId,
-                projectId = projectId,
-                pipelineName = name,
-                version = PipelineTemplateConstant.INIT_VERSION,
-                creator = userId
-            )
-        } else {
-            pipelineTemplateGenerator.getDefaultSetting(
-                type = srcTemplateResource.type,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = name,
-                desc = srcTemplateInfo.desc,
-                creator = userId
-            )
-        }
-
-        val templateInfo = PipelineTemplateInfo(
-            id = templateId,
-            projectId = projectId,
-            name = name,
-            desc = srcTemplateInfo.desc,
-            mode = srcTemplateInfo.mode,
-            category = srcTemplateInfo.category,
-            type = srcTemplateInfo.type,
-            logoUrl = srcTemplateInfo.logoUrl,
-            enablePac = srcTemplateInfo.enablePac,
-            releasedVersion = version,
-            releasedVersionName = "V1(P1.T1.1)",
-            releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
-            source = srcTemplateInfo.source,
-            storeFlag = srcTemplateInfo.storeFlag,
-            creator = userId,
-            latestVersionStatus = VersionStatus.RELEASED
-        )
-
-        val templateResource = srcTemplateResource.copy(
-            projectId = projectId,
-            templateId = templateId,
-            settingVersion = PipelineTemplateConstant.INIT_VERSION,
-            version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
-            versionName = "V1(P1.T1.1)",
-            versionNum = 1,
-            pipelineVersion = 1,
-            triggerVersion = 1,
-            creator = userId,
-            releaseTime = LocalDateTime.now().timestampmilli()
-        )
-
-        pipelineTemplateTransactionService.createTemplate(
-            pipelineTemplateInfo = templateInfo,
-            pipelineTemplateResource = templateResource,
-            pipelineTemplateSetting = setting
-        )
-        return templateId
     }
 
     // 发布模板

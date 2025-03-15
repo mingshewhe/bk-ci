@@ -29,6 +29,7 @@ package com.tencent.devops.process.service.template.v2.version
 
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -40,13 +41,14 @@ import org.springframework.stereotype.Service
 class PipelineTemplateVersionManager @Autowired constructor(
     private val versionHandlers: List<PipelineTemplateVersionHandler>,
     private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
-    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator
+    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator,
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator
 ) {
 
     fun deployTemplate(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String = pipelineTemplateGenerator.generateTemplateId(),
         request: PipelineTemplateVersionReq
     ): DeployTemplateResult {
         val context = getConverter(request).convert(

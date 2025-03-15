@@ -10,11 +10,13 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -50,6 +52,34 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateCustomCreateReq
+    ): Result<DeployTemplateResult>
+
+    @Operation(summary = "研发商店导入模板")
+    @POST
+    @Path("/create/market")
+    fun createByMarket(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "请求体", required = true)
+        request: PipelineTemplateMarketCreateReq
+    ): Result<DeployTemplateResult>
+
+    @Operation(summary = "复制")
+    @POST
+    @Path("/copy/")
+    fun copy(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "请求体", required = true)
+        request: PipelineTemplateCopyCreateReq
     ): Result<DeployTemplateResult>
 
     @Operation(summary = "删除流水线模板")
@@ -180,27 +210,6 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("comparedVersion")
         comparedVersion: Long
     ): Result<PipelineTemplateCompareResponse>
-
-    @Operation(summary = "复制")
-    @POST
-    @Path("/{srcTemplateId}/copy/")
-    fun copy(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
-        @Parameter(description = "父模板ID", required = true)
-        @PathParam("srcTemplateId")
-        srcTemplateId: String,
-        @Parameter(description = "是否同步配置", required = false)
-        @QueryParam("copySetting")
-        copySetting: Boolean,
-        @Parameter(description = "模板名称", required = false)
-        @QueryParam("name")
-        name: String
-    ): Result<String>
 
     @Operation(summary = "草稿发布为正式版本的信息预览")
     @GET

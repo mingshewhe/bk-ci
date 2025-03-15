@@ -37,11 +37,13 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -60,13 +62,52 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         request: PipelineTemplateCustomCreateReq
     ): Result<DeployTemplateResult> {
-        logger.info("create template {}|{}|{}", userId, projectId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
             projectId = projectId,
             permission = AuthPermission.CREATE
         )
         return Result(templateFacadeService.create(userId = userId, projectId = projectId, request = request))
+    }
+
+    override fun createByMarket(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateMarketCreateReq
+    ): Result<DeployTemplateResult> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.CREATE
+        )
+        return Result(
+            templateFacadeService.createByMarket(userId = userId, projectId = projectId, request = request)
+        )
+    }
+
+    override fun copy(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateCopyCreateReq
+    ): Result<DeployTemplateResult> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.CREATE
+        )
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = request.srcTemplateId
+        )
+        return Result(
+            templateFacadeService.copy(
+                userId = userId,
+                projectId = projectId,
+                request = request
+            )
+        )
     }
 
     override fun delete(
@@ -90,7 +131,6 @@ class UserPipelineTemplateV2ResourceImpl(
         templateId: String,
         request: PipelineTemplateDraftSaveReq
     ): Result<DeployTemplateResult> {
-        logger.info("save template draft {}|{}|{}|{}", userId, projectId, templateId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
             projectId = projectId,
@@ -112,7 +152,6 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         request: PipelineTemplateCommonCondition
     ): Result<SQLPage<PipelineTemplateInfo>> {
-        logger.info("list template infos {}|{}|{}", userId, projectId, request)
         return Result(templateFacadeService.listTemplateInfos(userId, request))
     }
 
@@ -199,31 +238,6 @@ class UserPipelineTemplateV2ResourceImpl(
                 templateId = templateId,
                 baseVersion = baseVersion,
                 comparedVersion = comparedVersion
-            )
-        )
-    }
-
-    override fun copy(
-        userId: String,
-        projectId: String,
-        srcTemplateId: String,
-        copySetting: Boolean,
-        name: String
-    ): Result<String> {
-        logger.info("copy template {}|{}|{}|{}", userId, projectId, srcTemplateId, copySetting)
-        permissionService.checkPipelineTemplatePermissionWithMessage(
-            userId = userId,
-            projectId = projectId,
-            permission = AuthPermission.EDIT,
-            templateId = srcTemplateId
-        )
-        return Result(
-            templateFacadeService.copy(
-                userId = userId,
-                projectId = projectId,
-                srcTemplateId = srcTemplateId,
-                copySetting = copySetting,
-                name = name
             )
         )
     }
