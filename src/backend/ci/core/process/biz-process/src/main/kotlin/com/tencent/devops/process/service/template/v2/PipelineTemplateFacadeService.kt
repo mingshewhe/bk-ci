@@ -26,16 +26,11 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
-import com.tencent.devops.store.api.common.ServiceStoreResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
-import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import org.jooq.DSLContext
-import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -70,75 +65,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    private fun createByMarket(userId: String, projectId: String, request: PipelineTemplateMarketCreateReq) {
-        val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
-            userId = userId,
-            templateCode = request.marketTemplateId
-        ).data ?: throw ErrorCodeException(errorCode = ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
-        val marketTemplateInfo = pipelineTemplateInfoService.get(
-            templateId = request.marketTemplateId
-        )
-        pipelineTemplateCommonService.checkTemplateBasicInfo(
-            projectId = projectId,
-            name = marketTemplateInfo.name
-        )
-        val marketTemplateResource = pipelineTemplateResourceService.get(
-            projectId = request.marketTemplateProjectId,
-            templateId = request.marketTemplateId,
-            version = request.marketTemplateVersion
-        )
-        val templateId = pipelineTemplateGenerator.generateTemplateId()
-        val version = pipelineTemplateGenerator.generateTemplateVersion()
+    fun createByMarket(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateMarketCreateReq
+    ): DeployTemplateResult {
 
-        val setting = pipelineTemplateGenerator.getDefaultSetting(
-            type = marketTemplateResource.type,
-            projectId = projectId,
-            templateId = templateId,
-            creator = userId,
-            templateName = marketTemplateInfo.name,
-            desc = marketTemplateInfo.desc
-        )
-
-        val pipelineTemplateInfo = PipelineTemplateInfo(
-            id = templateId,
-            projectId = projectId,
-            name = marketTemplateInfo.name,
-            desc = marketTemplateInfo.desc,
-            mode = TemplateType.CONSTRAINT.name,
-            type = marketTemplateInfo.type,
-            enablePac = false,
-            releasedVersion = version,
-            releasedVersionName = marketTemplateInfo.releasedVersionName,
-            releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
-            source = PipelineTemplateSource.MARKET,
-            storeFlag = false,
-            creator = userId,
-            srcTemplateProjectId = marketTemplateInfo.projectId,
-            srcTemplateId = marketTemplateInfo.id,
-            category = marketTemplateDetails.classifyCode,
-            logoUrl = marketTemplateDetails.logoUrl,
-            latestVersionStatus = VersionStatus.RELEASED
-        )
-        val templateResource = PipelineTemplateResource(
-            projectId = projectId,
-            templateId = templateId,
-            type = marketTemplateInfo.type,
-            settingVersion = PipelineTemplateConstant.INIT_VERSION,
-            version = version,
-            number = PipelineTemplateConstant.INIT_NUMBER,
-            srcTemplateProjectId = marketTemplateInfo.projectId,
-            srcTemplateId = marketTemplateInfo.id,
-            srcTemplateVersion = marketTemplateResource.version,
-            model = marketTemplateResource.model,
-            yaml = marketTemplateResource.yaml,
-            creator = userId,
-            status = VersionStatus.RELEASED
-        )
-        pipelineTemplateTransactionService.createTemplate(
-            pipelineTemplateInfo = pipelineTemplateInfo,
-            pipelineTemplateSetting = setting,
-            pipelineTemplateResource = templateResource
-        )
     }
 
     fun deleteTemplate(projectId: String, templateId: String): Boolean {
