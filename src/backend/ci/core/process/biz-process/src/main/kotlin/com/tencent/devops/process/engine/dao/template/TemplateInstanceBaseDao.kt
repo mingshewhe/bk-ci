@@ -226,7 +226,7 @@ class TemplateInstanceBaseDao {
             description = description,
             status = TemplateInstanceStatus.valueOf(status),
             pac = pac,
-            targetAction = CodeTargetAction.valueOf(targetAction),
+            targetAction = targetAction?.let { CodeTargetAction.valueOf(targetAction) },
             type = TemplateInstanceType.valueOf(type),
             labels = labels,
             staticViews = staticViews,
