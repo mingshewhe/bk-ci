@@ -132,6 +132,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
+            templateId = templateId,
             request = request
         )
     }
