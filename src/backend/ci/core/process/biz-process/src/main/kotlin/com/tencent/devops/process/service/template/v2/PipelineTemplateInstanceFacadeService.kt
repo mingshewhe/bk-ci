@@ -13,10 +13,12 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
-import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedErrors
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedMsg
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.PipelineTemplateConstant
@@ -32,7 +34,6 @@ import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEven
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateInstanceItemStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
@@ -51,6 +52,7 @@ import com.tencent.devops.process.service.PipelineVersionFacadeService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.util.TempNotifyTemplateUtils
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.store.api.template.ServiceTemplateResource
@@ -87,7 +89,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val redisOperation: RedisOperation,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator
+    private val transferService: PipelineTransferYamlService
 ) {
     @Value("\${template.maxSyncInstanceNum:10}")
     private val maxSyncInstanceNum: Int = 10
@@ -224,14 +226,17 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 pipelineName = instance.pipelineName
             )
         }
-        val transferResult = pipelineTemplateGenerator.transfer(
+        val transferResult = transferService.transfer(
             userId = userId,
             projectId = projectId,
-            storageType = PipelineStorageType.MODEL,
-            templateType = PipelineTemplateType.PIPELINE,
-            templateModel = templateModel,
-            templateSetting = setting,
-            yaml = null
+            pipelineId = pipelineId,
+            actionType = TransferActionType.FULL_MODEL2YAML,
+            data = TransferBody(
+                modelAndSetting = PipelineModelAndSetting(
+                    model = instanceModel,
+                    setting = setting
+                )
+            )
         )
         // 创建流水线
         pipelineInfoFacadeService.createPipeline(
@@ -919,6 +924,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         successPipelines: MutableList<String>,
         failurePipelines: MutableList<String>
     ) {
+        logger.info("start to handle template create event {}", instanceBase)
         val baseId = instanceBase.baseId
         val projectId = instanceBase.projectId
         val templateInstanceItemCount = templateInstanceItemDao.getTemplateInstanceItemCountByBaseId(
@@ -958,6 +964,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             )
             templateInstanceItems.forEach { item ->
                 with(item) {
+                    logger.info("create template instance {}", item)
                     templateInstanceItemDao.updateStatus(
                         dslContext = dslContext,
                         projectId = item.projectId,

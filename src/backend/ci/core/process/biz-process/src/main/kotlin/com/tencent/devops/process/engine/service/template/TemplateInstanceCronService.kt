@@ -87,7 +87,7 @@ class TemplateInstanceCronService @Autowired constructor(
     private val maxErrorReasonLength: Int = 200
 
     // todo 新版本上线后，停止该定时
-    @Scheduled(cron = "0 0/1 * * * ?")
+    // @Scheduled(cron = "0 0/1 * * * ?")
     fun templateInstance() {
         val profile = SpringContextUtil.getBean(Profile::class.java)
         val activeProfiles = profile.getActiveProfiles()
