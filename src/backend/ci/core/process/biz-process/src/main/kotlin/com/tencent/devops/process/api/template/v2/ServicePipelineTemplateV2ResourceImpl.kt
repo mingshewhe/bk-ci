@@ -1,0 +1,113 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.devops.process.api.template.v2
+
+import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.PTemplateOrderByType
+import com.tencent.devops.process.pojo.PTemplateSortType
+import com.tencent.devops.process.pojo.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.MarketTemplateRequest
+import com.tencent.devops.process.pojo.template.OptionalTemplateList
+import com.tencent.devops.process.pojo.template.TemplateDetailInfo
+import com.tencent.devops.process.pojo.template.TemplateListModel
+import com.tencent.devops.process.pojo.template.TemplateModelDetail
+import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+
+@RestResource
+class ServicePipelineTemplateV2ResourceImpl(
+    private val permissionService: PipelineTemplatePermissionService,
+    private val templateFacadeService: PipelineTemplateFacadeService,
+    private val templateInfoService: PipelineTemplateInfoService
+) : ServicePipelineTemplateV2Resource {
+    override fun addMarketTemplate(
+        userId: String,
+        projectId: String,
+        addMarketTemplateRequest: MarketTemplateRequest
+    ): Result<Map<String, String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateMarketTemplateReference(
+        userId: String,
+        projectId: String,
+        updateMarketTemplateRequest: MarketTemplateRequest
+    ): Result<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getTemplateDetailInfo(templateCode: String): Result<TemplateDetailInfo?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkImageReleaseStatus(
+        userId: String,
+        templateCode: String
+    ): Result<String?> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getSrcTemplateCodes(projectId: String): Result<List<String>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getTemplateIdBySrcCode(
+        srcTemplateId: String,
+        projectIds: List<String>
+    ): Result<List<PipelineTemplateInfo>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun updateStoreFlag(userId: String, projectId: String, templateId: String, storeFlag: Boolean): Result<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+    override fun listAllTemplate(userId: String, projectId: String, templateType: TemplateType?, page: Int?, pageSize: Int?): Result<OptionalTemplateList> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getTemplate(userId: String, projectId: String, templateId: String, version: Long?, versionName: String?): Result<TemplateModelDetail> {
+        TODO("Not yet implemented")
+    }
+
+    override fun listTemplate(userId: String, projectId: String, templateType: TemplateType?, storeFlag: Boolean?, orderBy: PTemplateOrderByType?, sort: PTemplateSortType?, page: Int?, pageSize: Int?): Result<TemplateListModel> {
+        TODO("Not yet implemented")
+    }
+
+    override fun listTemplateById(templateIds: Collection<String>, projectId: String?, templateType: TemplateType?): Result<OptionalTemplateList> {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkTemplate(userId: String, projectId: String, templateId: String): Result<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+}

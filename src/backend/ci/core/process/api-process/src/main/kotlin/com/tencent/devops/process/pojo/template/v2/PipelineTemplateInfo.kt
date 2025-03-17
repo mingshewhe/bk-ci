@@ -3,6 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板基础信息")
@@ -47,6 +48,10 @@ data class PipelineTemplateInfo(
     val debugPipelineCount: Int? = 0,
     @get:Schema(title = "实例流水线数", required = true)
     val instancePipelineCount: Int? = 0,
+    @get:Schema(title = "升级策略-用于研发商店安装的模板", required = true)
+    val upgradeStrategy: UpgradeStrategyEnum? = null,
+    @get:Schema(title = "配置同步策略-用于研发商店安装的模板", required = true)
+    val settingSyncStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = false)

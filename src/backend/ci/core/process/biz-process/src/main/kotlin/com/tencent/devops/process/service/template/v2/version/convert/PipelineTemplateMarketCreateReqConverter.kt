@@ -79,16 +79,19 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 templateCode = marketTemplateId
             ).data ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
             val marketTemplateInfo = pipelineTemplateInfoService.get(
+                projectId = marketTemplateProjectId,
                 templateId = marketTemplateId
-            )
-            pipelineTemplateCommonService.checkTemplateBasicInfo(
-                projectId = projectId,
-                name = marketTemplateInfo.name
             )
             val marketTemplateResource = pipelineTemplateResourceService.get(
                 projectId = marketTemplateProjectId,
                 templateId = marketTemplateId,
-                version = marketTemplateVersion
+                version = marketTemplateVersion ?: (marketTemplateInfo.releasedVersion
+                    ?: throw ErrorCodeException(errorCode = ""))
+            )
+
+            pipelineTemplateCommonService.checkTemplateBasicInfo(
+                projectId = projectId,
+                name = marketTemplateInfo.name
             )
 
             val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
@@ -109,9 +112,6 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 mode = TemplateType.CONSTRAINT.name,
                 type = marketTemplateInfo.type,
                 enablePac = false,
-                releasedVersion = version,
-                releasedVersionName = marketTemplateInfo.releasedVersionName,
-                releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
                 source = PipelineTemplateSource.MARKET,
                 storeFlag = false,
                 creator = userId,

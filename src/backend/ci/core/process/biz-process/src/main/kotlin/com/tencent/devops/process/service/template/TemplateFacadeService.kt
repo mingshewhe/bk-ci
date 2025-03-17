@@ -903,8 +903,8 @@ class TemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun getSrcTemplateCodes(projectId: String): com.tencent.devops.common.api.pojo.Result<List<String>> {
-        return com.tencent.devops.common.api.pojo.Result(templateDao.getSrcTemplateCodes(dslContext, projectId))
+    fun getSrcTemplateCodes(projectId: String): List<String> {
+        return templateDao.getSrcTemplateCodes(dslContext, projectId)
     }
 
     /**
@@ -2464,7 +2464,7 @@ class TemplateFacadeService @Autowired constructor(
         userId: String,
         projectId: String,
         addMarketTemplateRequest: MarketTemplateRequest
-    ): com.tencent.devops.common.api.pojo.Result<Map<String, String>> {
+    ): Map<String, String> {
         logger.info("the userId is:$userId,addMarketTemplateRequest is:$addMarketTemplateRequest")
         val templateCode = addMarketTemplateRequest.templateCode
         val publicFlag = addMarketTemplateRequest.publicFlag // 是否为公共模板
@@ -2530,14 +2530,14 @@ class TemplateFacadeService @Autowired constructor(
             )
             projectTemplateMap[projectId] = templateId
         }
-        return com.tencent.devops.common.api.pojo.Result(projectTemplateMap)
+        return projectTemplateMap
     }
 
     fun updateMarketTemplateReference(
         userId: String,
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
-    ): com.tencent.devops.common.api.pojo.Result<Boolean> {
+    ): Boolean {
         logger.info("the userId is:$userId,updateMarketTemplateReference Request is:$updateMarketTemplateRequest")
         val templateCode = updateMarketTemplateRequest.templateCode
         val category = JsonUtil.toJson(updateMarketTemplateRequest.categoryCodeList ?: listOf<String>(), false)
@@ -2552,7 +2552,7 @@ class TemplateFacadeService @Autowired constructor(
                 logoUrl = updateMarketTemplateRequest.logoUrl
             )
         }
-        return com.tencent.devops.common.api.pojo.Result(true)
+        return true
     }
 
     fun updateTemplateStoreFlag(
@@ -2560,7 +2560,7 @@ class TemplateFacadeService @Autowired constructor(
         projectId: String,
         templateId: String,
         storeFlag: Boolean
-    ): com.tencent.devops.common.api.pojo.Result<Boolean> {
+    ): Boolean {
         templateDao.updateStoreFlag(
             dslContext = dslContext,
             userId = userId,
@@ -2568,7 +2568,7 @@ class TemplateFacadeService @Autowired constructor(
             templateId = templateId,
             storeFlag = storeFlag
         )
-        return com.tencent.devops.common.api.pojo.Result(true)
+        return true
     }
 
     fun addRemoteAuth(model: Model, projectId: String, pipelineId: String, userId: String) {

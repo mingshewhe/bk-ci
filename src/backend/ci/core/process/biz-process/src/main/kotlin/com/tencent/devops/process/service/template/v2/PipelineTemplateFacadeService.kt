@@ -5,7 +5,6 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
-import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -24,7 +23,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
-import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -229,7 +227,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId
         )
         val draftBaseVersionResource = pipelineTemplateResourceService.getDraftBaseVersionResource(
-            projectId = projectId, templateId = templateId
+            projectId = projectId,
+            templateId = templateId
         )
         // 配合前端的展示需要，version有以下几种情况的返回值：
         // 1 发布过且有草稿：version取草稿的版本号
