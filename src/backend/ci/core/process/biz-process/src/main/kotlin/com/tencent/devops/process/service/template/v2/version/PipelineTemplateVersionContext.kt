@@ -60,5 +60,5 @@ data class PipelineTemplateVersionContext(
     @get:Schema(title = "是否merge主干", required = true)
     val mergedMaster: Boolean = false,
     @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
-    var targetAction: CodeTargetAction? = null,
+    var targetAction: CodeTargetAction? = null
 )

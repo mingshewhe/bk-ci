@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线模版保存草稿
+ * 创建或更新流水线模版草稿版本
  *
  */
 @Service
@@ -103,7 +103,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             }
         }
         return DeployTemplateResult(
-            version = pTemplateResourceWithoutVersion.version,
+            version = pTemplateResourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = pTemplateResourceOnlyVersion.number,
@@ -139,7 +139,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             userId = userId,
             draftResource = draftResource,
             templateResource = pTemplateResourceWithoutVersion,
-            templateSetting = pipelineTemplateSetting,
+            templateSetting = pipelineTemplateSetting
         )
         return PTemplateResourceOnlyVersion(draftResource)
     }

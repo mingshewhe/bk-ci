@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线创建分支版本
+ * 创建流水线模版分支版本
  */
 @Service
 class PipelineTemplateCreateBranchHandler @Autowired constructor(
@@ -79,7 +79,7 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         }
 
         return DeployTemplateResult(
-            version = pTemplateResourceWithoutVersion.version,
+            version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,

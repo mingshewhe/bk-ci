@@ -39,7 +39,8 @@ interface PipelineTemplateVersionReqConverter {
     fun convert(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
+        version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext
 }

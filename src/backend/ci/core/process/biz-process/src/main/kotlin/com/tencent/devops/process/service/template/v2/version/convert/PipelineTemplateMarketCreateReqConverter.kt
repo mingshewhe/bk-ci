@@ -29,7 +29,6 @@ package com.tencent.devops.process.service.template.v2.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
@@ -37,10 +36,8 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
@@ -71,7 +68,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
     override fun convert(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
+        version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
         request as PipelineTemplateMarketCreateReq
@@ -92,19 +90,19 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 templateId = marketTemplateId,
                 version = marketTemplateVersion
             )
-            val version = pipelineTemplateGenerator.generateTemplateVersion()
 
+            val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
             val setting = pipelineTemplateGenerator.getDefaultSetting(
                 type = marketTemplateResource.type,
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 creator = userId,
                 templateName = marketTemplateInfo.name,
                 desc = marketTemplateInfo.desc
             )
 
             val pipelineTemplateInfo = PipelineTemplateInfo(
-                id = templateId,
+                id = newTemplateId,
                 projectId = projectId,
                 name = marketTemplateInfo.name,
                 desc = marketTemplateInfo.desc,
@@ -125,9 +123,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 type = marketTemplateInfo.type,
-                version = version,
                 srcTemplateProjectId = marketTemplateInfo.projectId,
                 srcTemplateId = marketTemplateInfo.id,
                 srcTemplateVersion = marketTemplateResource.version,
@@ -140,7 +137,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
             return PipelineTemplateVersionContext(
                 userId = userId,
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

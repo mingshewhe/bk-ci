@@ -45,6 +45,9 @@ import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVe
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
+/**
+ * 发布流水线模版草稿版本
+ */
 @Service
 class PipelineTemplateReleaseDraftHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
@@ -81,7 +84,7 @@ class PipelineTemplateReleaseDraftHandler @Autowired constructor(
     private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
         val resourceOnlyVersion = releaseDraftVersion()
         return DeployTemplateResult(
-            version = pTemplateResourceWithoutVersion.version,
+            version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,

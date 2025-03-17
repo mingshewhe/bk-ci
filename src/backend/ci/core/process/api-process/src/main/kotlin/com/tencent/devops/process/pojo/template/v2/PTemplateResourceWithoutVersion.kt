@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版资源没有版本信息")
 data class PTemplateResourceWithoutVersion(
-    @get:Schema(title = "模版全局ID", required = true)
-    val version: Long,
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
     @get:Schema(title = "模板ID", required = true)

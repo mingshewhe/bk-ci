@@ -47,7 +47,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线模版创建正式版本
+ * 创建流水线模版正式版本
  */
 @Service
 class PipelineTemplateCreateReleaseHandler @Autowired constructor(
@@ -85,7 +85,12 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
                 versionStatus = VersionStatus.RELEASED
             )
             pipelineTemplateTransactionService.createTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
+                pipelineTemplateInfo = pipelineTemplateInfo.copy(
+                    releasedVersion = defaultTemplateVersion.version,
+                    releasedVersionName = defaultTemplateVersion.versionName,
+                    releasedSettingVersion = defaultTemplateVersion.settingVersion,
+                    latestVersionStatus = VersionStatus.RELEASED
+                ),
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
@@ -97,7 +102,7 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
             createReleaseVersion()
         }
         return DeployTemplateResult(
-            version = pTemplateResourceWithoutVersion.version,
+            version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,

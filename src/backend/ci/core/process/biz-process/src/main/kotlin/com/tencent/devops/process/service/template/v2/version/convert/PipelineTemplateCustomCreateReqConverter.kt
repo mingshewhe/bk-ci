@@ -59,7 +59,8 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
     override fun convert(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
+        version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
         request as PipelineTemplateCustomCreateReq
@@ -68,10 +69,11 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = name
             )
+            val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
             val setting = pipelineTemplateGenerator.getDefaultSetting(
                 type = type,
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 templateName = name,
                 desc = desc,
                 creator = userId
@@ -82,7 +84,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 userId = userId
             )
             val pipelineTemplateInfo = PipelineTemplateInfo(
-                id = templateId,
+                id = newTemplateId,
                 projectId = projectId,
                 name = request.name,
                 desc = request.desc,
@@ -105,9 +107,8 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 yaml = null
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                version = pipelineTemplateGenerator.generateTemplateVersion(),
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 type = type,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
@@ -117,7 +118,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
             return PipelineTemplateVersionContext(
                 userId = userId,
                 projectId = projectId,
-                templateId = templateId,
+                templateId = newTemplateId,
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

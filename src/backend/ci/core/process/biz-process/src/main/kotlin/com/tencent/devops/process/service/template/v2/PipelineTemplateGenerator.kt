@@ -126,6 +126,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         return when (versionStatus) {
             VersionStatus.COMMITTING -> {
                 PTemplateResourceOnlyVersion(
+                    version = generateTemplateVersion(),
                     number = PipelineTemplateConstant.INIT_VERSION,
                     settingVersion = PipelineTemplateConstant.INIT_VERSION
                 )
@@ -133,6 +134,7 @@ class PipelineTemplateGenerator @Autowired constructor(
 
             VersionStatus.BRANCH -> {
                 PTemplateResourceOnlyVersion(
+                    version = generateTemplateVersion(),
                     number = PipelineTemplateConstant.INIT_VERSION,
                     settingVersion = PipelineTemplateConstant.INIT_VERSION,
                     versionName = branchName!!
@@ -147,6 +149,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                     settingVersion = PipelineTemplateConstant.INIT_VERSION
                 )
                 PTemplateResourceOnlyVersion(
+                    version = generateTemplateVersion(),
                     number = PipelineTemplateConstant.INIT_VERSION,
                     versionName = versionName,
                     versionNum = PipelineTemplateConstant.INIT_VERSION,
@@ -166,6 +169,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         latestResource: PipelineTemplateResource,
         baseVersion: Long? = null
     ) = PTemplateResourceOnlyVersion(
+        version = generateTemplateVersion(),
         number = latestResource.number + 1,
         settingVersion = latestResource.settingVersion + 1,
         baseVersion = baseVersion ?: latestResource.version
@@ -181,6 +185,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         branchName: String,
         baseVersion: Long? = null
     ) = PTemplateResourceOnlyVersion(
+        version = generateTemplateVersion(),
         number = latestResource.number + 1,
         versionName = branchName,
         settingVersion = latestResource.settingVersion + 1,
@@ -204,10 +209,10 @@ class PipelineTemplateGenerator @Autowired constructor(
         newSetting: PipelineSetting
     ): PTemplateResourceOnlyVersion {
         // 如果从草稿发布,number和setting不需要生成,直接使用草稿版本,否则使用最新版本+1
-        val (number, settingVersion) = if (draftResource == null) {
-            Pair(latestResource.number + 1, latestResource.settingVersion + 1)
+        val (version, number, settingVersion) = if (draftResource == null) {
+            Triple(generateTemplateVersion(), latestResource.number + 1, latestResource.settingVersion + 1)
         } else {
-            Pair(draftResource.number, draftResource.settingVersion)
+            Triple(draftResource.version, draftResource.number, draftResource.settingVersion)
         }
         // 如果没有正式版本,说明是第一次生成正式版本
         return if (latestReleaseResource == null) {
@@ -223,6 +228,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 settingVersion = settingVersionNum
             )
             PTemplateResourceOnlyVersion(
+                version = version,
                 number = number,
                 versionName = versionName,
                 versionNum = versionNum,
@@ -264,6 +270,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 settingVersion = settingVersionNum
             )
             PTemplateResourceOnlyVersion(
+                version = version,
                 number = number,
                 versionName = versionName,
                 versionNum = versionNum,

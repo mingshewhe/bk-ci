@@ -31,6 +31,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版资源只有版本信息")
 data class PTemplateResourceOnlyVersion(
+    @get:Schema(title = "模版版本", required = true)
+    val version: Long,
     @get:Schema(title = "版本排序号", required = true)
     val number: Int,
     @get:Schema(title = "模板发布-版本名称", required = false)
@@ -49,6 +51,7 @@ data class PTemplateResourceOnlyVersion(
     val baseVersion: Long? = null,
 ) {
     constructor(pipelineTemplateResource: PipelineTemplateResource) : this(
+        version = pipelineTemplateResource.version,
         number = pipelineTemplateResource.number,
         versionName = pipelineTemplateResource.versionName,
         versionNum = pipelineTemplateResource.versionNum,

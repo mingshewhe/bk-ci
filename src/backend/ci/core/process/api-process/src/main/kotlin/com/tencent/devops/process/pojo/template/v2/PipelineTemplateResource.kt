@@ -91,10 +91,10 @@ data class PipelineTemplateResource(
         pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
         pTemplateResourceOnlyVersion: PTemplateResourceOnlyVersion
     ) : this(
-        version = pTemplateResourceWithoutVersion.version,
         projectId = pTemplateResourceWithoutVersion.projectId,
         templateId = pTemplateResourceWithoutVersion.templateId,
         type = pTemplateResourceWithoutVersion.type,
+        version = pTemplateResourceOnlyVersion.version,
         settingVersion = pTemplateResourceOnlyVersion.settingVersion,
         number = pTemplateResourceOnlyVersion.number,
         versionName = pTemplateResourceOnlyVersion.versionName,
