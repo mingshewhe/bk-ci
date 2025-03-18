@@ -41,4 +41,23 @@ data class PTemplateResourceWithoutVersion(
     val creator: String,
     @get:Schema(title = "更新人", required = false)
     val updater: String? = null
-)
+) {
+    constructor(templateResource: PipelineTemplateResource) : this(
+        projectId = templateResource.projectId,
+        templateId = templateResource.templateId,
+        type = templateResource.type,
+        srcTemplateProjectId = templateResource.srcTemplateProjectId,
+        srcTemplateId = templateResource.srcTemplateId,
+        srcTemplateVersion = templateResource.srcTemplateVersion,
+        params = templateResource.params,
+        model = templateResource.model,
+        yaml = templateResource.yaml,
+        description = templateResource.description,
+        status = templateResource.status,
+        branchAction = templateResource.branchAction,
+        sortWeight = templateResource.sortWeight,
+        baseVersion = templateResource.baseVersion,
+        creator = templateResource.creator,
+        updater = templateResource.updater
+    )
+}

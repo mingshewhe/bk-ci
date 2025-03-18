@@ -5,8 +5,10 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
@@ -21,7 +23,9 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,7 +43,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
-    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
+    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator
 ) {
     fun create(
         userId: String,
@@ -134,6 +139,60 @@ class PipelineTemplateFacadeService @Autowired constructor(
             request = request
         )
     }
+
+    fun preFetchDraftVersion(
+        projectId: String,
+        templateId: String,
+        version: Long,
+        enablePac: Boolean,
+        targetAction: CodeTargetAction?,
+        targetBranch: String?
+    ): TemplatePrefetchReleaseResult {
+        val draftResource = pipelineTemplateResourceService.get(
+            projectId = projectId, templateId = templateId, version = version
+        )
+        if (draftResource.status != VersionStatus.COMMITTING) {
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        }
+        val templateSetting = pipelineTemplateSettingService.get(
+            projectId = projectId, templateId = templateId, settingVersion = draftResource.settingVersion
+        )
+        val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseDraftVersion(
+            projectId = projectId,
+            templateId = templateId,
+            draftResource = draftResource,
+            draftSetting = templateSetting,
+            enablePac = enablePac,
+            targetAction = targetAction,
+            targetBranch = targetBranch
+        ).second
+        return TemplatePrefetchReleaseResult(
+            templateId = templateId,
+            templateName = templateSetting.pipelineName,
+            version = resourceOnlyVersion.version,
+            number = resourceOnlyVersion.number,
+            newVersionNum = resourceOnlyVersion.versionNum,
+            newVersionName = resourceOnlyVersion.versionName!!,
+        )
+    }
+
+    fun releaseDraftVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long,
+        request: PipelineTemplateReleaseDraftReq
+    ): DeployTemplateResult {
+        logger.info("release draft version|projectId:$projectId|templateId:$templateId|version:$version")
+        return pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version,
+            request = request
+        )
+    }
+
 
     // 获取模板列表
     fun listTemplateInfos(

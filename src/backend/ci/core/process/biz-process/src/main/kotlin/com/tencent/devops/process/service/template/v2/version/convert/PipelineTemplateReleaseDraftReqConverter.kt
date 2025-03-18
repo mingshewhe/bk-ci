@@ -27,29 +27,32 @@
 
 package com.tencent.devops.process.service.template.v2.version.convert
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
-import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 保存草稿请求转换
+ * 发布草稿转换
  */
 @Service
-class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService
+class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) : PipelineTemplateVersionReqConverter {
-
     override fun support(request: PipelineTemplateVersionReq): Boolean {
-        return request is PipelineTemplateDraftSaveReq
+        return request is PipelineTemplateReleaseDraftReq
     }
 
     override fun convert(
@@ -59,42 +62,41 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
         version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
-        request as PipelineTemplateDraftSaveReq
+        request as PipelineTemplateReleaseDraftReq
         with(request) {
             if (templateId == null) {
                 throw IllegalArgumentException("templateId is null")
+            }
+            if (version == null) {
+                throw IllegalArgumentException("version is null")
             }
             val templateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
             )
-            val modelTransferResult = pipelineTemplateGenerator.transfer(
-                userId = userId,
-                projectId = projectId,
-                storageType = storageType,
-                templateType = templateInfo.type,
-                templateModel = model,
-                templateSetting = templateSetting,
-                yaml = yaml
+            val draftResource = pipelineTemplateResourceService.get(
+                projectId = projectId, templateId = templateId, version = version
             )
-            val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
-                projectId = projectId,
-                templateId = templateId,
-                type = templateInfo.type,
-                model = modelTransferResult.templateModel,
-                yaml = modelTransferResult.yamlWithVersion?.yamlStr,
-                status = VersionStatus.COMMITTING,
-                creator = userId
+            if (draftResource.status != VersionStatus.COMMITTING) {
+                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+            }
+            val templateSetting = pipelineTemplateSettingService.get(
+                projectId = projectId, templateId = templateId, settingVersion = draftResource.settingVersion
             )
+            val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource)
             return PipelineTemplateVersionContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
-                versionAction = PipelineVersionAction.SAVE_DRAFT,
+                versionAction = PipelineVersionAction.RELEASE_DRAFT,
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = modelTransferResult.templateSetting
+                pipelineTemplateSetting = templateSetting,
+                yamlFileInfo = yamlInfo,
+                enablePac = enablePac,
+                targetAction = targetAction,
+                targetBranch = targetBranch
             )
         }
     }

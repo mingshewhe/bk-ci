@@ -30,15 +30,17 @@ package com.tencent.devops.process.pojo.template.v2
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版发布预览结果")
-data class PipelineTemplatePrefetchReleaseResult(
+data class TemplatePrefetchReleaseResult(
     @get:Schema(title = "模版ID", required = true)
     val templateId: String,
     @get:Schema(title = "模版名称", required = true)
     val templateName: String,
-    @get:Schema(title = "草稿版本号", required = true)
-    val version: Int,
+    @get:Schema(title = "草稿版本", required = true)
+    val version: Long,
+    @get:Schema(title = "版本排序号", required = true)
+    val number: Int,
     @get:Schema(title = "发布版本号", required = false)
-    val newVersionNum: Int,
+    val newVersionNum: Int?,
     @get:Schema(title = "生成版本名称", required = false)
     val newVersionName: String
 )

@@ -59,6 +59,8 @@ data class PipelineTemplateVersionContext(
     val yamlFileInfo: PipelineYamlFileInfo? = null,
     @get:Schema(title = "是否merge主干", required = true)
     val mergedMaster: Boolean = false,
-    @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
-    var targetAction: CodeTargetAction? = null
+    @get:Schema(title = "发布操作", required = false)
+    val targetAction: CodeTargetAction? = null,
+    @get:Schema(title = "分支", required = false)
+    val targetBranch: String? = null
 )

@@ -56,6 +56,11 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
                 errorCode = ""
             )
         }
+        if (targetBranch == null) {
+            throw ErrorCodeException(
+                errorCode = ""
+            )
+        }
         val templateInfo = pipelineTemplateInfoService.getOrNull(
             projectId = projectId,
             templateId = templateId
@@ -63,7 +68,7 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         val resourceOnlyVersion = if (templateInfo == null) {
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.BRANCH,
-                branchName = yamlFileInfo.branch
+                branchName = targetBranch
             )
             pipelineTemplateTransactionService.createTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
@@ -95,7 +100,7 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
             latestResource = latestResource,
-            branchName = yamlFileInfo!!.branch
+            branchName = targetBranch!!
         )
         val pipelineTemplateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

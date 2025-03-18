@@ -38,7 +38,6 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 

@@ -135,10 +135,13 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
     private fun PipelineTemplateVersionContext.updateDraftVersion(
         draftResource: PipelineTemplateResource
     ): PTemplateResourceOnlyVersion {
+        val templateResource = PipelineTemplateResource(
+            pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+            pTemplateResourceOnlyVersion = PTemplateResourceOnlyVersion(draftResource)
+        )
         pipelineTemplateTransactionService.updateDraftVersion(
             userId = userId,
-            draftResource = draftResource,
-            templateResource = pTemplateResourceWithoutVersion,
+            templateResource = templateResource,
             templateSetting = pipelineTemplateSetting
         )
         return PTemplateResourceOnlyVersion(draftResource)

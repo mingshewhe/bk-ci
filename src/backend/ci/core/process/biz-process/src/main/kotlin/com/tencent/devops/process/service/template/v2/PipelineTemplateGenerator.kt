@@ -32,6 +32,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
@@ -43,6 +44,7 @@ import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -61,7 +63,9 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateGenerator @Autowired constructor(
     private val client: Client,
-    private val transferService: PipelineTransferYamlService
+    private val transferService: PipelineTransferYamlService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
 ) {
 
     fun getDefaultTemplateModel(
@@ -192,25 +196,130 @@ class PipelineTemplateGenerator @Autowired constructor(
         baseVersion = baseVersion ?: latestResource.version
     )
 
+
     /**
-     * 生成正式版本信息
+     * 生成草稿发布版本
+     */
+    fun generateReleaseDraftVersion(
+        projectId: String,
+        templateId: String,
+        draftResource: PipelineTemplateResource,
+        draftSetting: PipelineSetting,
+        enablePac: Boolean,
+        targetAction: CodeTargetAction?,
+        targetBranch: String? = null
+    ): Pair<VersionStatus, PTemplateResourceOnlyVersion> {
+        val newResource = PTemplateResourceWithoutVersion(draftResource)
+        return if (enablePac) {
+            generateReleaseDraftVersionWithPac(
+                projectId = projectId,
+                templateId = templateId,
+                draftResource = draftResource,
+                newResource = newResource,
+                newSetting = draftSetting,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            )
+        } else {
+            val resourceOnlyVersion = generateReleaseVersion(
+                projectId = projectId,
+                templateId = templateId,
+                draftResource = draftResource,
+                newResource = newResource,
+                newSetting = draftSetting
+            )
+            Pair(VersionStatus.RELEASED, resourceOnlyVersion)
+        }
+    }
+
+    fun generateReleaseDraftVersionWithPac(
+        projectId: String,
+        templateId: String,
+        draftResource: PipelineTemplateResource,
+        newResource: PTemplateResourceWithoutVersion,
+        newSetting: PipelineSetting,
+        targetAction: CodeTargetAction?,
+        targetBranch: String? = null
+    ): Pair<VersionStatus, PTemplateResourceOnlyVersion> {
+        return when (targetAction) {
+            CodeTargetAction.COMMIT_TO_MASTER -> {
+                val resourceOnlyVersion = generateReleaseVersion(
+                    projectId = projectId,
+                    templateId = templateId,
+                    draftResource = draftResource,
+                    newResource = newResource,
+                    newSetting = newSetting
+                )
+                Pair(VersionStatus.RELEASED, resourceOnlyVersion)
+            }
+
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH,
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE -> {
+                val baseResource = draftResource.baseVersion?.let {
+                    pipelineTemplateResourceService.get(
+                        projectId = projectId, templateId = templateId, version = it
+                    )
+                } ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+                if (baseResource.status != VersionStatus.BRANCH) {
+                    throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+                }
+                val resourceOnlyVersion =
+                    PTemplateResourceOnlyVersion(draftResource).copy(versionName = baseResource.versionName)
+                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
+            }
+
+            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
+                val versionName = "${PAC_TEMPLATE_BRANCH_PREFIX}$templateId-${draftResource.number}"
+                val resourceOnlyVersion =
+                    PTemplateResourceOnlyVersion(draftResource).copy(versionName = versionName)
+                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
+            }
+
+            CodeTargetAction.COMMIT_TO_BRANCH -> {
+                if (targetBranch == null) {
+                    throw IllegalArgumentException("targetBranch is null")
+                }
+                val resourceOnlyVersion =
+                    PTemplateResourceOnlyVersion(draftResource).copy(versionName = targetBranch)
+                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
+            }
+
+            else -> {
+                throw IllegalArgumentException("targetAction is illegal")
+            }
+        }
+    }
+
+    /**
+     * 生成正式版本
      *
      * @param draftResource 草稿版本,草稿发布时需传入,直接生成正式版本为空
-     * @param latestResource 最新的版本
-     * @param latestReleaseResource 最新的正式版本
-     * @param latestReleaseSetting 最新的正式版本设置
      */
     fun generateReleaseVersion(
+        projectId: String,
+        templateId: String,
         draftResource: PipelineTemplateResource? = null,
-        latestResource: PipelineTemplateResource,
-        latestReleaseResource: PipelineTemplateResource?,
-        latestReleaseSetting: PipelineSetting?,
         newResource: PTemplateResourceWithoutVersion,
         newSetting: PipelineSetting
     ): PTemplateResourceOnlyVersion {
+        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
+            projectId = projectId, templateId = templateId
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        val latestReleaseResource = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId, templateId = templateId
+        )
+        val latestReleaseSetting = latestReleaseResource?.let {
+            pipelineTemplateSettingService.get(
+                projectId = projectId, templateId = templateId, settingVersion = it.settingVersion
+            )
+        }
         // 如果从草稿发布,number和setting不需要生成,直接使用草稿版本,否则使用最新版本+1
         val (version, number, settingVersion) = if (draftResource == null) {
-            Triple(generateTemplateVersion(), latestResource.number + 1, latestResource.settingVersion + 1)
+            Triple(
+                generateTemplateVersion(),
+                latestResource.number + 1,
+                latestResource.settingVersion + 1
+            )
         } else {
             Triple(draftResource.version, draftResource.number, draftResource.settingVersion)
         }
@@ -431,5 +540,6 @@ class PipelineTemplateGenerator @Autowired constructor(
 
     companion object {
         private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
+        private const val PAC_TEMPLATE_BRANCH_PREFIX = "bk-ci-template-"
     }
 }

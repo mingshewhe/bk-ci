@@ -28,11 +28,11 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模板发布请求体")
-data class PipelineTemplateReleaseRequest(
+@Schema(title = "流水线模板发布草稿请求体")
+data class PipelineTemplateReleaseDraftReq(
     @get:Schema(title = "是否本次开启PAC", required = true)
     var enablePac: Boolean,
     @get:Schema(title = "版本描述", required = false)
@@ -40,5 +40,7 @@ data class PipelineTemplateReleaseRequest(
     @get:Schema(title = "分支操作", required = false)
     var targetAction: CodeTargetAction?,
     @get:Schema(title = "流水线YAML信息", required = false)
-    val yamlInfo: PipelineYamlVo?
+    val yamlInfo: PipelineYamlFileInfo?,
+    @get:Schema(title = "发布到指定分支", required = false)
+    val targetBranch: String? = null
 ) : PipelineTemplateVersionReq

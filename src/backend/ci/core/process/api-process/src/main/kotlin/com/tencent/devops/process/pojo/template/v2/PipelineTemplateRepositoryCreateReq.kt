@@ -1,6 +1,5 @@
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板商店导入创建请求体")

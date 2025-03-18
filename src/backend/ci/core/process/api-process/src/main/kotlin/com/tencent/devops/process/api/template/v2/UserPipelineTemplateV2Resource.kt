@@ -6,6 +6,7 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
@@ -17,8 +18,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
+import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -226,8 +227,20 @@ interface UserPipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "模版版本", required = true)
         @PathParam("version")
-        version: Int
-    ): Result<PipelineTemplatePrefetchReleaseResult>
+        version: Long,
+        @Parameter(description = "是否开启PAC", required = false)
+        @QueryParam("enablePac")
+        enablePac: Boolean = false,
+        @Parameter(description = "提交动作", required = false)
+        @QueryParam("targetAction")
+        targetAction: CodeTargetAction? = null,
+        @Parameter(description = "代码库hashId", required = false)
+        @QueryParam("repoHashId")
+        repoHashId: String? = null,
+        @Parameter(description = "指定提交的分支", required = false)
+        @QueryParam("targetBranch")
+        targetBranch: String? = null
+    ): Result<TemplatePrefetchReleaseResult>
 
     @Operation(summary = "将当前草稿发布为正式版本")
     @POST
@@ -242,11 +255,11 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "模板ID", required = true)
         @PathParam("templateId")
         templateId: String,
-        @Parameter(description = "流水线编排版本", required = true)
+        @Parameter(description = "模版版本", required = true)
         @PathParam("version")
-        version: Int,
+        version: Long,
         @Parameter(description = "流水线模版发布请求体", required = true)
-        request: PipelineTemplateReleaseRequest
+        request: PipelineTemplateReleaseDraftReq
     ): Result<DeployTemplateResult>
 
     @Operation(summary = "是否有模板特定权限")

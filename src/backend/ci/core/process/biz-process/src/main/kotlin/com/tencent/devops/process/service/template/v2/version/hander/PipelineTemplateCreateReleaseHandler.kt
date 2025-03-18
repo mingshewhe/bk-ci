@@ -27,11 +27,9 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
-import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
-import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
@@ -112,25 +110,9 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
-        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
-            projectId = projectId,
-            templateId = templateId
-        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
-        val latestReleaseResource = pipelineTemplateResourceService.getLatestReleasedResource(
-            projectId = projectId,
-            templateId = templateId
-        )
-        val latestReleaseSetting = latestReleaseResource?.let {
-            pipelineTemplateSettingService.getPipelineTemplateSetting(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = it.settingVersion
-            )
-        }
         val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseVersion(
-            latestResource = latestResource,
-            latestReleaseResource = latestReleaseResource,
-            latestReleaseSetting = latestReleaseSetting,
+            projectId = projectId,
+            templateId = templateId,
             newResource = pTemplateResourceWithoutVersion,
             newSetting = pipelineTemplateSetting
         )

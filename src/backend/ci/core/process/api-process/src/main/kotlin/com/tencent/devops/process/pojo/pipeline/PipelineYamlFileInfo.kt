@@ -31,12 +31,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线yaml文件信息")
 data class PipelineYamlFileInfo(
-    @get:Schema(title = "项目ID")
-    val projectId: String,
     @get:Schema(title = "代码库ID")
     val repoHashId: String,
     @get:Schema(title = "ci文件路径")
-    val filePath: String,
-    @get:Schema(title = "分支")
-    val branch: String
+    val filePath: String
 )

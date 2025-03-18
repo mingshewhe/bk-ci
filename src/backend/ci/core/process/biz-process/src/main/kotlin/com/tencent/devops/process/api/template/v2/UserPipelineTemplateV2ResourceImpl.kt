@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
@@ -44,8 +45,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplatePrefetchReleaseResult
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseRequest
+import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -246,19 +247,52 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int
-    ): Result<PipelineTemplatePrefetchReleaseResult> {
-        TODO("Not yet implemented")
+        version: Long,
+        enablePac: Boolean,
+        targetAction: CodeTargetAction?,
+        repoHashId: String?,
+        targetBranch: String?
+    ): Result<TemplatePrefetchReleaseResult> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.preFetchDraftVersion(
+                projectId = projectId,
+                templateId = templateId,
+                version = version,
+                enablePac = enablePac,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            )
+        )
     }
 
     override fun releaseDraftVersion(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Int,
-        request: PipelineTemplateReleaseRequest
+        version: Long,
+        request: PipelineTemplateReleaseDraftReq
     ): Result<DeployTemplateResult> {
-        TODO("Not yet implemented")
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.releaseDraftVersion(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                version = version,
+                request = request
+            )
+        )
     }
 
     override fun hasPipelineTemplatePermission(
