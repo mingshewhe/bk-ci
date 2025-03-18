@@ -100,7 +100,7 @@ class PipelineTemplateReleaseDraftHandler @Autowired constructor(
         )
         if (versionStatus == VersionStatus.RELEASED) {
             val templateResource = PipelineTemplateResource(
-                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion.copy(status = versionStatus),
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
             pipelineTemplateTransactionService.releaseDraft2ReleaseVersion(

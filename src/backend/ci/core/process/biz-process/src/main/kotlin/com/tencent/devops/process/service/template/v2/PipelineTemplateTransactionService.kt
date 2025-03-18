@@ -108,7 +108,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
             releasedVersion = templateResource.version,
             releasedVersionName = templateResource.versionName,
             releasedSettingVersion = templateResource.settingVersion,
-            latestVersionStatus = templateResource.status,
+            latestVersionStatus = VersionStatus.RELEASED,
             updater = userId
         )
         val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
@@ -241,7 +241,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
             releasedVersion = templateResource.version,
             releasedVersionName = templateResource.versionName,
             releasedSettingVersion = templateResource.settingVersion,
-            latestVersionStatus = templateResource.status,
+            latestVersionStatus = VersionStatus.RELEASED,
             updater = userId
         )
         val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
@@ -255,7 +255,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
             pipelineVersion = templateResource.pipelineVersion,
             triggerVersion = templateResource.triggerVersion,
             releaseTime = LocalDateTime.now(),
-            status = templateResource.status,
+            status = VersionStatus.RELEASED,
             sortWeight = templateResource.sortWeight,
             updater = userId
         )

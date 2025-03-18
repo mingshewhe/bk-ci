@@ -27,17 +27,17 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
-import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
@@ -51,8 +51,6 @@ import org.springframework.stereotype.Service
 class PipelineTemplateCreateReleaseHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionHandler {
@@ -74,6 +72,10 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+        if (pTemplateResourceWithoutVersion.status != VersionStatus.RELEASED) {
+            // TEMPLATE_NOT_RELEASED
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        }
         val templateInfo = pipelineTemplateInfoService.getOrNull(
             projectId = projectId,
             templateId = templateId
