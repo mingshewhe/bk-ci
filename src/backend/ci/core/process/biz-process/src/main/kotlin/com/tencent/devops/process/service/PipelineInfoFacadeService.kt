@@ -98,15 +98,12 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.view.PipelineViewGroupService
 import com.tencent.devops.process.template.service.TemplateService
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import com.tencent.devops.store.api.template.ServiceTemplateResource
-import java.net.URLEncoder
-import java.time.LocalDateTime
-import java.util.LinkedList
-import java.util.concurrent.TimeUnit
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.StreamingOutput
@@ -117,6 +114,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
+import java.net.URLEncoder
+import java.time.LocalDateTime
+import java.util.LinkedList
+import java.util.concurrent.TimeUnit
 
 @Suppress("ALL")
 @Service
@@ -141,7 +142,8 @@ class PipelineInfoFacadeService @Autowired constructor(
     private val yamlFacadeService: PipelineYamlFacadeService,
     private val operationLogService: PipelineOperationLogService,
     private val pipelineAuthorizationService: PipelineAuthorizationService,
-    private val pipelineAsCodeService: PipelineAsCodeService
+    private val pipelineAsCodeService: PipelineAsCodeService,
+    private val pipelineTemplateRelatedService: PipelineTemplateRelatedService
 ) {
 
     @Value("\${process.deletedPipelineStoreDays:30}")
@@ -455,7 +457,7 @@ class PipelineInfoFacadeService @Autowired constructor(
                 // 先进行模板关联操作
                 if (templateId != null) {
                     watcher.start("createTemplate")
-                    templateService.createRelationBtwTemplate(
+                    pipelineTemplateRelatedService.createRelation(
                         userId = userId,
                         projectId = projectId,
                         templateId = templateId,

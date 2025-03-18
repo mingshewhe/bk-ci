@@ -1,23 +1,36 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateRelatedDao
+import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
+import com.tencent.devops.process.engine.dao.template.TemplateDao
+import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import org.jooq.DSLContext
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线模版基础信息类
+ * 流水线模版与流水线关联类
  */
 @Service
 class PipelineTemplateRelatedService @Autowired constructor(
     private val dslContext: DSLContext,
-    private val pipelineTemplateRelatedDao: PipelineTemplateRelatedDao
+    private val pipelineTemplateRelatedDao: PipelineTemplateRelatedDao,
+    private val templateDao: TemplateDao,
+    private val templatePipelineDao: TemplatePipelineDao,
+    private val pipelineTemplateResourceDao: PipelineTemplateResourceDao
 ) {
     fun create(
         transactionContext: DSLContext? = null,
@@ -123,5 +136,82 @@ class PipelineTemplateRelatedService @Autowired constructor(
                 instanceType = PipelineInstanceTypeEnum.CONSTRAINT
             )
         ) > 0
+    }
+
+
+    fun createRelation(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        pipelineId: String,
+        instanceType: String,
+        buildNo: BuildNo? = null,
+        param: List<BuildFormProperty>? = null,
+        fixTemplateVersion: Long? = null
+    ): Boolean {
+        logger.info(
+            "Start creating relation between template and pipeline: userId=$userId, " +
+                "templateId=$templateId, pipelineId=$pipelineId, instanceType=$instanceType"
+        )
+
+        val (templateVersion, versionName) = if (fixTemplateVersion != null) {
+            // 使用指定版本
+            val v2Record = pipelineTemplateResourceDao.getLatestRecord(
+                dslContext = dslContext,
+                projectId = projectId,
+                templateId = templateId,
+                status = VersionStatus.RELEASED,
+                version = fixTemplateVersion
+            )
+            if (v2Record != null) {
+                v2Record.version to v2Record.versionName!!
+            } else {
+                val v1Record = templateDao.getTemplate(
+                    dslContext = dslContext,
+                    version = fixTemplateVersion
+                ) ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
+                v1Record.version to v1Record.versionName
+            }
+        } else {
+            // 使用最新版本
+            val v2LatestRecord = pipelineTemplateResourceDao.getLatestRecord(
+                dslContext = dslContext,
+                projectId = projectId,
+                templateId = templateId,
+                status = VersionStatus.RELEASED
+            )
+            if (v2LatestRecord != null) {
+                v2LatestRecord.version to v2LatestRecord.versionName!!
+            } else {
+                val v1LatestRecord = templateDao.getLatestTemplate(dslContext, templateId)
+                v1LatestRecord.version to v1LatestRecord.versionName
+            }
+        }
+        create(
+            pipelineTemplateRelated = PipelineTemplateRelated(
+                projectId = projectId,
+                templateId = templateId,
+                pipelineId = pipelineId,
+                version = templateVersion,
+                versionName = versionName,
+                instanceType = PipelineInstanceTypeEnum.valueOf(instanceType),
+                rootTemplateId = templateId,
+                creator = userId,
+                updater = userId,
+                buildNo = buildNo,
+                params = param,
+                instanceErrorInfo = null,
+                deleted = false
+            )
+        )
+        logger.info(
+            "Successfully created relation: templateId=$templateId, pipelineId=$pipelineId, " +
+                "version=$templateVersion"
+        )
+        return true
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(PipelineTemplateCommonService::class.java)
     }
 }
