@@ -557,8 +557,45 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 )
             )
         )
-        // pipelineSettingFacadeService.saveSetting()
-        // pipelineInfoFacadeService.editPipeline()
+        pipelineInfoFacadeService.editPipeline(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = instance.pipelineId,
+            model = instanceModel,
+            yaml = transferResult.yamlWithVersion,
+            channelCode = ChannelCode.BS,
+            checkPermission = true,
+            checkTemplate = false,
+            versionStatus = VersionStatus.RELEASED,
+            // todo 分支名称
+            branchName = null,
+            description = description,
+            yamlInfo = instance.yamlInfo
+        )
+        if (useTemplateSettings) {
+            pipelineSettingFacadeService.saveSetting(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = instance.pipelineId,
+                setting = pipelineSetting,
+                checkPermission = true,
+                dispatchPipelineUpdateEvent = false
+            )
+        } else {
+            // 不应用模板设置但是修改了流水线名称,需要重命名流水线
+            if (pipelineSetting.pipelineName != instance.pipelineName) {
+                pipelineSettingFacadeService.saveSetting(
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = instance.pipelineId,
+                    setting = pipelineSetting.apply {
+                        this.pipelineName = instance.pipelineName
+                    },
+                    checkPermission = true,
+                    dispatchPipelineUpdateEvent = false
+                )
+            }
+        }
     }
 
     fun checkTemplateAtomsForExplicitVersion(template: Model, userId: String) {
