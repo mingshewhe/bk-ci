@@ -32,7 +32,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesReleaseRequest
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
 
@@ -46,7 +46,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         templateId: String,
         version: Long,
         useTemplateSettings: Boolean,
-        request: PipelineTemplateInstancesReleaseRequest
+        request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet {
         return instanceFacadeService.createTemplateInstances(
             projectId = projectId,
@@ -64,7 +64,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         templateId: String,
         version: Long,
         useTemplateSettings: Boolean,
-        request: PipelineTemplateInstancesReleaseRequest
+        request: PipelineTemplateInstancesRequest
     ): Result<String> {
         return Result(
             data = instanceFacadeService.asyncCreateTemplateInstances(
@@ -78,32 +78,14 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
-    override fun updateTemplateInstances(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        version: Long,
-        useTemplateSettings: Boolean,
-        instances: List<TemplateInstanceUpdate>
-    ): TemplateOperationRet {
-        return instanceFacadeService.syncUpdateTemplateInstances(
-            projectId = projectId,
-            userId = userId,
-            templateId = templateId,
-            version = version,
-            useTemplateSettings = useTemplateSettings,
-            instances = instances
-        )
-    }
-
     override fun asyncUpdateTemplateInstances(
         userId: String,
         projectId: String,
         templateId: String,
         version: Long,
         useTemplateSettings: Boolean,
-        instances: List<TemplateInstanceUpdate>
-    ): Result<Boolean> {
+        request: PipelineTemplateInstancesRequest
+    ): Result<String> {
         return Result(
             instanceFacadeService.asyncUpdateTemplateInstances(
                 projectId = projectId,
@@ -111,7 +93,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 templateId = templateId,
                 version = version,
                 useTemplateSettings = useTemplateSettings,
-                instances = instances
+                request = request
             )
         )
     }

@@ -30,8 +30,8 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "模板实例发布请求体")
-data class PipelineTemplateInstancesReleaseRequest(
+@Schema(title = "模板实例请求体")
+data class PipelineTemplateInstancesRequest(
     @get:Schema(title = "是否本次开启PAC", required = true)
     val enablePac: Boolean,
     @get:Schema(title = "版本描述", required = false)

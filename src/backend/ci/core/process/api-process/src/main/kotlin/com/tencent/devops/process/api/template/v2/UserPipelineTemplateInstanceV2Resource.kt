@@ -35,7 +35,7 @@ import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesReleaseRequest
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -78,7 +78,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
         @Parameter(description = "创建实例", required = true)
-        request: PipelineTemplateInstancesReleaseRequest
+        request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet
 
     @Operation(summary = "流水线模板-批量实例化流水线模板-异步")
@@ -101,31 +101,8 @@ interface UserPipelineTemplateInstanceV2Resource {
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
         @Parameter(description = "创建实例", required = true)
-        request: PipelineTemplateInstancesReleaseRequest
+        request: PipelineTemplateInstancesRequest
     ): Result<String>
-
-    @Operation(summary = "批量更新流水线模板实例")
-    @PUT
-    @Path("/projects/{projectId}/templates/{templateId}")
-    fun updateTemplateInstances(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
-        @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
-        @Parameter(description = "版本号", required = true)
-        @QueryParam("version")
-        version: Long,
-        @Parameter(description = "是否应用模板设置")
-        @QueryParam("useTemplateSettings")
-        useTemplateSettings: Boolean,
-        @Parameter(description = "模板实例", required = true)
-        instances: List<TemplateInstanceUpdate>
-    ): TemplateOperationRet
 
     @Operation(summary = "异步批量更新流水线模板实例")
     @PUT
@@ -146,9 +123,9 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "是否应用模板设置")
         @QueryParam("useTemplateSettings")
         useTemplateSettings: Boolean,
-        @Parameter(description = "模板实例", required = true)
-        instances: List<TemplateInstanceUpdate>
-    ): Result<Boolean>
+        @Parameter(description = "更新实例", required = true)
+        request: PipelineTemplateInstancesRequest
+    ): Result<String>
 
     @Operation(summary = "列表流水线模板实例")
     @GET

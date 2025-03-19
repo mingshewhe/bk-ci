@@ -43,7 +43,8 @@ class PipelineTemplateInstanceSettingService @Autowired constructor(
         pipelineId: String,
         pipelineName: String,
         pipelineLabels: List<String>?,
-        enabledPac: Boolean
+        enabledPac: Boolean,
+        version: Int
     ): PipelineSetting {
         val pipelineTemplateSetting = pipelineTemplateSettingService.getPipelineTemplateSetting(
             projectId = projectId,
@@ -55,7 +56,7 @@ class PipelineTemplateInstanceSettingService @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 pipelineName = pipelineName,
-                version = 1,
+                version = version,
                 labels = pipelineLabels ?: labels ?: emptyList(),
                 buildNumRule = buildNumRule,
                 successSubscriptionList = successSubscriptionList,
