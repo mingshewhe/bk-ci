@@ -103,6 +103,7 @@ import com.tencent.devops.store.common.service.StoreTotalStatisticService
 import com.tencent.devops.store.common.service.StoreUserService
 import com.tencent.devops.store.common.service.action.StoreDecorateFactory
 import com.tencent.devops.store.pojo.common.InstallStoreReq
+import com.tencent.devops.store.pojo.common.enums.StoreProjectTypeEnum
 import com.tencent.devops.store.template.service.MarketTemplateService
 import com.tencent.devops.store.template.service.TemplateCategoryService
 import com.tencent.devops.store.template.service.TemplateLabelService
@@ -309,6 +310,14 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             classifyList?.forEach {
                 classifyMap[it.id] = it.classifyCode
             }
+            // 获取模板的来源项目ID
+            val storeCode2ProjectCode = storeProjectRelDao.listStoreCode2ProjectCode(
+                dslContext = dslContext,
+                storeCodes = templates.map { it[tTemplate.TEMPLATE_CODE] },
+                storeType = StoreTypeEnum.TEMPLATE,
+                storeProjectType = StoreProjectTypeEnum.INIT
+            )
+
             try {
                 templates.forEach {
                     val code = it[tTemplate.TEMPLATE_CODE] as String
@@ -332,6 +341,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                         id = it[tTemplate.ID] as String,
                         name = it[tTemplate.TEMPLATE_NAME] as String,
                         code = code,
+                        srcProjectId = storeCode2ProjectCode[code],
                         version = it[tTemplate.VERSION] as String,
                         status = TemplateStatusEnum.getTemplateStatus((it[tTemplate.TEMPLATE_STATUS] as Byte).toInt()),
                         type = "",
