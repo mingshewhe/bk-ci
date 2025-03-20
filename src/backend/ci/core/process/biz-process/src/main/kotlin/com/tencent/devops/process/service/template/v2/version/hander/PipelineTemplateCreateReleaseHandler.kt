@@ -128,6 +128,7 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting.copy(
+                creator = userId,
                 version = resourceOnlyVersion.settingVersion
             )
         )
