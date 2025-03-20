@@ -5,8 +5,8 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.PipelineTemplateSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线YAML导入创建请求体")
-data class PipelineTemplateYamlCreateReq(
+@Schema(title = "流水线YAML导入请求体")
+data class PipelineTemplateYamlImportReq(
     @get:Schema(title = "模板名称", required = true)
     val name: String,
     @get:Schema(title = "简介", required = false)
