@@ -37,8 +37,10 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.transfer.PreviewResponse
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferMark
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
@@ -52,8 +54,14 @@ import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.notice_key
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.pipeline_key
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.setting_key
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.trigger_key
 import com.tencent.devops.process.utils.PipelineVersionUtils
+import com.tencent.devops.process.yaml.transfer.TransferMapper
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -538,8 +546,29 @@ class PipelineTemplateGenerator @Autowired constructor(
         }
     }
 
+    fun buildPreView(
+        yaml: String
+    ): PreviewResponse {
+        val pipelineIndex = mutableListOf<TransferMark>()
+        val triggerIndex = mutableListOf<TransferMark>()
+        val noticeIndex = mutableListOf<TransferMark>()
+        val settingIndex = mutableListOf<TransferMark>()
+        try {
+            TransferMapper.getYamlLevelOneIndex(yaml).forEach { (key, value) ->
+                if (key in pipeline_key) pipelineIndex.add(value)
+                if (key in trigger_key) triggerIndex.add(value)
+                if (key in notice_key) noticeIndex.add(value)
+                if (key in setting_key) settingIndex.add(value)
+            }
+        } catch (ignore: Throwable) {
+            logger.warn("TRANSFER_YAML_FAILED", ignore)
+        }
+        return PreviewResponse(yaml, pipelineIndex, triggerIndex, noticeIndex, settingIndex)
+    }
+
     companion object {
         private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
         private const val PAC_TEMPLATE_BRANCH_PREFIX = "bk-ci-template-"
+        private val logger = LoggerFactory.getLogger(PipelineTemplateGenerator::class.java)
     }
 }

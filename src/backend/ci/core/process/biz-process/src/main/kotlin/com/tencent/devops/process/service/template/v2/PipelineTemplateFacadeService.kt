@@ -6,7 +6,9 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -27,6 +29,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
+import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -268,10 +271,36 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             settingVersion = templateResource.settingVersion
         )
-
+        val (yamlSupported, yamlPreview, msg) = try {
+            val yaml = templateResource.yaml ?: pipelineTemplateGenerator.transfer(
+                userId = templateResource.creator,
+                projectId = templateResource.projectId,
+                storageType = PipelineStorageType.MODEL,
+                templateType = templateResource.type,
+                templateModel = templateResource.model,
+                templateSetting = setting,
+                yaml = null
+            ).yamlWithVersion?.yamlStr ?: ""
+            val response = pipelineTemplateGenerator.buildPreView(yaml)
+            Triple(true, response, null)
+        } catch (e: PipelineTransferException) {
+            Triple(
+                first = false,
+                second = null,
+                third = I18nUtil.getCodeLanMessage(
+                    messageCode = e.errorCode,
+                    params = e.params,
+                    language = I18nUtil.getLanguage(I18nUtil.getRequestUserId()),
+                    defaultMessage = e.defaultMessage
+                )
+            )
+        }
         return PipelineTemplateDetailsResponse(
             resource = templateResource,
-            setting = setting
+            setting = setting,
+            yamlSupported = yamlSupported,
+            yamlPreview = yamlPreview,
+            yamlInvalidMsg = msg
         )
     }
 

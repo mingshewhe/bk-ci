@@ -85,11 +85,11 @@ import com.tencent.devops.process.yaml.v3.parsers.template.YamlTemplateConf
 import com.tencent.devops.process.yaml.v3.parsers.template.models.GetTemplateParam
 import com.tencent.devops.process.yaml.v3.utils.ScriptYmlUtils
 import com.tencent.devops.repository.api.ServiceRepositoryResource
-import java.util.LinkedList
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.util.LinkedList
 
 @Suppress("ALL")
 @Service
@@ -109,10 +109,10 @@ class PipelineTransferYamlService @Autowired constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTransferYamlService::class.java)
         private const val TEMPLATE_ROOT_FILE = "TEMPLATE_ROOT_FILE"
-        private val pipeline_key = listOf("stages", "jobs", "steps", "finally")
-        private val trigger_key = listOf("on")
-        private val notice_key = listOf("notices")
-        private val setting_key = listOf("concurrency", "name", "version", "label")
+        val pipeline_key = listOf("stages", "jobs", "steps", "finally")
+        val trigger_key = listOf("on")
+        val notice_key = listOf("notices")
+        val setting_key = listOf("concurrency", "name", "version", "label")
         private const val DEFAULT_REPO_ALIAS_NAME = "self"
     }
 

@@ -28,6 +28,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.transfer.PreviewResponse
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版详情")
@@ -35,5 +36,11 @@ data class PipelineTemplateDetailsResponse(
     @get:Schema(title = "模板模型信息", required = true)
     val resource: PipelineTemplateResource,
     @get:Schema(title = "模板配置信息", required = true)
-    val setting: PipelineSetting
+    val setting: PipelineSetting,
+    @get:Schema(title = "流水线YAML编排（含高亮）", required = false)
+    val yamlPreview: PreviewResponse?,
+    @get:Schema(title = "是否支持YAML解析", required = true)
+    val yamlSupported: Boolean,
+    @get:Schema(title = "YAML解析异常信息")
+    val yamlInvalidMsg: String?
 )
