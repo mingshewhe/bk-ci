@@ -106,7 +106,9 @@ class PipelineTemplateReleaseDraftHandler @Autowired constructor(
             pipelineTemplateTransactionService.releaseDraft2ReleaseVersion(
                 userId = userId,
                 templateResource = templateResource,
-                templateSetting = pipelineTemplateSetting
+                templateSetting = pipelineTemplateSetting.copy(
+                    version = resourceOnlyVersion.settingVersion
+                )
             )
         } else {
             pipelineTemplateTransactionService.releaseDraft2BranchVersion(

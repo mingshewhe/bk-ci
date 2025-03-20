@@ -701,8 +701,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             val baseId = event.baseId
             val projectId = event.projectId
             val type = event.templateInstanceType
-            logger.info("start to handle template event {}|,{}", type, event)
 
+            logger.info("start to handle template event {}|,{}", type, event)
             if (!lock.tryLock()) {
                 logger.warn("handle template instance event running ${event.projectId}|${event.baseId}")
                 return@use

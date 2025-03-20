@@ -127,7 +127,9 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
         )
         pipelineTemplateTransactionService.createDraftVersion(
             templateResource = templateResource,
-            templateSetting = pipelineTemplateSetting
+            templateSetting = pipelineTemplateSetting.copy(
+                version = resourceOnlyVersion.settingVersion
+            )
         )
         return resourceOnlyVersion
     }
