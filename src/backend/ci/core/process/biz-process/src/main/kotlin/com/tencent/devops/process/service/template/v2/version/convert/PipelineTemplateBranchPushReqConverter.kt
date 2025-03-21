@@ -127,7 +127,9 @@ class PipelineTemplateBranchPushReqConverter(
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pipelineTemplateSetting = pipelineTemplateSetting,
-                enablePac = true
+                enablePac = true,
+                yamlFileInfo = yamlFileInfo,
+                targetBranch = branchName
             )
         }
     }

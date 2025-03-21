@@ -14,7 +14,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
@@ -153,7 +153,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         branchName: String,
         isDefaultBranch: Boolean,
         description: String? = null,
-        yamlInfo: PipelineYamlVo? = null
+        yamlFileInfo: PipelineYamlFileInfo? = null
     ): DeployTemplateResult {
         val request = PipelineTemplateBranchPushReq(
             yaml = yaml,
@@ -161,7 +161,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             branchName = branchName,
             isDefaultBranch = isDefaultBranch,
             description = description,
-            yamlInfo = yamlInfo
+            yamlFileInfo = yamlFileInfo
         )
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
@@ -179,7 +179,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         branchName: String,
         isDefaultBranch: Boolean,
         description: String? = null,
-        yamlInfo: PipelineYamlVo? = null
+        yamlFileInfo: PipelineYamlFileInfo? = null
     ): DeployTemplateResult {
         val request = PipelineTemplateBranchPushReq(
             yaml = yaml,
@@ -187,7 +187,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             branchName = branchName,
             isDefaultBranch = isDefaultBranch,
             description = description,
-            yamlInfo = yamlInfo
+            yamlFileInfo = yamlFileInfo
         )
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,

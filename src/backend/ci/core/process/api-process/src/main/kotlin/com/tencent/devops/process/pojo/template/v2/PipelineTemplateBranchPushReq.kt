@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模版yaml文件推送请求")
@@ -43,5 +43,5 @@ data class PipelineTemplateBranchPushReq(
     @get:Schema(title = "描述", required = true)
     val description: String? = null,
     @get:Schema(title = "yaml文件信息", required = true)
-    val yamlInfo: PipelineYamlVo? = null
+    val yamlFileInfo: PipelineYamlFileInfo? = null
 ) : PipelineTemplateVersionReq

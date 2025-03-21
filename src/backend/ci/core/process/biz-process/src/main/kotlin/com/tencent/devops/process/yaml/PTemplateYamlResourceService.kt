@@ -28,9 +28,8 @@
 package com.tencent.devops.process.yaml
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.process.pojo.pipeline.DeletePipelineResult
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -45,7 +44,7 @@ import java.util.LinkedList
 class PTemplateYamlResourceService(
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : IPipelineYamlResourceService {
     override fun createYamlPipeline(
         userId: String,
@@ -56,7 +55,7 @@ class PTemplateYamlResourceService(
         isDefaultBranch: Boolean,
         description: String?,
         aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlInfo: PipelineYamlVo?
+        yamlFileInfo: PipelineYamlFileInfo?
     ): DeployPipelineResult {
         val deployTemplateResult = pipelineTemplateFacadeService.createYamlTemplate(
             userId = userId,
@@ -66,7 +65,7 @@ class PTemplateYamlResourceService(
             branchName = branchName,
             isDefaultBranch = isDefaultBranch,
             description = description,
-            yamlInfo = yamlInfo
+            yamlFileInfo = yamlFileInfo
         )
         return with(deployTemplateResult) {
             DeployPipelineResult(
@@ -92,7 +91,7 @@ class PTemplateYamlResourceService(
         isDefaultBranch: Boolean,
         description: String?,
         aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlInfo: PipelineYamlVo?
+        yamlFileInfo: PipelineYamlFileInfo?
     ): DeployPipelineResult {
         val deployTemplateResult = pipelineTemplateFacadeService.updateYamlTemplate(
             userId = userId,
@@ -103,7 +102,7 @@ class PTemplateYamlResourceService(
             branchName = branchName,
             isDefaultBranch = isDefaultBranch,
             description = description,
-            yamlInfo = yamlInfo
+            yamlFileInfo = yamlFileInfo
         )
         return with(deployTemplateResult) {
             DeployPipelineResult(
@@ -130,8 +129,8 @@ class PTemplateYamlResourceService(
         TODO("Not yet implemented")
     }
 
-    override fun deletePipeline(userId: String, projectId: String, pipelineId: String): DeletePipelineResult {
-        TODO("Not yet implemented")
+    override fun deletePipeline(userId: String, projectId: String, pipelineId: String): Boolean {
+        return pipelineTemplateFacadeService.deleteTemplate(projectId = projectId, templateId = pipelineId)
     }
 
     override fun getPipelineName(projectId: String, pipelineId: String): String? {

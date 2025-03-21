@@ -126,7 +126,7 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
         )
         val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pTemplateResourceOnlyVersion = resourceOnlyVersion,
+            pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
         pipelineTemplateTransactionService.createReleaseVersion(
             userId = userId,

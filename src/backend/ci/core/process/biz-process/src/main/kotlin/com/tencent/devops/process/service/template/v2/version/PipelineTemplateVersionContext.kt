@@ -57,10 +57,8 @@ data class PipelineTemplateVersionContext(
     val enablePac: Boolean = false,
     @get:Schema(title = "yaml文件分支信息", required = true)
     val yamlFileInfo: PipelineYamlFileInfo? = null,
-    @get:Schema(title = "是否merge主干", required = true)
-    val mergedMaster: Boolean = false,
     @get:Schema(title = "发布操作", required = false)
     val targetAction: CodeTargetAction? = null,
-    @get:Schema(title = "分支", required = false)
+    @get:Schema(title = "分支,发布时指定的分支或者推送的分支", required = false)
     val targetBranch: String? = null
 )
