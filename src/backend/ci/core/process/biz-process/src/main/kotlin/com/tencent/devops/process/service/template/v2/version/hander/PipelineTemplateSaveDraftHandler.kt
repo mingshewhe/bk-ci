@@ -74,6 +74,10 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+        if (pTemplateResourceWithoutVersion.status != VersionStatus.COMMITTING) {
+            // TEMPLATE_NOT_RELEASED
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        }
         val templateInfo = pipelineTemplateInfoService.getOrNull(
             projectId = projectId,
             templateId = templateId

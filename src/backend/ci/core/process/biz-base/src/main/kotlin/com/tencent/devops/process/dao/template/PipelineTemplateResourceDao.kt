@@ -241,7 +241,8 @@ class PipelineTemplateResourceDao {
             }
             dslContext.selectFrom(this)
                 .where(conditions)
-                .orderBy(NUMBER.desc())
+                .orderBy(VERSION.desc())
+                .limit(1)
                 .fetchOne()?.convert()
         }
     }

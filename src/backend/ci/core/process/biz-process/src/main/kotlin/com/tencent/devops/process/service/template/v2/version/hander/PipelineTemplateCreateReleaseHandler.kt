@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
@@ -43,6 +44,7 @@ import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVe
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
  * 创建流水线模版正式版本
@@ -94,6 +96,8 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
+                ).copy(
+                    releaseTime = LocalDateTime.now().timestampmilli()
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
                     version = defaultTemplateVersion.settingVersion

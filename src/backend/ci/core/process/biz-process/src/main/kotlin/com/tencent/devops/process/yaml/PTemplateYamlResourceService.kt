@@ -33,6 +33,7 @@ import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import org.springframework.stereotype.Service
 import java.util.LinkedList
@@ -43,7 +44,8 @@ import java.util.LinkedList
 @Service
 class PTemplateYamlResourceService(
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
 ) : IPipelineYamlResourceService {
     override fun createYamlPipeline(
         userId: String,
@@ -140,6 +142,9 @@ class PTemplateYamlResourceService(
     }
 
     override fun existsReleaseVersion(projectId: String, pipelineId: String): Boolean {
-        TODO("Not yet implemented")
+        return pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = pipelineId
+        ) != null
     }
 }

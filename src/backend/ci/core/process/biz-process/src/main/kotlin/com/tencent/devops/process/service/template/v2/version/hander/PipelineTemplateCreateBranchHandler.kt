@@ -61,6 +61,10 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
                 errorCode = ""
             )
         }
+        if (pTemplateResourceWithoutVersion.status != VersionStatus.BRANCH) {
+            // TEMPLATE_NOT_RELEASED
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        }
         val templateInfo = pipelineTemplateInfoService.getOrNull(
             projectId = projectId,
             templateId = templateId

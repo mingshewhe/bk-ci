@@ -29,6 +29,7 @@ package com.tencent.devops.process.service.template.v2.version.convert
 
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
@@ -84,6 +85,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
+                sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
                 creator = userId,
                 updater = userId
             )

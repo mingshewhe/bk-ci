@@ -107,6 +107,7 @@ class PipelineTemplateBranchPushReqConverter(
                 type = modelTransferResult.templateType,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
+                description = description,
                 status = status,
                 creator = userId,
                 updater = userId
@@ -125,7 +126,8 @@ class PipelineTemplateBranchPushReqConverter(
                 versionAction = versionAction,
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = pipelineTemplateSetting
+                pipelineTemplateSetting = pipelineTemplateSetting,
+                enablePac = true
             )
         }
     }

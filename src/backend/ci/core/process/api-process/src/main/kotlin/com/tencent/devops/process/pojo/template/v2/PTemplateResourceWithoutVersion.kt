@@ -34,7 +34,7 @@ data class PTemplateResourceWithoutVersion(
     @get:Schema(title = "分支状态", required = false)
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的权重为0", required = false)
-    val sortWeight: Int? = 100,
+    val sortWeight: Int? = 0,
     @get:Schema(title = "草稿来源版本,可以通过请求传入", required = false)
     val baseVersion: Long? = null,
     @get:Schema(title = "创建人", required = true)
