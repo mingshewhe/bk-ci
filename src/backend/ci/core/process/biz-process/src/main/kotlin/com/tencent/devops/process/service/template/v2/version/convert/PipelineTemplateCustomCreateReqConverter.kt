@@ -113,7 +113,8 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
-                creator = userId
+                creator = userId,
+                updater = userId
             )
             return PipelineTemplateVersionContext(
                 userId = userId,

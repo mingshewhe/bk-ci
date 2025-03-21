@@ -81,7 +81,9 @@ class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
                 throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
             }
             val templateSetting = pipelineTemplateSettingService.get(
-                projectId = projectId, templateId = templateId, settingVersion = draftResource.settingVersion
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = draftResource.settingVersion
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource)
             return PipelineTemplateVersionContext(

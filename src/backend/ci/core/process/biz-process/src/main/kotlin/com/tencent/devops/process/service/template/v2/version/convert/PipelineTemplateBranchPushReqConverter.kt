@@ -77,46 +77,55 @@ class PipelineTemplateBranchPushReqConverter(
             } else {
                 Pair(VersionStatus.BRANCH, PipelineVersionAction.CREATE_BRANCH)
             }
-            val templateInfo = if (templateId == null) {
+            val (newTemplateId, templateInfo) = if (templateId == null) {
                 val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
                 val templateSetting = modelTransferResult.templateSetting
-                PipelineTemplateInfo(
+                val templateInfo = PipelineTemplateInfo(
                     id = newTemplateId,
                     projectId = projectId,
                     name = templateSetting.pipelineName,
                     desc = templateSetting.desc,
                     mode = TemplateType.CUSTOMIZE.name,
                     type = modelTransferResult.templateType,
-                    enablePac = false,
+                    enablePac = true,
                     source = PipelineTemplateSource.CUSTOM,
                     storeFlag = false,
                     creator = userId,
                     latestVersionStatus = status
                 )
+                Pair(newTemplateId, templateInfo)
             } else {
-                pipelineTemplateInfoService.get(
+                val templateInfo = pipelineTemplateInfoService.get(
                     projectId = projectId,
                     templateId = templateId
                 )
+                Pair(templateId, templateInfo)
             }
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
-                templateId = templateInfo.id,
+                templateId = newTemplateId,
                 type = modelTransferResult.templateType,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = status,
-                creator = userId
+                creator = userId,
+                updater = userId
+            )
+            val pipelineTemplateSetting = modelTransferResult.templateSetting.copy(
+                projectId = projectId,
+                pipelineId = newTemplateId,
+                creator = userId,
+                updater = userId
             )
             return PipelineTemplateVersionContext(
                 userId = userId,
                 projectId = projectId,
-                templateId = templateInfo.id,
+                templateId = newTemplateId,
                 version = version,
                 versionAction = versionAction,
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = modelTransferResult.templateSetting
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }

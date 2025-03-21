@@ -89,9 +89,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
                     pTemplateResourceOnlyVersion = defaultVersion
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultVersion.settingVersion,
-                    creator = userId,
-                    updater = userId
+                    version = defaultVersion.settingVersion
                 )
             )
             defaultVersion

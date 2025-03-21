@@ -84,7 +84,14 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
-                creator = userId
+                creator = userId,
+                updater = userId
+            )
+            val pipelineTemplateSetting = modelTransferResult.templateSetting.copy(
+                projectId = projectId,
+                pipelineId = templateId,
+                creator = userId,
+                updater = userId
             )
             return PipelineTemplateVersionContext(
                 userId = userId,
@@ -94,7 +101,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = modelTransferResult.templateSetting
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }
