@@ -77,7 +77,9 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultTemplateVersion.settingVersion
+                    version = defaultTemplateVersion.settingVersion,
+                    creator = userId,
+                    updater = userId
                 )
             )
             defaultTemplateVersion
@@ -112,7 +114,9 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         pipelineTemplateTransactionService.createBranchVersion(
             templateResource = pipelineTemplateResource,
             templateSetting = pipelineTemplateSetting.copy(
-                version = resourceOnlyVersion.settingVersion
+                version = resourceOnlyVersion.settingVersion,
+                creator = userId,
+                updater = userId
             )
         )
         return resourceOnlyVersion

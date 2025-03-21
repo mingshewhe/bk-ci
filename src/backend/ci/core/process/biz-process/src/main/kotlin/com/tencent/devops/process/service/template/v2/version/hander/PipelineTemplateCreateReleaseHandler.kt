@@ -96,7 +96,9 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultTemplateVersion.settingVersion
+                    version = defaultTemplateVersion.settingVersion,
+                    creator = userId,
+                    updater = userId
                 )
             )
             defaultTemplateVersion
@@ -128,8 +130,9 @@ class PipelineTemplateCreateReleaseHandler @Autowired constructor(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting.copy(
+                version = resourceOnlyVersion.settingVersion,
                 creator = userId,
-                version = resourceOnlyVersion.settingVersion
+                updater = userId
             )
         )
         return resourceOnlyVersion
