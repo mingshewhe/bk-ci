@@ -1,7 +1,6 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSubscriptionType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
@@ -57,11 +56,11 @@ class PipelineTemplateInstanceSettingService @Autowired constructor(
                 pipelineId = pipelineId,
                 pipelineName = pipelineName,
                 version = version,
-                labels = pipelineLabels ?: labels ?: emptyList(),
+                labels = pipelineLabels ?: labels,
                 buildNumRule = buildNumRule,
                 successSubscriptionList = successSubscriptionList,
                 failSubscriptionList = failSubscriptionList,
-                runLockType = runLockType ?: PipelineRunLockType.SINGLE_LOCK,
+                runLockType = runLockType,
                 waitQueueTimeMinute = waitQueueTimeMinute,
                 maxQueueSize = maxQueueSize,
                 concurrencyGroup = concurrencyGroup,

@@ -311,28 +311,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         return pipelineId
     }
 
-    private fun getBranchName(
-        enabledPac: Boolean,
-        targetAction: CodeTargetAction?,
-        pipelineId: String,
-    ): String? {
-        if (!enabledPac)
-            return null
-
-        return when (targetAction) {
-            CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
-                PipelineVersionFacadeService.getReleaseBranchName(
-                    pipelineId = pipelineId,
-                    version = 1
-                )
-            }
-
-            else -> {
-                null
-            }
-        }
-    }
-
     private fun handleSyncCreateInstanceErrorMessage(
         projectId: String,
         instance: PipelineTemplateInstanceReleaseInfo,
