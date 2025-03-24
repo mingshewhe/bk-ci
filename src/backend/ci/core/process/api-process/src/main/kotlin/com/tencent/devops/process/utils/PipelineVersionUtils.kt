@@ -202,30 +202,7 @@ object PipelineVersionUtils {
                 ) {
                 return false
             }
-            return thisStage.containers.containersDiffer(otherStage.containers)
-            /*thisStage.containers.forEachIndexed { cIndex, thisContainer ->
-                val otherContainer = otherStage.containers[cIndex]
-                if (thisContainer != otherContainer && thisContainer.elements.size != otherContainer.elements.size) {
-                    return false
-                }
-                if (thisContainer is VMBuildContainer && otherContainer is VMBuildContainer) {
-                    if (thisContainer != otherContainer || thisContainer.dispatchType != otherContainer.dispatchType ||
-                        thisContainer.jobControlOption != otherContainer.jobControlOption
-                    ) return false
-                } else if (thisContainer is NormalContainer && otherContainer is NormalContainer) {
-                    if (thisContainer != otherContainer ||
-                        thisContainer.jobControlOption != otherContainer.jobControlOption
-                    ) return false
-                } else {
-                    return false
-                }
-                thisContainer.elements.forEachIndexed { eIndex, thisElement ->
-                    val otherElement = otherContainer.elements[eIndex]
-                    if (thisElement != otherElement) return false
-                    if (thisElement.additionalOptions != otherElement.additionalOptions) return false
-                    if (thisElement.differ(otherElement)) return false
-                }
-            }*/
+            if (!thisStage.containers.containersDiffer(otherStage.containers)) return false
         }
         return true
     }
@@ -234,7 +211,7 @@ object PipelineVersionUtils {
         if (this != other && this.size != other.size) return false
         this.forEachIndexed { cIndex, thisContainer ->
             val otherContainer = other[cIndex]
-            if (thisContainer.differ(otherContainer)) return false
+            if (!thisContainer.differ(otherContainer)) return false
         }
         return true
     }
@@ -254,8 +231,7 @@ object PipelineVersionUtils {
         } else {
             return false
         }
-        if (this.elements.elementsDiffer(other.elements)) return false
-        return true
+        return this.elements.elementsDiffer(other.elements)
     }
 
     private fun List<Element>.elementsDiffer(other: List<Element>): Boolean {

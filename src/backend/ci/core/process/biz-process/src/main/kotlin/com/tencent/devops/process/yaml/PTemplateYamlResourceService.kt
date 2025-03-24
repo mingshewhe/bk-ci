@@ -129,8 +129,11 @@ class PTemplateYamlResourceService(
         TODO("Not yet implemented")
     }
 
-    override fun deletePipeline(userId: String, projectId: String, pipelineId: String): Boolean {
-        return pipelineTemplateFacadeService.deleteTemplate(projectId = projectId, templateId = pipelineId)
+    override fun deletePipeline(userId: String, projectId: String, pipelineId: String) {
+        pipelineTemplateFacadeService.deleteTemplate(
+            projectId = projectId,
+            templateId = pipelineId
+        )
     }
 
     override fun getPipelineName(projectId: String, pipelineId: String): String? {

@@ -1,6 +1,7 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
@@ -79,6 +80,8 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
+                ).copy(
+                    branchAction = BranchVersionAction.ACTIVE
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
                     version = defaultTemplateVersion.settingVersion

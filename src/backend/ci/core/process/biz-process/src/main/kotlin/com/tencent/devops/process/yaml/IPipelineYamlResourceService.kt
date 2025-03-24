@@ -75,7 +75,7 @@ interface IPipelineYamlResourceService {
         userId: String,
         projectId: String,
         pipelineId: String
-    ): Boolean
+    )
 
     fun getPipelineName(
         projectId: String,

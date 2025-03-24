@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -105,6 +106,8 @@ class PipelineTemplateTransactionService @Autowired constructor(
         templateSetting: PipelineSetting
     ) {
         val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+            name = templateSetting.pipelineName,
+            desc = templateSetting.desc,
             releasedVersion = templateResource.version,
             releasedVersionName = templateResource.versionName,
             releasedSettingVersion = templateResource.settingVersion,
@@ -124,7 +127,9 @@ class PipelineTemplateTransactionService @Autowired constructor(
             )
             pipelineTemplateResourceService.create(
                 transactionContext = context,
-                pipelineTemplateResource = templateResource
+                pipelineTemplateResource = templateResource.copy(
+                    releaseTime = LocalDateTime.now().timestampmilli()
+                )
             )
             pipelineTemplateSettingService.create(
                 transactionContext = context,
@@ -179,7 +184,9 @@ class PipelineTemplateTransactionService @Autowired constructor(
             )
             pipelineTemplateResourceService.create(
                 transactionContext = transactionContext,
-                pipelineTemplateResource = templateResource
+                pipelineTemplateResource = templateResource.copy(
+                    branchAction = BranchVersionAction.ACTIVE
+                )
             )
             pipelineTemplateSettingService.create(
                 transactionContext = transactionContext,
@@ -238,6 +245,8 @@ class PipelineTemplateTransactionService @Autowired constructor(
         templateSetting: PipelineSetting
     ) {
         val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+            name = templateSetting.pipelineName,
+            desc = templateSetting.desc,
             releasedVersion = templateResource.version,
             releasedVersionName = templateResource.versionName,
             releasedSettingVersion = templateResource.settingVersion,
@@ -256,7 +265,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
             triggerVersion = templateResource.triggerVersion,
             releaseTime = LocalDateTime.now(),
             status = VersionStatus.RELEASED,
-            sortWeight = templateResource.sortWeight,
+            sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT,
             updater = userId
         )
         val templateResourceCondition = PipelineTemplateResourceCommonCondition(
