@@ -190,6 +190,7 @@ class PipelineTemplateResourceDao {
                 UPDATE_TIME
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
+                .and(BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name).or(BRANCH_ACTION.isNull))
                 .orderBy(SORT_WEIGHT.desc(), VERSION.desc())
                 .fetch()
                 .map {
