@@ -5,6 +5,7 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -439,8 +440,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateVersions(
         commonCondition: PipelineTemplateResourceCommonCondition
     ): Page<PipelineVersionSimple> {
-        val records = pipelineTemplateResourceService.getTemplateVersions(commonCondition)
-        val count = pipelineTemplateResourceService.count(commonCondition)
+        val conditions = commonCondition.copy(branchAction = BranchVersionAction.ACTIVE)
+        val records = pipelineTemplateResourceService.getTemplateVersions(conditions)
+        val count = pipelineTemplateResourceService.count(conditions)
         return Page(
             page = commonCondition.page ?: -1,
             pageSize = commonCondition.pageSize ?: -1,
