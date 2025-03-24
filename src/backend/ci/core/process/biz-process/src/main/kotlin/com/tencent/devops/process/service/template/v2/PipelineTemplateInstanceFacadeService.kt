@@ -12,6 +12,7 @@ import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatch
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
@@ -196,13 +197,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             templateId = templateId
         )
 
-        // 转化模型生成yaml
-        val branchName = getBranchName(
-            enabledPac = enabledPac,
-            targetAction = targetAction,
-            pipelineId = pipelineId
-        )
-
         val setting = if (useTemplateSettings) {
             pipelineTemplateInstanceSettingService.getTemplateInstanceSetting(
                 projectId = projectId,
@@ -233,6 +227,23 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 )
             )
         )
+
+        val (branchName, versionStatus) =
+            if (enabledPac && targetAction == CHECKOUT_BRANCH_AND_REQUEST_MERGE) {
+                Pair(
+                    first = PipelineVersionFacadeService.getReleaseBranchName(
+                        pipelineId = pipelineId,
+                        version = PipelineTemplateConstant.INIT_VERSION
+                    ),
+                    second = VersionStatus.BRANCH
+                )
+            } else {
+                Pair(
+                    first = null,
+                    second = VersionStatus.RELEASED
+                )
+            }
+
         // 创建流水线
         pipelineInfoFacadeService.createPipeline(
             userId = userId,
@@ -246,7 +257,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             buildNo = instance.buildNo,
             param = instance.param,
             fixTemplateVersion = templateVersion,
-            versionStatus = VersionStatus.RELEASED,
+            versionStatus = versionStatus,
             branchName = branchName,
             yamlInfo = instance.yamlInfo,
             description = description
@@ -275,11 +286,13 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 params = arrayOf(PipelineVersionReleaseRequest::yamlInfo.name)
             )
             // 对前端的YAML信息进行校验
-            if (!yamlInfo.filePath.endsWith(".yaml") && !yamlInfo.filePath.endsWith(".yml"))
+            if (!yamlInfo.filePath.endsWith(".yaml") && !yamlInfo.filePath.endsWith(".yml")) {
                 throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_PIPELINE_YAML_FILENAME,
                     params = arrayOf(yamlInfo.filePath)
                 )
+            }
+
             pipelineYamlFacadeService.pushYamlFile(
                 userId = userId,
                 projectId = projectId,
@@ -307,7 +320,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             return null
 
         return when (targetAction) {
-            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
+            CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
                 PipelineVersionFacadeService.getReleaseBranchName(
                     pipelineId = pipelineId,
                     version = 1
@@ -697,11 +710,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     }
 
     fun handleTemplateInstanceEvent(event: PipelineTemplateInstanceEvent) {
-        PipelineTemplateInstanceLock(redisOperation, event.baseId).use { lock ->
-            val baseId = event.baseId
-            val projectId = event.projectId
-            val type = event.templateInstanceType
-
+        val baseId = event.baseId
+        val projectId = event.projectId
+        val type = event.templateInstanceType
+        PipelineTemplateInstanceLock(redisOperation, baseId).use { lock ->
             logger.info("start to handle template event {}|,{}", type, event)
             if (!lock.tryLock()) {
                 logger.warn("handle template instance event running ${event.projectId}|${event.baseId}")
@@ -746,6 +758,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             val successPipelines = mutableListOf<String>()
             val failurePipelines = mutableListOf<String>()
             val totalPages = PageUtil.calTotalPage(PageUtil.MAX_PAGE_SIZE, templateInstanceItemCount)
+
             for (page in 1..totalPages) {
                 val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
                     dslContext = dslContext,
