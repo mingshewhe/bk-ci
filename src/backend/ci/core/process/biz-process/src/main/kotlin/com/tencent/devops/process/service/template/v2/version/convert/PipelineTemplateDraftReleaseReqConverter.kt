@@ -32,7 +32,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -46,13 +46,13 @@ import org.springframework.stereotype.Service
  * 发布草稿转换
  */
 @Service
-class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
+class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) : PipelineTemplateVersionReqConverter {
     override fun support(request: PipelineTemplateVersionReq): Boolean {
-        return request is PipelineTemplateReleaseDraftReq
+        return request is PipelineTemplateDraftReleaseReq
     }
 
     override fun convert(
@@ -62,7 +62,7 @@ class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
         version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionContext {
-        request as PipelineTemplateReleaseDraftReq
+        request as PipelineTemplateDraftReleaseReq
         with(request) {
             if (templateId == null) {
                 throw IllegalArgumentException("templateId is null")
@@ -70,7 +70,7 @@ class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
             if (version == null) {
                 throw IllegalArgumentException("version is null")
             }
-            val templateInfo = pipelineTemplateInfoService.get(
+            val pipelineTemplateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
             )
@@ -80,7 +80,7 @@ class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
             if (draftResource.status != VersionStatus.COMMITTING) {
                 throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
             }
-            val templateSetting = pipelineTemplateSettingService.get(
+            val pipelineTemplateSetting = pipelineTemplateSettingService.get(
                 projectId = projectId,
                 templateId = templateId,
                 settingVersion = draftResource.settingVersion
@@ -92,9 +92,9 @@ class PipelineTemplateReleaseDraftReqConverter @Autowired constructor(
                 templateId = templateId,
                 version = version,
                 versionAction = PipelineVersionAction.RELEASE_DRAFT,
-                pipelineTemplateInfo = templateInfo,
+                pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = templateSetting,
+                pipelineTemplateSetting = pipelineTemplateSetting,
                 yamlFileInfo = yamlInfo,
                 enablePac = enablePac,
                 targetAction = targetAction,

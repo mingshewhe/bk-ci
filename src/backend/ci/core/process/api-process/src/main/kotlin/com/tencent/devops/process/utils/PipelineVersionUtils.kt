@@ -142,7 +142,7 @@ object PipelineVersionUtils {
         originTemplateModel: ITemplateModel,
         newTemplateModel:  ITemplateModel,
         originParams: List<BuildFormProperty>?,
-        newParams: List<BuildFormProperty>?,
+        newParams: List<BuildFormProperty>?
     ): Int {
         return when {
             originTemplateModel is Model && newTemplateModel is Model -> {

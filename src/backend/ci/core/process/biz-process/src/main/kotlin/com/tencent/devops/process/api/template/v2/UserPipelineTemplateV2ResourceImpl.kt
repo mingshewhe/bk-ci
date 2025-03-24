@@ -34,6 +34,7 @@ import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
@@ -41,13 +42,13 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import org.slf4j.LoggerFactory
@@ -276,7 +277,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         templateId: String,
         version: Long,
-        request: PipelineTemplateReleaseDraftReq
+        request: PipelineTemplateDraftReleaseReq
     ): Result<DeployTemplateResult> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -285,12 +286,45 @@ class UserPipelineTemplateV2ResourceImpl(
             templateId = templateId
         )
         return Result(
-            templateFacadeService.releaseDraftVersion(
+            templateFacadeService.releaseDraft(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
                 request = request
+            )
+        )
+    }
+
+    override fun getPipelineOperationLogs(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        creator: String?,
+        page: Int?,
+        pageSize: Int?
+    ): Result<Page<PipelineOperationDetail>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun rollbackDraftFromVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ): Result<DeployTemplateResult> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.rollbackDraft(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                version = version
             )
         )
     }

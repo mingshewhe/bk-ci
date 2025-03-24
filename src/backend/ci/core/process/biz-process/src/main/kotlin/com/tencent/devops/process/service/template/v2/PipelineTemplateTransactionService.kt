@@ -204,6 +204,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
             params = templateResource.params,
             model = templateResource.model,
             yaml = templateResource.yaml,
+            baseVersion = templateResource.baseVersion,
             updater = userId,
             sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
         )

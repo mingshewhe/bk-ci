@@ -7,6 +7,7 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
@@ -18,9 +19,9 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -259,7 +260,49 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("version")
         version: Long,
         @Parameter(description = "流水线模版发布请求体", required = true)
-        request: PipelineTemplateReleaseDraftReq
+        request: PipelineTemplateDraftReleaseReq
+    ): Result<DeployTemplateResult>
+
+    @Operation(summary = "获取流水线操作日志列表（分页）")
+    @GET
+    @Path("{templateId}/operationLog")
+    fun getPipelineOperationLogs(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "搜索字段：创建人", required = false)
+        @QueryParam("creator")
+        creator: String? = null,
+        @Parameter(description = "第几页", required = false, example = "1")
+        @QueryParam("page")
+        page: Int?,
+        @Parameter(description = "每页多少条", required = false, example = "20")
+        @QueryParam("pageSize")
+        pageSize: Int?
+    ): Result<Page<PipelineOperationDetail>>
+
+    @Operation(summary = "回滚到指定的历史版本并覆盖草稿")
+    @POST
+    @Path("{templateId}/rollbackDraft")
+    fun rollbackDraftFromVersion(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "回回滚目标版本", required = true)
+        @QueryParam("version")
+        version: Long
     ): Result<DeployTemplateResult>
 
     @Operation(summary = "是否有模板特定权限")

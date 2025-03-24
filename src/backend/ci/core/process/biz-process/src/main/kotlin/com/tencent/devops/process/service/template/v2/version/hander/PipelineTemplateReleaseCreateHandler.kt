@@ -1,7 +1,34 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.pipeline.enums.BranchVersionAction
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
@@ -12,26 +39,26 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
-import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
- * 创建流水线模版分支版本
+ * 创建流水线模版正式版本
  */
 @Service
-class PipelineTemplateCreateBranchHandler @Autowired constructor(
+class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionHandler {
+
     override fun support(context: PipelineTemplateVersionContext): Boolean {
-        return context.versionAction == PipelineVersionAction.CREATE_BRANCH
+        return context.versionAction == PipelineVersionAction.CREATE_RELEASE
     }
 
     override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
@@ -47,22 +74,7 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
-        if (!enablePac) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (yamlFileInfo == null) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (targetBranch == null) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (pTemplateResourceWithoutVersion.status != VersionStatus.BRANCH) {
+        if (pTemplateResourceWithoutVersion.status != VersionStatus.RELEASED) {
             // TEMPLATE_NOT_RELEASED
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         }
@@ -72,16 +84,20 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         )
         val resourceOnlyVersion = if (templateInfo == null) {
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.BRANCH,
-                branchName = targetBranch
+                versionStatus = VersionStatus.RELEASED
             )
             pipelineTemplateTransactionService.createTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
+                pipelineTemplateInfo = pipelineTemplateInfo.copy(
+                    releasedVersion = defaultTemplateVersion.version,
+                    releasedVersionName = defaultTemplateVersion.versionName,
+                    releasedSettingVersion = defaultTemplateVersion.settingVersion,
+                    latestVersionStatus = VersionStatus.RELEASED
+                ),
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                     pTemplateResourceOnlyVersion = defaultTemplateVersion
                 ).copy(
-                    branchAction = BranchVersionAction.ACTIVE
+                    releaseTime = LocalDateTime.now().timestampmilli()
                 ),
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
                     version = defaultTemplateVersion.settingVersion
@@ -89,9 +105,8 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
             )
             defaultTemplateVersion
         } else {
-            createBranchVersion()
+            createReleaseVersion()
         }
-
         return DeployTemplateResult(
             version = resourceOnlyVersion.version,
             templateId = templateId,
@@ -102,22 +117,20 @@ class PipelineTemplateCreateBranchHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionContext.createBranchVersion(): PTemplateResourceOnlyVersion {
-        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
+    private fun PipelineTemplateVersionContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
+        val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseVersion(
             projectId = projectId,
-            templateId = templateId
-        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
-        val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
-            latestResource = latestResource,
-            branchName = targetBranch!!
+            templateId = templateId,
+            newResource = pTemplateResourceWithoutVersion,
+            newSetting = pipelineTemplateSetting
         )
-        val pipelineTemplateResource = PipelineTemplateResource(
+        val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
             pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
-
-        pipelineTemplateTransactionService.createBranchVersion(
-            templateResource = pipelineTemplateResource,
+        pipelineTemplateTransactionService.createReleaseVersion(
+            userId = userId,
+            templateResource = templateResource,
             templateSetting = pipelineTemplateSetting.copy(
                 version = resourceOnlyVersion.settingVersion
             )

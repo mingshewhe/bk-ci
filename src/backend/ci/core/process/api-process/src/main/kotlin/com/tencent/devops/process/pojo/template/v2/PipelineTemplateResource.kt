@@ -105,7 +105,8 @@ data class PipelineTemplateResource(
         srcTemplateProjectId = pTemplateResourceWithoutVersion.srcTemplateProjectId,
         srcTemplateId = pTemplateResourceWithoutVersion.srcTemplateId,
         srcTemplateVersion = pTemplateResourceWithoutVersion.srcTemplateVersion,
-        baseVersion = pTemplateResourceWithoutVersion.baseVersion,
+        // 如果请求有传递基准版本,则使用基准版本,否则使用最新版本
+        baseVersion = pTemplateResourceWithoutVersion.baseVersion ?: pTemplateResourceOnlyVersion.baseVersion,
         params = pTemplateResourceWithoutVersion.params,
         model = pTemplateResourceWithoutVersion.model,
         yaml = pTemplateResourceWithoutVersion.yaml,

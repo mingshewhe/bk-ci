@@ -32,7 +32,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板发布草稿请求体")
-data class PipelineTemplateReleaseDraftReq(
+data class PipelineTemplateDraftReleaseReq(
     @get:Schema(title = "是否本次开启PAC", required = true)
     var enablePac: Boolean,
     @get:Schema(title = "版本描述", required = false)

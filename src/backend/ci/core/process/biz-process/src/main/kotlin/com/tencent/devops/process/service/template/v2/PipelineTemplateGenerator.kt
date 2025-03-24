@@ -178,13 +178,12 @@ class PipelineTemplateGenerator @Autowired constructor(
      * 生成草稿版本
      */
     fun generateDraftVersion(
-        latestResource: PipelineTemplateResource,
-        baseVersion: Long? = null
+        latestResource: PipelineTemplateResource
     ) = PTemplateResourceOnlyVersion(
         version = generateTemplateVersion(),
         number = latestResource.number + 1,
         settingVersion = latestResource.settingVersion + 1,
-        baseVersion = baseVersion ?: latestResource.version
+        baseVersion = latestResource.version
     )
 
     /**
@@ -194,14 +193,13 @@ class PipelineTemplateGenerator @Autowired constructor(
      */
     fun generateBranchVersion(
         latestResource: PipelineTemplateResource,
-        branchName: String,
-        baseVersion: Long? = null
+        branchName: String
     ) = PTemplateResourceOnlyVersion(
         version = generateTemplateVersion(),
         number = latestResource.number + 1,
         versionName = branchName,
         settingVersion = latestResource.settingVersion + 1,
-        baseVersion = baseVersion ?: latestResource.version
+        baseVersion = latestResource.version
     )
 
 

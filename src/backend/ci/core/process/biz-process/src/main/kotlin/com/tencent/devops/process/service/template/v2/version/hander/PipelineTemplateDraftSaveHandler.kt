@@ -47,10 +47,9 @@ import org.springframework.stereotype.Service
 
 /**
  * 创建或更新流水线模版草稿版本
- *
  */
 @Service
-class PipelineTemplateSaveDraftHandler @Autowired constructor(
+class PipelineTemplateDraftSaveHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
@@ -98,14 +97,14 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             )
             defaultVersion
         } else {
-            val draftVersion = pipelineTemplateResourceService.getDraftVersionResource(
+            val draftResource = pipelineTemplateResourceService.getDraftVersionResource(
                 projectId = projectId,
                 templateId = templateId
             )
-            if (draftVersion == null) {
+            if (draftResource == null) {
                 createDraftVersion()
             } else {
-                updateDraftVersion(draftResource = draftVersion)
+                updateDraftVersion(draftResource = draftResource)
             }
         }
         return DeployTemplateResult(
@@ -124,8 +123,7 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
             templateId = templateId
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val resourceOnlyVersion = pipelineTemplateGenerator.generateDraftVersion(
-            latestResource = latestVersion,
-            baseVersion = pTemplateResourceWithoutVersion.baseVersion
+            latestResource = latestVersion
         )
         val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
@@ -143,15 +141,16 @@ class PipelineTemplateSaveDraftHandler @Autowired constructor(
     private fun PipelineTemplateVersionContext.updateDraftVersion(
         draftResource: PipelineTemplateResource
     ): PTemplateResourceOnlyVersion {
+        val resourceOnlyVersion = PTemplateResourceOnlyVersion(draftResource)
         val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pTemplateResourceOnlyVersion = PTemplateResourceOnlyVersion(draftResource)
+            pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
         pipelineTemplateTransactionService.updateDraftVersion(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting
         )
-        return PTemplateResourceOnlyVersion(draftResource)
+        return resourceOnlyVersion
     }
 }

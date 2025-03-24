@@ -27,7 +27,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateReleaseDraftReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
@@ -131,6 +132,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
+    /**
+     * 保存草稿
+     */
     fun saveDraft(
         userId: String,
         projectId: String,
@@ -233,12 +237,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun releaseDraftVersion(
+    /**
+     * 发布草稿
+     */
+    fun releaseDraft(
         userId: String,
         projectId: String,
         templateId: String,
         version: Long,
-        request: PipelineTemplateReleaseDraftReq
+        request: PipelineTemplateDraftReleaseReq
     ): DeployTemplateResult {
         logger.info("release draft version|projectId:$projectId|templateId:$templateId|version:$version")
         return pipelineTemplateVersionManager.deployTemplate(
@@ -250,6 +257,23 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    /**
+     * 回滚草稿到指定版本
+     */
+    fun rollbackDraft(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ): DeployTemplateResult {
+        return pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version,
+            request = PipelineTemplateDraftRollbackReq()
+        )
+    }
 
     // 获取模板列表
     fun listTemplateInfos(
