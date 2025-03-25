@@ -42,5 +42,5 @@ interface PipelineTemplateVersionReqConverter {
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext
+    ): PipelineTemplateVersionCreateContext
 }

@@ -40,8 +40,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -55,12 +54,12 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
-) : PipelineTemplateVersionHandler {
-    override fun support(context: PipelineTemplateVersionContext): Boolean {
+) : PipelineTemplateVersionCreateHandler {
+    override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
     }
 
-    override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
+    override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
@@ -72,7 +71,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+    private fun PipelineTemplateVersionCreateContext.doHandle(): DeployTemplateResult {
         if (pTemplateResourceWithoutVersion.status != VersionStatus.COMMITTING) {
             // TEMPLATE_NOT_RELEASED
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
@@ -117,7 +116,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionContext.createDraftVersion(): PTemplateResourceOnlyVersion {
+    private fun PipelineTemplateVersionCreateContext.createDraftVersion(): PTemplateResourceOnlyVersion {
         val latestVersion = pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId,
             templateId = templateId
@@ -138,7 +137,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
         return resourceOnlyVersion
     }
 
-    private fun PipelineTemplateVersionContext.updateDraftVersion(
+    private fun PipelineTemplateVersionCreateContext.updateDraftVersion(
         draftResource: PipelineTemplateResource
     ): PTemplateResourceOnlyVersion {
         val resourceOnlyVersion = PTemplateResourceOnlyVersion(draftResource)

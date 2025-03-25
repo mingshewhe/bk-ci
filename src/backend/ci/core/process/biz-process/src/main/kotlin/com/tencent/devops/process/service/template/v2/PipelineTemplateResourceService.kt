@@ -166,6 +166,22 @@ class PipelineTemplateResourceService @Autowired constructor(
         )
     }
 
+    fun deleteVersion(
+        projectId: String,
+        templateId: String,
+        version: Long
+    ) {
+        val condition = PipelineTemplateResourceCommonCondition(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        pipelineTemplateResourceDao.delete(
+            dslContext = dslContext,
+            commonCondition = condition
+        )
+    }
+
     fun list(commonCondition: PipelineTemplateResourceCommonCondition): List<PipelineTemplateResource> {
         return pipelineTemplateResourceDao.list(
             dslContext = dslContext,

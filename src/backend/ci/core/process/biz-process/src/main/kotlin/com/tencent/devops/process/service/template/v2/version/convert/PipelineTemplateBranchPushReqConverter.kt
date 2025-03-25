@@ -38,7 +38,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.stereotype.Service
 
@@ -60,7 +60,7 @@ class PipelineTemplateBranchPushReqConverter(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateBranchPushReq
         with(request) {
             val modelTransferResult = pipelineTemplateGenerator.transfer(
@@ -118,7 +118,7 @@ class PipelineTemplateBranchPushReqConverter(
                 creator = userId,
                 updater = userId
             )
-            return PipelineTemplateVersionContext(
+            return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = newTemplateId,
@@ -129,7 +129,7 @@ class PipelineTemplateBranchPushReqConverter(
                 pipelineTemplateSetting = pipelineTemplateSetting,
                 enablePac = true,
                 yamlFileInfo = yamlFileInfo,
-                targetBranch = branchName
+                branchName = branchName
             )
         }
     }

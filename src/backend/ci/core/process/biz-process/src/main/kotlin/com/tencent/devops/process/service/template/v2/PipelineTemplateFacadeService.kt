@@ -23,12 +23,12 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
@@ -275,6 +275,40 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    /**
+     * 删除模版版本
+     */
+    fun deleteVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ) {
+        pipelineTemplateVersionManager.deleteVersion(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+    }
+
+    /**
+     * 将分支版本置为不活跃
+     */
+    fun inactiveBranch(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        branch: String
+    ) {
+        pipelineTemplateVersionManager.inactiveBranch(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            branch = branch
+        )
+    }
+
     // 获取模板列表
     fun listTemplateInfos(
         userId: String,
@@ -500,9 +534,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    // 发布模板
-    // 流水线模板检查
-    // 回滚版本
 
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTemplateFacadeService::class.java)

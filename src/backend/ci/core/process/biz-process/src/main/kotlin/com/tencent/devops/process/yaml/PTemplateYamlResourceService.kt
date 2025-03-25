@@ -126,7 +126,12 @@ class PTemplateYamlResourceService(
         branchVersionAction: BranchVersionAction,
         releaseBranch: Boolean?
     ) {
-        TODO("Not yet implemented")
+        pipelineTemplateFacadeService.inactiveBranch(
+            userId = userId,
+            projectId = projectId,
+            templateId = pipelineId,
+            branch = branchName
+        )
     }
 
     override fun deletePipeline(userId: String, projectId: String, pipelineId: String) {

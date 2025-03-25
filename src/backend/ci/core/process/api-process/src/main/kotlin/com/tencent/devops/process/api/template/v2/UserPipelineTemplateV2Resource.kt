@@ -15,11 +15,11 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import io.swagger.v3.oas.annotations.Operation
@@ -304,6 +304,24 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("version")
         version: Long
     ): Result<DeployTemplateResult>
+
+    @Operation(summary = "删除模版版本")
+    @DELETE
+    @Path("{templateId}/{version}/")
+    fun deleteVersion(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "模版版本", required = true)
+        @PathParam("version")
+        version: Long
+    ): Result<Boolean>
 
     @Operation(summary = "是否有模板特定权限")
     @GET

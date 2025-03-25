@@ -14,8 +14,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -29,12 +28,12 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
-) : PipelineTemplateVersionHandler {
-    override fun support(context: PipelineTemplateVersionContext): Boolean {
+) : PipelineTemplateVersionCreateHandler {
+    override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.CREATE_BRANCH
     }
 
-    override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
+    override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
@@ -46,7 +45,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+    private fun PipelineTemplateVersionCreateContext.doHandle(): DeployTemplateResult {
         if (!enablePac) {
             throw ErrorCodeException(
                 errorCode = ""
@@ -57,7 +56,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
                 errorCode = ""
             )
         }
-        if (targetBranch == null) {
+        if (branchName == null) {
             throw ErrorCodeException(
                 errorCode = ""
             )
@@ -73,7 +72,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         val resourceOnlyVersion = if (templateInfo == null) {
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.BRANCH,
-                branchName = targetBranch
+                branchName = branchName
             )
             pipelineTemplateTransactionService.createTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
@@ -102,14 +101,14 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionContext.createBranchVersion(): PTemplateResourceOnlyVersion {
+    private fun PipelineTemplateVersionCreateContext.createBranchVersion(): PTemplateResourceOnlyVersion {
         val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId,
             templateId = templateId
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
             latestResource = latestResource,
-            branchName = targetBranch!!
+            branchName = branchName!!
         )
         val pipelineTemplateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

@@ -39,8 +39,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -54,12 +53,12 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val redisOperation: RedisOperation
-) : PipelineTemplateVersionHandler {
-    override fun support(context: PipelineTemplateVersionContext): Boolean {
+) : PipelineTemplateVersionCreateHandler {
+    override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.RELEASE_DRAFT
     }
 
-    override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
+    override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (version == null) {
                 throw IllegalArgumentException("version is null")
@@ -79,7 +78,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+    private fun PipelineTemplateVersionCreateContext.doHandle(): DeployTemplateResult {
         val draftResource = pipelineTemplateResourceService.get(
             projectId = projectId, templateId = templateId, version = version!!
         )
@@ -96,7 +95,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             draftSetting = templateSetting,
             enablePac = enablePac,
             targetAction = targetAction,
-            targetBranch = targetBranch
+            targetBranch = branchName
         )
         if (versionStatus == VersionStatus.RELEASED) {
             val templateResource = PipelineTemplateResource(

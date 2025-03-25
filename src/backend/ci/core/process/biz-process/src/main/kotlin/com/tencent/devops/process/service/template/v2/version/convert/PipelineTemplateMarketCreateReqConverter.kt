@@ -31,7 +31,6 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
@@ -43,7 +42,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonServ
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import org.springframework.beans.factory.annotation.Autowired
@@ -71,7 +70,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateMarketCreateReq
         with(request) {
             val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
@@ -134,7 +133,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 status = VersionStatus.RELEASED
             )
 
-            return PipelineTemplateVersionContext(
+            return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = newTemplateId,

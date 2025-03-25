@@ -37,7 +37,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -61,7 +61,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateDraftReleaseReq
         with(request) {
             if (templateId == null) {
@@ -86,7 +86,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 settingVersion = draftResource.settingVersion
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource)
-            return PipelineTemplateVersionContext(
+            return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
@@ -98,7 +98,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 yamlFileInfo = yamlInfo,
                 enablePac = enablePac,
                 targetAction = targetAction,
-                targetBranch = targetBranch
+                branchName = targetBranch
             )
         }
     }

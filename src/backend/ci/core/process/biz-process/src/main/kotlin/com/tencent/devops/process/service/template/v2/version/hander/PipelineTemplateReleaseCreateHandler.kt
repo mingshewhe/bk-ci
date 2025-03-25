@@ -40,8 +40,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionHandler
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -55,13 +54,13 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation
-) : PipelineTemplateVersionHandler {
+) : PipelineTemplateVersionCreateHandler {
 
-    override fun support(context: PipelineTemplateVersionContext): Boolean {
+    override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.CREATE_RELEASE
     }
 
-    override fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult {
+    override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
@@ -73,7 +72,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionContext.doHandle(): DeployTemplateResult {
+    private fun PipelineTemplateVersionCreateContext.doHandle(): DeployTemplateResult {
         if (pTemplateResourceWithoutVersion.status != VersionStatus.RELEASED) {
             // TEMPLATE_NOT_RELEASED
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
@@ -117,7 +116,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
+    private fun PipelineTemplateVersionCreateContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
         val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseVersion(
             projectId = projectId,
             templateId = templateId,

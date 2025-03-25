@@ -27,38 +27,21 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
-import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
-import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
  * 模版版本上下文
  */
 @Schema(title = "模版版本上下文")
-data class PipelineTemplateVersionContext(
+data class PipelineTemplateVersionDeleteContext(
     val userId: String,
     val projectId: String,
     val templateId: String,
-    @get:Schema(title = "模版版本,发布时才有值", required = true)
+    @get:Schema(title = "模版版本", required = true)
     val version: Long? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
-    @get:Schema(title = "模版信息", required = true)
-    val pipelineTemplateInfo: PipelineTemplateInfo,
-    @get:Schema(title = "模版编排", required = true)
-    val pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
-    @get:Schema(title = "模版设置", required = true)
-    val pipelineTemplateSetting: PipelineSetting,
-    @get:Schema(title = "是否开启PAC", required = true)
-    val enablePac: Boolean = false,
-    @get:Schema(title = "yaml文件分支信息", required = true)
-    val yamlFileInfo: PipelineYamlFileInfo? = null,
-    @get:Schema(title = "发布操作", required = false)
-    val targetAction: CodeTargetAction? = null,
-    @get:Schema(title = "分支,发布时指定的分支或者推送的分支", required = false)
-    val targetBranch: String? = null
+    @get:Schema(title = "预删除的分支", required = false)
+    val branch: String? = null
 )

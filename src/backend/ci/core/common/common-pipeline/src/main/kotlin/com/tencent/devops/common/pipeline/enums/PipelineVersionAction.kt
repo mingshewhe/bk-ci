@@ -39,6 +39,8 @@ enum class PipelineVersionAction {
     CREATE_RELEASE,
     @Schema(title = "发布草稿")
     RELEASE_DRAFT,
-    @Schema(title = "合并主干")
-    MERGE_MASTER
+    @Schema(title = "删除版本")
+    DELETE_VERSION,
+    @Schema(title = "分支版本置为不活跃")
+    INACTIVE_BRANCH
 }

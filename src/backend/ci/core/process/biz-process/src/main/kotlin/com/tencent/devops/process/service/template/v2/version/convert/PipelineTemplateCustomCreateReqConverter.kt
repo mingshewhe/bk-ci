@@ -39,7 +39,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -63,7 +63,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateCustomCreateReq
         with(request) {
             pipelineTemplateCommonService.checkTemplateBasicInfo(
@@ -118,7 +118,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 creator = userId,
                 updater = userId
             )
-            return PipelineTemplateVersionContext(
+            return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = newTemplateId,

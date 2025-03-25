@@ -27,9 +27,12 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
+import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionCreateHandler
+import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionDeleteHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -38,9 +41,10 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplateVersionManager @Autowired constructor(
-    private val versionHandlers: List<PipelineTemplateVersionHandler>,
+    private val versionCreateHandlers: List<PipelineTemplateVersionCreateHandler>,
     private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
-    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator
+    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator,
+    private val versionDeleteHandler: PipelineTemplateVersionDeleteHandler
 ) {
 
     fun deployTemplate(
@@ -65,8 +69,41 @@ class PipelineTemplateVersionManager @Autowired constructor(
         return getHandler(context).handle(context = context)
     }
 
-    private fun getHandler(context: PipelineTemplateVersionContext): PipelineTemplateVersionHandler {
-        return versionHandlers.find { it.support(context) }
+    fun deleteVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ) {
+        val context = PipelineTemplateVersionDeleteContext(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version,
+            versionAction = PipelineVersionAction.DELETE_VERSION
+        )
+        versionDeleteHandler.handle(context = context)
+    }
+
+    fun inactiveBranch(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        branch: String
+    ) {
+        val context = PipelineTemplateVersionDeleteContext(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            branch = branch,
+            versionAction = PipelineVersionAction.INACTIVE_BRANCH
+        )
+        versionDeleteHandler.handle(context = context)
+    }
+
+
+    private fun getHandler(context: PipelineTemplateVersionCreateContext): PipelineTemplateVersionCreateHandler {
+        return versionCreateHandlers.find { it.support(context) }
             ?: throw IllegalArgumentException("Unsupported version event: ${context.versionAction}")
     }
 

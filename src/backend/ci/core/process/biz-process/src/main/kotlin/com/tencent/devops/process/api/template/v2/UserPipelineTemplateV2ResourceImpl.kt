@@ -329,6 +329,22 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    override fun deleteVersion(userId: String, projectId: String, templateId: String, version: Long): Result<Boolean> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.DELETE,
+            templateId = templateId
+        )
+        templateFacadeService.deleteVersion(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        return Result(true)
+    }
+
     override fun hasPipelineTemplatePermission(
         userId: String,
         projectId: String,

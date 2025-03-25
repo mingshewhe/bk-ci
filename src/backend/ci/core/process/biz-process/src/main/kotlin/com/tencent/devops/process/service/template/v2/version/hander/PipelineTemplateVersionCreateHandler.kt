@@ -25,16 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.version
+package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 
 /**
- * 模版版本处理类
+ * 模版版本创建处理类
  */
-interface PipelineTemplateVersionHandler {
+interface PipelineTemplateVersionCreateHandler {
 
-    fun support(context: PipelineTemplateVersionContext): Boolean
+    fun support(context: PipelineTemplateVersionCreateContext): Boolean
 
-    fun handle(context: PipelineTemplateVersionContext): DeployTemplateResult
+    fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult
 }

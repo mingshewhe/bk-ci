@@ -33,12 +33,10 @@ import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
-import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -48,8 +46,6 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
-    private val pipelineTemplateCommonService: PipelineTemplateCommonService,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService
@@ -65,7 +61,7 @@ class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         if (templateId == null) {
             throw IllegalArgumentException("templateId is null")
         }
@@ -90,8 +86,9 @@ class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
             branchAction = null,
             sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
             baseVersion = baseResource.version,
+            description = null
         )
-        return PipelineTemplateVersionContext(
+        return PipelineTemplateVersionCreateContext(
             userId = userId,
             projectId = projectId,
             templateId = templateId,

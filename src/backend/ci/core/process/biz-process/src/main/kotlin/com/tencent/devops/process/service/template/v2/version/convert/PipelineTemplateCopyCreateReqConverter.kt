@@ -40,7 +40,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionContext
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -67,7 +67,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
         templateId: String?,
         version: Long?,
         request: PipelineTemplateVersionReq
-    ): PipelineTemplateVersionContext {
+    ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateCopyCreateReq
         with(request) {
             val srcTemplateInfo = pipelineTemplateInfoService.get(
@@ -141,7 +141,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 creator = userId,
                 updater = userId
             )
-            return PipelineTemplateVersionContext(
+            return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 templateId = newTemplateId,
