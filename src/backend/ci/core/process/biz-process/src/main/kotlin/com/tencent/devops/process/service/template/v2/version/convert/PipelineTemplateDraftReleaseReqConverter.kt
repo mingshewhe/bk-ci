@@ -85,6 +85,18 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 templateId = templateId,
                 settingVersion = draftResource.settingVersion
             )
+            if (enablePac) {
+                if (targetAction == null) {
+                    throw IllegalArgumentException("targetAction is null")
+                }
+                if (yamlFileInfo == null) {
+                    throw IllegalArgumentException("yamlFileInfo is null")
+                }
+                if (draftResource.yaml == null) {
+                    throw IllegalArgumentException("yaml is null")
+                }
+                // TODO 校验推送yaml权限合法性
+            }
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource)
             return PipelineTemplateVersionCreateContext(
                 userId = userId,
@@ -95,7 +107,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pipelineTemplateSetting = pipelineTemplateSetting,
-                yamlFileInfo = yamlInfo,
+                yamlFileInfo = yamlFileInfo,
                 enablePac = enablePac,
                 targetAction = targetAction,
                 branchName = targetBranch

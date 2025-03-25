@@ -63,8 +63,16 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             if (version == null) {
                 throw IllegalArgumentException("version is null")
             }
-            if (enablePac && targetAction == null) {
-                throw IllegalArgumentException("targetAction is null")
+            if (enablePac) {
+                if (targetAction == null) {
+                    throw IllegalArgumentException("targetAction is null")
+                }
+                if (yamlFileInfo == null) {
+                    throw IllegalArgumentException("yamlFileInfo is null")
+                }
+                if (pTemplateResourceWithoutVersion.yaml == null) {
+                    throw IllegalArgumentException("yaml is null")
+                }
             }
             with(context) {
                 val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)

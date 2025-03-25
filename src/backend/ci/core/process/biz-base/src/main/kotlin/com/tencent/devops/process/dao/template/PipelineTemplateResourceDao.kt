@@ -223,7 +223,7 @@ class PipelineTemplateResourceDao {
         version: Long? = null,
         versionName: String? = null
     ): PipelineTemplateResource? {
-        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+        with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val conditions = mutableListOf<Condition>()
             conditions.add(PROJECT_ID.eq(projectId))
             conditions.add(TEMPLATE_ID.eq(templateId))
@@ -240,11 +240,16 @@ class PipelineTemplateResourceDao {
             if (versionName != null) {
                 conditions.add(VERSION_NAME.eq(versionName))
             }
-            dslContext.selectFrom(this)
-                .where(conditions)
-                .orderBy(VERSION.desc())
-                .limit(1)
-                .fetchOne()?.convert()
+            val query = dslContext.selectFrom(this).where(conditions)
+            // 正式版本,应该按照versionNum排序,
+            // 不然如果版本顺序是: 正式(v1)->草稿->正式(v2),
+            // 如果把草稿发布,那么草稿应是v3,如果再创建一个正式版本,如果按照仅按照version排序,正式版本的versionNum还是v3
+            if (status == VersionStatus.RELEASED) {
+                query.orderBy(VERSION_NUM.desc(), VERSION.desc())
+            } else {
+                query.orderBy(VERSION.desc())
+            }
+            return query.limit(1).fetchOne()?.convert()
         }
     }
 

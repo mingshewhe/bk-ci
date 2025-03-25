@@ -27,10 +27,12 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -88,6 +90,14 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private fun PipelineTemplateVersionDeleteContext.deleteVersion() {
         if (version == null) {
             throw IllegalArgumentException("version is null")
+        }
+        val latestReleasedResource = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = templateId
+        )
+        if (latestReleasedResource?.version == version) {
+            // 最新正式版本不能删除
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         }
         val updateInfo = PipelineTemplateResourceUpdateInfo(
             status = VersionStatus.DELETE

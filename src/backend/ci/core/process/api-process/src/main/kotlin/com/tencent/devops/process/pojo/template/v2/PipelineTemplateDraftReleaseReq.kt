@@ -39,8 +39,8 @@ data class PipelineTemplateDraftReleaseReq(
     var description: String? = null,
     @get:Schema(title = "分支操作", required = false)
     var targetAction: CodeTargetAction?,
-    @get:Schema(title = "流水线YAML信息", required = false)
-    val yamlInfo: PipelineYamlFileInfo?,
+    @get:Schema(title = "模版YAML文件信息", required = false)
+    val yamlFileInfo: PipelineYamlFileInfo?,
     @get:Schema(title = "发布到指定分支", required = false)
     val targetBranch: String? = null
 ) : PipelineTemplateVersionReq
