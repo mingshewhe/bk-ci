@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -35,13 +36,15 @@ data class PipelineTemplateInstancesRequest(
     @get:Schema(title = "是否本次开启PAC", required = true)
     val enablePac: Boolean,
     @get:Schema(title = "版本描述", required = false)
-    val description: String? = null,
+    val description: String?,
     @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
     val targetAction: CodeTargetAction?,
-    @get:Schema(title = "静态流水线组", required = false)
-    val staticViews: List<String> = emptyList(),
-    @get:Schema(title = "标签", required = false)
-    val labels: List<String> = emptyList(),
+    @get:Schema(title = "代码库hashId", required = true)
+    val repoHashId: String?,
+    @get:Schema(title = "代码库类型", required = true)
+    val scmType: ScmType?,
+    @get:Schema(title = "目标分支", required = true)
+    val targetBranch: String?,
     @get:Schema(title = "模板实例发布实体", required = true)
     val instanceReleaseInfos: List<PipelineTemplateInstanceReleaseInfo>
 )

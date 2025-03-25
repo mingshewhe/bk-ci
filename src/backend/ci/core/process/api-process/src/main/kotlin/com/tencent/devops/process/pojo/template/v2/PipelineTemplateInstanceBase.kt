@@ -1,5 +1,6 @@
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema
@@ -19,8 +20,9 @@ data class PipelineTemplateInstanceBase(
     val pac: Boolean,
     val targetAction: CodeTargetAction?,
     val type: TemplateInstanceType,
-    val labels: List<String>?,
-    val staticViews: List<String>?,
+    val repoHashId: String?,
+    val scmType: ScmType?,
+    val targetBranch: String?,
     val creator: String,
     val modifier: String,
     val createTime: Long,

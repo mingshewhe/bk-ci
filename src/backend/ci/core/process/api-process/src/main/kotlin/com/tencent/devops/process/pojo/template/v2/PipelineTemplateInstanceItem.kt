@@ -16,7 +16,7 @@ data class PipelineTemplateInstanceItem(
     val buildNo: BuildNo?,
     val status: TemplateInstanceStatus,
     val params: List<BuildFormProperty>?,
-    val yamlInfo: PipelineYamlVo?,
+    val filePath: String?,
     val errorMessage: String?,
     val creator: String,
     val modifier: String,

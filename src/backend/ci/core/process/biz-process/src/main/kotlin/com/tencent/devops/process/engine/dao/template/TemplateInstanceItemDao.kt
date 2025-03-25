@@ -111,7 +111,6 @@ class TemplateInstanceItemDao {
             instances.map {
                 val buildNo = it.buildNo
                 val param = it.param
-                val yamlInfoStr = it.yamlInfo?.let { it1 -> JsonUtil.toJson(it1) }
                 dslContext.insertInto(
                     this,
                     ID,
@@ -124,7 +123,7 @@ class TemplateInstanceItemDao {
                     BASE_ID,
                     CREATOR,
                     MODIFIER,
-                    YAML_INFO
+                    FILE_PATH
                 ).values(
                     UUIDUtil.generate(),
                     projectId,
@@ -136,7 +135,7 @@ class TemplateInstanceItemDao {
                     baseId,
                     userId,
                     userId,
-                    yamlInfoStr
+                    it.filePath
                 ).onDuplicateKeyUpdate()
                     .set(PIPELINE_NAME, it.pipelineName)
                     .set(BUILD_NO_INFO, buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) })
@@ -145,7 +144,7 @@ class TemplateInstanceItemDao {
                     .set(BASE_ID, baseId)
                     .set(CREATOR, userId)
                     .set(MODIFIER, userId)
-                    .set(YAML_INFO, yamlInfoStr)
+                    .set(FILE_PATH, it.filePath)
                     .execute()
             }
         }
@@ -288,9 +287,6 @@ class TemplateInstanceItemDao {
         val buildNo = buildNoInfo?.let {
             JsonUtil.to(it, object : TypeReference<BuildNo>() {})
         }
-        val yamlInfo = yamlInfo?.let {
-            JsonUtil.to(it, object : TypeReference<PipelineYamlVo>() {})
-        }
         return PipelineTemplateInstanceItem(
             id = id,
             baseId = baseId,
@@ -300,7 +296,7 @@ class TemplateInstanceItemDao {
             buildNo = buildNo,
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
-            yamlInfo = yamlInfo,
+            filePath = filePath,
             errorMessage = errorMessgae,
             creator = creator,
             modifier = modifier,

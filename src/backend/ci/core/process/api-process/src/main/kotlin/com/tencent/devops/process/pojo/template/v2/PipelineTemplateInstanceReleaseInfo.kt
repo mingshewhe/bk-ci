@@ -29,10 +29,9 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "")
+@Schema(title = "创建/升级单条实例请求体")
 data class PipelineTemplateInstanceReleaseInfo(
     @get:Schema(title = "流水线ID，创建时可为空", required = false)
     val pipelineId: String = "",
@@ -42,6 +41,6 @@ data class PipelineTemplateInstanceReleaseInfo(
     val buildNo: BuildNo?,
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>? = null,
-    @get:Schema(title = "流水线YAML信息", required = false)
-    val yamlInfo: PipelineYamlVo?
+    @get:Schema(title = "yaml文件路径", required = true)
+    val filePath: String?
 )

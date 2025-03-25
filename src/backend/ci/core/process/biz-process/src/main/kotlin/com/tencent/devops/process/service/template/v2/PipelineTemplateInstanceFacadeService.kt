@@ -1,18 +1,19 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.constant.CommonMessageCode
+import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
-import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction.COMMIT_TO_BRANCH
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
@@ -24,15 +25,16 @@ import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
-import com.tencent.devops.process.engine.atom.AtomUtils
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceBaseDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceItemDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
@@ -52,12 +54,10 @@ import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
-import com.tencent.devops.store.pojo.atom.AtomCodeVersionReqItem
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
@@ -66,7 +66,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val client: Client,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val stageTagService: StageTagService,
     private val dslContext: DSLContext,
@@ -84,23 +83,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val redisOperation: RedisOperation,
-    private val transferService: PipelineTransferYamlService
+    private val transferService: PipelineTransferYamlService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) {
-    @Value("\${template.maxSyncInstanceNum:10}")
-    private val maxSyncInstanceNum: Int = 10
-
-    @Value("\${template.maxUpdateInstanceNum:100}")
-    private val maxUpdateInstanceNum: Int = 100
-
-    @Value("\${template.maxSaveVersionRecordNum:2}")
-    private val maxSaveVersionRecordNum: Int = 2
-
-    @Value("\${template.instanceListUrl}")
-    private val instanceListUrl: String = ""
-
-    @Value("\${template.maxErrorReasonLength:200}")
-    private val maxErrorReasonLength: Int = 200
-
     /*同步创建模板实例*/
     fun createTemplateInstances(
         projectId: String,
@@ -135,8 +121,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     templateSettingVersion = templateResource.settingVersion,
                     enabledPac = request.enablePac,
                     targetAction = request.targetAction,
-                    labels = request.labels,
-                    staticViews = request.staticViews,
+                    repoHashId = request.repoHashId,
+                    targetBranch = request.targetBranch,
+                    scmType = request.scmType,
                     description = request.description
                 )
                 successPipelines.add(instance.pipelineName)
@@ -177,13 +164,13 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         templateVersion: Long,
         templateSettingVersion: Int,
         useTemplateSettings: Boolean,
-        labels: List<String>?,
-        staticViews: List<String>?
+        repoHashId: String?,
+        scmType: ScmType?,
+        targetBranch: String?
     ): String {
         // 获取默认阶段标签
         val defaultStageTag = stageTagService.getDefaultStageTag().data
         val defaultStageTagId = defaultStageTag?.id
-        val yamlInfo = instance.yamlInfo
 
         // 构建实例模型
         val instanceModel = PipelineUtils.instanceModel(
@@ -193,7 +180,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             param = instance.param,
             instanceFromTemplate = true,
             defaultStageTagId = defaultStageTagId,
-            staticViews = staticViews ?: emptyList(),
             templateId = templateId
         )
 
@@ -204,7 +190,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 settingVersion = templateSettingVersion,
                 pipelineId = pipelineId,
                 pipelineName = instance.pipelineName,
-                pipelineLabels = labels,
+                pipelineLabels = null,
                 enabledPac = enabledPac,
                 version = 1
             )
@@ -228,8 +214,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             )
         )
 
-        val (branchName, versionStatus) =
-            if (enabledPac && targetAction == CHECKOUT_BRANCH_AND_REQUEST_MERGE) {
+        val (branchName, versionStatus) = when {
+            (enabledPac && targetAction == CHECKOUT_BRANCH_AND_REQUEST_MERGE) -> {
                 Pair(
                     first = PipelineVersionFacadeService.getReleaseBranchName(
                         pipelineId = pipelineId,
@@ -237,12 +223,30 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     ),
                     second = VersionStatus.BRANCH
                 )
-            } else {
+            }
+
+            (enabledPac && targetAction == COMMIT_TO_BRANCH) -> {
+                // todo 如果指定分支是默认分支，为正式版本
+                Pair(
+                    first = targetBranch ?: throw ErrorCodeException(errorCode = ""),
+                    second = VersionStatus.BRANCH
+                )
+            }
+
+            else -> {
                 Pair(
                     first = null,
                     second = VersionStatus.RELEASED
                 )
             }
+        }
+        val yamlInfo = targetAction?.let {
+            PipelineYamlVo(
+                repoHashId = repoHashId!!,
+                scmType = scmType!!,
+                filePath = instance.filePath!!
+            )
+        }
 
         // 创建流水线
         pipelineInfoFacadeService.createPipeline(
@@ -259,7 +263,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             fixTemplateVersion = templateVersion,
             versionStatus = versionStatus,
             branchName = branchName,
-            yamlInfo = instance.yamlInfo,
+            yamlInfo = yamlInfo,
             description = description
         )
 
@@ -392,8 +396,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 pac = request.enablePac,
                 targetAction = request.targetAction?.name,
                 type = TemplateInstanceType.CREATE.name,
-                labels = JsonUtil.toJson(request.labels),
-                staticViews = JsonUtil.toJson(request.staticViews),
+                repoHashId = request.repoHashId,
+                scmType = request.scmType,
+                targetBranch = request.targetBranch,
+                description = request.description
             )
             templateInstanceItemDao.createTemplateInstanceItemsV2(
                 dslContext = context,
@@ -450,8 +456,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 pac = request.enablePac,
                 targetAction = request.targetAction?.name,
                 type = TemplateInstanceType.UPDATE.name,
-                labels = JsonUtil.toJson(request.labels),
-                staticViews = JsonUtil.toJson(request.staticViews),
+                description = request.description,
+                repoHashId = request.repoHashId,
+                scmType = request.scmType,
+                targetBranch = request.targetBranch
             )
             templateInstanceItemDao.createTemplateInstanceItemsV2(
                 dslContext = context,
@@ -488,21 +496,25 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         templateModel: Model,
         templateVersion: Long,
         templateSettingVersion: Int,
-        useTemplateSettings: Boolean
+        useTemplateSettings: Boolean,
+        repoHashId: String?,
+        scmType: ScmType?,
+        targetBranch: String?
     ) {
         val labels = if (useTemplateSettings) {
-            templateModel.labels
+            pipelineTemplateSettingService.getPipelineTemplateSetting(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = templateSettingVersion
+            ).labels
         } else {
-            val tmpLabels = mutableListOf<String>()
             pipelineGroupService.getGroups(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = instance.pipelineId
-            ).forEach { group ->
-                tmpLabels.addAll(group.labels)
-            }
-            tmpLabels
+            ).flatMap { it.labels }
         }
+
         val instanceModel = PipelineUtils.instanceModel(
             templateModel = templateModel,
             pipelineName = instance.pipelineName,
@@ -548,6 +560,45 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 )
             )
         )
+
+        val (branchName, versionStatus) = when {
+            (enabledPac && targetAction == CHECKOUT_BRANCH_AND_REQUEST_MERGE) -> {
+                val latestResource = pipelineRepositoryService.getLatestResource(
+                    projectId = projectId,
+                    pipelineId = pipelineId
+                )
+                Pair(
+                    first = PipelineVersionFacadeService.getReleaseBranchName(
+                        pipelineId = pipelineId,
+                        version = latestResource.version + 1
+                    ),
+                    second = VersionStatus.BRANCH
+                )
+            }
+
+            (enabledPac && targetAction == COMMIT_TO_BRANCH) -> {
+                Pair(
+                    first = targetBranch ?: throw ErrorCodeException(errorCode = ""),
+                    second = VersionStatus.BRANCH
+                )
+            }
+
+            else -> {
+                Pair(
+                    first = null,
+                    second = VersionStatus.RELEASED
+                )
+            }
+        }
+
+        val yamlInfo = targetAction?.let {
+            PipelineYamlVo(
+                repoHashId = repoHashId!!,
+                scmType = scmType!!,
+                filePath = instance.filePath!!
+            )
+        }
+
         pipelineInfoFacadeService.editPipeline(
             userId = userId,
             projectId = projectId,
@@ -557,11 +608,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             channelCode = ChannelCode.BS,
             checkPermission = true,
             checkTemplate = false,
-            versionStatus = VersionStatus.RELEASED,
-            // todo 分支名称
-            branchName = null,
+            versionStatus = versionStatus,
+            branchName = branchName,
             description = description,
-            yamlInfo = instance.yamlInfo
+            yamlInfo = yamlInfo
         )
         if (useTemplateSettings) {
             pipelineSettingFacadeService.saveSetting(
@@ -587,28 +637,22 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 )
             }
         }
-    }
 
-    fun checkTemplateAtomsForExplicitVersion(template: Model, userId: String) {
-        val codeVersions = mutableSetOf<AtomCodeVersionReqItem>()
-        template.stages.forEach { stage ->
-            stage.containers.forEach { container ->
-                container.elements.forEach nextElement@{ element ->
-                    val atomCode = element.getAtomCode()
-                    val version = element.version
-                    if (version.contains("*")) {
-                        return@nextElement
-                    }
-                    codeVersions.add(AtomCodeVersionReqItem(atomCode, version))
-                }
-            }
-        }
-        if (codeVersions.isNotEmpty()) {
-            AtomUtils.checkTemplateRealVersionAtoms(
-                codeVersions = codeVersions,
-                userId = userId,
-                client = client
+        if (enabledPac) {
+            val fixTargetAction = targetAction ?: throw ErrorCodeException(errorCode = "")
+            if (yamlInfo == null) throw ErrorCodeException(
+                errorCode = CommonMessageCode.ERROR_NEED_PARAM_,
+                params = arrayOf(PipelineVersionReleaseRequest::yamlInfo.name)
             )
+            // 对前端的YAML信息进行校验
+            if (!yamlInfo.filePath.endsWith(".yaml") && !yamlInfo.filePath.endsWith(".yml")) {
+                throw ErrorCodeException(
+                    errorCode = ProcessMessageCode.ERROR_PIPELINE_YAML_FILENAME,
+                    params = arrayOf(yamlInfo.filePath)
+                )
+            }
+
+            // todo
         }
     }
 
@@ -763,7 +807,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                             pipelineName = pipelineName,
                             buildNo = buildNo,
                             param = params,
-                            yamlInfo = yamlInfo
+                            filePath = filePath
                         )
 
                         try {
@@ -781,8 +825,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                                     templateVersion = instanceBase.templateVersion,
                                     templateSettingVersion = templateSettingVersion,
                                     useTemplateSettings = instanceBase.useTemplateSetting,
-                                    labels = instanceBase.labels,
-                                    staticViews = instanceBase.staticViews
+                                    repoHashId = instanceBase.repoHashId,
+                                    scmType = instanceBase.scmType,
+                                    targetBranch = instanceBase.targetBranch
                                 )
                             } else {
                                 updateTemplateInstance(
@@ -797,7 +842,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                                     templateModel = templateModel,
                                     templateVersion = instanceBase.templateVersion,
                                     templateSettingVersion = templateSettingVersion,
-                                    useTemplateSettings = instanceBase.useTemplateSetting
+                                    useTemplateSettings = instanceBase.useTemplateSetting,
+                                    repoHashId = instanceBase.repoHashId,
+                                    scmType = instanceBase.scmType,
+                                    targetBranch = instanceBase.targetBranch
                                 )
                             }
                             templateInstanceItemDao.updateStatus(

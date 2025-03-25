@@ -27,8 +27,7 @@
 
 package com.tencent.devops.process.engine.dao.template
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.model.process.tables.TTemplateInstanceBase
@@ -57,9 +56,11 @@ class TemplateInstanceBaseDao {
         userId: String,
         pac: Boolean? = null,
         targetAction: String? = null,
+        description: String? = null,
         type: String? = TemplateInstanceType.UPDATE.name,
-        labels: String? = null,
-        staticViews: String? = null
+        repoHashId: String? = null,
+        scmType: ScmType? = null,
+        targetBranch: String? = null
     ) {
         with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
             setOf(
@@ -76,9 +77,11 @@ class TemplateInstanceBaseDao {
                     MODIFIER,
                     PAC,
                     TARGET_ACTION,
+                    DESCRIPTION,
                     TYPE,
-                    LABELS,
-                    STATIC_VIEWS
+                    REPO_HASH_ID,
+                    SCM_TYPE,
+                    TARGET_BRANCH
                 ).values(
                     baseId,
                     templateId,
@@ -91,9 +94,11 @@ class TemplateInstanceBaseDao {
                     userId,
                     pac,
                     targetAction,
+                    description,
                     type,
-                    labels,
-                    staticViews
+                    repoHashId,
+                    scmType?.name,
+                    targetBranch
                 )
                     .onDuplicateKeyUpdate()
                     .set(TEMPLATE_ID, templateId)
@@ -106,8 +111,10 @@ class TemplateInstanceBaseDao {
                     .set(PAC, pac)
                     .set(TARGET_ACTION, targetAction)
                     .set(TYPE, type)
-                    .set(LABELS, labels)
-                    .set(STATIC_VIEWS, staticViews)
+                    .set(DESCRIPTION, description)
+                    .set(REPO_HASH_ID, repoHashId)
+                    .set(SCM_TYPE, scmType?.name)
+                    .set(TARGET_BRANCH, targetBranch)
                     .execute()
             )
         }
@@ -208,12 +215,6 @@ class TemplateInstanceBaseDao {
     }
 
     private fun TTemplateInstanceBaseRecord.convert(): PipelineTemplateInstanceBase {
-        val labels = labels?.let {
-            JsonUtil.to(it, object : TypeReference<List<String>>() {})
-        }
-        val staticViews = staticViews?.let {
-            JsonUtil.to(it, object : TypeReference<List<String>>() {})
-        }
         return PipelineTemplateInstanceBase(
             baseId = id,
             projectId = projectId,
@@ -228,8 +229,9 @@ class TemplateInstanceBaseDao {
             pac = pac,
             targetAction = targetAction?.let { CodeTargetAction.valueOf(targetAction) },
             type = TemplateInstanceType.valueOf(type),
-            labels = labels,
-            staticViews = staticViews,
+            scmType = scmType?.let { ScmType.valueOf(scmType) },
+            repoHashId = repoHashId,
+            targetBranch = targetBranch,
             creator = creator,
             modifier = modifier,
             createTime = createTime.timestampmilli(),
