@@ -335,8 +335,10 @@ object ProcessMessageCode {
     const val ERROR_INCORRECT_NOTIFICATION_TYPE = "2101230" // 通知类型配置不正确，请检查
     const val ERROR_INCORRECT_NOTIFICATION_MESSAGE_CONTENT = "2101231" // 通知内容为空，请检查
     const val ERROR_AGENT_REUSE_MUTEX_JOB_NULL = "2101232" // {0}使用流水线构建机复用互斥组需要声明具体的JobId，不能为空
+
     // 流水线构建机复用互斥组节点 {0} 复用的 {1} 不存在，或非第三方构建机节点
     const val ERROR_AGENT_REUSE_MUTEX_DEP_NULL_NODE = "2101233"
+
     // 在 {0} 下，构建机复用互斥组节点 {1} 与被复用的 {2} 节点调度类型不同，AgentId和AgentEnv不能互相复用
     const val ERROR_AGENT_REUSE_MUTEX_DEP_ERROR = "2101234"
     const val ERROR_YAML_PUSH_CREATE_BRANCH = "2101235" // 创建分支失败: {0}
@@ -564,8 +566,10 @@ object ProcessMessageCode {
     const val BK_BUILD_CANCEL_BY_CONCURRENCY = "bkBuildCancelByConcurrency" // 并发组配置的取消
 
     const val BK_PIPELINE_ELEMENT_CHECK_FAILED_MESSAGE = "bkPipelineElementCheckFailedMessage"
+
     // 没有子流水线执行权限错误标题
     const val BK_NOT_SUB_PIPELINE_EXECUTE_PERMISSION_ERROR_TITLE = "bkNotSubPipelineExecutePermissionErrorTitle"
+
     // 没有子流水线执行权限错误消息
     const val BK_NOT_SUB_PIPELINE_EXECUTE_PERMISSION_ERROR_MESSAGE = "bkNotSubPipelineExecutePermissionErrorMessage"
 
@@ -575,6 +579,7 @@ object ProcessMessageCode {
 
     // 权限代持人[xxx]已无当前流水线执行权限，可能是权限已过期或不再负责此流水线，请联系流水线拥有者处理
     const val BK_AUTHOR_NOT_PIPELINE_EXECUTE_PERMISSION = "bkAuthorNotPipelineExecutePermission"
+
     // 子流水线循环依赖错误标题
     const val BK_SUB_PIPELINE_CIRCULAR_DEPENDENCY_ERROR_TITLE = "bkSubPipelineCircularDependencyErrorTitle"
 
@@ -610,6 +615,10 @@ object ProcessMessageCode {
 
     // 自定义模板名称
     const val BK_CUSTOM_PIPELINE_TEMPLATE_NAME = "bkCustomPipelineTemplateName"
+
     // 研发商店模板名称
     const val BK_MARKET_PIPELINE_TEMPLATE_NAME = "bkMarketPipelineTemplateName"
+
+    // 公共模板名称
+    const val BK_PUBLIC_PIPELINE_TEMPLATE_NAME = "bkPublicPipelineTemplateName"
 }

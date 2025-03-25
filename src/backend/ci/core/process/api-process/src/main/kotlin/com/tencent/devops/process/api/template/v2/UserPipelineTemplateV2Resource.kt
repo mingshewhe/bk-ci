@@ -175,6 +175,17 @@ interface UserPipelineTemplateV2Resource {
         projectId: String
     ): Result<Map<String, Int>>
 
+    @Operation(summary = "获取项目模板来源对应的数量")
+    @POST
+    @Path("/getSource2Count/")
+    fun getSource2Count(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        commonCondition: PipelineTemplateCommonCondition
+    ): Result<Map<String, Int>>
+
     @Operation(summary = "查看模板的版本历史")
     @POST
     @Path("/{templateId}/versions/")

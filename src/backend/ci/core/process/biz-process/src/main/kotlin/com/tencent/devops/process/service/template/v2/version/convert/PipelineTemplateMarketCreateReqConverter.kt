@@ -32,7 +32,6 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -108,10 +107,9 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = marketTemplateInfo.name,
                 desc = marketTemplateInfo.desc,
-                mode = TemplateType.CONSTRAINT.name,
+                mode = TemplateType.CONSTRAINT,
                 type = marketTemplateInfo.type,
                 enablePac = false,
-                source = PipelineTemplateSource.MARKET,
                 storeFlag = false,
                 creator = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,

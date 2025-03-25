@@ -52,6 +52,7 @@ import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import org.slf4j.LoggerFactory
+import kotlin.math.log
 
 @RestResource
 class UserPipelineTemplateV2ResourceImpl(
@@ -202,6 +203,13 @@ class UserPipelineTemplateV2ResourceImpl(
 
     override fun getType2Count(userId: String, projectId: String): Result<Map<String, Int>> {
         return Result(templateInfoService.getType2Count(projectId))
+    }
+
+    override fun getSource2Count(
+        userId: String,
+        commonCondition: PipelineTemplateCommonCondition
+    ): Result<Map<String, Int>> {
+        return Result(templateInfoService.getSource2count(commonCondition))
     }
 
     override fun getTemplateVersions(

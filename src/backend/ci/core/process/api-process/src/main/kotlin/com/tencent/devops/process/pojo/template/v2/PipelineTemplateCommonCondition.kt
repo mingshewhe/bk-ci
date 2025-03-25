@@ -1,9 +1,9 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.api.exception.InvalidParamException
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 import kotlin.reflect.full.memberProperties
 
@@ -22,7 +22,7 @@ data class PipelineTemplateCommonCondition(
     @get:Schema(title = "描述", required = false)
     val desc: String? = null,
     @get:Schema(title = "公共/约束/自定义模式", required = false)
-    val mode: String? = null,
+    val mode: TemplateType? = null,
     @get:Schema(title = "应用范畴", required = false)
     val category: String? = null,
     @get:Schema(title = "模板类型", required = false)
@@ -37,8 +37,6 @@ data class PipelineTemplateCommonCondition(
     val releasedSettingVersion: Int? = null,
     @get:Schema(title = "模板状态", required = false)
     val latestVersionStatus: VersionStatus? = null,
-    @get:Schema(title = "模板来源", required = false)
-    val source: PipelineTemplateSource? = null,
     @get:Schema(title = "是否关联研发商店", required = false)
     val storeFlag: Boolean? = null,
     @get:Schema(title = "父模板ID", required = false)

@@ -28,12 +28,10 @@
 package com.tencent.devops.process.pojo.enums
 
 enum class PipelineTemplateType(val value: String) {
-    All("all"),
     PIPELINE("pipeline"),
     STAGE("stage"),
     JOB("job"),
-    STEP("step"),
-    UNKNOWN("unknown");
+    STEP("step");
 
     companion object {
         fun get(value: String): PipelineTemplateType {

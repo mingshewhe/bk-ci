@@ -108,19 +108,19 @@ class PipelineTemplateFacadeService @Autowired constructor(
             )
         }
 
-        if (templateInfo.mode == TemplateType.CUSTOMIZE.name && templateInfo.storeFlag) {
+        if (templateInfo.mode == TemplateType.CUSTOMIZE && templateInfo.storeFlag) {
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_PUBLISH
             )
         }
         val isExistInstalledTemplate = pipelineTemplateInfoService.count(
             PipelineTemplateCommonCondition(
-                mode = TemplateType.CONSTRAINT.name,
+                mode = TemplateType.CONSTRAINT,
                 srcTemplateProjectId = projectId,
                 srcTemplateId = templateId
             )
         ) > 0
-        if (templateInfo.mode == TemplateType.CUSTOMIZE.name && isExistInstalledTemplate) {
+        if (templateInfo.mode == TemplateType.CUSTOMIZE && isExistInstalledTemplate) {
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_INSTALL
             )
@@ -464,8 +464,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = basicInfo.type,
             logoUrl = basicInfo.logoUrl,
             enablePac = basicInfo.enablePac,
-            source = basicInfo.source,
-            sourceName = basicInfo.sourceName,
             storeFlag = basicInfo.storeFlag,
             srcTemplateId = basicInfo.srcTemplateId,
             srcTemplateProjectId = basicInfo.srcTemplateProjectId,

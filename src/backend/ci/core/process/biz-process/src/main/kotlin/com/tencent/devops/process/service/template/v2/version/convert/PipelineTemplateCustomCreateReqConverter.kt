@@ -31,7 +31,6 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateReq
@@ -89,10 +88,9 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = request.name,
                 desc = request.desc,
-                mode = TemplateType.CUSTOMIZE.name,
+                mode = TemplateType.CUSTOMIZE,
                 type = request.type,
                 enablePac = false,
-                source = PipelineTemplateSource.CUSTOM,
                 storeFlag = false,
                 creator = userId,
                 latestVersionStatus = VersionStatus.COMMITTING

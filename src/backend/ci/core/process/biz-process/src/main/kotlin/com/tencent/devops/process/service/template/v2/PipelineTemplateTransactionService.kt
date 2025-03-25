@@ -376,7 +376,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
                     templateId = templateId
                 )
             )
-            if (templateInfo.mode == TemplateType.CONSTRAINT.name) {
+            if (templateInfo.mode == TemplateType.CONSTRAINT) {
                 client.get(ServiceStoreResource::class).uninstall(
                     storeCode = templateInfo.srcTemplateId!!,
                     storeType = StoreTypeEnum.TEMPLATE,

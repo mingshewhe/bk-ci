@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -117,7 +118,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 name = name,
                 desc = srcTemplateInfo.desc,
-                mode = srcTemplateInfo.mode,
+                mode = TemplateType.CUSTOMIZE,
                 category = srcTemplateInfo.category,
                 type = srcTemplateInfo.type,
                 logoUrl = srcTemplateInfo.logoUrl,
@@ -125,7 +126,6 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 releasedVersion = version,
                 releasedVersionName = "V1(P1.T1.1)",
                 releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
-                source = srcTemplateInfo.source,
                 storeFlag = srcTemplateInfo.storeFlag,
                 creator = userId,
                 latestVersionStatus = VersionStatus.RELEASED

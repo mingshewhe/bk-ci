@@ -2,9 +2,9 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板基础信息")
@@ -19,7 +19,7 @@ data class PipelineTemplateInfoResponse(
     @get:Schema(title = "简介", required = true)
     val desc: String?,
     @get:Schema(title = "公共/约束/自定义模式", required = true)
-    val mode: String,
+    val mode: TemplateType,
     @get:Schema(title = "应用范畴", required = true)
     val category: String? = null,
     @get:Schema(title = "模板类型", required = true)
@@ -28,10 +28,6 @@ data class PipelineTemplateInfoResponse(
     val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
-    @get:Schema(title = "模板来源", required = true)
-    val source: PipelineTemplateSource,
-    @get:Schema(title = "来源名称", required = true)
-    val sourceName: String? = null,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
     val storeFlag: Boolean,
     @get:Schema(title = "父模板ID", required = false)

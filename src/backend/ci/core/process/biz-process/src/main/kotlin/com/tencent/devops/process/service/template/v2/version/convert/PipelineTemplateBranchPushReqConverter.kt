@@ -30,7 +30,6 @@ package com.tencent.devops.process.service.template.v2.version.convert
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
@@ -85,10 +84,9 @@ class PipelineTemplateBranchPushReqConverter(
                     projectId = projectId,
                     name = templateSetting.pipelineName,
                     desc = templateSetting.desc,
-                    mode = TemplateType.CUSTOMIZE.name,
+                    mode = TemplateType.CUSTOMIZE,
                     type = modelTransferResult.templateType,
                     enablePac = true,
-                    source = PipelineTemplateSource.CUSTOM,
                     storeFlag = false,
                     creator = userId,
                     latestVersionStatus = status
