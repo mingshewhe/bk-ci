@@ -29,6 +29,7 @@ package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
@@ -88,10 +89,17 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
         if (version == null) {
             throw IllegalArgumentException("version is null")
         }
-        pipelineTemplateResourceService.deleteVersion(
+        val updateInfo = PipelineTemplateResourceUpdateInfo(
+            status = VersionStatus.DELETE
+        )
+        val condition = PipelineTemplateResourceCommonCondition(
             projectId = projectId,
             templateId = templateId,
             version = version
+        )
+        pipelineTemplateResourceService.update(
+            record = updateInfo,
+            commonCondition = condition
         )
     }
 
