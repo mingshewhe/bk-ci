@@ -183,6 +183,9 @@ interface UserPipelineTemplateV2Resource {
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
         @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "查询请求体", required = true)
         commonCondition: PipelineTemplateCommonCondition
     ): Result<Map<String, Int>>
 
