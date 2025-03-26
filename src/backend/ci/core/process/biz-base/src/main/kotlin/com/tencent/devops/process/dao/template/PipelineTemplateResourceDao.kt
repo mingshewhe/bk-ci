@@ -191,6 +191,7 @@ class PipelineTemplateResourceDao {
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
                 .and(BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name).or(BRANCH_ACTION.isNull))
+                .and(STATUS.ne(VersionStatus.DELETE.name))
                 .orderBy(SORT_WEIGHT.desc(), VERSION.desc())
                 .fetch()
                 .map {
