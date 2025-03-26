@@ -270,7 +270,7 @@ class PipelineTemplateResourceDao {
                 val conditions = mutableListOf<Condition>()
                 conditions.add(PROJECT_ID.eq(projectId))
                 conditions.add(STATUS.ne(VersionStatus.DELETE.name))
-                conditions.add((BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name)))
+                conditions.add((BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name)).or(BRANCH_ACTION.isNull))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
