@@ -207,6 +207,7 @@ class UserPipelineTemplateV2ResourceImpl(
 
     override fun getSource2Count(
         userId: String,
+        projectId: String,
         commonCondition: PipelineTemplateCommonCondition
     ): Result<Map<String, Int>> {
         return Result(templateInfoService.getSource2count(commonCondition))

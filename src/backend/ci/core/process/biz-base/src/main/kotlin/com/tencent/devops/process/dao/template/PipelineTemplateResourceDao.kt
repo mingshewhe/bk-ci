@@ -190,8 +190,6 @@ class PipelineTemplateResourceDao {
                 UPDATE_TIME
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
-                .and(BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name).or(BRANCH_ACTION.isNull))
-                .and(STATUS.ne(VersionStatus.DELETE.name))
                 .orderBy(SORT_WEIGHT.desc(), VERSION.desc())
                 .fetch()
                 .map {
@@ -270,6 +268,8 @@ class PipelineTemplateResourceDao {
             with(commonCondition) {
                 val conditions = mutableListOf<Condition>()
                 conditions.add(PROJECT_ID.eq(projectId))
+                conditions.add(STATUS.ne(VersionStatus.DELETE.name))
+                conditions.add((BRANCH_ACTION.ne(BranchVersionAction.INACTIVE.name)))
                 if (templateId != null) conditions.add(TEMPLATE_ID.eq(templateId))
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))

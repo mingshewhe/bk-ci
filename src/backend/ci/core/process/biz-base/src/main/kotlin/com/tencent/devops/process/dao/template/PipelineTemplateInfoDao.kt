@@ -105,6 +105,7 @@ class PipelineTemplateInfoDao {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
+                .orderBy(UPDATE_TIME.desc())
                 .let {
                     if (commonCondition.page != null && commonCondition.pageSize != null) {
                         it.offset((commonCondition.page!! - 1) * commonCondition.pageSize!!)
