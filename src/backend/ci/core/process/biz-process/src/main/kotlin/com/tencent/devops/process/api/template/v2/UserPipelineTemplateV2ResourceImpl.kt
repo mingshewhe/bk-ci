@@ -40,6 +40,7 @@ import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -48,7 +49,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -158,7 +158,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         request: PipelineTemplateCommonCondition
-    ): Result<PipelineTemplateInfoPage> {
+    ): Result<SQLPage<PipelineTemplateInfo>> {
         return Result(templateFacadeService.listTemplateInfos(userId, request))
     }
 
@@ -213,7 +213,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): Result<Map<String, Int>> {
+    ): Result<PTemplateSource2Count> {
         return Result(templateInfoService.getSource2Count(commonCondition))
     }
 

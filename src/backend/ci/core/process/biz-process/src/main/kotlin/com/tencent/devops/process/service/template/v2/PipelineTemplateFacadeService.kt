@@ -1,6 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
@@ -27,6 +28,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
@@ -316,11 +318,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun listTemplateInfos(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): PipelineTemplateInfoPage {
+    ): SQLPage<PipelineTemplateInfo> {
         logger.info("list template infos {}|{}", userId, commonCondition)
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
-        return if (enableTemplatePermissionManage) {
+
+        val (count, templateInfoWithPermission) = if (enableTemplatePermissionManage) {
             val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
                 userId = userId,
                 projectId = projectId,
@@ -331,18 +334,14 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     AuthPermission.EDIT
                 )
             )
-            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST]
-                ?: return PipelineTemplateInfoPage(
-                    count = 0,
-                    countOfCustom = 0,
-                    countOfMarket = 0,
-                    records = emptyList()
-                )
-            val queryCondition = commonCondition.copy(filterTemplateIds = templatesWithListPermIds)
+            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST] ?: return SQLPage(
+                count = 0L,
+                records = emptyList()
+            )
 
+            val queryCondition = commonCondition.copy(filterTemplateIds = templatesWithListPermIds)
             val templateInfoList = pipelineTemplateInfoService.list(queryCondition)
             val count = pipelineTemplateInfoService.count(queryCondition)
-            val source2Count = pipelineTemplateInfoService.getSource2Count(queryCondition)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
                 templateInfo.copy(
@@ -351,16 +350,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(templateInfo.id) ?: false
                 )
             }
-            PipelineTemplateInfoPage(
-                count = count,
-                countOfCustom = source2Count[TemplateType.CUSTOMIZE.name] ?: 0,
-                countOfMarket = source2Count[TemplateType.CONSTRAINT.name] ?: 0,
-                records = templateInfoWithPermission
-            )
+            Pair(count.toLong(), templateInfoWithPermission)
         } else {
             val templateInfoList = pipelineTemplateInfoService.list(commonCondition)
             val count = pipelineTemplateInfoService.count(commonCondition)
-            val source2Count = pipelineTemplateInfoService.getSource2Count(commonCondition)
             val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
@@ -370,13 +363,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     canDelete = isProjectManager
                 )
             }
-            PipelineTemplateInfoPage(
-                count = count,
-                countOfCustom = source2Count[TemplateType.CUSTOMIZE.name] ?: 0,
-                countOfMarket = source2Count[TemplateType.CONSTRAINT.name] ?: 0,
-                records = templateInfoWithPermission
-            )
+            Pair(count.toLong(), templateInfoWithPermission)
         }
+
+        return SQLPage(
+            count = count,
+            records = templateInfoWithPermission
+        )
     }
 
     // 查看模板详情

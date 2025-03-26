@@ -13,6 +13,7 @@ import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -133,7 +134,7 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateCommonCondition
-    ): Result<PipelineTemplateInfoPage>
+    ): Result<SQLPage<PipelineTemplateInfo>>
 
     @Operation(summary = "查看模板详情")
     @GET
@@ -192,7 +193,7 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "查询请求体", required = true)
         commonCondition: PipelineTemplateCommonCondition
-    ): Result<Map<String, Int>>
+    ): Result<PTemplateSource2Count>
 
     @Operation(summary = "查看模板的版本历史")
     @POST

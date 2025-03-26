@@ -5,6 +5,7 @@ import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
@@ -86,15 +87,17 @@ class PipelineTemplateInfoService @Autowired constructor(
         return type2Count
     }
 
-    fun getSource2Count(commonCondition: PipelineTemplateCommonCondition): Map<String, Int> {
+    fun getSource2Count(commonCondition: PipelineTemplateCommonCondition): PTemplateSource2Count {
         val rawCounts = pipelineTemplateInfoDao.getSource2count(
             dslContext = dslContext,
             commonCondition = commonCondition
         )
-
-        return enumValues<TemplateType>().associateBy(
-            keySelector = { it.name },
-            valueTransform = { rawCounts[it.name] ?: 0 }
+        val custom = rawCounts[TemplateType.CUSTOMIZE.name] ?: 0
+        val market = rawCounts[TemplateType.CONSTRAINT.name] ?: 0
+        return PTemplateSource2Count(
+            all = custom + market,
+            custom = custom,
+            market = market
         )
     }
 
