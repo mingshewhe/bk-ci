@@ -21,6 +21,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -132,7 +133,7 @@ interface UserPipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateCommonCondition
-    ): Result<SQLPage<PipelineTemplateInfo>>
+    ): Result<PipelineTemplateInfoPage>
 
     @Operation(summary = "查看模板详情")
     @GET

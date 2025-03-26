@@ -48,6 +48,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -157,7 +158,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         request: PipelineTemplateCommonCondition
-    ): Result<SQLPage<PipelineTemplateInfo>> {
+    ): Result<PipelineTemplateInfoPage> {
         return Result(templateFacadeService.listTemplateInfos(userId, request))
     }
 
@@ -213,7 +214,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         commonCondition: PipelineTemplateCommonCondition
     ): Result<Map<String, Int>> {
-        return Result(templateInfoService.getSource2count(commonCondition))
+        return Result(templateInfoService.getSource2Count(commonCondition))
     }
 
     override fun getTemplateVersions(
