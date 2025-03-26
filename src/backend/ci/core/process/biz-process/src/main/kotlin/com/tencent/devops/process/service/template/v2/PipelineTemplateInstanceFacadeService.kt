@@ -309,7 +309,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 repoHashId = yamlInfo.repoHashId,
                 scmType = yamlInfo.scmType!!,
                 filePath = yamlInfo.filePath,
-                targetAction = fixTargetAction
+                targetAction = fixTargetAction,
+                targetBranch = branchName
             )
         }
         return pipelineId
