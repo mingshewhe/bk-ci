@@ -70,7 +70,7 @@ class PipelineTemplateResourceDao {
                 record.triggerVersion,
                 record.baseVersion,
                 record.params?.let { JsonUtil.toJson(it) },
-                record.model?.let { JsonUtil.toJson(it) },
+                record.model.let { JsonUtil.toJson(it) },
                 record.yaml,
                 record.status.name,
                 record.branchAction?.name,
@@ -226,6 +226,7 @@ class PipelineTemplateResourceDao {
             val conditions = mutableListOf<Condition>()
             conditions.add(PROJECT_ID.eq(projectId))
             conditions.add(TEMPLATE_ID.eq(templateId))
+            conditions.add(STATUS.ne(VersionStatus.DELETE.name))
             if (status != null) {
                 conditions.add(STATUS.eq(status.name))
                 // 获取活跃的分支版本
