@@ -1,13 +1,13 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
@@ -17,6 +17,7 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
@@ -26,16 +27,17 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
+import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import javax.ws.rs.core.Response
 
 /**
  * 流水线模版门面类
@@ -313,12 +315,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun listTemplateInfos(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): SQLPage<PipelineTemplateInfo> {
+    ): PipelineTemplateInfoPage {
         logger.info("list template infos {}|{}", userId, commonCondition)
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
-
-        val (count, templateInfoWithPermission) = if (enableTemplatePermissionManage) {
+        return if (enableTemplatePermissionManage) {
             val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
                 userId = userId,
                 projectId = projectId,
@@ -329,14 +330,18 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     AuthPermission.EDIT
                 )
             )
-            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST] ?: return SQLPage(
-                count = 0L,
-                records = emptyList()
-            )
-
+            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST]
+                ?: return PipelineTemplateInfoPage(
+                    count = 0,
+                    countOfCustom = 0,
+                    countOfMarket = 0,
+                    records = emptyList()
+                )
             val queryCondition = commonCondition.copy(filterTemplateIds = templatesWithListPermIds)
+
             val templateInfoList = pipelineTemplateInfoService.list(queryCondition)
             val count = pipelineTemplateInfoService.count(queryCondition)
+            val source2Count = pipelineTemplateInfoService.getSource2Count(queryCondition)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
                 templateInfo.copy(
@@ -345,10 +350,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(templateInfo.id) ?: false
                 )
             }
-            Pair(count.toLong(), templateInfoWithPermission)
+            PipelineTemplateInfoPage(
+                count = count,
+                countOfCustom = source2Count[TemplateType.CUSTOMIZE.name] ?: 0,
+                countOfMarket = source2Count[TemplateType.CONSTRAINT.name] ?: 0,
+                records = templateInfoWithPermission
+            )
         } else {
             val templateInfoList = pipelineTemplateInfoService.list(commonCondition)
             val count = pipelineTemplateInfoService.count(commonCondition)
+            val source2Count = pipelineTemplateInfoService.getSource2Count(commonCondition)
             val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
 
             val templateInfoWithPermission = templateInfoList.map { templateInfo ->
@@ -358,13 +369,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     canDelete = isProjectManager
                 )
             }
-            Pair(count.toLong(), templateInfoWithPermission)
+            PipelineTemplateInfoPage(
+                count = count,
+                countOfCustom = source2Count[TemplateType.CUSTOMIZE.name] ?: 0,
+                countOfMarket = source2Count[TemplateType.CONSTRAINT.name] ?: 0,
+                records = templateInfoWithPermission
+            )
         }
-
-        return SQLPage(
-            count = count,
-            records = templateInfoWithPermission
-        )
     }
 
     // 查看模板详情
@@ -532,6 +543,71 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    fun transfer(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        storageType: PipelineStorageType,
+        request: TransferBody
+    ): PTemplateModelTransferResult {
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        return pipelineTemplateGenerator.transfer(
+            userId = userId,
+            projectId = projectId,
+            storageType = storageType,
+            templateType = templateInfo.type,
+            templateModel = request.templateModelAndSetting?.templateModel,
+            templateSetting = request.templateModelAndSetting?.setting,
+            yaml = request.oldYaml
+        )
+    }
+
+    fun exportTemplate(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long?
+    ): Response {
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        val templateResource = version?.let {
+            pipelineTemplateResourceService.get(
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            )
+        } ?: pipelineTemplateResourceService.getLatestVersionResource(
+            projectId = projectId,
+            templateId = templateId
+        ) ?: throw ErrorCodeException(errorCode = "")
+        val setting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = templateResource.settingVersion
+        )
+
+        val yamlStr = pipelineTemplateGenerator.transfer(
+            userId = userId,
+            projectId = projectId,
+            storageType = PipelineStorageType.MODEL,
+            templateType = templateResource.type,
+            templateModel = templateResource.model,
+            templateSetting = setting,
+            yaml = templateResource.yaml
+        ).yamlWithVersion?.yamlStr
+        if (yamlStr == null) {
+            throw ErrorCodeException(errorCode = "")
+        }
+        return FileExportUtil.exportStringToFile(
+            content = yamlStr,
+            fileName = "${templateInfo.name}.yaml"
+        )
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTemplateFacadeService::class.java)

@@ -32,11 +32,14 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
+import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -52,7 +55,7 @@ import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import org.slf4j.LoggerFactory
-import kotlin.math.log
+import javax.ws.rs.core.Response
 
 @RestResource
 class UserPipelineTemplateV2ResourceImpl(
@@ -375,6 +378,38 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String
     ): Result<Boolean> {
         return Result(permissionService.enableTemplatePermissionManage(projectId))
+    }
+
+    override fun transfer(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        storageType: PipelineStorageType,
+        request: TransferBody
+    ): Result<PTemplateModelTransferResult> {
+        return Result(
+            templateFacadeService.transfer(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                storageType = storageType,
+                request = request
+            )
+        )
+    }
+
+    override fun exportTemplate(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long?
+    ): Response {
+        return templateFacadeService.exportTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
     }
 
     companion object {

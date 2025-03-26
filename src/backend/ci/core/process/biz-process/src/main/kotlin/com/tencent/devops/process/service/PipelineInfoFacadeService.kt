@@ -101,6 +101,7 @@ import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.view.PipelineViewGroupService
 import com.tencent.devops.process.template.service.TemplateService
+import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import com.tencent.devops.store.api.template.ServiceTemplateResource
@@ -214,10 +215,16 @@ class PipelineInfoFacadeService @Autowired constructor(
         logger.info("exportPipeline |$pipelineId | $projectId| $userId")
         return if (storageType == PipelineStorageType.YAML) {
             val suffix = PipelineStorageType.YAML.fileSuffix
-            exportStringToFile(targetVersion.yaml ?: "", "${settingInfo.pipelineName}$suffix")
+            FileExportUtil.exportStringToFile(
+                targetVersion.yaml ?: "",
+                "${settingInfo.pipelineName}$suffix"
+            )
         } else {
             val suffix = PipelineStorageType.MODEL.fileSuffix
-            exportStringToFile(JsonUtil.toSortJson(modelAndSetting), "${settingInfo.pipelineName}$suffix")
+            FileExportUtil.exportStringToFile(
+                JsonUtil.toSortJson(modelAndSetting),
+                "${settingInfo.pipelineName}$suffix"
+            )
         }
     }
 
@@ -261,22 +268,6 @@ class PipelineInfoFacadeService @Autowired constructor(
             channelCode = ChannelCode.BS,
             checkPermission = true
         ).pipelineId
-    }
-
-    private fun exportStringToFile(content: String, fileName: String): Response {
-        // 流式下载
-        val fileStream = StreamingOutput { output ->
-            val sb = StringBuilder()
-            sb.append(content)
-            output.write(sb.toString().toByteArray())
-            output.flush()
-        }
-        val encodeName = URLEncoder.encode(fileName, "UTF-8")
-        return Response
-            .ok(fileStream, MediaType.APPLICATION_OCTET_STREAM_TYPE)
-            .header("content-disposition", "attachment; filename = $encodeName")
-            .header("Cache-Control", "no-cache")
-            .build()
     }
 
     fun getPipelineNameVersion(projectId: String, pipelineId: String): Pair<String, Int> {

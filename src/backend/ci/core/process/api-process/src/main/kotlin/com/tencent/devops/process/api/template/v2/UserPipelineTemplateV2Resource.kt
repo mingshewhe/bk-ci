@@ -7,9 +7,12 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
+import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -36,6 +39,7 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.QueryParam
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Tag(name = "USER_PIPELINE_TEMPLATE_V2", description = "用户-流水线-模板-V2")
 @Path("/user/pipeline/template/v2/{projectId}")
@@ -366,4 +370,43 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("projectId")
         projectId: String
     ): Result<Boolean>
+
+    @Operation(summary = "转化")
+    @GET
+    @Path("/transfer/{templateId}")
+    fun transfer(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "格式", required = true)
+        @QueryParam("storageType")
+        storageType: PipelineStorageType,
+        @Parameter(description = "请求体", required = true)
+        request: TransferBody
+    ): Result<PTemplateModelTransferResult?>
+
+    @Operation(summary = "导出流水线模板")
+    @GET
+    @Path("{templateId}/export")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    fun exportTemplate(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "流水线Id", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "导出的目标版本", required = false)
+        @QueryParam("version")
+        version: Long?
+    ): Response
 }
