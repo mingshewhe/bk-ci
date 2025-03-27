@@ -1,5 +1,6 @@
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.api.check.Preconditions
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
@@ -8,7 +9,6 @@ import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
@@ -19,6 +19,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
@@ -29,7 +30,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -540,23 +540,36 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun transfer(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
         storageType: PipelineStorageType,
-        request: TransferBody
+        body: PTemplateTransferBody
     ): PTemplateModelTransferResult {
-        val templateInfo = pipelineTemplateInfoService.get(
-            projectId = projectId,
-            templateId = templateId
-        )
-        return pipelineTemplateGenerator.transfer(
-            userId = userId,
-            projectId = projectId,
-            storageType = storageType,
-            templateType = templateInfo.type,
-            templateModel = request.templateModelAndSetting?.templateModel,
-            templateSetting = request.templateModelAndSetting?.setting,
-            yaml = request.oldYaml
-        )
+        return if (storageType == PipelineStorageType.YAML) {
+            Preconditions.checkNotNull(templateId, "The template id must not be null")
+            val templateInfo = pipelineTemplateInfoService.get(
+                projectId = projectId,
+                templateId = templateId!!
+            )
+            pipelineTemplateGenerator.transfer(
+                userId = userId,
+                projectId = projectId,
+                storageType = storageType,
+                templateType = templateInfo.type,
+                templateModel = body.templateModel,
+                templateSetting = body.templateSetting,
+                yaml = body.yaml
+            )
+        } else {
+            pipelineTemplateGenerator.transfer(
+                userId = userId,
+                projectId = projectId,
+                storageType = storageType,
+                templateType = null,
+                templateModel = null,
+                templateSetting = null,
+                yaml = body.yaml
+            )
+        }
     }
 
     fun exportTemplate(

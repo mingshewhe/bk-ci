@@ -33,7 +33,6 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
-import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
@@ -41,6 +40,7 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
+import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -384,9 +384,9 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun transfer(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
         storageType: PipelineStorageType,
-        request: TransferBody
+        body: PTemplateTransferBody
     ): Result<PTemplateModelTransferResult> {
         return Result(
             templateFacadeService.transfer(
@@ -394,7 +394,7 @@ class UserPipelineTemplateV2ResourceImpl(
                 projectId = projectId,
                 templateId = templateId,
                 storageType = storageType,
-                request = request
+                body = body
             )
         )
     }

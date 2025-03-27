@@ -8,12 +8,12 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
-import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
+import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -22,7 +22,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoPage
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -375,7 +374,7 @@ interface UserPipelineTemplateV2Resource {
 
     @Operation(summary = "转化")
     @GET
-    @Path("/transfer/{templateId}")
+    @Path("/transfer")
     fun transfer(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -384,13 +383,13 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("projectId")
         projectId: String,
         @Parameter(description = "模版ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
-        @Parameter(description = "格式", required = true)
+        @QueryParam("templateId")
+        templateId: String?,
+        @Parameter(description = "转化格式，若model转yaml，参数填写YAML；否则填写MODEL", required = true)
         @QueryParam("storageType")
         storageType: PipelineStorageType,
         @Parameter(description = "请求体", required = true)
-        request: TransferBody
+        body: PTemplateTransferBody
     ): Result<PTemplateModelTransferResult?>
 
     @Operation(summary = "导出流水线模板")
