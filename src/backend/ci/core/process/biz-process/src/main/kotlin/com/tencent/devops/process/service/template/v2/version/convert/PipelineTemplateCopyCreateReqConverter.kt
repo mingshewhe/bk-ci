@@ -28,9 +28,12 @@
 package com.tencent.devops.process.service.template.v2.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -43,6 +46,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceSe
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -89,6 +93,11 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 version = srcTemplateInfo.releasedVersion!!
             )
 
+            if (srcTemplateInfo.type == PipelineTemplateType.PIPELINE) {
+                (srcTemplateResource.model as Model).name = request.name
+            }
+
+            logger.debug("copy convert model {}", srcTemplateResource.model)
             val setting = if (copySetting) {
                 val srcTemplateSetting = pipelineTemplateSettingService.get(
                     projectId = projectId,
@@ -113,6 +122,16 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 )
             }
 
+            val yaml = pipelineTemplateGenerator.transfer(
+                userId = userId,
+                projectId = projectId,
+                storageType = PipelineStorageType.MODEL,
+                templateType = srcTemplateInfo.type,
+                templateModel = srcTemplateResource.model,
+                templateSetting = setting,
+                yaml = null
+            ).yamlWithVersion?.yamlStr ?: ""
+
             val pipelineTemplateInfo = PipelineTemplateInfo(
                 id = newTemplateId,
                 projectId = projectId,
@@ -136,7 +155,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 type = srcTemplateResource.type,
                 params = srcTemplateResource.params,
                 model = srcTemplateResource.model,
-                yaml = srcTemplateResource.yaml,
+                yaml = yaml,
                 status = VersionStatus.RELEASED,
                 creator = userId,
                 updater = userId
@@ -151,5 +170,9 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 pipelineTemplateSetting = setting
             )
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(PipelineTemplateCopyCreateReqConverter::class.java)
     }
 }
