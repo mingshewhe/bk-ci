@@ -14,6 +14,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
@@ -540,21 +541,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun transfer(
         userId: String,
         projectId: String,
-        templateId: String?,
+        templateType: PipelineTemplateType?,
         storageType: PipelineStorageType,
         body: PTemplateTransferBody
     ): PTemplateModelTransferResult {
         return if (storageType == PipelineStorageType.YAML) {
-            Preconditions.checkNotNull(templateId, "The template id must not be null")
-            val templateInfo = pipelineTemplateInfoService.get(
-                projectId = projectId,
-                templateId = templateId!!
-            )
+            Preconditions.checkNotNull(templateType, "The template type must not be null")
             pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = storageType,
-                templateType = templateInfo.type,
+                templateType = templateType,
                 templateModel = body.templateModel,
                 templateSetting = body.templateSetting,
                 yaml = body.yaml

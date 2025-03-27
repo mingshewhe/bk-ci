@@ -9,6 +9,7 @@ import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.process.pojo.PipelineOperationDetail
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -382,9 +383,9 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模版ID", required = true)
-        @QueryParam("templateId")
-        templateId: String?,
+        @Parameter(description = "模版类型-时，必传", required = true)
+        @QueryParam("templateType")
+        templateType: PipelineTemplateType?,
         @Parameter(description = "转化格式，若model转yaml，参数填写YAML；否则填写MODEL", required = true)
         @QueryParam("storageType")
         storageType: PipelineStorageType,

@@ -36,6 +36,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -384,7 +385,7 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun transfer(
         userId: String,
         projectId: String,
-        templateId: String?,
+        templateType: PipelineTemplateType?,
         storageType: PipelineStorageType,
         body: PTemplateTransferBody
     ): Result<PTemplateModelTransferResult> {
@@ -392,7 +393,7 @@ class UserPipelineTemplateV2ResourceImpl(
             templateFacadeService.transfer(
                 userId = userId,
                 projectId = projectId,
-                templateId = templateId,
+                templateType = templateType,
                 storageType = storageType,
                 body = body
             )
