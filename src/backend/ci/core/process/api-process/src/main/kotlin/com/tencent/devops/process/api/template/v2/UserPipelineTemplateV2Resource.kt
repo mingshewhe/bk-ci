@@ -383,7 +383,7 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模版类型-时，必传", required = true)
+        @Parameter(description = "模版类型-时，必传", required = false)
         @QueryParam("templateType")
         templateType: PipelineTemplateType?,
         @Parameter(description = "转化格式，若model转yaml，参数填写YAML；否则填写MODEL", required = true)
