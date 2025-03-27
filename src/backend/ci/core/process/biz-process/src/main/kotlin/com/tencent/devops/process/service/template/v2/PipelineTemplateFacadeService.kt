@@ -545,28 +545,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
         storageType: PipelineStorageType,
         body: PTemplateTransferBody
     ): PTemplateModelTransferResult {
-        return if (storageType == PipelineStorageType.YAML) {
-            Preconditions.checkNotNull(templateType, "The template type must not be null")
-            pipelineTemplateGenerator.transfer(
-                userId = userId,
-                projectId = projectId,
-                storageType = storageType,
-                templateType = templateType,
-                templateModel = body.templateModel,
-                templateSetting = body.templateSetting,
-                yaml = body.yaml
-            )
-        } else {
-            pipelineTemplateGenerator.transfer(
-                userId = userId,
-                projectId = projectId,
-                storageType = storageType,
-                templateType = null,
-                templateModel = null,
-                templateSetting = null,
-                yaml = body.yaml
-            )
-        }
+        return pipelineTemplateGenerator.transfer(
+            userId = userId,
+            projectId = projectId,
+            storageType = storageType,
+            templateType = templateType,
+            templateModel = body.templateModel,
+            templateSetting = body.templateSetting,
+            yaml = body.yaml
+        )
     }
 
     fun exportTemplate(
