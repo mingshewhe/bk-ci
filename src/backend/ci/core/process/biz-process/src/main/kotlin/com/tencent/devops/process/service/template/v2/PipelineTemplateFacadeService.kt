@@ -324,7 +324,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
 
-        val (count, templateInfoWithPermission) = if (enableTemplatePermissionManage) {
+        val (count, templateInfos) = if (enableTemplatePermissionManage) {
             val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
                 userId = userId,
                 projectId = projectId,
@@ -369,7 +369,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
 
         return SQLPage(
             count = count,
-            records = templateInfoWithPermission
+            records = templateInfos
         )
     }
 
