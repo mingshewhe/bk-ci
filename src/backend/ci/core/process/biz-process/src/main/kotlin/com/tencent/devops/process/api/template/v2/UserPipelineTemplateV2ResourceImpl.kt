@@ -136,7 +136,7 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun saveDraft(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
         request: PipelineTemplateDraftSaveReq
     ): Result<DeployTemplateResult> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
@@ -385,7 +385,6 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun transfer(
         userId: String,
         projectId: String,
-        templateType: PipelineTemplateType?,
         storageType: PipelineStorageType,
         body: PTemplateTransferBody
     ): Result<PTemplateModelTransferResult> {
@@ -393,7 +392,6 @@ class UserPipelineTemplateV2ResourceImpl(
             templateFacadeService.transfer(
                 userId = userId,
                 projectId = projectId,
-                templateType = templateType,
                 storageType = storageType,
                 body = body
             )

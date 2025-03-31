@@ -30,8 +30,10 @@ package com.tencent.devops.process.service.template.v2.version.convert
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -62,25 +64,37 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
     ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateDraftSaveReq
         with(request) {
-            if (templateId == null) {
-                throw IllegalArgumentException("templateId is null")
-            }
-            val templateInfo = pipelineTemplateInfoService.get(
-                projectId = projectId,
-                templateId = templateId
-            )
             val modelTransferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = storageType,
-                templateType = templateInfo.type,
+                templateType = type,
                 templateModel = model,
                 templateSetting = templateSetting,
                 yaml = yaml
             )
+            val templateInfo = if (templateId != null) {
+                pipelineTemplateInfoService.get(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            } else {
+                PipelineTemplateInfo(
+                    id = pipelineTemplateGenerator.generateTemplateId(),
+                    projectId = projectId,
+                    name = modelTransferResult.templateSetting.pipelineName,
+                    desc = modelTransferResult.templateSetting.desc,
+                    mode = TemplateType.CUSTOMIZE,
+                    type = modelTransferResult.templateType,
+                    enablePac = false,
+                    storeFlag = false,
+                    creator = userId,
+                    latestVersionStatus = VersionStatus.COMMITTING
+                )
+            }
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
-                templateId = templateId,
+                templateId = templateInfo.id,
                 type = templateInfo.type,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
@@ -91,14 +105,14 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
             )
             val pipelineTemplateSetting = modelTransferResult.templateSetting.copy(
                 projectId = projectId,
-                pipelineId = templateId,
+                pipelineId = templateInfo.id,
                 creator = userId,
                 updater = userId
             )
             return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
-                templateId = templateId,
+                templateId = templateInfo.id,
                 version = version,
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 pipelineTemplateInfo = templateInfo,

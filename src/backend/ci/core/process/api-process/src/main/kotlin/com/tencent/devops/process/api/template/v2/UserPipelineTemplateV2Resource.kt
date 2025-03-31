@@ -107,7 +107,7 @@ interface UserPipelineTemplateV2Resource {
 
     @Operation(summary = "保存流水线模板草稿")
     @PUT
-    @Path("/{templateId}/saveDraft")
+    @Path("/saveDraft")
     fun saveDraft(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -116,8 +116,8 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("projectId")
         projectId: String,
         @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
+        @QueryParam("templateId")
+        templateId: String?,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateDraftSaveReq
     ): Result<DeployTemplateResult>
@@ -374,7 +374,7 @@ interface UserPipelineTemplateV2Resource {
     ): Result<Boolean>
 
     @Operation(summary = "转化")
-    @GET
+    @POST
     @Path("/transfer")
     fun transfer(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
@@ -383,10 +383,7 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模版类型-时，必传", required = false)
-        @QueryParam("templateType")
-        templateType: PipelineTemplateType?,
-        @Parameter(description = "转化格式，若model转yaml，参数填写YAML；否则填写MODEL", required = true)
+        @Parameter(description = "转化格式，若yaml转model，参数填写YAML；model转yaml，填写Model", required = true)
         @QueryParam("storageType")
         storageType: PipelineStorageType,
         @Parameter(description = "请求体", required = true)

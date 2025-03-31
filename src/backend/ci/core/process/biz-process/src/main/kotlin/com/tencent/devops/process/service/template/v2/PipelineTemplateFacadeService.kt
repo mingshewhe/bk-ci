@@ -144,7 +144,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun saveDraft(
         userId: String,
         projectId: String,
-        templateId: String,
+        templateId: String?,
         request: PipelineTemplateDraftSaveReq
     ): DeployTemplateResult {
         return pipelineTemplateVersionManager.deployTemplate(
@@ -541,7 +541,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun transfer(
         userId: String,
         projectId: String,
-        templateType: PipelineTemplateType?,
         storageType: PipelineStorageType,
         body: PTemplateTransferBody
     ): PTemplateModelTransferResult {
@@ -549,7 +548,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             storageType = storageType,
-            templateType = templateType,
+            templateType = body.templateType,
             templateModel = body.templateModel,
             templateSetting = body.templateSetting,
             yaml = body.yaml
