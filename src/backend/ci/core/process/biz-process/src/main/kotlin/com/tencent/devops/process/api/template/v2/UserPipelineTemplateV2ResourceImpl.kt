@@ -36,7 +36,6 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -56,8 +55,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import jakarta.ws.rs.core.Response
 import org.slf4j.LoggerFactory
-import javax.ws.rs.core.Response
 
 @RestResource
 class UserPipelineTemplateV2ResourceImpl(

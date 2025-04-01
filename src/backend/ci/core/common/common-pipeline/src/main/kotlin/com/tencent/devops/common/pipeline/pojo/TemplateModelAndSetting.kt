@@ -30,7 +30,8 @@ package com.tencent.devops.common.pipeline.pojo
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import io.swagger.v3.oas.annotations.media.Schema
-import javax.validation.Valid
+import jakarta.validation.Valid
+
 
 data class TemplateModelAndSetting(
     @get:Schema(title = "流水线模板模型", required = true)

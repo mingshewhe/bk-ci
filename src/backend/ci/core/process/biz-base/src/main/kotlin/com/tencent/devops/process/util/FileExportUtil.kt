@@ -1,9 +1,9 @@
 package com.tencent.devops.process.util
 
 import java.net.URLEncoder
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.StreamingOutput
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.core.StreamingOutput
 
 object FileExportUtil {
     fun exportStringToFile(content: String, fileName: String): Response {
