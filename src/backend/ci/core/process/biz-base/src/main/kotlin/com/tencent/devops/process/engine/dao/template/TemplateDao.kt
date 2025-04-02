@@ -493,6 +493,21 @@ class TemplateDao {
         )
     }
 
+    fun list(
+        dslContext: DSLContext,
+        projectId: String,
+        limit: Int,
+        offset: Int
+    ): List<String> {
+        return with(TTemplate.T_TEMPLATE) {
+            dslContext.select(ID).from(this)
+                .where(PROJECT_ID.eq(projectId))
+                .groupBy(ID)
+                .limit(limit).offset(offset)
+                .fetch().map { it.value1() }
+        }
+    }
+
     fun listTemplateByProjectCondition(
         dslContext: DSLContext,
         templateType: TemplateType?,

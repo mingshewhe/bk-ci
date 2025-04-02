@@ -70,30 +70,39 @@ class PipelineTemplateTransactionService @Autowired constructor(
      * 创建流水线模版和权限,用于新建模版
      */
     fun createTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfo,
-        pipelineTemplateResource: PipelineTemplateResource,
-        pipelineTemplateSetting: PipelineSetting
+        pipelineTemplateInfo: PipelineTemplateInfo? = null,
+        pipelineTemplateResource: PipelineTemplateResource? = null,
+        pipelineTemplateSetting: PipelineSetting? = null,
+        syncPermission: Boolean? = true
     ) {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            pipelineTemplateInfoService.create(
-                transactionContext = context,
-                pipelineTemplateInfo = pipelineTemplateInfo
-            )
-            pipelineTemplateResourceService.create(
-                transactionContext = context,
-                pipelineTemplateResource = pipelineTemplateResource
-            )
-            pipelineTemplateSettingService.create(
-                transactionContext = context,
-                pipelineTemplateSetting = pipelineTemplateSetting
-            )
-            pipelineTemplatePermissionService.createResource(
-                userId = pipelineTemplateInfo.creator,
-                projectId = pipelineTemplateInfo.projectId,
-                templateId = pipelineTemplateInfo.id,
-                templateName = pipelineTemplateInfo.name
-            )
+            pipelineTemplateInfo?.let {
+                pipelineTemplateInfoService.create(
+                    transactionContext = context,
+                    pipelineTemplateInfo = pipelineTemplateInfo
+                )
+            }
+            pipelineTemplateResource?.let {
+                pipelineTemplateResourceService.create(
+                    transactionContext = context,
+                    pipelineTemplateResource = pipelineTemplateResource
+                )
+            }
+            pipelineTemplateSetting?.let {
+                pipelineTemplateSettingService.create(
+                    transactionContext = context,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
+            if (syncPermission == true && pipelineTemplateInfo != null) {
+                pipelineTemplatePermissionService.createResource(
+                    userId = pipelineTemplateInfo.creator,
+                    projectId = pipelineTemplateInfo.projectId,
+                    templateId = pipelineTemplateInfo.id,
+                    templateName = pipelineTemplateInfo.name
+                )
+            }
         }
     }
 

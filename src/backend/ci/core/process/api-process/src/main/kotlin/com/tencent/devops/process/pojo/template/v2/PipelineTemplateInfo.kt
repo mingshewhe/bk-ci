@@ -36,7 +36,7 @@ data class PipelineTemplateInfo(
     val latestVersionStatus: VersionStatus,
     @get:Schema(title = "来源名称", required = true)
     val sourceName: String? = null,
-    @get:Schema(title = "是否从研发商店安装至项目", required = true)
+    @get:Schema(title = "是否上架至研发商店", required = true)
     val storeFlag: Boolean,
     @get:Schema(title = "父模板ID", required = false)
     val srcTemplateId: String? = null,

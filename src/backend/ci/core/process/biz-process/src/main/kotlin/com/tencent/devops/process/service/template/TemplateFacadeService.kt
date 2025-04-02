@@ -1352,7 +1352,7 @@ class TemplateFacadeService @Autowired constructor(
         return latestVersion
     }
 
-    private fun listTemplateVersions(projectId: String, templateId: String): List<TemplateVersion> {
+    fun listTemplateVersions(projectId: String, templateId: String): List<TemplateVersion> {
         val versionInfos = templateDao.getTemplateVersionInfos(dslContext, projectId, templateId)
         val tTemplate = TTemplate.T_TEMPLATE
         val versions = mutableListOf<TemplateVersion>()

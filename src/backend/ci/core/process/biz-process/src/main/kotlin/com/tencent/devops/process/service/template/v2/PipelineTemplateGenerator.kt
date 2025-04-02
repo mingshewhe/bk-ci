@@ -73,7 +73,7 @@ class PipelineTemplateGenerator @Autowired constructor(
     private val client: Client,
     private val transferService: PipelineTransferYamlService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) {
 
     fun getDefaultTemplateModel(
