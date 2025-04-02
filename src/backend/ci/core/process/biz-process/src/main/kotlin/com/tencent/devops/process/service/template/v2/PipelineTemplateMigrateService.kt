@@ -113,7 +113,7 @@ class PipelineTemplateMigrateService(
             // 当前实际模板，可能为当前模板的版本或父模板版本
             val currentVersionTemplate = templateDao.getTemplate(
                 dslContext = dslContext,
-                projectId = projectId,
+                projectId = templateVersionInfo.projectId!!,
                 version = templateVersionInfo.version
             ) ?: throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS

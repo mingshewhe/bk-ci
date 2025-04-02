@@ -1363,6 +1363,7 @@ class TemplateFacadeService @Autowired constructor(
             if (!versionNames.contains(versionName)) {
                 versions.add(
                     TemplateVersion(
+                        projectId = projectId,
                         version = versionInfo[tTemplate.VERSION],
                         versionName = versionName,
                         updateTime = versionInfo[tTemplate.UPDATE_TIME].timestampmilli(),

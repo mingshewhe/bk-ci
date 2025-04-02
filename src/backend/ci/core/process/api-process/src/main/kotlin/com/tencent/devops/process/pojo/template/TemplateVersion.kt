@@ -42,5 +42,7 @@ data class TemplateVersion(
     @get:Schema(title = "更新时间", required = false)
     val updateTime: Long,
     @get:Schema(title = "构建者", required = false)
-    val creator: String
+    val creator: String,
+    @get:Schema(title = "项目ID", required = false)
+    val projectId: String? = null
 )
