@@ -5,6 +5,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
@@ -29,6 +30,8 @@ class PipelineTemplateInfoDao {
                 NAME,
                 DESC,
                 MODE,
+                UPGRADE_STRATEGY,
+                SETTING_SYNC_STRATEGY,
                 CATEGORY,
                 TYPE,
                 LOGO_URL,
@@ -50,6 +53,8 @@ class PipelineTemplateInfoDao {
                 record.name,
                 record.desc,
                 record.mode.name,
+                record.upgradeStrategy?.name,
+                record.settingSyncStrategy?.name,
                 record.category,
                 record.type.name,
                 record.logoUrl,
@@ -90,6 +95,8 @@ class PipelineTemplateInfoDao {
                     record.debugPipelineCount?.let { set(DEBUG_PIPELINE_COUNT, it) }
                     record.instancePipelineCount?.let { set(INSTANCE_PIPELINE_COUNT, it) }
                     record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
+                    record.upgradeStrategy?.let { set(UPGRADE_STRATEGY, it.name) }
+                    record.settingSyncStrategy?.let { set(SETTING_SYNC_STRATEGY, it.name) }
                 }
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, now)
@@ -228,6 +235,8 @@ class PipelineTemplateInfoDao {
             name = this.name,
             desc = this.desc,
             mode = mode,
+            upgradeStrategy = this.upgradeStrategy?.let { UpgradeStrategyEnum.valueOf(it) },
+            settingSyncStrategy = this.settingSyncStrategy?.let { UpgradeStrategyEnum.valueOf(it) },
             sourceName = TemplateType.getDisplayName(mode),
             category = this.category,
             type = PipelineTemplateType.valueOf(this.type),

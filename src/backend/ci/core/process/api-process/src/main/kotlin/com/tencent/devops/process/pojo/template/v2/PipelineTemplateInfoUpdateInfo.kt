@@ -1,6 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板更新请求体")
@@ -23,6 +24,10 @@ data class PipelineTemplateInfoUpdateInfo(
     val releasedSettingVersion: Int? = null,
     @get:Schema(title = "模板状态", required = false)
     val latestVersionStatus: VersionStatus? = null,
+    @get:Schema(title = "升级策略-用于研发商店安装的模板", required = true)
+    val upgradeStrategy: UpgradeStrategyEnum? = null,
+    @get:Schema(title = "配置同步策略-用于研发商店安装的模板", required = true)
+    val settingSyncStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
     val storeFlag: Boolean? = null,
     @get:Schema(title = "调试流水线数", required = true)
