@@ -50,6 +50,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import org.jooq.DSLContext
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -65,6 +66,7 @@ class PipelineTemplateMigrateService(
 ) {
 
     fun migrateTemplate(projectId: String) {
+        logger.info("start to migrate project templates,{}", projectId)
         var offset = 0
         val limit = PageUtil.MAX_PAGE_SIZE / 2
         do {
@@ -74,7 +76,7 @@ class PipelineTemplateMigrateService(
                 limit = limit,
                 offset = offset
             )
-
+            logger.info("templates->{}", templateIds)
             templateIds.forEach { templateId ->
                 migrateTemplate(
                     templateId = templateId,
@@ -87,12 +89,13 @@ class PipelineTemplateMigrateService(
     }
 
     fun migrateTemplate(templateId: String, projectId: String) {
+        logger.info("migrate template,{}|{}", projectId, templateId)
         val latestTemplate = templateDao.getLatestTemplate(
             dslContext = dslContext,
             projectId = projectId,
             templateId = templateId
         )
-
+        logger.debug("migrate template latestTemplate {}", latestTemplate)
         val setting = pipelineSettingDao.getSetting(
             dslContext = dslContext,
             projectId = projectId,
@@ -100,27 +103,34 @@ class PipelineTemplateMigrateService(
         ) ?: throw ErrorCodeException(
             errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
         )
+        logger.debug("migrate template setting {}", setting)
 
-        val templateVersionInfos = getTemplateVersions(latestTemplate = latestTemplate)
+        val (srcTemplateProjectId, templateVersionInfos) = getTemplateVersions(latestTemplate = latestTemplate)
+        logger.debug(
+            "migrate template srcTemplateProjectId {},templateVersionInfos{}",
+            srcTemplateProjectId, templateVersionInfos
+        )
 
-        var seq = 0
+
+        var versionSequence = 0
         var pipelineVersion = 0
         var triggerVersion = 0
 
         templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
-            seq += 1
-            val currentVersionSetting = setting.copy(version = seq)
+            versionSequence += 1
+            val currentSetting = setting.copy(version = versionSequence)
             // 当前实际模板，可能为当前模板的版本或父模板版本
-            val currentVersionTemplate = templateDao.getTemplate(
+            val currentProjectId = srcTemplateProjectId ?: projectId
+            val currentTemplate = templateDao.getTemplate(
                 dslContext = dslContext,
-                projectId = templateVersionInfo.projectId!!,
+                projectId = currentProjectId,
                 version = templateVersionInfo.version
             ) ?: throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
             )
 
-            val currentVersionTemplateModel = JsonUtil.to(currentVersionTemplate.template, Model::class.java)
-            val currentVersionTemplateParams = currentVersionTemplateModel.getTriggerContainer().params
+            val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
+            val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
 
             if (index == 0) {
                 pipelineVersion = 1
@@ -129,7 +139,7 @@ class PipelineTemplateMigrateService(
                 // 上一个版本的模板
                 val previousVersionTemplate = templateDao.getTemplate(
                     dslContext = dslContext,
-                    projectId = projectId,
+                    projectId = currentProjectId,
                     version = templateVersionInfos[index - 1].version
                 ) ?: throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
@@ -141,15 +151,15 @@ class PipelineTemplateMigrateService(
                 pipelineVersion = PipelineVersionUtils.getPipelineVersion(
                     currVersion = pipelineVersion,
                     originTemplateModel = previousVersionTemplateModel,
-                    newTemplateModel = currentVersionTemplateModel,
+                    newTemplateModel = currentTemplateModel,
                     originParams = previousVersionTemplateParams,
-                    newParams = currentVersionTemplateParams
+                    newParams = currentTemplateParams
                 )
 
                 triggerVersion = PipelineVersionUtils.getTriggerVersion(
                     currVersion = triggerVersion,
                     originModel = previousVersionTemplateModel,
-                    newModel = currentVersionTemplateModel
+                    newModel = currentTemplateModel
                 )
             }
 
@@ -158,24 +168,24 @@ class PipelineTemplateMigrateService(
                 projectId = latestTemplate.projectId,
                 storageType = PipelineStorageType.MODEL,
                 templateType = PipelineTemplateType.PIPELINE,
-                templateModel = currentVersionTemplateModel,
-                templateSetting = currentVersionSetting,
+                templateModel = currentTemplateModel,
+                templateSetting = currentSetting,
                 yaml = null
             )
 
             val pipelineTemplateResource = createPipelineTemplateResource(
                 latestTemplate = latestTemplate,
-                currentTemplate = currentVersionTemplate,
-                seq = seq,
+                currentTemplate = currentTemplate,
+                seq = versionSequence,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,
-                params = currentVersionTemplateParams,
+                params = currentTemplateParams,
                 modelTransferResult = modelTransferResult,
             )
 
             pipelineTemplateTransactionService.createTemplate(
                 pipelineTemplateResource = pipelineTemplateResource,
-                pipelineTemplateSetting = currentVersionSetting,
+                pipelineTemplateSetting = currentSetting,
             )
         }
 
@@ -187,21 +197,30 @@ class PipelineTemplateMigrateService(
         )
     }
 
-    fun getTemplateVersions(latestTemplate: TTemplateRecord): List<TemplateVersion> {
+    fun getTemplateVersions(
+        latestTemplate: TTemplateRecord
+    ): Pair<String?/*srcTemplateProjectId*/, List<TemplateVersion>> {
         return if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
             val srcLatestTemplate = templateDao.getLatestTemplate(
                 dslContext = dslContext,
                 templateId = latestTemplate.srcTemplateId
             )
-            templateFacadeService.listTemplateVersions(
-                projectId = srcLatestTemplate.projectId,
-                templateId = srcLatestTemplate.id
+            Pair(
+                first = srcLatestTemplate.projectId,
+                second = templateFacadeService.listTemplateVersions(
+                    projectId = srcLatestTemplate.projectId,
+                    templateId = srcLatestTemplate.id
+                )
             )
         } else {
-            templateFacadeService.listTemplateVersions(
-                projectId = latestTemplate.projectId,
-                templateId = latestTemplate.id
+            Pair(
+                first = null,
+                second = templateFacadeService.listTemplateVersions(
+                    projectId = latestTemplate.projectId,
+                    templateId = latestTemplate.id
+                )
             )
+
         }
     }
 
@@ -292,5 +311,9 @@ class PipelineTemplateMigrateService(
             createdTime = latestTemplate.createdTime.timestampmilli(),
             updateTime = latestTemplate.updateTime.timestampmilli()
         )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(PipelineTemplateMigrateService::class.java)
     }
 }
