@@ -25,24 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.service.pipeline.version.listener
 
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineModelData
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 
-@Schema(title = "版本版本变更动作")
-enum class PipelineVersionAction {
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "创建分支版本")
-    CREATE_BRANCH,
-    @Schema(title = "创建正式版本")
-    CREATE_RELEASE,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "删除版本")
-    DELETE_VERSION,
-    @Schema(title = "分支版本置为不活跃")
-    INACTIVE_BRANCH,
-    @Schema(title = "模版实例化")
-    TEMPLATE_INSTANCE
+/**
+ * 流水线版本创建监听器
+ */
+interface PipelineVersionCreateListener {
+
+    fun onCreate(
+        userId: String,
+        pipelineBasicInfo: PipelineBasicInfo,
+        pipelineModelData: PipelineModelData,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
+    )
+
+    fun onUpdate(
+        userId: String,
+        pipelineBasicInfo: PipelineBasicInfo,
+        pipelineModelData: PipelineModelData,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
+    )
 }

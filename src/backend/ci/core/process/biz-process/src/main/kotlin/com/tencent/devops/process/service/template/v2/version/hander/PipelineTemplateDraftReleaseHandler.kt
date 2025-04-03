@@ -54,9 +54,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
-    override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
-        return context.versionAction == PipelineVersionAction.RELEASE_DRAFT
-    }
+    override fun support(context: PipelineTemplateVersionCreateContext) =
+        context.versionAction == PipelineVersionAction.RELEASE_DRAFT
 
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
@@ -74,14 +73,12 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                     throw IllegalArgumentException("yaml is null")
                 }
             }
-            with(context) {
-                val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
-                try {
-                    lock.lock()
-                    return doHandle()
-                } finally {
-                    lock.unlock()
-                }
+            val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
+            try {
+                lock.lock()
+                return doHandle()
+            } finally {
+                lock.unlock()
             }
         }
     }

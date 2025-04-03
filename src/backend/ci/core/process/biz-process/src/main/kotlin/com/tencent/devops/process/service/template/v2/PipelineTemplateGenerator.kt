@@ -124,9 +124,8 @@ class PipelineTemplateGenerator @Autowired constructor(
 
     fun generateTemplateId() = UUIDUtil.generate()
 
-    fun generateTemplateVersion(): Long {
-        return client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
-    }
+    fun generateTemplateVersion() =
+        client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
 
     /**
      * 获取默认版本
@@ -285,6 +284,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 if (targetBranch == null) {
                     throw IllegalArgumentException("targetBranch is null")
                 }
+                // TODO 需要判断是否为默认分支
                 val resourceOnlyVersion =
                     PTemplateResourceOnlyVersion(draftResource).copy(versionName = targetBranch)
                 Pair(VersionStatus.BRANCH, resourceOnlyVersion)

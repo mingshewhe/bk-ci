@@ -25,24 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.pojo.pipeline
 
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "版本版本变更动作")
-enum class PipelineVersionAction {
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "创建分支版本")
-    CREATE_BRANCH,
-    @Schema(title = "创建正式版本")
-    CREATE_RELEASE,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "删除版本")
-    DELETE_VERSION,
-    @Schema(title = "分支版本置为不活跃")
-    INACTIVE_BRANCH,
-    @Schema(title = "模版实例化")
-    TEMPLATE_INSTANCE
+@Schema(title = "流水线资源只有版本信息")
+data class PipelineResourceOnlyVersion(
+    @get:Schema(title = "记录版本号", required = true)
+    val version: Int,
+    @get:Schema(title = "版本名称", required = true)
+    val versionName: String? = null,
+    @get:Schema(title = "发布版本号", required = false)
+    val versionNum: Int? = null,
+    @get:Schema(title = "编排版本号", required = false)
+    val pipelineVersion: Int? = null,
+    @get:Schema(title = "触发器版本号", required = false)
+    val triggerVersion: Int? = null,
+    @get:Schema(title = "设置版本号", required = false)
+    val settingVersion: Int?,
+    @get:Schema(title = "默认的基础版本,取的是最新的正式版本", required = false)
+    val baseVersion: Int? = null,
+) {
+    constructor(pipelineResource: PipelineResourceVersion) : this(
+        version = pipelineResource.version,
+        versionName = pipelineResource.versionName,
+        versionNum = pipelineResource.versionNum,
+        pipelineVersion = pipelineResource.pipelineVersion,
+        triggerVersion = pipelineResource.triggerVersion,
+        settingVersion = pipelineResource.settingVersion,
+        baseVersion = pipelineResource.baseVersion,
+    )
 }

@@ -25,24 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.pojo.pipeline
 
+import com.tencent.devops.common.pipeline.enums.ChannelCode
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "版本版本变更动作")
-enum class PipelineVersionAction {
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "创建分支版本")
-    CREATE_BRANCH,
-    @Schema(title = "创建正式版本")
-    CREATE_RELEASE,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "删除版本")
-    DELETE_VERSION,
-    @Schema(title = "分支版本置为不活跃")
-    INACTIVE_BRANCH,
-    @Schema(title = "模版实例化")
-    TEMPLATE_INSTANCE
-}
+@Schema(title = "流水线基础信息")
+data class PipelineBasicInfo(
+    @get:Schema(title = "项目ID")
+    val projectId: String,
+    @get:Schema(title = "流水线DI")
+    val pipelineId: String,
+    @get:Schema(title = "模板ID")
+    val templateId: String?,
+    @get:Schema(title = "流水线名称")
+    val pipelineName: String,
+    @get:Schema(title = "流水线描述")
+    val pipelineDesc: String,
+    @get:Schema(title = "渠道")
+    val channelCode: ChannelCode,
+    @get:Schema(title = "ID")
+    val id: Long?,
+    @get:Schema(title = "是否禁用")
+    val pipelineDisable: Boolean?,
+)

@@ -25,24 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.pojo.pipeline
 
+import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
+import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "版本版本变更动作")
-enum class PipelineVersionAction {
-    @Schema(title = "保存草稿")
-    SAVE_DRAFT,
-    @Schema(title = "创建分支版本")
-    CREATE_BRANCH,
-    @Schema(title = "创建正式版本")
-    CREATE_RELEASE,
-    @Schema(title = "发布草稿")
-    RELEASE_DRAFT,
-    @Schema(title = "删除版本")
-    DELETE_VERSION,
-    @Schema(title = "分支版本置为不活跃")
-    INACTIVE_BRANCH,
-    @Schema(title = "模版实例化")
-    TEMPLATE_INSTANCE
-}
+@Schema(title = "流水线编排解析后数据")
+data class PipelineModelData(
+    @get:Schema(title = "是否能够手动启动")
+    val canManualStartup: Boolean,
+    @get:Schema(title = "是否可以跳过")
+    val canElementSkip: Boolean,
+    @get:Schema(title = "任务数")
+    val taskCount: Int,
+    @get:Schema(title = "构建版本号", required = false)
+    val buildNo: BuildNo? = null,
+    @get:Schema(title = "流水线事件回调", required = false)
+    val events: Map<String, PipelineCallbackEvent>? = emptyMap(),
+    @get:Schema(title = "流水线插件", required = false)
+    val modelTasks: List<PipelineModelTask>
+)
