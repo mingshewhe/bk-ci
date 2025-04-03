@@ -243,6 +243,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
     ) {
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
+            // 分支版本需要将同分支版本置为无效
             pipelineResourceVersionDao.updateBranchVersion(
                 dslContext = transactionContext,
                 userId = userId,

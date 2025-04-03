@@ -34,7 +34,9 @@ import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceCreateReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
@@ -53,6 +55,7 @@ import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -85,7 +88,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val transferService: PipelineTransferYamlService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineVersionManager: PipelineVersionManager
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -97,11 +101,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet {
         logger.info("template instance creation start $projectId|$userId|$templateId")
-        val templateResource = pipelineTemplateResourceService.get(projectId, templateId, version)
-
-        val templateModel = templateResource.model as Model
         val instances = request.instanceReleaseInfos
-
         val successPipelines = mutableListOf<String>()
         val failurePipelines = mutableListOf<String>()
         val successPipelineIds = mutableListOf<String>()
@@ -109,25 +109,33 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
 
         instances.forEach { instance ->
             try {
-                val pipelineId = createTemplateInstance(
+                val instanceCreateReq = PipelineTemplateInstanceCreateReq(
                     projectId = projectId,
-                    userId = userId,
-                    pipelineId = pipelineIdGenerator.getNextId(),
                     templateId = templateId,
-                    instance = instance,
-                    templateModel = templateModel,
                     templateVersion = version,
+                    pipelineName = instance.pipelineName,
+                    buildNo = instance.buildNo,
+                    param = instance.param,
                     useTemplateSettings = useTemplateSettings,
-                    templateSettingVersion = templateResource.settingVersion,
-                    enabledPac = request.enablePac,
+                    enablePac = request.enablePac,
+                    yamlFileInfo = if (request.enablePac) {
+                        PipelineYamlFileInfo(
+                            repoHashId = request.repoHashId!!,
+                            filePath = instance.filePath!!
+                        )
+                    } else {
+                        null
+                    },
                     targetAction = request.targetAction,
-                    repoHashId = request.repoHashId,
-                    targetBranch = request.targetBranch,
-                    scmType = request.scmType,
-                    description = request.description
+                    branchName = request.targetBranch
+                )
+                val deployPipeline = pipelineVersionManager.deployPipeline(
+                    userId = userId,
+                    projectId = projectId,
+                    request = instanceCreateReq
                 )
                 successPipelines.add(instance.pipelineName)
-                successPipelineIds.add(pipelineId)
+                successPipelineIds.add(deployPipeline.pipelineId)
             } catch (ignored: Throwable) {
                 handleSyncCreateInstanceErrorMessage(
                     projectId = projectId,

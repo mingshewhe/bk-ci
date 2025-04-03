@@ -102,14 +102,16 @@ class PipelineTemplateInstanceHandler constructor(
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelData = pipelineModelData,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting,
+                pipelineSetting = pipelineSetting
             )
         } else {
             if (versionStatus == VersionStatus.RELEASED) {
                 pipelineVersionPersistenceService.createReleaseVersion(
                     userId = userId,
+                    pipelineBasicInfo = pipelineBasicInfo,
+                    pipelineModelData = pipelineModelData,
                     pipelineResourceVersion = pipelineResourceVersion,
-                    pipelineSetting = pipelineSetting
+                    pipelineSetting = pipelineSetting,
                 )
             } else {
                 pipelineVersionPersistenceService.createBranchVersion(
