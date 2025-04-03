@@ -78,6 +78,31 @@ class PipelineVersionPersistenceService @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
+        transactionCreatePipeline(
+            userId = userId,
+            pipelineBasicInfo = pipelineBasicInfo,
+            pipelineModelData = pipelineModelData,
+            pipelineResourceVersion = pipelineResourceVersion,
+            pipelineSetting = pipelineSetting
+        )
+        versionCreateListeners.forEach {
+            it.onCreate(
+                userId = userId,
+                pipelineBasicInfo = pipelineBasicInfo,
+                pipelineModelData = pipelineModelData,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
+            )
+        }
+    }
+
+    private fun transactionCreatePipeline(
+        userId: String,
+        pipelineBasicInfo: PipelineBasicInfo,
+        pipelineModelData: PipelineModelData,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
+    ) {
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
             createPipelineInfo(
@@ -134,15 +159,6 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     )
                 )
             }
-        }
-        versionCreateListeners.forEach {
-            it.onCreate(
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
-                pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting
-            )
         }
     }
 
