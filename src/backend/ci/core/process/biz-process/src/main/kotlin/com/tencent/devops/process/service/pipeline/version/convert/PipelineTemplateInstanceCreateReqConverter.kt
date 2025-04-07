@@ -49,11 +49,13 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
+import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 /**
  * 模版实例化创建请求转换
  */
+@Service
 class PipelineTemplateInstanceCreateReqConverter(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,

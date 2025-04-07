@@ -51,7 +51,7 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 
 @Tag(name = "USER_TEMPLATE_INSTANCE_V2", description = "用户-流水模板-实例化-V2")
-@Path("/user/template/Instances/v2")
+@Path("/user/template/instances/v2")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Suppress("ALL")
