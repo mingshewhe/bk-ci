@@ -22,11 +22,13 @@ class PipelineTemplateResourceService @Autowired constructor(
 ) {
 
     fun getTemplateResourceVersion(
+        projectId: String,
         templateId: String,
         version: Long
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.get(
             dslContext = dslContext,
+            projectId = projectId,
             templateId = templateId,
             version = version
         )
@@ -140,12 +142,10 @@ class PipelineTemplateResourceService @Autowired constructor(
         version: Long
     ): PipelineTemplateResource {
         return pipelineTemplateResourceDao.get(
-            commonCondition = PipelineTemplateResourceCommonCondition(
-                projectId = projectId,
-                templateId = templateId,
-                version = version
-            ),
-            dslContext = dslContext
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            version = version
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
     }
 

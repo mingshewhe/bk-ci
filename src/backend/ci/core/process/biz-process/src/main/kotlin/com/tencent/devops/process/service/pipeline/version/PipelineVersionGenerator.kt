@@ -242,6 +242,41 @@ class PipelineVersionGenerator constructor(
         }
     }
 
+    fun getVersionStatusAndBranchName(
+        projectId: String,
+        templateId: String,
+        templateVersion: Long,
+        enablePac: Boolean,
+        repoHashId: String?,
+        targetAction: CodeTargetAction?,
+        targetBranch: String? = null
+    ): Pair<VersionStatus, String?> {
+        return if (enablePac) {
+            return when (targetAction) {
+                CodeTargetAction.COMMIT_TO_MASTER -> {
+                    Pair(VersionStatus.RELEASED, null)
+                }
+
+                CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
+                CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
+                    val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
+                    Pair(VersionStatus.BRANCH, branchName)
+                }
+
+                // TODO 需要判断是否为默认分支
+                CodeTargetAction.COMMIT_TO_BRANCH -> {
+                    Pair(VersionStatus.BRANCH, targetBranch)
+                }
+
+                else -> {
+                    Pair(VersionStatus.RELEASED, null)
+                }
+            }
+        } else {
+            Pair(VersionStatus.RELEASED, null)
+        }
+    }
+
     /**
      * 生成模版实例化版本
      */
@@ -251,11 +286,12 @@ class PipelineVersionGenerator constructor(
         newResource: PipelineResourceWithoutVersion,
         newSetting: PipelineSettingVersion,
         enablePac: Boolean,
+        repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null,
         templateId: String,
         templateVersion: Long
-    ): Pair<VersionStatus, PipelineResourceOnlyVersion> {
+    ): PipelineResourceOnlyVersion {
         return if (enablePac) {
             generateInstanceVersionWithPac(
                 projectId = projectId,
@@ -274,7 +310,7 @@ class PipelineVersionGenerator constructor(
                 newResource = newResource,
                 newSetting = newSetting,
             )
-            Pair(VersionStatus.RELEASED, resourceOnlyVersion)
+            resourceOnlyVersion
         }
     }
 
@@ -290,26 +326,25 @@ class PipelineVersionGenerator constructor(
         targetBranch: String? = null,
         templateId: String,
         templateVersion: Long
-    ): Pair<VersionStatus, PipelineResourceOnlyVersion> {
+    ): PipelineResourceOnlyVersion {
         return when (targetAction) {
             CodeTargetAction.COMMIT_TO_MASTER -> {
-                val resourceOnlyVersion = generateReleaseVersion(
+                generateReleaseVersion(
                     projectId = projectId,
                     pipelineId = pipelineId,
                     newResource = newResource,
                     newSetting = newSetting,
                 )
-                Pair(VersionStatus.RELEASED, resourceOnlyVersion)
             }
 
-            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
+            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
                 val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
-                val resourceOnlyVersion = generateBranchVersion(
+                generateBranchVersion(
                     projectId = projectId,
                     pipelineId = pipelineId,
                     branchName = branchName
                 )
-                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
             }
 
             CodeTargetAction.COMMIT_TO_BRANCH -> {
@@ -317,12 +352,11 @@ class PipelineVersionGenerator constructor(
                     throw IllegalArgumentException("targetBranch is null")
                 }
                 // TODO 需要判断是否为默认分支
-                val resourceOnlyVersion = generateBranchVersion(
+                generateBranchVersion(
                     projectId = projectId,
                     pipelineId = pipelineId,
                     branchName = targetBranch
                 )
-                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
             }
 
             else -> {

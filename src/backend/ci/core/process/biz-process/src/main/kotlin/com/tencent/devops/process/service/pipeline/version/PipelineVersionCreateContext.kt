@@ -62,7 +62,7 @@ data class PipelineVersionCreateContext(
     val yamlFileInfo: PipelineYamlFileInfo? = null,
     @get:Schema(title = "发布操作", required = false)
     val targetAction: CodeTargetAction? = null,
-    @get:Schema(title = "分支名,发布时指定的分支或者代码库推送的分支", required = false)
+    @get:Schema(title = "分支名,发布时的分支或者代码库推送的分支", required = false)
     val branchName: String? = null,
     @get:Schema(title = "模版ID", required = false)
     val templateId: String? = null,

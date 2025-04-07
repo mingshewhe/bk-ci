@@ -157,12 +157,14 @@ class PipelineTemplateResourceDao {
 
     fun get(
         dslContext: DSLContext,
+        projectId: String,
         templateId: String,
         version: Long
     ): PipelineTemplateResource? {
         return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             dslContext.selectFrom(this)
-                .where(TEMPLATE_ID.eq(templateId))
+                .where(PROJECT_ID.eq(projectId))
+                .and(TEMPLATE_ID.eq(templateId))
                 .and(VERSION.eq(version))
                 .fetchOne()?.convert()
         }

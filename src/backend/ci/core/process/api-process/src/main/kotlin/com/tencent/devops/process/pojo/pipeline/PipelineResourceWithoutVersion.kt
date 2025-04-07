@@ -53,8 +53,8 @@ data class PipelineResourceWithoutVersion(
     val updater: String?,
     @get:Schema(title = "版本修改时间", required = true)
     val updateTime: LocalDateTime?,
-    @get:Schema(title = "草稿版本标识", required = false)
-    val status: VersionStatus? = null,
+    @get:Schema(title = "版本状态", required = false)
+    val status: VersionStatus,
     @get:Schema(title = "分支版本状态", required = false)
     val branchAction: BranchVersionAction? = null,
     @get:Schema(title = "版本变更说明", required = false)
@@ -72,7 +72,7 @@ data class PipelineResourceWithoutVersion(
         createTime = pipelineResource.createTime,
         updater = pipelineResource.updater,
         updateTime = pipelineResource.updateTime,
-        status = pipelineResource.status,
+        status = pipelineResource.status ?: VersionStatus.RELEASED,
         branchAction = pipelineResource.branchAction,
         description = pipelineResource.description,
         baseVersion = pipelineResource.baseVersion

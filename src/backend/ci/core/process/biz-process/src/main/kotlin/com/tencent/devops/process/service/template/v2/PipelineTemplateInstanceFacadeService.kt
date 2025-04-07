@@ -127,7 +127,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                         null
                     },
                     targetAction = request.targetAction,
-                    branchName = request.targetBranch
+                    targetBranch = request.targetBranch
                 )
                 val deployPipeline = pipelineVersionManager.deployPipeline(
                     userId = userId,

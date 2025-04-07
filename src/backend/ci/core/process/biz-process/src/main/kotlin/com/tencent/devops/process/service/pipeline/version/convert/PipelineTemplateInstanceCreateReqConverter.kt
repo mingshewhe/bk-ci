@@ -45,6 +45,7 @@ import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -64,7 +65,8 @@ class PipelineTemplateInstanceCreateReqConverter(
     private val pipelineTemplateInstanceSettingService: PipelineTemplateInstanceSettingService,
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val transferService: PipelineTransferYamlService,
-    private val pipelineResourceFactory: PipelineResourceFactory
+    private val pipelineResourceFactory: PipelineResourceFactory,
+    private val pipelineVersionGenerator: PipelineVersionGenerator
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceCreateReq
 
@@ -77,6 +79,14 @@ class PipelineTemplateInstanceCreateReqConverter(
     ): PipelineVersionCreateContext {
         request as PipelineTemplateInstanceCreateReq
         with(request) {
+            if (enablePac) {
+                if (targetAction == null) {
+                    throw IllegalArgumentException("targetAction is null")
+                }
+                if (yamlFileInfo == null) {
+                    throw IllegalArgumentException("yamlFileInfo is null")
+                }
+            }
             val templateInfo = pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId)
             if (templateInfo.type != PipelineTemplateType.PIPELINE) {
                 throw ErrorCodeException(
@@ -142,12 +152,22 @@ class PipelineTemplateInstanceCreateReqConverter(
                 channelCode = ChannelCode.BS,
                 model = instanceModel
             )
+            val (versionStatus, branchName) = pipelineVersionGenerator.getVersionStatusAndBranchName(
+                projectId = projectId,
+                templateId = templateId,
+                templateVersion = templateVersion,
+                enablePac = enablePac,
+                repoHashId = yamlFileInfo?.repoHashId,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            )
             val pipelineModelData = pipelineResourceFactory.createPipelineModelData(
                 model = instanceModel,
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 userId = userId,
                 create = true,
+                versionStatus = versionStatus,
                 channelCode = ChannelCode.BS
             )
             val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
@@ -159,7 +179,8 @@ class PipelineTemplateInstanceCreateReqConverter(
                 creator = userId,
                 createTime = LocalDateTime.now(),
                 updater = userId,
-                updateTime = LocalDateTime.now()
+                updateTime = LocalDateTime.now(),
+                status = versionStatus
             )
 
             return PipelineVersionCreateContext(

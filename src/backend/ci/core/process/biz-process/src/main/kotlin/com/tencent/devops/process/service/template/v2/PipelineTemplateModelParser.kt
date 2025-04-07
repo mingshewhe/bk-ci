@@ -49,27 +49,33 @@ class PipelineTemplateModelParser @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) {
 
-    fun parseModel(model: Model): Model {
-        val newStages = parseStages(model.stages)
+    fun parseModel(
+        projectId: String,
+        model: Model
+    ): Model {
+        val newStages = parseStages(projectId = projectId, stages = model.stages)
         return model.copy(stages = newStages)
     }
 
-    fun parseTemplateModel(model: ITemplateModel): ITemplateModel {
+    fun parseTemplateModel(
+        projectId: String,
+        model: ITemplateModel
+    ): ITemplateModel {
         return when (model) {
             is Model -> {
-                parseModel(model)
+                parseModel(projectId = projectId, model = model)
             }
 
             is StageTemplateModel -> {
-                model.copy(stages = parseStages(model.stages))
+                model.copy(stages = parseStages(projectId = projectId, stages = model.stages))
             }
 
             is JobTemplateModel -> {
-                model.copy(containers = parseContainers(model.containers))
+                model.copy(containers = parseContainers(projectId = projectId, containers = model.containers))
             }
 
             is StepTemplateModel -> {
-                val newElements = parseElements(model.container.elements)
+                val newElements = parseElements(projectId = projectId, elements = model.container.elements)
                 val newContainer = model.container.copyElements(newElements)
                 model.copy(container = newContainer)
             }
@@ -78,13 +84,16 @@ class PipelineTemplateModelParser @Autowired constructor(
         }
     }
 
-    private fun parseStages(stages: List<Stage>): List<Stage> {
+    private fun parseStages(
+        projectId: String,
+        stages: List<Stage>
+    ): List<Stage> {
         val newStages = mutableListOf<Stage>()
         stages.forEach { stage ->
             val newStage = if (stage.fromTemplate == true) {
-                parseStageTemplate(stage)
+                parseStageTemplate(projectId = projectId, stage = stage)
             } else {
-                val newContainers = parseContainers(stage.containers)
+                val newContainers = parseContainers(projectId = projectId, containers = stage.containers)
                 listOf(stage.copy(containers = newContainers))
             }
             newStages.addAll(newStage)
@@ -92,13 +101,19 @@ class PipelineTemplateModelParser @Autowired constructor(
         return newStages
     }
 
-    private fun parseContainers(containers: List<Container>): List<Container> {
+    private fun parseContainers(
+        projectId: String,
+        containers: List<Container>
+    ): List<Container> {
         val newContainers = mutableListOf<Container>()
         containers.forEach { container ->
             val newContainer = if (container is JobTemplateContainer) {
-                parseJobTemplateContainer(container)
+                parseJobTemplateContainer(
+                    projectId = projectId,
+                    container = container
+                )
             } else {
-                val newElements = parseElements(container.elements)
+                val newElements = parseElements(projectId = projectId, elements = container.elements)
                 listOf(container.copyElements(newElements))
             }
             newContainers.addAll(newContainer)
@@ -106,11 +121,17 @@ class PipelineTemplateModelParser @Autowired constructor(
         return newContainers
     }
 
-    private fun parseElements(elements: List<Element>): List<Element> {
+    private fun parseElements(
+        projectId: String,
+        elements: List<Element>
+    ): List<Element> {
         val newElements = mutableListOf<Element>()
         elements.forEach { element ->
             val newElement = if (element is StepTemplateElement) {
-                parseStepTemplateElement(element)
+                parseStepTemplateElement(
+                    projectId = projectId,
+                    element = element
+                )
             } else {
                 listOf(element)
             }
@@ -119,10 +140,14 @@ class PipelineTemplateModelParser @Autowired constructor(
         return newElements
     }
 
-    private fun parseStageTemplate(stage: Stage): List<Stage> {
+    private fun parseStageTemplate(
+        projectId: String,
+        stage: Stage
+    ): List<Stage> {
         val templateId = stage.templateId!!
         val templateVersion = stage.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+            projectId = projectId,
             templateId = templateId,
             version = TODO()
         )?.model ?: throw ErrorCodeException(
@@ -138,10 +163,14 @@ class PipelineTemplateModelParser @Autowired constructor(
         return templateModel.stages
     }
 
-    private fun parseJobTemplateContainer(container: JobTemplateContainer): List<Container> {
+    private fun parseJobTemplateContainer(
+        projectId: String,
+        container: JobTemplateContainer
+    ): List<Container> {
         val templateId = container.templateId!!
         val templateVersion = container.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+            projectId = projectId,
             templateId = templateId,
             version = TODO()
         )?.model ?: throw ErrorCodeException(
@@ -157,10 +186,14 @@ class PipelineTemplateModelParser @Autowired constructor(
         return templateModel.containers
     }
 
-    private fun parseStepTemplateElement(element: StepTemplateElement): List<Element> {
+    private fun parseStepTemplateElement(
+        projectId: String,
+        element: StepTemplateElement
+    ): List<Element> {
         val templateId = element.templateId!!
         val templateVersion = element.template!!
         val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+            projectId = projectId,
             templateId = templateId,
             version = TODO()
         )?.model ?: throw ErrorCodeException(

@@ -81,23 +81,16 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
     }
 
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
-        val (versionStatus, resourceOnlyVersion) = pipelineVersionGenerator.generateInstanceVersion(
-            projectId = projectId,
-            pipelineId = pipelineId,
-            newResource = pipelineResourceWithoutVersion,
-            newSetting = PipelineSettingVersion.convertFromSetting(pipelineSetting),
-            enablePac = enablePac,
-            targetAction = targetAction,
-            targetBranch = branchName,
-            templateId = templateId!!,
-            templateVersion = templateVersion!!,
-        )
-        val pipelineResourceVersion = PipelineResourceVersion(
-            pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-            pipelineResourceOnlyVersion = resourceOnlyVersion
-        )
         val pipelineInfo = pipelineRepositoryService.getPipelineInfo(projectId = projectId, pipelineId = pipelineId)
-        if (pipelineInfo == null) {
+        val resourceOnlyVersion = if (pipelineInfo == null) {
+            val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
+                versionStatus = pipelineResourceWithoutVersion.status,
+                branchName = branchName
+            )
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
+            )
             pipelineVersionPersistenceService.createPipeline(
                 userId = userId,
                 pipelineBasicInfo = pipelineBasicInfo,
@@ -105,8 +98,25 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                 pipelineResourceVersion = pipelineResourceVersion,
                 pipelineSetting = pipelineSetting
             )
+            resourceOnlyVersion
         } else {
-            if (versionStatus == VersionStatus.RELEASED) {
+            val resourceOnlyVersion = pipelineVersionGenerator.generateInstanceVersion(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                newResource = pipelineResourceWithoutVersion,
+                newSetting = PipelineSettingVersion.convertFromSetting(pipelineSetting),
+                enablePac = enablePac,
+                repoHashId = yamlFileInfo?.repoHashId,
+                targetAction = targetAction,
+                targetBranch = branchName,
+                templateId = templateId!!,
+                templateVersion = templateVersion!!,
+            )
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
+            )
+            if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
                 pipelineVersionPersistenceService.createReleaseVersion(
                     userId = userId,
                     pipelineBasicInfo = pipelineBasicInfo,
@@ -120,7 +130,9 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                     pipelineResourceVersion = pipelineResourceVersion,
                     pipelineSetting = pipelineSetting
                 )
+
             }
+            resourceOnlyVersion
         }
 
         return DeployPipelineResult(
