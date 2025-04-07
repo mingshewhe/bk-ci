@@ -118,14 +118,14 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 userId = userId,
                 pipelineResourceVersion = pipelineResourceVersion
             )
-            pipelineSettingDao.saveSetting(
-                dslContext = transactionContext,
-                setting = pipelineSetting
-            )
             createPipelineResourceVersion(
                 transactionContext = transactionContext,
                 userId = userId,
                 pipelineResourceVersion = pipelineResourceVersion
+            )
+            pipelineSettingDao.saveSetting(
+                dslContext = transactionContext,
+                setting = pipelineSetting
             )
             createPipelineSettingVersion(
                 transactionContext = transactionContext,

@@ -121,10 +121,14 @@ class PipelineTemplateInstanceCreateReqConverter(
 
             // 生成流水线配置
             val pipelineSetting = if (useTemplateSettings) {
-                pipelineTemplateSettingService.get(
+                val templateSetting = pipelineTemplateSettingService.get(
                     projectId = projectId,
                     templateId = templateId,
                     settingVersion = templateResource.settingVersion
+                )
+                templateSetting.copy(
+                    pipelineId = newPipelineId,
+                    pipelineName = pipelineName
                 )
             } else {
                 pipelineTemplateInstanceSettingService.getTemplateInstanceDefaultSetting(
