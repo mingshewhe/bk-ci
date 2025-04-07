@@ -163,8 +163,8 @@ class PipelineTemplateMigrateService(
                 )
             }
 
-            logger.debug("model Transfer model: {} ", currentTemplateModel)
-            logger.debug("model Transfer setting: {}", currentSetting)
+            logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
+            logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
             val modelTransferResult = try {
                 pipelineTemplateGenerator.transfer(
                     userId = latestTemplate.creator,
