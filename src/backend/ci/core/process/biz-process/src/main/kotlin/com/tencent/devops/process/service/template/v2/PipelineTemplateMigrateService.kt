@@ -78,10 +78,14 @@ class PipelineTemplateMigrateService(
             )
             logger.info("templates->{}", templateIds)
             templateIds.forEach { templateId ->
-                migrateTemplate(
-                    templateId = templateId,
-                    projectId = projectId
-                )
+                try {
+                    migrateTemplate(
+                        templateId = templateId,
+                        projectId = projectId
+                    )
+                } catch (ex: Exception) {
+                    logger.warn("migrate template failed $projectId|$templateId|$ex")
+                }
             }
 
             offset += limit
@@ -177,7 +181,12 @@ class PipelineTemplateMigrateService(
                 )
             } catch (ex: Exception) {
                 logger.warn("model Transfer failed:{}", ex.toString())
-                throw ex
+                PTemplateModelTransferResult(
+                    templateType = PipelineTemplateType.PIPELINE,
+                    templateModel = currentTemplateModel,
+                    templateSetting = currentSetting,
+                    yamlWithVersion = null
+                )
             }
 
             val pipelineTemplateResource = createPipelineTemplateResource(
