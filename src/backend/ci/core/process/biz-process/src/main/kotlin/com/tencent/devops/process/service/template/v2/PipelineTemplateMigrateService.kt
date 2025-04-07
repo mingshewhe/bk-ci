@@ -163,15 +163,22 @@ class PipelineTemplateMigrateService(
                 )
             }
 
-            val modelTransferResult = pipelineTemplateGenerator.transfer(
-                userId = latestTemplate.creator,
-                projectId = latestTemplate.projectId,
-                storageType = PipelineStorageType.MODEL,
-                templateType = PipelineTemplateType.PIPELINE,
-                templateModel = currentTemplateModel,
-                templateSetting = currentSetting,
-                yaml = null
-            )
+            logger.debug("model Transfer model: {} ", currentTemplateModel)
+            logger.debug("model Transfer setting: {}", currentSetting)
+            val modelTransferResult = try {
+                pipelineTemplateGenerator.transfer(
+                    userId = latestTemplate.creator,
+                    projectId = latestTemplate.projectId,
+                    storageType = PipelineStorageType.MODEL,
+                    templateType = PipelineTemplateType.PIPELINE,
+                    templateModel = currentTemplateModel,
+                    templateSetting = currentSetting,
+                    yaml = null
+                )
+            } catch (ex: Exception) {
+                logger.warn("model Transfer failed:{}", ex.toString())
+                throw ex
+            }
 
             val pipelineTemplateResource = createPipelineTemplateResource(
                 latestTemplate = latestTemplate,
