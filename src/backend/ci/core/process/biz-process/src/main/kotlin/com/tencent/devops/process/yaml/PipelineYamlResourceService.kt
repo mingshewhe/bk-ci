@@ -32,6 +32,7 @@ import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.DeletePipelineResult
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.service.PipelineInfoFacadeService
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
@@ -54,7 +55,7 @@ class PipelineYamlResourceService @Autowired constructor(
         isDefaultBranch: Boolean,
         description: String?,
         aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlInfo: PipelineYamlVo?
+        yamlFileInfo: PipelineYamlFileInfo?,
     ): DeployPipelineResult {
         return pipelineInfoFacadeService.createYamlPipeline(
             userId = userId,
@@ -65,7 +66,12 @@ class PipelineYamlResourceService @Autowired constructor(
             isDefaultBranch = isDefaultBranch,
             description = description,
             aspects = aspects,
-            yamlInfo = yamlInfo
+            yamlInfo = yamlFileInfo?.let {
+                PipelineYamlVo(
+                    repoHashId = it.repoHashId,
+                    filePath = it.filePath
+                )
+            }
         )
     }
 
@@ -79,7 +85,7 @@ class PipelineYamlResourceService @Autowired constructor(
         isDefaultBranch: Boolean,
         description: String?,
         aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlInfo: PipelineYamlVo?
+        yamlFileInfo: PipelineYamlFileInfo?
     ): DeployPipelineResult {
         return pipelineInfoFacadeService.updateYamlPipeline(
             userId = userId,
@@ -91,7 +97,12 @@ class PipelineYamlResourceService @Autowired constructor(
             isDefaultBranch = isDefaultBranch,
             description = description,
             aspects = aspects,
-            yamlInfo = yamlInfo
+            yamlInfo = yamlFileInfo?.let {
+                PipelineYamlVo(
+                    repoHashId = it.repoHashId,
+                    filePath = it.filePath
+                )
+            }
         )
     }
 
@@ -113,8 +124,8 @@ class PipelineYamlResourceService @Autowired constructor(
         )
     }
 
-    override fun deletePipeline(userId: String, projectId: String, pipelineId: String): DeletePipelineResult {
-        return pipelineInfoFacadeService.deletePipeline(
+    override fun deletePipeline(userId: String, projectId: String, pipelineId: String) {
+        pipelineInfoFacadeService.deletePipeline(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,

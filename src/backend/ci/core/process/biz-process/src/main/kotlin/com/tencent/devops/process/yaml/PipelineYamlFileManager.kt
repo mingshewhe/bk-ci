@@ -43,6 +43,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PAC_DEFAULT_BRANCH_FILE_DELETED
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileSyncReq
@@ -525,7 +526,7 @@ class PipelineYamlFileManager @Autowired constructor(
     private fun PipelineYamlFileEvent.createYamlPipeline(): DeployPipelineResult {
         val isDefaultBranch = ref == defaultBranch
         val directory = GitActionCommon.getCiDirectory(filePath)
-        val yamlInfo = PipelineYamlVo(repoHashId = repoHashId, filePath = filePath)
+        val yamlFileInfo = PipelineYamlFileInfo(repoHashId = repoHashId, filePath = filePath)
         // 如果不是默认分支,需要判断默认分支是否已经删除,如果删除,不能再创建
         if (!isDefaultBranch) {
             val defaultBranchDeleted = pipelineYamlFileService.getBranchFilePath(
@@ -556,10 +557,7 @@ class PipelineYamlFileManager @Autowired constructor(
             branchName = ref,
             isDefaultBranch = isDefaultBranch,
             description = commit.commitMsg,
-            aspects = PipelineTransferAspectLoader.initByDefaultTriggerOn(defaultRepo = {
-                repository.aliasName
-            }),
-            yamlInfo = yamlInfo,
+            yamlFileInfo = yamlFileInfo,
             isTemplate = GitActionCommon.isTemplateFile(filePath)
         )
         val pipelineId = deployPipelineResult.pipelineId
@@ -764,7 +762,7 @@ class PipelineYamlFileManager @Autowired constructor(
     }
 
     private fun PipelineYamlFileEvent.updateYamlPipeline(pipelineId: String): DeployPipelineResult {
-        val yamlInfo = PipelineYamlVo(
+        val yamlFileInfo = PipelineYamlFileInfo(
             repoHashId = repoHashId,
             filePath = filePath
         )
@@ -783,10 +781,7 @@ class PipelineYamlFileManager @Autowired constructor(
             branchName = ref,
             isDefaultBranch = ref == defaultBranch,
             description = commit.commitMsg,
-            aspects = PipelineTransferAspectLoader.initByDefaultTriggerOn(defaultRepo = {
-                repository.aliasName
-            }),
-            yamlInfo = yamlInfo,
+            yamlFileInfo = yamlFileInfo,
             isTemplate = GitActionCommon.isTemplateFile(filePath)
         )
         pipelineYamlService.update(

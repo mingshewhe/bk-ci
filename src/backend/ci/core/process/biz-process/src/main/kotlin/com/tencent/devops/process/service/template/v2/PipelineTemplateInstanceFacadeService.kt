@@ -304,22 +304,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     params = arrayOf(yamlInfo.filePath)
                 )
             }
-
-            pipelineYamlFacadeService.pushYamlFile(
-                userId = userId,
-                projectId = projectId,
-                pipelineId = pipelineId,
-                version = PipelineTemplateConstant.INIT_VERSION,
-                versionName = branchName,
-                pipelineName = instance.pipelineName,
-                content = transferResult.yamlWithVersion?.yamlStr ?: "",
-                commitMessage = description ?: "update",
-                repoHashId = yamlInfo.repoHashId,
-                scmType = yamlInfo.scmType!!,
-                filePath = yamlInfo.filePath,
-                targetAction = fixTargetAction,
-                targetBranch = branchName
-            )
         }
         return pipelineId
     }
