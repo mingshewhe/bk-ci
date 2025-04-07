@@ -1,7 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime

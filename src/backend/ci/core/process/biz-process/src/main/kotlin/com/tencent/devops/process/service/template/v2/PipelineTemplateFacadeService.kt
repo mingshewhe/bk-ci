@@ -6,8 +6,8 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS
@@ -397,12 +397,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Boolean {
+    fun saveDraft(userId: String, request: PipelineTemplateDraftSaveReq): Long {
         logger.info("save template draft {}|{}|{}", request.projectId, userId, request)
         val templateInfo = pipelineTemplateInfoService.get(
             projectId = request.projectId,
             templateId = request.templateId
         )
+        val version: Long
         // todo yaml方式 或者 model方式
         var newYaml = ""
 
@@ -425,7 +426,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                     status = VersionStatus.COMMITTING
                 )
             )
-
+            version = draftVersionResource.version
             val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
                 name = request.name,
                 desc = request.desc,
@@ -463,6 +464,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 projectId = request.projectId,
                 templateId = request.templateId
             )
+            version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!
             val pipelineTemplateResource = PipelineTemplateResource(
                 projectId = request.projectId,
                 templateId = request.templateId,
@@ -470,7 +472,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 desc = request.desc,
                 type = templateInfo.type,
                 settingVersion = latestTemplateResource.settingVersion?.let { it + 1 },
-                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data!!,
+                version = version,
                 number = latestTemplateResource.number + 1,
                 draftSourceVersion = request.draftSourceVersion,
                 params = request.params,
@@ -497,7 +499,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 pipelineTemplateResource = pipelineTemplateResource
             )
         }
-        return true
+        return version
     }
 
     // 获取模板列表

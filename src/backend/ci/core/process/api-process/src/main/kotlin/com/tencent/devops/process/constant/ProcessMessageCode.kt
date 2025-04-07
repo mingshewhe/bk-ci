@@ -607,4 +607,9 @@ object ProcessMessageCode {
     const val BK_YAML_PIPELINE_DELETE_VERSION_FAILED = "bkYamlPipelineDeleteVersionFailed"
     // [<a href={0}>{1}</a>]删除失败
     const val BK_YAML_PIPELINE_DELETE_FAILED = "bkYamlPipelineDeleteFailed"
+
+    // 自定义模板名称
+    const val BK_CUSTOM_PIPELINE_TEMPLATE_NAME = "bkCustomPipelineTemplateName"
+    // 研发商店模板名称
+    const val BK_MARKET_PIPELINE_TEMPLATE_NAME = "bkMarketPipelineTemplateName"
 }

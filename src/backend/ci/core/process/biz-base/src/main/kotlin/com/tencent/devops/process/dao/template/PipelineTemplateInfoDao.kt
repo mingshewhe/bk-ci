@@ -1,7 +1,7 @@
 package com.tencent.devops.process.dao.template
 
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
@@ -208,6 +208,7 @@ class PipelineTemplateInfoDao {
     }
 
     fun TPipelineTemplateInfoRecord.convert(): PipelineTemplateInfo {
+        val source = PipelineTemplateSource.get(this.source)
         return PipelineTemplateInfo(
             id = this.id,
             projectId = this.projectId,
@@ -222,7 +223,8 @@ class PipelineTemplateInfoDao {
             latestVersionStatus = VersionStatus.get(this.latestVersionStatus),
             latestVersionName = this.latestVersionName,
             latestSettingVersion = this.latestSettingVersion,
-            source = PipelineTemplateSource.get(this.source),
+            source = source,
+            sourceName = PipelineTemplateSource.getSourceName(source),
             storeFlag = this.storeFlag,
             srcTemplateId = this.srcTemplateId,
             srcTemplateProjectId = this.srcTemplateProjectId,

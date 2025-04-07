@@ -1,7 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateSource
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.PipelineTemplateSource
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
@@ -36,6 +36,8 @@ data class PipelineTemplateInfoWithPermission(
     override val latestSettingVersion: Int?,
     @get:Schema(title = "模板来源", required = true)
     override val source: PipelineTemplateSource,
+    @get:Schema(title = "来源名称", required = true)
+    override val sourceName: String? = null,
     @get:Schema(title = "是否从研发商店安装至项目", required = true)
     override val storeFlag: Boolean,
     @get:Schema(title = "父模板ID", required = false)
@@ -106,6 +108,7 @@ data class PipelineTemplateInfoWithPermission(
                     latestVersionName = latestVersionName,
                     latestSettingVersion = latestSettingVersion,
                     source = source,
+                    sourceName = sourceName,
                     storeFlag = storeFlag,
                     srcTemplateId = srcTemplateId,
                     srcTemplateProjectId = srcTemplateProjectId,

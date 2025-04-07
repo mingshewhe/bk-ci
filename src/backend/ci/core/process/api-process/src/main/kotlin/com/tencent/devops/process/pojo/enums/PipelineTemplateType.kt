@@ -25,20 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline.enums
+package com.tencent.devops.process.pojo.enums
 
-enum class PipelineTemplateSource(
-    val value: String,
-    val alias: String
-) {
-    CUSTOM("custom", "自定义"),
-    REPOSITORY("repository", "代码库"),
-    MARKET("market", "研发商店"),
-    YAML("yaml", "yaml导入");
+enum class PipelineTemplateType(val value: String) {
+    All("all"),
+    PIPELINE("pipeline"),
+    STAGE("stage"),
+    JOB("job"),
+    STEP("step"),
+    UNKNOWN("unknown");
 
     companion object {
-        fun get(value: String): PipelineTemplateSource {
-            PipelineTemplateSource.values().forEach {
+        fun get(value: String): PipelineTemplateType {
+            PipelineTemplateType.values().forEach {
                 if (value == it.value) return it
             }
             throw IllegalArgumentException("No enum for constant $value")

@@ -86,7 +86,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         templateId: String,
         request: PipelineTemplateDraftSaveReq
-    ): Result<Boolean> {
+    ): Result<Long> {
         logger.info("save template draft {}|{}|{}|{}", userId, projectId, templateId, request)
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,

@@ -28,7 +28,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.common.pipeline.enums.PipelineTemplateType
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
