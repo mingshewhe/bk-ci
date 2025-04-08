@@ -96,7 +96,9 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelData = pipelineModelData,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting
+                pipelineSetting = pipelineSetting.copy(
+                    version = resourceOnlyVersion.settingVersion!!
+                )
             )
             resourceOnlyVersion
         } else {
@@ -122,13 +124,17 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                     pipelineBasicInfo = pipelineBasicInfo,
                     pipelineModelData = pipelineModelData,
                     pipelineResourceVersion = pipelineResourceVersion,
-                    pipelineSetting = pipelineSetting,
+                    pipelineSetting = pipelineSetting.copy(
+                        version = resourceOnlyVersion.settingVersion!!
+                    ),
                 )
             } else {
                 pipelineVersionPersistenceService.createBranchVersion(
                     userId = userId,
                     pipelineResourceVersion = pipelineResourceVersion,
-                    pipelineSetting = pipelineSetting
+                    pipelineSetting = pipelineSetting.copy(
+                        version = resourceOnlyVersion.settingVersion!!
+                    )
                 )
 
             }

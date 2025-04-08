@@ -30,11 +30,10 @@ package com.tencent.devops.process.pojo.pipeline.version
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版实例创建请求")
-data class PipelineTemplateInstanceCreateReq(
+data class PipelineTemplateInstanceReq(
     @get:Schema(title = "项目ID", required = false)
     val projectId: String,
     @get:Schema(title = "模版ID", required = false)
@@ -46,13 +45,15 @@ data class PipelineTemplateInstanceCreateReq(
     @get:Schema(title = "构建号（推荐版本号）", required = false)
     val buildNo: BuildNo?,
     @get:Schema(title = "流水线变量列表", required = false)
-    val param: List<BuildFormProperty>? = null,
+    val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "是否使用模版设置", required = false)
-    val useTemplateSettings: Boolean,
+    val useTemplateSetting: Boolean,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean = false,
-    @get:Schema(title = "yaml文件分支信息", required = true)
-    val yamlFileInfo: PipelineYamlFileInfo? = null,
+    @get:Schema(title = "代码库ID")
+    val repoHashId: String? = null,
+    @get:Schema(title = "ci文件路径")
+    val filePath: String? = null,
     @get:Schema(title = "发布操作", required = false)
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时指定的分支或者代码库推送的分支", required = false)

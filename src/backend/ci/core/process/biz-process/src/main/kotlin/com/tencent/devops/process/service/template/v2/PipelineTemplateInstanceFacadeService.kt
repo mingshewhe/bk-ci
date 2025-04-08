@@ -21,7 +21,6 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
-import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
@@ -34,9 +33,8 @@ import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
-import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceCreateReq
+import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
@@ -109,23 +107,17 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
 
         instances.forEach { instance ->
             try {
-                val instanceCreateReq = PipelineTemplateInstanceCreateReq(
+                val instanceCreateReq = PipelineTemplateInstanceReq(
                     projectId = projectId,
                     templateId = templateId,
                     templateVersion = version,
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
-                    param = instance.param,
-                    useTemplateSettings = useTemplateSettings,
+                    params = instance.param,
+                    useTemplateSetting = useTemplateSettings,
                     enablePac = request.enablePac,
-                    yamlFileInfo = if (request.enablePac) {
-                        PipelineYamlFileInfo(
-                            repoHashId = request.repoHashId!!,
-                            filePath = instance.filePath!!
-                        )
-                    } else {
-                        null
-                    },
+                    repoHashId = request.repoHashId,
+                    filePath = instance.filePath,
                     targetAction = request.targetAction,
                     targetBranch = request.targetBranch
                 )
@@ -157,155 +149,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             ),
             ""
         )
-    }
-
-    private fun createTemplateInstance(
-        projectId: String,
-        pipelineId: String,
-        userId: String,
-        templateId: String,
-        instance: PipelineTemplateInstanceReleaseInfo,
-        enabledPac: Boolean,
-        targetAction: CodeTargetAction?,
-        description: String?,
-        templateModel: Model,
-        templateVersion: Long,
-        templateSettingVersion: Int,
-        useTemplateSettings: Boolean,
-        repoHashId: String?,
-        scmType: ScmType?,
-        targetBranch: String?
-    ): String {
-        // 获取默认阶段标签
-        val defaultStageTag = stageTagService.getDefaultStageTag().data
-        val defaultStageTagId = defaultStageTag?.id
-
-        // 构建实例模型
-        val instanceModel = PipelineUtils.instanceModel(
-            templateModel = templateModel,
-            pipelineName = instance.pipelineName,
-            buildNo = instance.buildNo,
-            param = instance.param,
-            instanceFromTemplate = true,
-            defaultStageTagId = defaultStageTagId,
-            templateId = templateId
-        )
-
-        val setting = if (useTemplateSettings) {
-            pipelineTemplateInstanceSettingService.getTemplateInstanceSetting(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = templateSettingVersion,
-                pipelineId = pipelineId,
-                pipelineName = instance.pipelineName,
-                pipelineLabels = null,
-                enabledPac = enabledPac,
-                version = 1
-            )
-        } else {
-            pipelineTemplateInstanceSettingService.getTemplateInstanceDefaultSetting(
-                projectId = projectId,
-                pipelineId = pipelineId,
-                pipelineName = instance.pipelineName
-            )
-        }
-        val transferResult = transferService.transfer(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = pipelineId,
-            actionType = TransferActionType.FULL_MODEL2YAML,
-            data = TransferBody(
-                modelAndSetting = PipelineModelAndSetting(
-                    model = instanceModel,
-                    setting = setting
-                )
-            )
-        )
-
-        val (branchName, versionStatus) = when {
-            (enabledPac && targetAction == CHECKOUT_BRANCH_AND_REQUEST_MERGE) -> {
-                Pair(
-                    first = PipelineVersionFacadeService.getReleaseBranchName(
-                        pipelineId = pipelineId,
-                        version = PipelineTemplateConstant.INIT_VERSION
-                    ),
-                    second = VersionStatus.BRANCH
-                )
-            }
-
-            (enabledPac && targetAction == COMMIT_TO_BRANCH) -> {
-                // todo 如果指定分支是默认分支，为正式版本
-                Pair(
-                    first = targetBranch ?: throw ErrorCodeException(errorCode = ""),
-                    second = VersionStatus.BRANCH
-                )
-            }
-
-            else -> {
-                Pair(
-                    first = null,
-                    second = VersionStatus.RELEASED
-                )
-            }
-        }
-        val yamlInfo = targetAction?.let {
-            PipelineYamlVo(
-                repoHashId = repoHashId!!,
-                scmType = scmType!!,
-                filePath = instance.filePath!!
-            )
-        }
-
-        // 创建流水线
-        pipelineInfoFacadeService.createPipeline(
-            userId = userId,
-            projectId = projectId,
-            model = instanceModel,
-            channelCode = ChannelCode.BS,
-            fixPipelineId = pipelineId,
-            checkPermission = true,
-            yaml = transferResult.yamlWithVersion,
-            instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
-            buildNo = instance.buildNo,
-            param = instance.param,
-            fixTemplateVersion = templateVersion,
-            versionStatus = versionStatus,
-            branchName = branchName,
-            yamlInfo = yamlInfo,
-            description = description
-        )
-
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineSettingFacadeService.saveSetting(
-                context = context,
-                userId = userId,
-                projectId = setting.projectId,
-                pipelineId = setting.pipelineId,
-                setting = setting
-            )
-            pipelineRemoteAuthService.addRemoteAuth(
-                model = instanceModel,
-                projectId = projectId,
-                pipelineId = pipelineId,
-                userId = userId
-            )
-        }
-        if (enabledPac) {
-            val fixTargetAction = targetAction ?: throw ErrorCodeException(errorCode = "")
-            if (yamlInfo == null) throw ErrorCodeException(
-                errorCode = CommonMessageCode.ERROR_NEED_PARAM_,
-                params = arrayOf(PipelineVersionReleaseRequest::yamlInfo.name)
-            )
-            // 对前端的YAML信息进行校验
-            if (!yamlInfo.filePath.endsWith(".yaml") && !yamlInfo.filePath.endsWith(".yml")) {
-                throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.ERROR_PIPELINE_YAML_FILENAME,
-                    params = arrayOf(yamlInfo.filePath)
-                )
-            }
-        }
-        return pipelineId
     }
 
     private fun handleSyncCreateInstanceErrorMessage(
@@ -738,9 +581,14 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 dslContext = dslContext,
                 projectId = event.projectId,
                 baseId = event.baseId
-            ) ?: throw ErrorCodeException(errorCode = "")
+            ) ?: run {
+                logger.info(
+                    "handle template instance event failed, baseId not found ${event.projectId}|${event.baseId}"
+                )
+                return
+            }
 
-            val templateInstanceItemCount = templateInstanceItemDao.getTemplateInstanceItemCountByBaseId(
+            val itemCount = templateInstanceItemDao.getTemplateInstanceItemCountByBaseId(
                 dslContext = dslContext,
                 projectId = projectId,
                 baseId = baseId,
@@ -751,127 +599,111 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 instanceBase = instanceBase,
                 projectId = projectId,
                 baseId = baseId,
-                templateInstanceItemCount = templateInstanceItemCount
+                templateInstanceItemCount = itemCount
             )
 
-            // 开始执行任务
-            templateInstanceBaseDao.updateTemplateInstanceBase(
-                dslContext = dslContext,
-                projectId = event.projectId,
-                baseId = event.baseId,
-                status = TemplateInstanceStatus.INSTANCING.name,
-                userId = "system"
-            )
-            val templateResource = pipelineTemplateResourceService.get(
+            instanceBase.handleTemplateInstanceBase(
                 projectId = projectId,
-                templateId = instanceBase.templateId,
-                version = instanceBase.templateVersion
+                itemCount = itemCount
             )
+        }
+    }
 
-            val templateSettingVersion = templateResource.settingVersion
-            val templateModel = templateResource.model as Model
-            val successPipelines = mutableListOf<String>()
-            val failurePipelines = mutableListOf<String>()
-            val totalPages = PageUtil.calTotalPage(PageUtil.MAX_PAGE_SIZE, templateInstanceItemCount)
-
-            for (page in 1..totalPages) {
-                val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
-                    dslContext = dslContext,
-                    projectId = projectId,
-                    baseIds = listOf(baseId),
-                    excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name),
-                    page = page,
-                    pageSize = PageUtil.MAX_PAGE_SIZE
+    private fun PipelineTemplateInstanceBase.handleTemplateInstanceBase(projectId: String, itemCount: Long) {
+        // 开始执行任务
+        templateInstanceBaseDao.updateTemplateInstanceBase(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = baseId,
+            status = TemplateInstanceStatus.INSTANCING.name,
+            userId = "system"
+        )
+        val successPipelines = mutableListOf<String>()
+        val failurePipelines = mutableListOf<String>()
+        val totalPages = PageUtil.calTotalPage(PageUtil.MAX_PAGE_SIZE, itemCount)
+        for (page in 1..totalPages) {
+            val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
+                dslContext = dslContext,
+                projectId = projectId,
+                baseIds = listOf(baseId),
+                excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name),
+                page = page,
+                pageSize = PageUtil.MAX_PAGE_SIZE
+            )
+            templateInstanceItems.forEach { item ->
+                item.handleTemplateInstanceItem(
+                    instanceBase = this,
+                    successPipelines = successPipelines,
+                    failurePipelines = failurePipelines
                 )
-                templateInstanceItems.forEach { item ->
-                    with(item) {
-                        logger.info("${type.toString().lowercase()} template instance {}", item)
-                        if (item.status == TemplateInstanceStatus.SUCCESS)
-                            return@forEach
-                        templateInstanceItemDao.updateStatus(
-                            dslContext = dslContext,
-                            projectId = item.projectId,
-                            baseId = item.baseId,
-                            pipelineIds = listOf(item.pipelineId),
-                            status = TemplateInstanceStatus.INSTANCING
-                        )
-                        val instance = PipelineTemplateInstanceReleaseInfo(
-                            pipelineId = pipelineId,
-                            pipelineName = pipelineName,
-                            buildNo = buildNo,
-                            param = params,
-                            filePath = filePath
-                        )
-
-                        try {
-                            if (type == TemplateInstanceType.CREATE) {
-                                createTemplateInstance(
-                                    projectId = projectId,
-                                    pipelineId = item.pipelineId,
-                                    userId = creator,
-                                    templateId = instanceBase.templateId,
-                                    instance = instance,
-                                    enabledPac = instanceBase.pac,
-                                    targetAction = instanceBase.targetAction,
-                                    description = instanceBase.description,
-                                    templateModel = templateModel,
-                                    templateVersion = instanceBase.templateVersion,
-                                    templateSettingVersion = templateSettingVersion,
-                                    useTemplateSettings = instanceBase.useTemplateSetting,
-                                    repoHashId = instanceBase.repoHashId,
-                                    scmType = instanceBase.scmType,
-                                    targetBranch = instanceBase.targetBranch
-                                )
-                            } else {
-                                updateTemplateInstance(
-                                    projectId = projectId,
-                                    pipelineId = item.pipelineId,
-                                    userId = creator,
-                                    templateId = instanceBase.templateId,
-                                    instance = instance,
-                                    enabledPac = instanceBase.pac,
-                                    targetAction = instanceBase.targetAction,
-                                    description = instanceBase.description,
-                                    templateModel = templateModel,
-                                    templateVersion = instanceBase.templateVersion,
-                                    templateSettingVersion = templateSettingVersion,
-                                    useTemplateSettings = instanceBase.useTemplateSetting,
-                                    repoHashId = instanceBase.repoHashId,
-                                    scmType = instanceBase.scmType,
-                                    targetBranch = instanceBase.targetBranch
-                                )
-                            }
-                            templateInstanceItemDao.updateStatus(
-                                dslContext = dslContext,
-                                projectId = item.projectId,
-                                baseId = item.baseId,
-                                pipelineIds = listOf(item.pipelineId),
-                                status = TemplateInstanceStatus.SUCCESS
-                            )
-                            successPipelines.add(item.pipelineId)
-                        } catch (ignored: Throwable) {
-                            handleTemplateInstanceEventError(
-                                projectId = projectId,
-                                userId = item.creator,
-                                instance = item,
-                                error = ignored,
-                                failurePipelines = failurePipelines,
-                                type = type
-                            )
-                        }
-                    }
-                }
             }
-            val finalStatus = if (failurePipelines.isNotEmpty()) {
+        }
+        templateInstanceBaseDao.updateStatus(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = baseId,
+            status = if (failurePipelines.isNotEmpty()) {
                 TemplateInstanceStatus.FAILED
             } else {
                 TemplateInstanceStatus.SUCCESS
             }
-            templateInstanceBaseDao.updateStatus(
+        )
+    }
+
+    private fun PipelineTemplateInstanceItem.handleTemplateInstanceItem(
+        instanceBase: PipelineTemplateInstanceBase,
+        successPipelines: MutableList<String>,
+        failurePipelines: MutableList<String>
+    ) {
+        logger.info("${instanceBase.type} template instance item|$id|$projectId|$pipelineId")
+        if (status == TemplateInstanceStatus.SUCCESS) {
+            logger.info("${instanceBase.type} template instance item success|$id|$projectId|$pipelineId")
+            return
+        }
+        templateInstanceItemDao.updateStatus(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = baseId,
+            pipelineIds = listOf(pipelineId),
+            status = TemplateInstanceStatus.INSTANCING
+        )
+        val instanceCreateReq = PipelineTemplateInstanceReq(
+            projectId = projectId,
+            templateId = instanceBase.templateId,
+            templateVersion = instanceBase.templateVersion,
+            pipelineName = pipelineName,
+            buildNo = buildNo,
+            params = params,
+            useTemplateSetting = instanceBase.useTemplateSetting,
+            enablePac = instanceBase.pac,
+            repoHashId = instanceBase.repoHashId,
+            filePath = filePath,
+            targetAction = instanceBase.targetAction,
+            targetBranch = instanceBase.targetBranch
+        )
+
+        try {
+            pipelineVersionManager.deployPipeline(
+                userId = creator,
+                projectId = projectId,
+                request = instanceCreateReq
+            )
+            templateInstanceItemDao.updateStatus(
                 dslContext = dslContext,
-                projectId = event.projectId,
-                baseId = event.baseId,
-                status = finalStatus
+                projectId = projectId,
+                baseId = baseId,
+                pipelineIds = listOf(pipelineId),
+                status = TemplateInstanceStatus.SUCCESS
+            )
+            successPipelines.add(pipelineId)
+        } catch (ignored: Throwable) {
+            handleTemplateInstanceEventError(
+                projectId = projectId,
+                userId = creator,
+                instance = this,
+                error = ignored,
+                failurePipelines = failurePipelines,
+                type = instanceBase.type
             )
         }
     }

@@ -29,8 +29,10 @@ package com.tencent.devops.process.service.pipeline.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
@@ -39,7 +41,8 @@ import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
-import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceCreateReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
@@ -57,7 +60,7 @@ import java.time.LocalDateTime
  * 模版实例化创建请求转换
  */
 @Service
-class PipelineTemplateInstanceCreateReqConverter(
+class PipelineTemplateInstanceReqConverter(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
@@ -68,8 +71,9 @@ class PipelineTemplateInstanceCreateReqConverter(
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator
 ) : PipelineVersionCreateReqConverter {
-    override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceCreateReq
+    override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
+    @Suppress("LongMethod")
     override fun convert(
         userId: String,
         projectId: String,
@@ -77,14 +81,17 @@ class PipelineTemplateInstanceCreateReqConverter(
         version: Int?,
         request: PipelineVersionCreateReq
     ): PipelineVersionCreateContext {
-        request as PipelineTemplateInstanceCreateReq
+        request as PipelineTemplateInstanceReq
         with(request) {
             if (enablePac) {
                 if (targetAction == null) {
                     throw IllegalArgumentException("targetAction is null")
                 }
-                if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
+                if (repoHashId == null) {
+                    throw IllegalArgumentException("repoHashId is null")
+                }
+                if (filePath.isNullOrEmpty()) {
+                    throw IllegalArgumentException("filePath is null")
                 }
             }
             val templateInfo = pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId)
@@ -105,7 +112,7 @@ class PipelineTemplateInstanceCreateReqConverter(
             }
 
             // 生成流水线ID
-            val newPipelineId = pipelineIdGenerator.getNextId()
+            val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
 
             // 根据模版model生成流水线model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
@@ -113,14 +120,14 @@ class PipelineTemplateInstanceCreateReqConverter(
                 templateModel = templateResource.model as Model,
                 pipelineName = pipelineName,
                 buildNo = buildNo,
-                param = param,
+                param = params,
                 instanceFromTemplate = true,
                 defaultStageTagId = defaultStageTagId
             )
             instanceModel.templateId = templateId
 
             // 生成流水线配置
-            val pipelineSetting = if (useTemplateSettings) {
+            val pipelineSetting = if (useTemplateSetting) {
                 val templateSetting = pipelineTemplateSettingService.get(
                     projectId = projectId,
                     templateId = templateId,
@@ -161,7 +168,7 @@ class PipelineTemplateInstanceCreateReqConverter(
                 templateId = templateId,
                 templateVersion = templateVersion,
                 enablePac = enablePac,
-                repoHashId = yamlFileInfo?.repoHashId,
+                repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch
             )
@@ -184,7 +191,10 @@ class PipelineTemplateInstanceCreateReqConverter(
                 createTime = LocalDateTime.now(),
                 updater = userId,
                 updateTime = LocalDateTime.now(),
-                status = versionStatus
+                status = versionStatus,
+                branchAction = BranchVersionAction.ACTIVE.takeIf {
+                    versionStatus == VersionStatus.BRANCH
+                }
             )
 
             return PipelineVersionCreateContext(
@@ -197,7 +207,12 @@ class PipelineTemplateInstanceCreateReqConverter(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineSetting = pipelineSetting,
                 enablePac = enablePac,
-                yamlFileInfo = yamlFileInfo,
+                yamlFileInfo = enablePac.takeIf { it }?.let {
+                    PipelineYamlFileInfo(
+                        repoHashId = repoHashId!!,
+                        filePath = filePath!!,
+                    )
+                },
                 targetAction = targetAction,
                 branchName = branchName,
                 templateId = templateId,
