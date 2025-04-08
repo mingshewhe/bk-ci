@@ -1,5 +1,6 @@
 package com.tencent.devops.process.dao.template
 
+import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
@@ -23,6 +24,12 @@ class PipelineTemplateInfoDao {
         record: PipelineTemplateInfo
     ) {
         with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            val createTime = record.createdTime?.let {
+                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+            }
+            val updateTime = record.updateTime?.let {
+                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+            }
             dslContext.insertInto(
                 this,
                 ID,
@@ -46,7 +53,9 @@ class PipelineTemplateInfoDao {
                 DEBUG_PIPELINE_COUNT,
                 INSTANCE_PIPELINE_COUNT,
                 CREATOR,
-                UPDATER
+                UPDATER,
+                CREATED_TIME,
+                UPDATE_TIME
             ).values(
                 record.id,
                 record.projectId,
@@ -69,8 +78,27 @@ class PipelineTemplateInfoDao {
                 record.debugPipelineCount,
                 record.instancePipelineCount,
                 record.creator,
-                record.updater
-            ).execute()
+                record.updater,
+                createTime,
+                updateTime
+            ).onDuplicateKeyUpdate()
+                .set(NAME, record.name)
+                .set(DESC, record.desc)
+                .set(UPGRADE_STRATEGY, record.upgradeStrategy?.name)
+                .set(SETTING_SYNC_STRATEGY, record.settingSyncStrategy?.name)
+                .set(CATEGORY, record.category)
+                .set(LOGO_URL, record.logoUrl)
+                .set(PAC, record.enablePac)
+                .set(RELEASED_VERSION, record.releasedVersion)
+                .set(RELEASED_VERSION_NAME, record.releasedVersionName)
+                .set(RELEASED_SETTING_VERSION, record.releasedSettingVersion)
+                .set(LATEST_VERSION_STATUS, record.latestVersionStatus.name)
+                .set(STORE_FLAG, record.storeFlag)
+                .set(DEBUG_PIPELINE_COUNT, record.debugPipelineCount)
+                .set(INSTANCE_PIPELINE_COUNT, record.instancePipelineCount)
+                .set(UPDATER, record.updater)
+                .set(UPDATE_TIME, updateTime)
+                .execute()
         }
     }
 

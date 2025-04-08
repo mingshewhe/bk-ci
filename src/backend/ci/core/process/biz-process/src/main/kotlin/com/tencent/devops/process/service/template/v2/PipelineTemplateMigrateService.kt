@@ -286,7 +286,9 @@ class PipelineTemplateMigrateService(
             sortWeight = 0,
             creator = latestTemplate.creator,
             updater = latestTemplate.creator,
-            releaseTime = currentTemplate.createdTime.timestampmilli()
+            releaseTime = (currentTemplate.updateTime ?: currentTemplate.createdTime).timestampmilli(),
+            createdTime = currentTemplate.createdTime.timestampmilli(),
+            updateTime = currentTemplate.updateTime.timestampmilli(),
         )
     }
 
@@ -300,9 +302,10 @@ class PipelineTemplateMigrateService(
         val instanceSize = templatePipelineDao.countByVersionFeat(
             dslContext = dslContext,
             projectId = latestTemplate.projectId,
-            templateId = latestTemplate.template,
-            instanceType = "CONSTRAINT"
+            templateId = latestTemplate.id,
+            instanceType = TemplateType.CONSTRAINT.name
         )
+        logger.info("template instance count {}|{}|{}", latestTemplate.projectId, latestTemplate.id, instanceSize)
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
         return PipelineTemplateInfo(

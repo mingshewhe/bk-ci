@@ -96,7 +96,11 @@ data class PipelineSetting(
     @get:Schema(title = "创建人", required = false)
     val creator: String? = null,
     @get:Schema(title = "更新人", required = false)
-    val updater: String? = null
+    val updater: String? = null,
+    @get:Schema(title = "创建时间", required = false)
+    val createdTime: Long? = null,
+    @get:Schema(title = "更新时间", required = false)
+    val updateTime: Long? = null
 ) {
 
     companion object {

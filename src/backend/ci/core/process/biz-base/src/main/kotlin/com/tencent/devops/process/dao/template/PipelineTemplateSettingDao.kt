@@ -27,6 +27,12 @@ class PipelineTemplateSettingDao {
         val waitQueueTimeSecond = DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute)
         val labelStr = JsonUtil.toJson(record.labels)
         val pipelineAsCodeSettings = record.pipelineAsCodeSettings?.let { self -> JsonUtil.toJson(self) }
+        val createTime = record.createdTime?.let {
+            DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+        } ?: LocalDateTime.now()
+        val updateTime = record.updateTime?.let {
+            DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+        } ?: LocalDateTime.now()
         with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.insertInto(
                 this,
@@ -47,7 +53,9 @@ class PipelineTemplateSettingDao {
                 RUN_LOCK_TYPE,
                 MAX_CON_RUNNING_QUEUE_SIZE,
                 CREATOR,
-                UPDATER
+                UPDATER,
+                CREATED_TIME,
+                UPDATE_TIME
             ).values(
                 record.projectId,
                 record.pipelineId,
@@ -66,7 +74,9 @@ class PipelineTemplateSettingDao {
                 PipelineRunLockType.toValue(record.runLockType),
                 record.maxConRunningQueueSize ?: -1,
                 record.creator,
-                record.updater
+                record.updater,
+                createTime,
+                updateTime
             ).onDuplicateKeyUpdate()
                 .set(NAME, record.pipelineName)
                 .set(DESC, record.desc)
@@ -81,9 +91,8 @@ class PipelineTemplateSettingDao {
                 .set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(failSubscriptionList))
                 .set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType))
                 .set(MAX_CON_RUNNING_QUEUE_SIZE, record.maxConRunningQueueSize)
-                .set(CREATOR, record.creator)
                 .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, LocalDateTime.now())
+                .set(UPDATE_TIME, updateTime)
                 .execute()
         }
     }

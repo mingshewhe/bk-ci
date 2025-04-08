@@ -1,6 +1,7 @@
 package com.tencent.devops.process.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
@@ -26,6 +27,14 @@ class PipelineTemplateResourceDao {
         record: PipelineTemplateResource
     ) {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            val params = record.params?.let { JsonUtil.toJson(it) }
+            val model = record.model.let { JsonUtil.toJson(it) }
+            val createTime = record.createdTime?.let {
+                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+            }
+            val updateTime = record.updateTime?.let {
+                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+            }
             dslContext.insertInto(
                 this,
                 PROJECT_ID,
@@ -52,7 +61,9 @@ class PipelineTemplateResourceDao {
                 SORT_WEIGHT,
                 CREATOR,
                 UPDATER,
-                RELEASE_TIME
+                RELEASE_TIME,
+                CREATED_TIME,
+                UPDATE_TIME
             ).values(
                 record.projectId,
                 record.templateId,
@@ -69,8 +80,8 @@ class PipelineTemplateResourceDao {
                 record.pipelineVersion,
                 record.triggerVersion,
                 record.baseVersion,
-                record.params?.let { JsonUtil.toJson(it) },
-                record.model.let { JsonUtil.toJson(it) },
+                params,
+                model,
                 record.yaml,
                 record.status.name,
                 record.branchAction?.name,
@@ -78,8 +89,29 @@ class PipelineTemplateResourceDao {
                 record.sortWeight,
                 record.creator,
                 record.updater,
-                record.releaseTime
-            ).execute()
+                record.releaseTime,
+                createTime,
+                updateTime
+            ).onDuplicateKeyUpdate()
+                .set(SETTING_VERSION, record.settingVersion)
+                .set(VERSION, record.version)
+                .set(NUMBER, record.number)
+                .set(VERSION_NAME, record.versionName)
+                .set(VERSION_NUM, record.versionNum)
+                .set(SETTING_VERSION_NUM,record.settingVersionNum)
+                .set(PIPELINE_VERSION, record.pipelineVersion)
+                .set(TRIGGER_VERSION, record.triggerVersion)
+                .set(PIPELINE_VERSION, record.pipelineVersion)
+                .set(PARAMS, params)
+                .set(MODEL, model)
+                .set(YAML, record.yaml)
+                .set(STATUS, record.status.name)
+                .set(BRANCH_ACTION, record.branchAction?.name)
+                .set(DESCRIPTION, record.description)
+                .set(SORT_WEIGHT, record.sortWeight)
+                .set(UPDATER, record.updater)
+                .set(UPDATE_TIME, updateTime)
+                .execute()
         }
     }
 

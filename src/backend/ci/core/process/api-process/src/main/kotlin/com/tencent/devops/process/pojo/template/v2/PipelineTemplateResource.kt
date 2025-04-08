@@ -85,7 +85,11 @@ data class PipelineTemplateResource(
     @get:Schema(title = "更新人", required = false)
     val updater: String? = null,
     @get:Schema(title = "发布时间", required = false)
-    val releaseTime: Long? = null
+    val releaseTime: Long? = null,
+    @get:Schema(title = "创建时间", required = false)
+    val createdTime: Long? = null,
+    @get:Schema(title = "更新时间", required = false)
+    val updateTime: Long? = null
 ) {
     constructor(
         pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
