@@ -26,10 +26,10 @@ class PipelineTemplateInfoDao {
         with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             val createTime = record.createdTime?.let {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            }
+            } ?: LocalDateTime.now()
             val updateTime = record.updateTime?.let {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            }
+            } ?: LocalDateTime.now()
             dslContext.insertInto(
                 this,
                 ID,

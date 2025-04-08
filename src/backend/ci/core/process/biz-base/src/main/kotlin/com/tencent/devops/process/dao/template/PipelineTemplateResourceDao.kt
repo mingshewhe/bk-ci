@@ -31,10 +31,10 @@ class PipelineTemplateResourceDao {
             val model = record.model.let { JsonUtil.toJson(it) }
             val createTime = record.createdTime?.let {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            }
+            } ?: LocalDateTime.now()
             val updateTime = record.updateTime?.let {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            }
+            } ?: LocalDateTime.now()
             dslContext.insertInto(
                 this,
                 PROJECT_ID,
@@ -98,7 +98,7 @@ class PipelineTemplateResourceDao {
                 .set(NUMBER, record.number)
                 .set(VERSION_NAME, record.versionName)
                 .set(VERSION_NUM, record.versionNum)
-                .set(SETTING_VERSION_NUM,record.settingVersionNum)
+                .set(SETTING_VERSION_NUM, record.settingVersionNum)
                 .set(PIPELINE_VERSION, record.pipelineVersion)
                 .set(TRIGGER_VERSION, record.triggerVersion)
                 .set(PIPELINE_VERSION, record.pipelineVersion)
