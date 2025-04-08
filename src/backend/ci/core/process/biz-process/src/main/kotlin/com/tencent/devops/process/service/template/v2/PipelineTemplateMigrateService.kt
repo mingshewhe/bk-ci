@@ -122,7 +122,10 @@ class PipelineTemplateMigrateService(
 
         templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
             versionSequence += 1
-            val currentSetting = setting.copy(version = versionSequence)
+            val currentSetting = setting.copy(
+                version = versionSequence,
+                creator = templateVersionInfo.creator
+            )
             // 当前实际模板，可能为当前模板的版本或父模板版本
             val currentProjectId = srcTemplateProjectId ?: projectId
             val currentTemplate = templateDao.getTemplate(
