@@ -124,7 +124,9 @@ class PipelineTemplateMigrateService(
             versionSequence += 1
             val currentSetting = setting.copy(
                 version = versionSequence,
-                creator = templateVersionInfo.creator
+                creator = templateVersionInfo.creator,
+                createdTime = latestTemplate.createdTime.timestampmilli(),
+                updateTime = latestTemplate.updateTime.timestampmilli()
             )
             // 当前实际模板，可能为当前模板的版本或父模板版本
             val currentProjectId = srcTemplateProjectId ?: projectId
