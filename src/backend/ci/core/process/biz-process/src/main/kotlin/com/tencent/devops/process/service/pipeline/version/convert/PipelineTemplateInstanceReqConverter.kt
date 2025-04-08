@@ -34,10 +34,12 @@ import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
@@ -69,7 +71,8 @@ class PipelineTemplateInstanceReqConverter(
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val transferService: PipelineTransferYamlService,
     private val pipelineResourceFactory: PipelineResourceFactory,
-    private val pipelineVersionGenerator: PipelineVersionGenerator
+    private val pipelineVersionGenerator: PipelineVersionGenerator,
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
@@ -127,23 +130,11 @@ class PipelineTemplateInstanceReqConverter(
             instanceModel.templateId = templateId
 
             // 生成流水线配置
-            val pipelineSetting = if (useTemplateSetting) {
-                val templateSetting = pipelineTemplateSettingService.get(
-                    projectId = projectId,
-                    templateId = templateId,
-                    settingVersion = templateResource.settingVersion
-                )
-                templateSetting.copy(
-                    pipelineId = newPipelineId,
-                    pipelineName = pipelineName
-                )
-            } else {
-                pipelineTemplateInstanceSettingService.getTemplateInstanceDefaultSetting(
-                    projectId = projectId,
-                    pipelineId = newPipelineId,
-                    pipelineName = pipelineName
-                )
-            }
+            val pipelineSetting = getPipelineSetting(
+                projectId = projectId,
+                pipelineId = newPipelineId,
+                templateSettingVersion = templateResource.settingVersion
+            )
 
             val transferResult = transferService.transfer(
                 userId = userId,
@@ -219,5 +210,32 @@ class PipelineTemplateInstanceReqConverter(
                 templateVersion = templateVersion
             )
         }
+    }
+
+    private fun PipelineTemplateInstanceReq.getPipelineSetting(
+        projectId: String,
+        pipelineId: String,
+        templateSettingVersion: Int
+    ): PipelineSetting {
+        val pipelineSetting = if (useTemplateSetting) {
+            val templateSetting = pipelineTemplateSettingService.get(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = templateSettingVersion
+            )
+            templateSetting.copy(
+                pipelineId = pipelineId,
+                pipelineName = pipelineName
+            )
+        } else {
+            pipelineRepositoryService.getSetting(projectId = projectId, pipelineId = pipelineId)?.copy(
+                pipelineName = pipelineName
+            ) ?: pipelineTemplateInstanceSettingService.getTemplateInstanceDefaultSetting(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                pipelineName = pipelineName
+            )
+        }
+        return pipelineSetting
     }
 }
