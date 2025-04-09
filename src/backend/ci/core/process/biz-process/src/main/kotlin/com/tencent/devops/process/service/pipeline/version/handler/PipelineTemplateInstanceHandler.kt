@@ -48,7 +48,8 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineInfoDao: PipelineInfoDao,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
+    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService,
+    private val pipelineVersionCreateCommonService: PipelineVersionCreateCommonService
 ) : PipelineVersionCreateHandler {
     override fun support(context: PipelineVersionCreateContext) =
         context.versionAction == PipelineVersionAction.TEMPLATE_INSTANCE
@@ -83,25 +84,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
         val pipelineInfo =
             pipelineInfoDao.getPipelineInfo(dslContext = dslContext, projectId = projectId, pipelineId = pipelineId)
         val resourceOnlyVersion = if (pipelineInfo == null) {
-            val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
-                versionStatus = pipelineResourceWithoutVersion.status,
-                branchName = branchName
-            )
-            val pipelineResourceVersion = PipelineResourceVersion(
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-                pipelineResourceOnlyVersion = resourceOnlyVersion
-            )
-            pipelineVersionPersistenceService.createPipeline(
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelBasicInfo = pipelineModelBasicInfo,
-                pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting.copy(
-                    version = resourceOnlyVersion.settingVersion!!
-                ),
-                templateInstanceBasicInfo = templateInstanceBasicInfo
-            )
-            resourceOnlyVersion
+            pipelineVersionCreateCommonService.createPipeline(context = this)
         } else {
             val resourceOnlyVersion = pipelineVersionGenerator.generateInstanceVersion(
                 projectId = projectId,
@@ -142,12 +125,19 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             resourceOnlyVersion
         }
 
+        // 推送文件
+        val yamlFileReleaseResult = pipelineVersionCreateCommonService.releaseYamlFile(
+            context = this,
+            resourceOnlyVersion = resourceOnlyVersion
+        )
+
         return DeployPipelineResult(
             pipelineId = pipelineId,
             pipelineName = pipelineSetting.pipelineName,
             version = resourceOnlyVersion.version,
             versionNum = resourceOnlyVersion.versionNum,
-            versionName = resourceOnlyVersion.versionName
+            versionName = resourceOnlyVersion.versionName,
+            targetUrl = yamlFileReleaseResult?.mrUrl
         )
     }
 }

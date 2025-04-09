@@ -34,6 +34,9 @@ import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
@@ -42,7 +45,9 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceSe
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
+import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 /**
@@ -55,6 +60,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val redisOperation: RedisOperation,
+    @Lazy private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val operationLogService: PipelineOperationLogService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext) =
@@ -126,6 +132,10 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 versionName = resourceOnlyVersion.versionName!!
             )
         }
+
+        // 发布yaml文件
+        val yamlFileReleaseResult = releaseYamlFile(resourceOnlyVersion = resourceOnlyVersion)
+
         operationLogService.addOperationLog(
             userId = userId,
             projectId = projectId,
@@ -142,7 +152,34 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
-            versionName = resourceOnlyVersion.versionName
+            versionName = resourceOnlyVersion.versionName,
+            targetUrl = yamlFileReleaseResult?.mrUrl
+        )
+    }
+
+    private fun PipelineTemplateVersionCreateContext.releaseYamlFile(
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
+    ): PipelineYamlFileReleaseResult? {
+        if (!enablePac) {
+            return null
+        }
+        val yamlFileReleaseReq = PipelineYamlFileReleaseReq(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            pipelineName = pipelineTemplateInfo.name,
+            version = resourceOnlyVersion.version.toInt(),
+            versionName = resourceOnlyVersion.versionName,
+            repoHashId = yamlFileInfo!!.repoHashId,
+            filePath = yamlFileInfo.filePath,
+            content = pTemplateResourceWithoutVersion.yaml!!,
+            commitMessage = pTemplateResourceWithoutVersion.description
+                ?: "update template ${pipelineTemplateInfo.name}",
+            targetAction = targetAction!!,
+            targetBranch = branchName
+        )
+        return pipelineYamlFacadeService.releaseYamlFile(
+            yamlFileReleaseReq = yamlFileReleaseReq
         )
     }
 }

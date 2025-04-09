@@ -324,7 +324,7 @@ class PipelineYamlFacadeService @Autowired constructor(
     fun checkPushParam(yamlFileReleaseReq: PipelineYamlFileReleaseReq) {
         with(yamlFileReleaseReq) {
             logger.info(
-                "check push yaml file|$userId|$projectId|$pipelineId|$repoHashId|$scmType|$version|$versionName"
+                "check push yaml file|$userId|$projectId|$pipelineId|$repoHashId|$version|$versionName"
             )
             val repository = client.get(ServiceRepositoryResource::class).get(
                 projectId = projectId,
@@ -353,7 +353,7 @@ class PipelineYamlFacadeService @Autowired constructor(
                 userId = userId,
                 projectId = projectId,
                 repoHashId = repoHashId,
-                scmType = scmType
+                scmType = ScmType.CODE_GIT
             )
             val action = eventActionFactory.loadManualEvent(setting = setting, event = event)
             if (!action.checkPushPermission()) {
@@ -367,7 +367,7 @@ class PipelineYamlFacadeService @Autowired constructor(
 
     fun pushYamlFile(yamlFileReleaseReq: PipelineYamlFileReleaseReq): PipelineYamlFileReleaseResult {
         with(yamlFileReleaseReq) {
-            logger.info("push yaml file|$userId|$projectId|$pipelineId|$repoHashId|$scmType|$version|$versionName")
+            logger.info("push yaml file|$userId|$projectId|$pipelineId|$repoHashId|$version|$versionName")
             val repository = client.get(ServiceRepositoryResource::class).get(
                 projectId = projectId,
                 repositoryId = repoHashId,
@@ -397,7 +397,7 @@ class PipelineYamlFacadeService @Autowired constructor(
                     userId = userId,
                     projectId = projectId,
                     repoHashId = repoHashId,
-                    scmType = scmType
+                    scmType = ScmType.CODE_GIT
                 )
                 val action = eventActionFactory.loadManualEvent(setting = setting, event = event)
                 // 发布时创建流水线

@@ -416,7 +416,6 @@ class PipelineVersionFacadeService @Autowired constructor(
                         version = draftVersion.version,
                         versionName = branchName,
                         repoHashId = yamlInfo.repoHashId,
-                        scmType = yamlInfo.scmType!!,
                         filePath = filePath,
                         content = draftVersion.yaml ?: "",
                         commitMessage = request.description ?: "update",
@@ -527,7 +526,6 @@ class PipelineVersionFacadeService @Autowired constructor(
                         content = draftVersion.yaml ?: "",
                         commitMessage = request.description ?: "update",
                         repoHashId = yamlInfo.repoHashId,
-                        scmType = yamlInfo.scmType!!,
                         filePath = yamlInfo.filePath,
                         targetAction = targetAction,
                         targetBranch = request.targetBranch

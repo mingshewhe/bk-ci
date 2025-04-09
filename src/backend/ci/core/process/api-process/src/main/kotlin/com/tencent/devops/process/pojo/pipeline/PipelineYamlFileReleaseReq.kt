@@ -47,8 +47,6 @@ data class PipelineYamlFileReleaseReq(
     val versionName: String?,
     @get:Schema(title = "代码库hashId", required = true)
     val repoHashId: String,
-    @get:Schema(title = "代码库类型", required = true)
-    val scmType: ScmType,
     @get:Schema(title = "文件路径", required = true)
     val filePath: String,
     @get:Schema(title = "文件内容", required = true)
