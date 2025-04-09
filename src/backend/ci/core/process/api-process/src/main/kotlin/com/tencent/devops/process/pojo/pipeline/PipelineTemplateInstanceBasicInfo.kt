@@ -25,31 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.pojo.pipeline
 
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineModelData
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import io.swagger.v3.oas.annotations.media.Schema
 
-/**
- * 流水线版本创建监听器
- */
-interface PipelineVersionCreateListener {
-
-    fun onCreate(
-        userId: String,
-        pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    )
-
-    fun onUpdate(
-        userId: String,
-        pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    )
-}
+@Schema(title = "流水线实例化基础信息")
+data class PipelineTemplateInstanceBasicInfo(
+    @get:Schema(title = "模版ID")
+    val templateId: String,
+    @get:Schema(title = "模版版本")
+    val templateVersion: Long,
+    @get:Schema(title = "模版版本名称")
+    val templateVersionName: String?,
+    @get:Schema(title = "实例化类型")
+    val instanceType: PipelineInstanceTypeEnum = PipelineInstanceTypeEnum.FREEDOM
+)

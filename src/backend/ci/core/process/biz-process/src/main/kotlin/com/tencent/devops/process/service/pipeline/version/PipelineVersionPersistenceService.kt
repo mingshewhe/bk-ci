@@ -27,9 +27,6 @@
 
 package com.tencent.devops.process.service.pipeline.version
 
-import com.tencent.devops.common.api.util.timestampmilli
-import com.tencent.devops.common.auth.api.AuthResourceType
-import com.tencent.devops.common.auth.api.pojo.ResourceAuthorizationDTO
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -40,18 +37,18 @@ import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
-import com.tencent.devops.process.permission.PipelineAuthorizationService
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineModelData
+import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
-import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionCreateListener
+import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
+import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionCreatePostProcessor
+import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionPostCreationContext
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 /**
  * 负责流水线版本持久化业务逻辑
@@ -67,49 +64,34 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
     private val pipelinePermissionService: PipelinePermissionService,
-    private val pipelineAuthorizationService: PipelineAuthorizationService,
-    private val versionCreateListeners: List<PipelineVersionCreateListener>
+    private val versionCreateListeners: List<PipelineVersionCreatePostProcessor>
 ) {
 
     fun createPipeline(
         userId: String,
         pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
+        pipelineModelBasicInfo: PipelineModelBasicInfo,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
+        pipelineSetting: PipelineSetting,
+        templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
+        checkPermission: Boolean = true
     ) {
-        transactionCreatePipeline(
+        val postCreationContext = PipelineVersionPostCreationContext(
             userId = userId,
             pipelineBasicInfo = pipelineBasicInfo,
-            pipelineModelData = pipelineModelData,
+            pipelineModelBasicInfo = pipelineModelBasicInfo,
             pipelineResourceVersion = pipelineResourceVersion,
-            pipelineSetting = pipelineSetting
+            pipelineSetting = pipelineSetting,
+            templateInstanceBasicInfo = templateInstanceBasicInfo,
+            checkPermission = checkPermission
         )
-        versionCreateListeners.forEach {
-            it.onCreate(
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
-                pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting
-            )
-        }
-    }
-
-    private fun transactionCreatePipeline(
-        userId: String,
-        pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    ) {
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
             createPipelineInfo(
                 transactionContext = transactionContext,
                 userId = userId,
                 pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
+                pipelineModelBasicInfo = pipelineModelBasicInfo,
                 version = pipelineResourceVersion.version,
                 latestVersionStatus = pipelineResourceVersion.status,
             )
@@ -137,45 +119,42 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     dslContext = dslContext,
                     projectId = projectId,
                     pipelineId = pipelineId,
-                    buildNo = pipelineModelData.buildNo
-                )
-                pipelinePermissionService.createResource(
-                    userId = userId,
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    pipelineName = pipelineName
-                )
-                pipelineAuthorizationService.addResourceAuthorization(
-                    projectId = projectId,
-                    resourceAuthorizationList = listOf(
-                        ResourceAuthorizationDTO(
-                            projectCode = projectId,
-                            resourceType = AuthResourceType.PIPELINE_DEFAULT.value,
-                            resourceCode = pipelineId,
-                            resourceName = pipelineName,
-                            handoverFrom = userId,
-                            handoverTime = LocalDateTime.now().timestampmilli()
-                        )
-                    )
+                    buildNo = pipelineModelBasicInfo.buildNo
                 )
             }
+            postProcessInTransactionCreation(
+                transactionContext = transactionContext,
+                postCreationContext = postCreationContext
+            )
         }
+        postProcessAfterCreation(postCreationContext = postCreationContext)
     }
 
     fun createReleaseVersion(
         userId: String,
         pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
+        pipelineModelBasicInfo: PipelineModelBasicInfo,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
+        pipelineSetting: PipelineSetting,
+        templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
+        checkPermission: Boolean = true
     ) {
+        val postCreationContext = PipelineVersionPostCreationContext(
+            userId = userId,
+            pipelineBasicInfo = pipelineBasicInfo,
+            pipelineModelBasicInfo = pipelineModelBasicInfo,
+            pipelineResourceVersion = pipelineResourceVersion,
+            pipelineSetting = pipelineSetting,
+            templateInstanceBasicInfo = templateInstanceBasicInfo,
+            checkPermission = checkPermission
+        )
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
             updatePipelineInfo(
                 transactionContext = transactionContext,
                 userId = userId,
                 pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
+                pipelineModelBasicInfo = pipelineModelBasicInfo,
                 version = pipelineResourceVersion.version,
                 latestVersionStatus = pipelineResourceVersion.status,
             )
@@ -203,16 +182,12 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     pipelineName = pipelineName
                 )
             }
-        }
-        versionCreateListeners.forEach {
-            it.onUpdate(
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
-                pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting
+            postProcessInTransactionVersionCreation(
+                transactionContext = transactionContext,
+                postCreationContext = postCreationContext
             )
         }
+        postProcessAfterVersionCreation(postCreationContext = postCreationContext)
     }
 
     fun createDraftVersion(
@@ -288,7 +263,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
         transactionContext: DSLContext,
         userId: String,
         pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
+        pipelineModelBasicInfo: PipelineModelBasicInfo,
         version: Int,
         latestVersionStatus: VersionStatus?,
     ) {
@@ -302,9 +277,9 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 pipelineDesc = pipelineDesc,
                 userId = userId,
                 channelCode = channelCode,
-                manualStartup = pipelineModelData.canManualStartup,
-                canElementSkip = pipelineModelData.canElementSkip,
-                taskCount = pipelineModelData.taskCount,
+                manualStartup = pipelineModelBasicInfo.canManualStartup,
+                canElementSkip = pipelineModelBasicInfo.canElementSkip,
+                taskCount = pipelineModelBasicInfo.taskCount,
                 id = id,
                 latestVersionStatus = latestVersionStatus,
                 pipelineDisable = pipelineDisable
@@ -316,7 +291,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
         transactionContext: DSLContext,
         userId: String,
         pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelData: PipelineModelData,
+        pipelineModelBasicInfo: PipelineModelBasicInfo,
         version: Int,
         latestVersionStatus: VersionStatus?
     ) {
@@ -329,9 +304,9 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 version = version,
                 pipelineName = pipelineName,
                 pipelineDesc = pipelineDesc,
-                manualStartup = pipelineModelData.canManualStartup,
-                canElementSkip = pipelineModelData.canElementSkip,
-                taskCount = pipelineModelData.taskCount,
+                manualStartup = pipelineModelBasicInfo.canManualStartup,
+                canElementSkip = pipelineModelBasicInfo.canElementSkip,
+                taskCount = pipelineModelBasicInfo.taskCount,
                 latestVersion = version,
                 latestVersionStatus = latestVersionStatus,
                 locked = pipelineDisable
@@ -427,6 +402,53 @@ class PipelineVersionPersistenceService @Autowired constructor(
             id = id
         )
     }
+
+    private fun postProcessAfterCreation(postCreationContext: PipelineVersionPostCreationContext) {
+        versionCreateListeners.forEach {
+            it.postProcessAfterCreation(postCreationContext = postCreationContext)
+        }
+    }
+
+    private fun postProcessInTransactionCreation(
+        transactionContext: DSLContext,
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessInTransactionCreation(
+                transactionContext = transactionContext,
+                postCreationContext = postCreationContext
+            )
+        }
+    }
+
+    private fun postProcessBeforeVersionCreation(
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessBeforeVersionCreation(postCreationContext = postCreationContext)
+        }
+    }
+
+    private fun postProcessInTransactionVersionCreation(
+        transactionContext: DSLContext,
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessInTransactionVersionCreation(
+                transactionContext = transactionContext,
+                postCreationContext = postCreationContext
+            )
+        }
+    }
+
+    private fun postProcessAfterVersionCreation(
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessAfterVersionCreation(postCreationContext = postCreationContext)
+        }
+    }
+
 
     companion object {
         private const val PIPELINE_SETTING_VERSION_BIZ_TAG_NAME = "PIPELINE_SETTING_VERSION"

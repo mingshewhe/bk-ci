@@ -25,25 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.pipeline
+package com.tencent.devops.process.service.pipeline.version.listener
 
-import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
-import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.process.engine.pojo.PipelineModelTask
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线编排解析后数据")
-data class PipelineModelData(
-    @get:Schema(title = "是否能够手动启动")
-    val canManualStartup: Boolean,
-    @get:Schema(title = "是否可以跳过")
-    val canElementSkip: Boolean,
-    @get:Schema(title = "任务数")
-    val taskCount: Int,
-    @get:Schema(title = "构建版本号", required = false)
-    val buildNo: BuildNo? = null,
-    @get:Schema(title = "流水线事件回调", required = false)
-    val events: Map<String, PipelineCallbackEvent>? = emptyMap(),
-    @get:Schema(title = "流水线插件", required = false)
-    val modelTasks: List<PipelineModelTask>
+@Schema(title = "流水线版本创建后置处理上下文")
+data class PipelineVersionPostCreationContext(
+    @get:Schema(title = "用户ID", required = true)
+    val userId: String,
+    @get:Schema(title = "流水线基础信息", required = true)
+    val pipelineBasicInfo: PipelineBasicInfo,
+    @get:Schema(title = "流水线模型基础信息", required = true)
+    val pipelineModelBasicInfo: PipelineModelBasicInfo,
+    @get:Schema(title = "流水线模型", required = true)
+    val pipelineResourceVersion: PipelineResourceVersion,
+    @get:Schema(title = "流水线设置", required = true)
+    val pipelineSetting: PipelineSetting,
+    @get:Schema(title = "流水线实例化信息", required = true)
+    val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
+    @get:Schema(title = "是否需要校验权限", required = true)
+    val checkPermission: Boolean = true
 )

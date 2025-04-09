@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
+import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
@@ -39,10 +40,12 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
+import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
@@ -55,6 +58,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
+import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -72,7 +76,9 @@ class PipelineTemplateInstanceReqConverter(
     private val transferService: PipelineTransferYamlService,
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val dslContext: DSLContext,
+    private val pipelineInfoDao: PipelineInfoDao
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
@@ -116,6 +122,12 @@ class PipelineTemplateInstanceReqConverter(
 
             // 生成流水线ID
             val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
+
+            val pipelineInfo = pipelineInfoDao.getPipelineInfo(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = newPipelineId
+            )
 
             // 根据模版model生成流水线model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
@@ -163,12 +175,12 @@ class PipelineTemplateInstanceReqConverter(
                 targetAction = targetAction,
                 targetBranch = targetBranch
             )
-            val pipelineModelData = pipelineResourceFactory.createPipelineModelData(
+            val pipelineModelBasicInfo = pipelineResourceFactory.createPipelineModelBasicInfo(
                 model = instanceModel,
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 userId = userId,
-                create = true,
+                create = pipelineInfo == null,
                 versionStatus = versionStatus,
                 channelCode = ChannelCode.BS
             )
@@ -188,13 +200,20 @@ class PipelineTemplateInstanceReqConverter(
                 }
             )
 
+            val templateInstanceBasicInfo = PipelineTemplateInstanceBasicInfo(
+                templateId = templateId,
+                templateVersion = templateVersion,
+                templateVersionName = templateResource.versionName,
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
+            )
+
             return PipelineVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 versionAction = PipelineVersionAction.TEMPLATE_INSTANCE,
                 pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
+                pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineSetting = pipelineSetting,
                 enablePac = enablePac,
@@ -206,8 +225,7 @@ class PipelineTemplateInstanceReqConverter(
                 },
                 targetAction = targetAction,
                 branchName = branchName,
-                templateId = templateId,
-                templateVersion = templateVersion
+                templateInstanceBasicInfo = templateInstanceBasicInfo
             )
         }
     }

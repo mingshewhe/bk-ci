@@ -35,7 +35,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineModelData
+import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
@@ -58,7 +58,6 @@ class PipelineResourceFactory @Autowired constructor(
         return PipelineBasicInfo(
             projectId = projectId,
             pipelineId = pipelineId,
-            templateId = model.templateId,
             pipelineName = model.name,
             pipelineDesc = model.desc ?: model.name,
             channelCode = channelCode,
@@ -67,17 +66,17 @@ class PipelineResourceFactory @Autowired constructor(
         )
     }
 
-    fun createPipelineModelData(
-        model: Model,
+    fun createPipelineModelBasicInfo(
+        userId: String,
         projectId: String,
         pipelineId: String,
-        userId: String,
+        model: Model,
         create: Boolean = true,
         versionStatus: VersionStatus? = VersionStatus.RELEASED,
         channelCode: ChannelCode,
         yamlInfo: PipelineYamlVo? = null,
         pipelineDialect: IPipelineDialect? = null
-    ): PipelineModelData {
+    ): PipelineModelBasicInfo {
         val triggerContainer = model.getTriggerContainer()
         var canManualStartup = false
         var canElementSkip = false
@@ -109,13 +108,15 @@ class PipelineResourceFactory @Autowired constructor(
             yamlInfo = yamlInfo,
             pipelineDialect = pipelineDialect
         )
-        return PipelineModelData(
+        return PipelineModelBasicInfo(
             canManualStartup = canManualStartup,
             canElementSkip = canElementSkip,
             taskCount = model.taskCount(),
+            param = triggerContainer.params,
             buildNo = buildNo,
             events = model.events,
-            modelTasks = modelTasks
+            modelTasks = modelTasks,
+            staticViews = model.staticViews
         )
     }
 }

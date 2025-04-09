@@ -27,23 +27,28 @@
 
 package com.tencent.devops.process.pojo.pipeline
 
-import com.tencent.devops.common.pipeline.enums.ChannelCode
+import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线基础信息")
-data class PipelineBasicInfo(
-    @get:Schema(title = "项目ID")
-    val projectId: String,
-    @get:Schema(title = "流水线DI")
-    val pipelineId: String,
-    @get:Schema(title = "流水线名称")
-    val pipelineName: String,
-    @get:Schema(title = "流水线描述")
-    val pipelineDesc: String,
-    @get:Schema(title = "渠道")
-    val channelCode: ChannelCode,
-    @get:Schema(title = "ID")
-    val id: Long?,
-    @get:Schema(title = "是否禁用")
-    val pipelineDisable: Boolean?,
+@Schema(title = "流水线编排解析后数据")
+data class PipelineModelBasicInfo(
+    @get:Schema(title = "是否能够手动启动")
+    val canManualStartup: Boolean,
+    @get:Schema(title = "是否可以跳过")
+    val canElementSkip: Boolean,
+    @get:Schema(title = "任务数")
+    val taskCount: Int,
+    @get:Schema(title = "参数")
+    val param: List<BuildFormProperty>? = null,
+    @get:Schema(title = "构建版本号", required = false)
+    val buildNo: BuildNo? = null,
+    @get:Schema(title = "流水线事件回调", required = false)
+    val events: Map<String, PipelineCallbackEvent>? = emptyMap(),
+    @get:Schema(title = "流水线插件", required = false)
+    val modelTasks: List<PipelineModelTask> = emptyList(),
+    @get:Schema(title = "静态流水线组", required = false)
+    val staticViews: List<String> = emptyList()
 )

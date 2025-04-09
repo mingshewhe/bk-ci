@@ -25,25 +25,59 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.pipeline
+package com.tencent.devops.process.service.pipeline.version.listener
 
-import com.tencent.devops.common.pipeline.enums.ChannelCode
-import io.swagger.v3.oas.annotations.media.Schema
+import org.jooq.DSLContext
 
-@Schema(title = "流水线基础信息")
-data class PipelineBasicInfo(
-    @get:Schema(title = "项目ID")
-    val projectId: String,
-    @get:Schema(title = "流水线DI")
-    val pipelineId: String,
-    @get:Schema(title = "流水线名称")
-    val pipelineName: String,
-    @get:Schema(title = "流水线描述")
-    val pipelineDesc: String,
-    @get:Schema(title = "渠道")
-    val channelCode: ChannelCode,
-    @get:Schema(title = "ID")
-    val id: Long?,
-    @get:Schema(title = "是否禁用")
-    val pipelineDisable: Boolean?,
-)
+/**
+ * 流水线版本创建后置处理器
+ */
+interface PipelineVersionCreatePostProcessor {
+
+    /**
+     * 流水线创建后执行
+     */
+    fun postProcessAfterCreation(
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+
+    }
+
+    /**
+     * 与流水线创建时事务保持一致
+     */
+    fun postProcessInTransactionCreation(
+        transactionContext: DSLContext,
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+
+    }
+
+    /**
+     * 流水线创建前执行
+     */
+    fun postProcessBeforeVersionCreation(
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+
+    }
+
+    /**
+     * 与流水线版本创建时事务保持一致
+     */
+    fun postProcessInTransactionVersionCreation(
+        transactionContext: DSLContext,
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+
+    }
+
+    /**
+     * 流水线版本创建后执行
+     */
+    fun postProcessAfterVersionCreation(
+        postCreationContext: PipelineVersionPostCreationContext
+    ) {
+
+    }
+}

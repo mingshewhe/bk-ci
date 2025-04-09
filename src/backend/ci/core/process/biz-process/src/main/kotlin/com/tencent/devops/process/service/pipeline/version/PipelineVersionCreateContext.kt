@@ -31,8 +31,9 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineModelData
+import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
+import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -51,7 +52,7 @@ data class PipelineVersionCreateContext(
     @get:Schema(title = "流水线信息", required = true)
     val pipelineBasicInfo: PipelineBasicInfo,
     @get:Schema(title = "流水线模型解析后数据", required = true)
-    var pipelineModelData: PipelineModelData,
+    var pipelineModelBasicInfo: PipelineModelBasicInfo,
     @get:Schema(title = "流水线编排信息", required = true)
     val pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,
     @get:Schema(title = "流水线设置", required = true)
@@ -64,8 +65,6 @@ data class PipelineVersionCreateContext(
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时的分支或者代码库推送的分支", required = false)
     val branchName: String? = null,
-    @get:Schema(title = "模版ID", required = false)
-    val templateId: String? = null,
-    @get:Schema(title = "模版版本", required = false)
-    val templateVersion: Long? = null
+    @get:Schema(title = "模版实例化信息", required = false)
+    val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null
 )

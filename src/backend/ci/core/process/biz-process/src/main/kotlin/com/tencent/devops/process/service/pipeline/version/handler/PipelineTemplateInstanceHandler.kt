@@ -31,33 +31,32 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
-import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
+import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
 class PipelineTemplateInstanceHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
+    private val dslContext: DSLContext,
+    private val pipelineInfoDao: PipelineInfoDao,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
 ) : PipelineVersionCreateHandler {
     override fun support(context: PipelineVersionCreateContext) =
         context.versionAction == PipelineVersionAction.TEMPLATE_INSTANCE
 
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
-            if (templateId == null) {
-                throw IllegalArgumentException("templateId is null")
-            }
-            if (templateVersion == null) {
-                throw IllegalArgumentException("templateVersion is null")
+            if (templateInstanceBasicInfo == null) {
+                throw IllegalArgumentException("templateInstanceBasicInfo is null")
             }
             if (enablePac) {
                 if (targetAction == null) {
@@ -81,7 +80,8 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
     }
 
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
-        val pipelineInfo = pipelineRepositoryService.getPipelineInfo(projectId = projectId, pipelineId = pipelineId)
+        val pipelineInfo =
+            pipelineInfoDao.getPipelineInfo(dslContext = dslContext, projectId = projectId, pipelineId = pipelineId)
         val resourceOnlyVersion = if (pipelineInfo == null) {
             val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
                 versionStatus = pipelineResourceWithoutVersion.status,
@@ -94,11 +94,12 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             pipelineVersionPersistenceService.createPipeline(
                 userId = userId,
                 pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelData = pipelineModelData,
+                pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceVersion = pipelineResourceVersion,
                 pipelineSetting = pipelineSetting.copy(
                     version = resourceOnlyVersion.settingVersion!!
-                )
+                ),
+                templateInstanceBasicInfo = templateInstanceBasicInfo
             )
             resourceOnlyVersion
         } else {
@@ -111,8 +112,8 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                 repoHashId = yamlFileInfo?.repoHashId,
                 targetAction = targetAction,
                 targetBranch = branchName,
-                templateId = templateId!!,
-                templateVersion = templateVersion!!,
+                templateId = templateInstanceBasicInfo!!.templateId,
+                templateVersion = templateInstanceBasicInfo.templateVersion
             )
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
@@ -122,11 +123,12 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                 pipelineVersionPersistenceService.createReleaseVersion(
                     userId = userId,
                     pipelineBasicInfo = pipelineBasicInfo,
-                    pipelineModelData = pipelineModelData,
+                    pipelineModelBasicInfo = pipelineModelBasicInfo,
                     pipelineResourceVersion = pipelineResourceVersion,
                     pipelineSetting = pipelineSetting.copy(
                         version = resourceOnlyVersion.settingVersion!!
                     ),
+                    templateInstanceBasicInfo = templateInstanceBasicInfo
                 )
             } else {
                 pipelineVersionPersistenceService.createBranchVersion(
@@ -136,7 +138,6 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                         version = resourceOnlyVersion.settingVersion!!
                     )
                 )
-
             }
             resourceOnlyVersion
         }
