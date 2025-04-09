@@ -33,8 +33,10 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -50,15 +52,16 @@ import org.springframework.stereotype.Service
 class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val operationLogService: PipelineOperationLogService
 ) {
 
     fun handle(context: PipelineTemplateVersionDeleteContext) {
         with(context) {
             logger.info(
                 "handle pipeline template version delete|" +
-                        "projectId:$projectId|templateId:$templateId|versionAction:$versionAction" +
-                        "|version:$version|branch:$branch"
+                    "projectId:$projectId|templateId:$templateId|versionAction:$versionAction" +
+                    "|version:$version|branch:$branch"
             )
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
@@ -106,6 +109,15 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             version = version
+        )
+        operationLogService.addOperationLog(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            version = version.toInt(),
+            operationLogType = OperationLogType.DELETE_PIPELINE_VERSION,
+            params = pipelineTemplateResourceService.get(condition).versionName ?: "",
+            description = null
         )
         pipelineTemplateResourceService.update(
             record = updateInfo,

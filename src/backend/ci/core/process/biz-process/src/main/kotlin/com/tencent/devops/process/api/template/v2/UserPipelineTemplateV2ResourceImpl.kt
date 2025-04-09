@@ -53,6 +53,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import jakarta.ws.rs.core.Response
@@ -62,7 +63,8 @@ import org.slf4j.LoggerFactory
 class UserPipelineTemplateV2ResourceImpl(
     private val permissionService: PipelineTemplatePermissionService,
     private val templateFacadeService: PipelineTemplateFacadeService,
-    private val templateInfoService: PipelineTemplateInfoService
+    private val templateInfoService: PipelineTemplateInfoService,
+    private val pipelineOperationLogService: PipelineOperationLogService
 ) : UserPipelineTemplateV2Resource {
     override fun create(
         userId: String,
@@ -317,7 +319,29 @@ class UserPipelineTemplateV2ResourceImpl(
         page: Int?,
         pageSize: Int?
     ): Result<Page<PipelineOperationDetail>> {
-        TODO("Not yet implemented")
+        return Result(
+            templateFacadeService.getOperationLogsInPage(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                creator = creator,
+                page = page,
+                pageSize = pageSize
+            )
+        )
+    }
+
+    override fun operatorList(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<List<String>> {
+        return Result(
+            pipelineOperationLogService.getOperatorInPage(
+                projectId = projectId,
+                pipelineId = templateId
+            )
+        )
     }
 
     override fun rollbackDraftFromVersion(

@@ -744,11 +744,11 @@ class PipelineVersionFacadeService @Autowired constructor(
         } catch (e: PipelineTransferException) {
             Triple(
                 false, null, I18nUtil.getCodeLanMessage(
-                    messageCode = e.errorCode,
-                    params = e.params,
-                    language = I18nUtil.getLanguage(I18nUtil.getRequestUserId()),
-                    defaultMessage = e.defaultMessage
-                )
+                messageCode = e.errorCode,
+                params = e.params,
+                language = I18nUtil.getLanguage(I18nUtil.getRequestUserId()),
+                defaultMessage = e.defaultMessage
+            )
             )
         }
         return PipelineVersionWithModel(
@@ -1118,6 +1118,7 @@ class PipelineVersionFacadeService @Autowired constructor(
         checkPermission: Boolean = true
     ): String {
         repositoryVersionService.deletePipelineVersion(
+            userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,
             version = version

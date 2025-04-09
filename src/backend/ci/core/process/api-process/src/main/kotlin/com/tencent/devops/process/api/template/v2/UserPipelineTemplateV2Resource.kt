@@ -282,7 +282,7 @@ interface UserPipelineTemplateV2Resource {
         request: PipelineTemplateDraftReleaseReq
     ): Result<DeployTemplateResult>
 
-    @Operation(summary = "获取流水线操作日志列表（分页）")
+    @Operation(summary = "获取模板操作日志列表（分页）")
     @GET
     @Path("{templateId}/operationLog")
     fun getPipelineOperationLogs(
@@ -305,6 +305,21 @@ interface UserPipelineTemplateV2Resource {
         @QueryParam("pageSize")
         pageSize: Int?
     ): Result<Page<PipelineOperationDetail>>
+
+    @Operation(summary = "获取模板操作人列表（分页）")
+    @GET
+    @Path("/{templateId}/operatorList")
+    fun operatorList(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "流水线ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<List<String>>
 
     @Operation(summary = "回滚到指定的历史版本并覆盖草稿")
     @POST

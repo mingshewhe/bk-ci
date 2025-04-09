@@ -1,9 +1,11 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.model.SQLLimit
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
+import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
@@ -11,8 +13,10 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
@@ -37,6 +41,7 @@ import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVe
 import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import jakarta.ws.rs.core.Response
+import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -54,7 +59,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineOperationLogDao: PipelineOperationLogDao,
+    private val dslContext: DSLContext
 ) {
     fun create(
         userId: String,
@@ -594,6 +601,70 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return FileExportUtil.exportStringToFile(
             content = yamlStr,
             fileName = "${templateInfo.name}.yaml"
+        )
+    }
+
+    fun getOperationLogsInPage(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        creator: String?,
+        page: Int?,
+        pageSize: Int?
+    ): Page<PipelineOperationDetail> {
+        val pageNotNull = page ?: 0
+        val pageSizeNotNull = pageSize ?: -1
+        var slqLimit: SQLLimit? = null
+        if (pageSizeNotNull != -1) slqLimit = PageUtil.convertPageSizeToSQLLimit(pageNotNull, pageSizeNotNull)
+        val offset = slqLimit?.offset ?: 0
+        val limit = slqLimit?.limit ?: -1
+        val opCount = pipelineOperationLogDao.getCountByPipeline(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = templateId,
+            creator = if (creator.isNullOrBlank()) null else creator
+        )
+        val opList = pipelineOperationLogDao.getListByPipeline(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = templateId,
+            creator = if (creator.isNullOrBlank()) null else creator,
+            offset = offset,
+            limit = limit
+        )
+        val versions = mutableSetOf<Int>()
+        opList.forEach { versions.add(it.version) }
+        val versionMap = pipelineTemplateResourceService.getTemplateVersions(
+            PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+            )
+        ).associateBy { it.version }
+        val detailList = opList.map {
+            with(it) {
+                val operationLogStr = "${operationLogType.getI18n(I18nUtil.getRequestUserLanguage())} $params"
+                PipelineOperationDetail(
+                    id = id,
+                    projectId = projectId,
+                    pipelineId = templateId,
+                    version = version,
+                    operator = operator,
+                    operationLogType = operationLogType,
+                    operationLogStr = operationLogStr,
+                    params = params,
+                    description = description,
+                    operateTime = operateTime,
+                    versionName = versionMap[it.version]?.versionName,
+                    versionCreateTime = versionMap[it.version]?.createTime,
+                    status = versionMap[it.version]?.status
+                )
+            }
+        }
+        return Page(
+            page = pageNotNull,
+            pageSize = pageSizeNotNull,
+            count = opCount.toLong(),
+            records = detailList
         )
     }
 

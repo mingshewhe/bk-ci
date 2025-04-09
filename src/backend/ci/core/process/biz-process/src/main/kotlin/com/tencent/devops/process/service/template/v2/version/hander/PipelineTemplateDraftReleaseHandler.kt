@@ -32,8 +32,10 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -52,7 +54,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val operationLogService: PipelineOperationLogService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext) =
         context.versionAction == PipelineVersionAction.RELEASE_DRAFT
@@ -123,6 +126,16 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 versionName = resourceOnlyVersion.versionName!!
             )
         }
+        operationLogService.addOperationLog(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            version = version.toInt(),
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION,
+            params = resourceOnlyVersion.versionName ?: "",
+            description = null
+        )
+
         return DeployTemplateResult(
             version = resourceOnlyVersion.version,
             templateId = templateId,

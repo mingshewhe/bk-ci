@@ -32,9 +32,11 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
@@ -53,7 +55,8 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val operationLogService: PipelineOperationLogService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
@@ -93,6 +96,15 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 pipelineTemplateSetting = pipelineTemplateSetting.copy(
                     version = defaultVersion.settingVersion
                 )
+            )
+            operationLogService.addOperationLog(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = templateId,
+                version = defaultVersion.version.toInt(),
+                operationLogType = OperationLogType.CREATE_PIPELINE_AND_DRAFT,
+                params = "",
+                description = null
             )
             defaultVersion
         } else {
@@ -134,6 +146,15 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 version = resourceOnlyVersion.settingVersion
             )
         )
+        operationLogService.addOperationLog(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            version = resourceOnlyVersion.version.toInt(),
+            operationLogType = OperationLogType.CREATE_DRAFT_VERSION,
+            params = latestVersion.versionName ?: "",
+            description = null
+        )
         return resourceOnlyVersion
     }
 
@@ -149,6 +170,15 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting
+        )
+        operationLogService.addOperationLog(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            version = resourceOnlyVersion.version.toInt(),
+            operationLogType = OperationLogType.CREATE_DRAFT_VERSION,
+            params = "",
+            description = null
         )
         return resourceOnlyVersion
     }
