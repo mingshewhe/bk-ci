@@ -176,7 +176,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             projectId = projectId,
             pipelineId = templateId,
             version = resourceOnlyVersion.version.toInt(),
-            operationLogType = OperationLogType.CREATE_DRAFT_VERSION,
+            operationLogType = OperationLogType.UPDATE_DRAFT_VERSION,
             params = "",
             description = null
         )
