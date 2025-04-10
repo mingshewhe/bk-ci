@@ -86,6 +86,7 @@ class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
             branchAction = null,
             sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
             baseVersion = baseResource.version,
+            baseVersionName = baseResource.versionName,
             description = null
         )
         return PipelineTemplateVersionCreateContext(

@@ -66,6 +66,8 @@ data class PipelineTemplateResource(
     val srcTemplateVersion: Long? = null,
     @get:Schema(title = "草稿来源版本", required = false)
     val baseVersion: Long? = null,
+    @get:Schema(title = "来源版本名称", required = false)
+    val baseVersionName: String? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "编排", required = false)
@@ -111,6 +113,8 @@ data class PipelineTemplateResource(
         srcTemplateVersion = pTemplateResourceWithoutVersion.srcTemplateVersion,
         // 如果请求有传递基准版本,则使用基准版本,否则使用最新版本
         baseVersion = pTemplateResourceWithoutVersion.baseVersion ?: pTemplateResourceOnlyVersion.baseVersion,
+        baseVersionName = pTemplateResourceWithoutVersion.baseVersionName
+            ?: pTemplateResourceOnlyVersion.baseVersionName,
         params = pTemplateResourceWithoutVersion.params,
         model = pTemplateResourceWithoutVersion.model,
         yaml = pTemplateResourceWithoutVersion.yaml,

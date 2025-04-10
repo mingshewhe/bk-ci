@@ -37,6 +37,8 @@ data class PTemplateResourceWithoutVersion(
     val sortWeight: Int? = 0,
     @get:Schema(title = "草稿来源版本,可以通过请求传入", required = false)
     val baseVersion: Long? = null,
+    @get:Schema(title = "来源版本名称", required = false)
+    val baseVersionName: String? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = false)
@@ -57,6 +59,7 @@ data class PTemplateResourceWithoutVersion(
         branchAction = templateResource.branchAction,
         sortWeight = templateResource.sortWeight,
         baseVersion = templateResource.baseVersion,
+        baseVersionName = templateResource.baseVersionName,
         creator = templateResource.creator,
         updater = templateResource.updater
     )

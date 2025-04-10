@@ -182,7 +182,8 @@ class PipelineTemplateGenerator @Autowired constructor(
         version = generateTemplateVersion(),
         number = latestResource.number + 1,
         settingVersion = latestResource.settingVersion + 1,
-        baseVersion = latestResource.version
+        baseVersion = latestResource.version,
+        baseVersionName = latestResource.baseVersionName
     )
 
     /**
@@ -198,7 +199,8 @@ class PipelineTemplateGenerator @Autowired constructor(
         number = latestResource.number + 1,
         versionName = branchName,
         settingVersion = latestResource.settingVersion + 1,
-        baseVersion = latestResource.version
+        baseVersion = latestResource.version,
+        baseVersionName = latestResource.versionName
     )
 
 

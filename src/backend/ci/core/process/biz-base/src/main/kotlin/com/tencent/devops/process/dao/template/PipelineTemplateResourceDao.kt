@@ -216,6 +216,7 @@ class PipelineTemplateResourceDao {
                 PIPELINE_VERSION,
                 TRIGGER_VERSION,
                 BASE_VERSION,
+                BASE_VERSION_NAME,
                 STATUS,
                 DESCRIPTION,
                 CREATOR,
@@ -236,12 +237,13 @@ class PipelineTemplateResourceDao {
                         pipelineVersion = it.value6(),
                         triggerVersion = it.value7(),
                         baseVersion = it.value8()?.toInt(),
-                        status = VersionStatus.get(it.value9()),
-                        description = it.value10(),
-                        creator = it.value11(),
-                        updater = it.value12(),
-                        createTime = it.value13().timestampmilli(),
-                        updateTime = it.value14().timestampmilli(),
+                        baseVersionName = it.value9(),
+                        status = VersionStatus.get(it.value10()),
+                        description = it.value11(),
+                        creator = it.value12(),
+                        updater = it.value13(),
+                        createTime = it.value14().timestampmilli(),
+                        updateTime = it.value15().timestampmilli(),
                         yamlVersion = null
                     )
                 }
