@@ -34,6 +34,8 @@ data class PipelineTemplateInfoResponse(
     val srcTemplateId: String? = null,
     @get:Schema(title = "父模板项目ID", required = false)
     val srcTemplateProjectId: String? = null,
+    @get:Schema(title = "能否调试", required = true)
+    val canDebug: Boolean? = null,
     @get:Schema(title = "调试流水线数", required = true)
     val debugPipelineCount: Int? = 0,
     @get:Schema(title = "实例流水线数", required = true)

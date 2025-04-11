@@ -486,6 +486,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             storeFlag = basicInfo.storeFlag,
             srcTemplateId = basicInfo.srcTemplateId,
             srcTemplateProjectId = basicInfo.srcTemplateProjectId,
+            canDebug = draftVersionResource != null,
             debugPipelineCount = basicInfo.debugPipelineCount,
             instancePipelineCount = basicInfo.instancePipelineCount,
             creator = basicInfo.creator,
