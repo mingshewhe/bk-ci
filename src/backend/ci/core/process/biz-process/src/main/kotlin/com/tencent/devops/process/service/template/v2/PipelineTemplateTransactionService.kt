@@ -295,7 +295,7 @@ class PipelineTemplateTransactionService @Autowired constructor(
                 record = templateResourceUpdateInfo,
                 commonCondition = templateResourceCondition
             )
-            pipelineTemplatePermissionService.createResource(
+            pipelineTemplatePermissionService.modifyResource(
                 userId = userId,
                 projectId = templateResource.projectId,
                 templateId = templateResource.templateId,

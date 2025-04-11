@@ -464,7 +464,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 draftVersionResource?.version
             }
         } ?: basicInfo.releasedVersion
-
+        val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
+            userId = userId,
+            projectId = projectId,
+            permissions = setOf(
+                AuthPermission.VIEW,
+                AuthPermission.DELETE,
+                AuthPermission.EDIT
+            )
+        )
         return PipelineTemplateInfoResponse(
             id = basicInfo.id,
             projectId = basicInfo.projectId,
@@ -484,6 +492,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
             updater = basicInfo.updater,
             createdTime = basicInfo.createdTime,
             updateTime = basicInfo.updateTime,
+            canView = permission2TemplatesMap[AuthPermission.VIEW]?.contains(basicInfo.id) ?: false,
+            canEdit = permission2TemplatesMap[AuthPermission.EDIT]?.contains(basicInfo.id) ?: false,
+            canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(basicInfo.id) ?: false,
             canRelease = draftVersionResource?.model != null,
             version = version,
             versionName = versionName,
