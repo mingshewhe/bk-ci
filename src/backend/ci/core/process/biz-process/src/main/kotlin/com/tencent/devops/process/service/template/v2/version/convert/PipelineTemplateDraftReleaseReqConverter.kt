@@ -89,8 +89,8 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 if (targetAction == null) {
                     throw IllegalArgumentException("targetAction is null")
                 }
-                if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
+                if (yamlInfo == null) {
+                    throw IllegalArgumentException("yamlInfo is null")
                 }
                 if (draftResource.yaml == null) {
                     throw IllegalArgumentException("yaml is null")
@@ -107,7 +107,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pipelineTemplateSetting = pipelineTemplateSetting,
-                yamlFileInfo = yamlFileInfo,
+                yamlFileInfo = yamlInfo,
                 enablePac = enablePac,
                 targetAction = targetAction,
                 branchName = targetBranch
