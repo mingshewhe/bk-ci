@@ -30,7 +30,7 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
-import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
+import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
@@ -116,6 +116,22 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 updater = updater,
                 page = page,
                 pageSize = pageSize
+            )
+        )
+    }
+
+    override fun listTemplateInstancesParams(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        pipelineIds: Set<String>
+    ): Result<Map<String, TemplateInstanceParams>> {
+        return Result(
+            instanceFacadeService.listTemplateInstancesParams(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                pipelineIds = pipelineIds
             )
         )
     }

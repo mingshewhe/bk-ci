@@ -41,7 +41,7 @@ data class TemplateInstanceParams(
     val pipelineId: String,
     @get:Schema(title = "流水线名称", required = false)
     val pipelineName: String,
-    @get:Schema(title = "构建号，不建议使用", required = false)
+    @get:Schema(title = "构建号", required = false)
     val buildNo: BuildNo?,
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>,

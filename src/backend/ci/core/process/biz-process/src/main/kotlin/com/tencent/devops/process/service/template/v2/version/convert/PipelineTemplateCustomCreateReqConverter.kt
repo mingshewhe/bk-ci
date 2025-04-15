@@ -103,6 +103,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 templateType = type,
                 templateModel = defaultTemplateModel,
                 templateSetting = setting,
+                params = emptyList(),
                 yaml = null
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(

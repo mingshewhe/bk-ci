@@ -1,5 +1,7 @@
 package com.tencent.devops.process.service.template.v2
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.exception.ErrorCodeException
@@ -25,6 +27,8 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
+import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceBaseDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceItemDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
@@ -35,6 +39,7 @@ import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
+import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
@@ -46,15 +51,14 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceRelea
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
+import com.tencent.devops.process.service.ParamFacadeService
 import com.tencent.devops.process.service.PipelineInfoFacadeService
-import com.tencent.devops.process.service.PipelineRemoteAuthService
 import com.tencent.devops.process.service.PipelineVersionFacadeService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
-import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -76,18 +80,20 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineSettingFacadeService: PipelineSettingFacadeService,
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineTemplateInstanceSettingService: PipelineTemplateInstanceSettingService,
-    private val pipelineRemoteAuthService: PipelineRemoteAuthService,
     private val pipelineGroupService: PipelineGroupService,
     private val pipelineSettingDao: PipelineSettingDao,
     private val templatePipelineDao: TemplatePipelineDao,
     private val pipelineIdGenerator: PipelineIdGenerator,
-    private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val redisOperation: RedisOperation,
     private val transferService: PipelineTransferYamlService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val pipelineVersionManager: PipelineVersionManager
+    private val pipelineVersionManager: PipelineVersionManager,
+    private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
+    private val pipelineResourceDao: PipelineResourceDao,
+    private val objectMapper: ObjectMapper,
+    private val paramService: ParamFacadeService
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -861,6 +867,64 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             count = count.toLong(),
             records = results
         )
+    }
+
+    fun listTemplateInstancesParams(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        pipelineIds: Set<String>
+    ): Map<String, TemplateInstanceParams> {
+        pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        val pipelineId2Name = pipelineSettingDao.getSettings(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineIds = pipelineIds,
+        ).associate { it.pipelineId to it.pipelineName }
+        val pipelineId2Model = pipelineResourceDao.listLatestModelResource(
+            dslContext = dslContext,
+            pipelineIds = pipelineIds,
+            projectId = projectId
+        )?.associate { resource ->
+            val model: Model = objectMapper.readValue(resource.value3())
+            resource.value1() to model
+        } ?: emptyMap()
+        val pipelineCurrentBuildNos = pipelineBuildSummaryDao.getSummaries(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineIds = pipelineIds
+        ).associate { it.pipelineId to it.buildNo }
+
+        return try {
+            pipelineId2Model.map {
+                val pipelineId = it.key
+                val instanceModel = it.value
+                val instanceTriggerContainer = instanceModel.getTriggerContainer()
+                val instanceParams = paramService.filterParams(
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    params = instanceTriggerContainer.params
+                )
+                val instanceBuildNoObj = instanceTriggerContainer.buildNo?.copy(
+                    currentBuildNo = pipelineCurrentBuildNos[pipelineId]
+                )
+                pipelineId to TemplateInstanceParams(
+                    pipelineId = pipelineId,
+                    pipelineName = pipelineId2Name[pipelineId] ?: "",
+                    buildNo = instanceBuildNoObj,
+                    param = instanceParams
+                )
+            }.toMap()
+        } catch (ignored: Throwable) {
+            logger.warn("Fail to list pipeline params - [$projectId|$userId|$templateId]", ignored)
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.FAIL_TO_LIST_TEMPLATE_PARAMS
+            )
+        }
     }
 
     companion object {

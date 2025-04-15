@@ -182,6 +182,7 @@ class PipelineTemplateMigrateService(
                     templateType = PipelineTemplateType.PIPELINE,
                     templateModel = currentTemplateModel,
                     templateSetting = currentSetting,
+                    params = currentTemplateParams,
                     yaml = null
                 )
             } catch (ex: Exception) {

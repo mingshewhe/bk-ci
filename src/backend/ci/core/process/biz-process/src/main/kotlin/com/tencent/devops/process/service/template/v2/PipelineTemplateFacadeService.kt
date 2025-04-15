@@ -7,6 +7,7 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -17,6 +18,7 @@ import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
@@ -401,6 +403,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 storageType = PipelineStorageType.MODEL,
                 templateType = templateResource.type,
                 templateModel = templateResource.model,
+                params = templateResource.params,
                 templateSetting = setting,
                 yaml = null
             ).yamlWithVersion?.yamlStr ?: ""
@@ -418,9 +421,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 )
             )
         }
+        val buildNo = if (templateResource.type == PipelineTemplateType.PIPELINE) {
+            (templateResource.model as Model).getTriggerContainer().buildNo
+        } else {
+            null
+        }
         return PipelineTemplateDetailsResponse(
             resource = templateResource,
             setting = setting,
+            buildNo = buildNo,
+            params = templateResource.params,
             yamlSupported = yamlSupported,
             yamlPreview = yamlPreview,
             yamlInvalidMsg = msg
@@ -568,6 +578,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateType = body.templateType,
             templateModel = body.templateModel,
             templateSetting = body.templateSetting,
+            params = body.params,
             yaml = body.yaml
         )
     }
@@ -604,6 +615,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             storageType = PipelineStorageType.MODEL,
             templateType = templateResource.type,
             templateModel = templateResource.model,
+            params = templateResource.params,
             templateSetting = setting,
             yaml = templateResource.yaml
         ).yamlWithVersion?.yamlStr

@@ -33,6 +33,7 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
+import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
@@ -51,15 +52,14 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 
 @Tag(name = "USER_TEMPLATE_INSTANCE_V2", description = "用户-流水模板-实例化-V2")
-@Path("/user/template/instances/v2")
+@Path("/user/template/instances/v2/projects/{projectId}")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Suppress("ALL")
 interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "流水线模板-批量实例化流水线模板-同步")
     @POST
-    @Path("/projects/{projectId}/templates/{templateId}")
+    @Path("/templates/{templateId}")
     fun createTemplateInstances(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -82,7 +82,7 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "流水线模板-批量实例化流水线模板-异步")
     @POST
-    @Path("/projects/{projectId}/templates/async/{templateId}")
+    @Path("/templates/async/{templateId}")
     fun asyncCreateTemplateInstances(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -105,7 +105,7 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "异步批量更新流水线模板实例")
     @PUT
-    @Path("/projects/{projectId}/templates/{templateId}/async/update")
+    @Path("/templates/{templateId}/async/update")
     fun asyncUpdateTemplateInstances(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -128,7 +128,7 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "列表流水线模板实例")
     @GET
-    @Path("/projects/{projectId}/templates/{templateId}")
+    @Path("/templates/{templateId}")
     fun listTemplateInstances(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -153,4 +153,21 @@ interface UserPipelineTemplateInstanceV2Resource {
         @BkField(patternStyle = BkStyleEnum.PAGE_SIZE_STYLE, required = true)
         pageSize: Int
     ): Result<SQLPage<PipelineTemplateRelatedResp>>
+
+    @Operation(summary = "通过流水线ID获取流水线启动参数")
+    @POST
+    @Path("/templates/{templateId}/pipelines")
+    fun listTemplateInstancesParams(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "创建实例", required = true)
+        pipelineIds: Set<String>
+    ): Result<Map<String/*pipelineId*/, TemplateInstanceParams>>
 }

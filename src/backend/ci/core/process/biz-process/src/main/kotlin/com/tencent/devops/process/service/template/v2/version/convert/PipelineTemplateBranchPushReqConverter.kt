@@ -69,6 +69,7 @@ class PipelineTemplateBranchPushReqConverter(
                 templateType = null,
                 templateModel = null,
                 templateSetting = null,
+                params = null,
                 yaml = yaml
             )
             val (status, versionAction) = if (isDefaultBranch) {
@@ -102,6 +103,7 @@ class PipelineTemplateBranchPushReqConverter(
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = newTemplateId,
+                params = modelTransferResult.params,
                 type = modelTransferResult.templateType,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,

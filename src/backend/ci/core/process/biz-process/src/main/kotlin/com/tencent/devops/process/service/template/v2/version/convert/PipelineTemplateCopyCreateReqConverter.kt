@@ -129,6 +129,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 templateType = srcTemplateInfo.type,
                 templateModel = srcTemplateResource.model,
                 templateSetting = setting,
+                params = srcTemplateResource.params,
                 yaml = null
             ).yamlWithVersion?.yamlStr ?: ""
 

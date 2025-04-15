@@ -35,6 +35,7 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.TemplateModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.PreviewResponse
@@ -406,6 +407,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         templateType: PipelineTemplateType?,
         templateModel: ITemplateModel?,
         templateSetting: PipelineSetting?,
+        params: List<BuildFormProperty>?,
         yaml: String?
     ): PTemplateModelTransferResult {
         return if (storageType == PipelineStorageType.YAML) {
@@ -435,7 +437,9 @@ class PipelineTemplateGenerator @Autowired constructor(
                 templateType = PipelineTemplateType.PIPELINE,
                 templateModel = newTemplateModel,
                 templateSetting = newTemplateSetting,
-                yamlWithVersion = transferResult.yamlWithVersion
+                yamlWithVersion = transferResult.yamlWithVersion,
+                // todo 需要改造，由code转化接口中获取。
+                params = (newTemplateModel as Model).getTriggerContainer().params
             )
         } else {
             val newTemplateType = Preconditions.checkNotNull(
@@ -450,9 +454,9 @@ class PipelineTemplateGenerator @Autowired constructor(
                 templateSetting,
                 "template setting must not be null"
             )
-            when (templateType) {
+            val result = when (templateType) {
                 PipelineTemplateType.PIPELINE -> {
-                    val result = transferService.transfer(
+                    transferService.transfer(
                         userId = userId,
                         projectId = projectId,
                         pipelineId = null,
@@ -465,16 +469,10 @@ class PipelineTemplateGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    PTemplateModelTransferResult(
-                        templateType = newTemplateType,
-                        templateModel = newTemplateModel,
-                        templateSetting = newTemplateSetting,
-                        yamlWithVersion = result.yamlWithVersion
-                    )
                 }
 
                 PipelineTemplateType.STAGE -> {
-                    val result = transferService.transfer(
+                    transferService.transfer(
                         userId = userId,
                         projectId = projectId,
                         pipelineId = null,
@@ -487,16 +485,10 @@ class PipelineTemplateGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    PTemplateModelTransferResult(
-                        templateType = newTemplateType,
-                        templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion,
-                        templateSetting = newTemplateSetting
-                    )
                 }
 
                 PipelineTemplateType.JOB -> {
-                    val result = transferService.transfer(
+                    transferService.transfer(
                         userId = userId,
                         projectId = projectId,
                         pipelineId = null,
@@ -509,16 +501,10 @@ class PipelineTemplateGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    PTemplateModelTransferResult(
-                        templateType = newTemplateType,
-                        templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion,
-                        templateSetting = newTemplateSetting
-                    )
                 }
 
                 PipelineTemplateType.STEP -> {
-                    val result = transferService.transfer(
+                    transferService.transfer(
                         userId = userId,
                         projectId = projectId,
                         pipelineId = null,
@@ -531,18 +517,20 @@ class PipelineTemplateGenerator @Autowired constructor(
                             oldYaml = ""
                         )
                     )
-                    PTemplateModelTransferResult(
-                        templateType = newTemplateType,
-                        templateModel = newTemplateModel,
-                        yamlWithVersion = result.yamlWithVersion,
-                        templateSetting = newTemplateSetting
-                    )
                 }
 
                 else -> {
                     throw IllegalArgumentException("unknown template type: $templateType")
                 }
             }
+            PTemplateModelTransferResult(
+                templateType = newTemplateType,
+                templateModel = newTemplateModel,
+                yamlWithVersion = result.yamlWithVersion,
+                templateSetting = newTemplateSetting,
+                // todo 需要改造，由code转化接口中获取。
+                params = (newTemplateModel as Model).getTriggerContainer().params
+            )
         }
     }
 

@@ -27,9 +27,12 @@
 
 package com.tencent.devops.process.service.template.v2.version.convert
 
+import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
@@ -64,12 +67,18 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
     ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateDraftSaveReq
         with(request) {
+            val params = if (storageType == PipelineStorageType.MODEL && type == PipelineTemplateType.PIPELINE) {
+                (model as Model).getTriggerContainer().params
+            } else {
+                request.params
+            }
             val modelTransferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = storageType,
                 templateType = type,
                 templateModel = model,
+                params = params,
                 templateSetting = templateSetting,
                 yaml = yaml
             )
@@ -96,6 +105,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 projectId = projectId,
                 templateId = templateInfo.id,
                 type = templateInfo.type,
+                params = modelTransferResult.params,
                 model = modelTransferResult.templateModel,
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,

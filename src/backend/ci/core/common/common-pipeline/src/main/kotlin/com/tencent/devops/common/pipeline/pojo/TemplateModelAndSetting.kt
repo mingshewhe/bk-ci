@@ -36,7 +36,9 @@ import jakarta.validation.Valid
 data class TemplateModelAndSetting(
     @get:Schema(title = "流水线模板模型", required = true)
     val templateModel: ITemplateModel,
-    @get:Schema(title = "流水线设置", required = false)
+    @get:Schema(title = "流水线设置", required = true)
     @field:Valid
-    val setting: PipelineSetting
+    val setting: PipelineSetting,
+    @get:Schema(title = "流水线入参", required = true)
+    val params: List<BuildFormProperty> = listOf()
 )
