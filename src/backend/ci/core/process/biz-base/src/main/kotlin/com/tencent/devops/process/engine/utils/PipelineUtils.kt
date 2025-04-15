@@ -37,14 +37,15 @@ import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamType
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.compatibility.BuildPropertyCompatibilityTools
 import com.tencent.devops.process.utils.PIPELINE_VARIABLES_STRING_LENGTH_MAX
-import java.util.regex.Pattern
 import jakarta.ws.rs.core.Response
 import org.slf4j.LoggerFactory
+import java.util.regex.Pattern
 
 object PipelineUtils {
 
@@ -207,7 +208,8 @@ object PipelineUtils {
         labels: List<String>? = null,
         defaultStageTagId: String?,
         templateId: String? = null,
-        staticViews: List<String> = emptyList()
+        staticViews: List<String> = emptyList(),
+        timerTrigger: TimerTriggerElement? = null
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
         val instanceParam = if (templateTrigger.templateParams == null) {
@@ -225,10 +227,16 @@ object PipelineUtils {
                 )
             )
         }
+        // 替换定时触发器
+        val triggerContainerElements = if (timerTrigger != null) {
+            templateTrigger.elements.filter { it !is TimerTriggerElement }.toMutableList().apply { add(timerTrigger) }
+        } else {
+            templateTrigger.elements
+        }
 
         val triggerContainer = TriggerContainer(
             name = templateTrigger.name,
-            elements = templateTrigger.elements,
+            elements = triggerContainerElements,
             params = cleanOptions(instanceParam),
             buildNo = buildNo,
             containerId = templateTrigger.containerId,

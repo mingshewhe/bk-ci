@@ -33,9 +33,9 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.model.process.tables.TTemplateInstanceItem
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceItemRecord
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
@@ -109,8 +109,9 @@ class TemplateInstanceItemDao {
     ) {
         with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
             instances.map {
-                val buildNo = it.buildNo
-                val param = it.param
+                val buildNo = it.buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) }
+                val param = it.param?.let { self -> JsonUtil.toJson(self, formatted = false) }
+                val timerTrigger = it.timerTrigger?.let { self -> JsonUtil.toJson(self, formatted = false) }
                 dslContext.insertInto(
                     this,
                     ID,
@@ -120,6 +121,7 @@ class TemplateInstanceItemDao {
                     BUILD_NO_INFO,
                     STATUS,
                     PARAM,
+                    TIMER_TRIGGER,
                     BASE_ID,
                     CREATOR,
                     MODIFIER,
@@ -129,18 +131,20 @@ class TemplateInstanceItemDao {
                     projectId,
                     it.pipelineId,
                     it.pipelineName,
-                    buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) },
+                    buildNo,
                     status,
-                    param?.let { self -> JsonUtil.toJson(self, formatted = false) },
+                    param,
+                    timerTrigger,
                     baseId,
                     userId,
                     userId,
                     it.filePath
                 ).onDuplicateKeyUpdate()
                     .set(PIPELINE_NAME, it.pipelineName)
-                    .set(BUILD_NO_INFO, buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) })
+                    .set(BUILD_NO_INFO, buildNo)
                     .set(STATUS, status)
-                    .set(PARAM, param?.let { self -> JsonUtil.toJson(self, formatted = false) })
+                    .set(PARAM, param)
+                    .set(TIMER_TRIGGER, timerTrigger)
                     .set(BASE_ID, baseId)
                     .set(CREATOR, userId)
                     .set(MODIFIER, userId)
@@ -287,6 +291,9 @@ class TemplateInstanceItemDao {
         val buildNo = buildNoInfo?.let {
             JsonUtil.to(it, object : TypeReference<BuildNo>() {})
         }
+        val timerTrigger = timerTrigger?.let {
+            JsonUtil.to(it, object : TypeReference<TimerTriggerElement>() {})
+        }
         return PipelineTemplateInstanceItem(
             id = id,
             baseId = baseId,
@@ -296,6 +303,7 @@ class TemplateInstanceItemDao {
             buildNo = buildNo,
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
+            timerTrigger = timerTrigger,
             filePath = filePath,
             errorMessage = errorMessgae,
             creator = creator,

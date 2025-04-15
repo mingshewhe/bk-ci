@@ -30,6 +30,7 @@ package com.tencent.devops.process.pojo.pipeline.version
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版实例创建请求")
@@ -46,6 +47,8 @@ data class PipelineTemplateInstanceReq(
     val buildNo: BuildNo?,
     @get:Schema(title = "流水线变量列表", required = false)
     val params: List<BuildFormProperty>? = null,
+    @get:Schema(title = "定时触发器", required = false)
+    val timerTrigger: TimerTriggerElement? = null,
     @get:Schema(title = "是否使用模版设置", required = false)
     val useTemplateSetting: Boolean,
     @get:Schema(title = "是否开启PAC", required = true)

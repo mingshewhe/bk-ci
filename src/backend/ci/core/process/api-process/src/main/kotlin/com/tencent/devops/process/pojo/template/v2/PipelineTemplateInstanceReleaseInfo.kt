@@ -29,6 +29,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "创建/升级单条实例请求体")
@@ -41,6 +42,8 @@ data class PipelineTemplateInstanceReleaseInfo(
     val buildNo: BuildNo?,
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>? = null,
+    @get:Schema(title = "定时触发器", required = false)
+    val timerTrigger: TimerTriggerElement? = null,
     @get:Schema(title = "yaml文件路径", required = true)
     val filePath: String?
 )

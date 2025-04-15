@@ -37,6 +37,8 @@ import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
@@ -120,6 +122,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
                     params = instance.param,
+                    timerTrigger = instance.timerTrigger,
                     useTemplateSetting = useTemplateSettings,
                     enablePac = request.enablePac,
                     repoHashId = request.repoHashId,
@@ -680,6 +683,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             pipelineName = pipelineName,
             buildNo = buildNo,
             params = params,
+            timerTrigger = timerTrigger,
             useTemplateSetting = instanceBase.useTemplateSetting,
             enablePac = instanceBase.pac,
             repoHashId = instanceBase.repoHashId,
@@ -902,6 +906,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             pipelineId2Model.map {
                 val pipelineId = it.key
                 val instanceModel = it.value
+                val timerTrigger = instanceModel.getTriggerContainer().getTimerTriggerElement()
                 val instanceTriggerContainer = instanceModel.getTriggerContainer()
                 val instanceParams = paramService.filterParams(
                     userId = userId,
@@ -916,7 +921,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     pipelineId = pipelineId,
                     pipelineName = pipelineId2Name[pipelineId] ?: "",
                     buildNo = instanceBuildNoObj,
-                    param = instanceParams
+                    param = instanceParams,
+                    timerTrigger = timerTrigger
                 )
             }.toMap()
         } catch (ignored: Throwable) {

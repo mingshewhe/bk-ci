@@ -30,6 +30,7 @@ package com.tencent.devops.common.pipeline.container
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.element.Element
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -60,7 +61,7 @@ data class TriggerContainer(
     var buildNo: BuildNo? = null,
     @get:Schema(
         title =
-            "是否可重试-仅限于构建详情展示重试，目前未作为编排的选项，暂设置为null不存储",
+        "是否可重试-仅限于构建详情展示重试，目前未作为编排的选项，暂设置为null不存储",
         required = false,
         readOnly = true
     )
@@ -124,5 +125,14 @@ data class TriggerContainer(
 
     override fun copyElements(elements: List<Element>): Container {
         return this.copy(elements = elements)
+    }
+
+    fun getTimerTriggerElement(): TimerTriggerElement? {
+        elements.forEach {
+            if (it is TimerTriggerElement) {
+                return it
+            }
+        }
+        return null
     }
 }

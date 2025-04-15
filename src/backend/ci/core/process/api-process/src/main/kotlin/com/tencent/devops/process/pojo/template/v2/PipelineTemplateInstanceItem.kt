@@ -2,7 +2,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -16,6 +16,7 @@ data class PipelineTemplateInstanceItem(
     val buildNo: BuildNo?,
     val status: TemplateInstanceStatus,
     val params: List<BuildFormProperty>?,
+    val timerTrigger: TimerTriggerElement?,
     val filePath: String?,
     val errorMessage: String?,
     val creator: String,
