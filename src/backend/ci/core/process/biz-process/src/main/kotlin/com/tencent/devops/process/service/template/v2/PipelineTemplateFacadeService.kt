@@ -399,18 +399,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 )
             )
         }
-        val (buildNo, timerTrigger) = if (templateResource.type == PipelineTemplateType.PIPELINE) {
-            val triggerContainer = (templateResource.model as Model).getTriggerContainer()
-            Pair(triggerContainer.buildNo, triggerContainer.getTimerTriggerElement())
+        val buildNo = if (templateResource.type == PipelineTemplateType.PIPELINE) {
+            (templateResource.model as Model).getTriggerContainer().buildNo
         } else {
-            null to null
+            null
         }
         return PipelineTemplateDetailsResponse(
             resource = templateResource,
             setting = setting,
             buildNo = buildNo,
             params = templateResource.params,
-            timerTrigger = timerTrigger,
             yamlSupported = yamlSupported,
             yamlPreview = yamlPreview,
             yamlInvalidMsg = msg

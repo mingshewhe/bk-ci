@@ -29,7 +29,6 @@ package com.tencent.devops.process.pojo.template
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
@@ -44,8 +43,6 @@ data class TemplateInstanceParams(
     val pipelineName: String,
     @get:Schema(title = "构建号", required = false)
     val buildNo: BuildNo?,
-    @get:Schema(title = "定时触发器", required = false)
-    val timerTrigger: TimerTriggerElement?,
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>,
     @get:Schema(title = "是否更新了推荐版本号基准值", required = false)

@@ -136,7 +136,6 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineName = pipelineName,
                 buildNo = buildNo,
                 param = params,
-                timerTrigger = timerTrigger,
                 instanceFromTemplate = true,
                 defaultStageTagId = defaultStageTagId,
                 templateId = templateId

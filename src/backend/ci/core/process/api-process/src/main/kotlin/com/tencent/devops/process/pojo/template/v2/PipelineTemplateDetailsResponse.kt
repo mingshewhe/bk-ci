@@ -29,7 +29,6 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.PreviewResponse
 import io.swagger.v3.oas.annotations.media.Schema
@@ -42,10 +41,8 @@ data class PipelineTemplateDetailsResponse(
     val setting: PipelineSetting,
     @get:Schema(title = "构建版本号", required = false)
     var buildNo: BuildNo? = null,
-    @get:Schema(title = "定时触发器", required = false)
-    val timerTrigger: TimerTriggerElement? = null,
     @get:Schema(title = "构建参数", required = false)
-    val params: List<BuildFormProperty>? = null,
+    val params: List<BuildFormProperty>? = emptyList(),
     @get:Schema(title = "流水线YAML编排（含高亮）", required = false)
     val yamlPreview: PreviewResponse?,
     @get:Schema(title = "是否支持YAML解析", required = true)
