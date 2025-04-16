@@ -70,6 +70,9 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
             if (version == null) {
                 throw IllegalArgumentException("version is null")
             }
+            if (description == null) {
+                throw IllegalArgumentException("description is null")
+            }
             val pipelineTemplateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
@@ -80,11 +83,6 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
             if (draftResource.status != VersionStatus.COMMITTING) {
                 throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
             }
-            val pipelineTemplateSetting = pipelineTemplateSettingService.get(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = draftResource.settingVersion
-            )
             if (enablePac) {
                 if (targetAction == null) {
                     throw IllegalArgumentException("targetAction is null")
@@ -96,6 +94,11 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                     throw IllegalArgumentException("yaml is null")
                 }
             }
+            val pipelineTemplateSetting = pipelineTemplateSettingService.get(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = draftResource.settingVersion
+            )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource).copy(
                 description = description
             )

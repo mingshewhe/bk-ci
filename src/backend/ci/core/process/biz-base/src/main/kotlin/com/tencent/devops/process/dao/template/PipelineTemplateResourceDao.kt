@@ -141,6 +141,7 @@ class PipelineTemplateResourceDao {
                     record.description?.let { set(DESCRIPTION, it) }
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
                     record.updater?.let { set(UPDATER, it) }
+                    record.sortWeight?.let { set(SORT_WEIGHT, it) }
                 }
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))

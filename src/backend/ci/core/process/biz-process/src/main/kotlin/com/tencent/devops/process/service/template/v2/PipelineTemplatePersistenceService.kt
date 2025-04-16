@@ -324,6 +324,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         templateId: String,
         version: Long,
         versionName: String,
+        description: String
     ) {
         val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
             branchAction = BranchVersionAction.INACTIVE
@@ -338,6 +339,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             versionName = versionName,
             status = VersionStatus.BRANCH,
             branchAction = BranchVersionAction.ACTIVE,
+            description = description,
             updater = userId,
             sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT
         )

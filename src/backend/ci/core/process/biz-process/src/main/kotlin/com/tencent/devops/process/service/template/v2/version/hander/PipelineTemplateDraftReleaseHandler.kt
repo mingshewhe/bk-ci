@@ -70,6 +70,9 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             if (version == null) {
                 throw IllegalArgumentException("version is null")
             }
+            if (pTemplateResourceWithoutVersion.description == null) {
+                throw IllegalArgumentException("description is null")
+            }
             if (enablePac) {
                 if (targetAction == null) {
                     throw IllegalArgumentException("targetAction is null")
@@ -131,7 +134,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
-                versionName = resourceOnlyVersion.versionName!!
+                versionName = resourceOnlyVersion.versionName!!,
+                description = pTemplateResourceWithoutVersion.description!!
             )
         }
 

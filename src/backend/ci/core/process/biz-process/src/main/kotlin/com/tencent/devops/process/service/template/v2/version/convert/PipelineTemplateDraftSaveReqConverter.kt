@@ -40,6 +40,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,7 +52,8 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
@@ -101,6 +103,14 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                     latestVersionStatus = VersionStatus.COMMITTING
                 )
             }
+            // 获取基础版本名称
+            val baseResource = baseVersion?.let {
+                pipelineTemplateResourceService.get(
+                    projectId = projectId,
+                    templateId = templateInfo.id,
+                    version = it
+                )
+            }
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = templateInfo.id,
@@ -111,6 +121,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 status = VersionStatus.COMMITTING,
                 sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
                 baseVersion = baseVersion,
+                baseVersionName = baseResource?.versionName,
                 creator = userId,
                 updater = userId
             )
