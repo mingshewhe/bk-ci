@@ -95,9 +95,10 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 if (draftResource.yaml == null) {
                     throw IllegalArgumentException("yaml is null")
                 }
-                // TODO 校验推送yaml权限合法性
             }
-            val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource)
+            val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(draftResource).copy(
+                description = description
+            )
             return PipelineTemplateVersionCreateContext(
                 userId = userId,
                 projectId = projectId,

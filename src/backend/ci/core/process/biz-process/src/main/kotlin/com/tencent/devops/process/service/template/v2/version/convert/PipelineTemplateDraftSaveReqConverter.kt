@@ -110,6 +110,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 yaml = modelTransferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
                 sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
+                baseVersion = baseVersion,
                 creator = userId,
                 updater = userId
             )

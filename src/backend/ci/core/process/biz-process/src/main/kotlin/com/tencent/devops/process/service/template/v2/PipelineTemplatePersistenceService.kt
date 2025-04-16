@@ -337,6 +337,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
             versionName = versionName,
             status = VersionStatus.BRANCH,
+            branchAction = BranchVersionAction.ACTIVE,
             updater = userId,
             sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT
         )

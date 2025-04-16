@@ -111,9 +111,12 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             targetAction = targetAction,
             targetBranch = branchName
         )
+        validateReleaseYamlFile(resourceOnlyVersion = resourceOnlyVersion)
         if (versionStatus == VersionStatus.RELEASED) {
             val templateResource = PipelineTemplateResource(
-                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion.copy(status = versionStatus),
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion.copy(
+                    status = versionStatus
+                ),
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
             pipelineTemplatePersistenceService.releaseDraft2ReleaseVersion(
@@ -179,6 +182,32 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             targetBranch = branchName
         )
         return pipelineYamlFacadeService.releaseYamlFile(
+            yamlFileReleaseReq = yamlFileReleaseReq
+        )
+    }
+
+    private fun PipelineTemplateVersionCreateContext.validateReleaseYamlFile(
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
+    ) {
+        if (!enablePac) {
+            return
+        }
+        val yamlFileReleaseReq = PipelineYamlFileReleaseReq(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = templateId,
+            pipelineName = pipelineTemplateInfo.name,
+            version = resourceOnlyVersion.version.toInt(),
+            versionName = resourceOnlyVersion.versionName,
+            repoHashId = yamlFileInfo!!.repoHashId,
+            filePath = yamlFileInfo.filePath,
+            content = pTemplateResourceWithoutVersion.yaml!!,
+            commitMessage = pTemplateResourceWithoutVersion.description
+                ?: "update template ${pipelineTemplateInfo.name}",
+            targetAction = targetAction!!,
+            targetBranch = branchName
+        )
+        pipelineYamlFacadeService.validateReleaseYamlFile(
             yamlFileReleaseReq = yamlFileReleaseReq
         )
     }
