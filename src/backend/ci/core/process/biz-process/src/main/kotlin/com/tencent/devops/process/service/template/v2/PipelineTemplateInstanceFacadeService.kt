@@ -45,6 +45,8 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
@@ -643,6 +645,13 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     failurePipelines = failurePipelines
                 )
             }
+        }
+        if (successPipelines.isNotEmpty()) {
+            pipelineTemplateInfoService.updateInstancePipelineCount(
+                projectId = projectId,
+                templateId = templateId,
+                count = successPipelines.size
+            )
         }
         templateInstanceBaseDao.updateStatus(
             dslContext = dslContext,

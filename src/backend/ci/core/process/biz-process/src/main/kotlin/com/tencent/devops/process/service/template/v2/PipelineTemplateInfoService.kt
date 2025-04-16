@@ -7,7 +7,7 @@ import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,7 +23,7 @@ class PipelineTemplateInfoService @Autowired constructor(
 ) {
     fun create(
         transactionContext: DSLContext? = null,
-        pipelineTemplateInfo: PipelineTemplateInfo
+        pipelineTemplateInfo: PipelineTemplateInfoV2
     ) {
         pipelineTemplateInfoDao.create(
             dslContext = transactionContext ?: dslContext,
@@ -31,7 +31,7 @@ class PipelineTemplateInfoService @Autowired constructor(
         )
     }
 
-    fun get(commonCondition: PipelineTemplateCommonCondition): PipelineTemplateInfo {
+    fun get(commonCondition: PipelineTemplateCommonCondition): PipelineTemplateInfoV2 {
         return pipelineTemplateInfoDao.get(
             dslContext = dslContext,
             commonCondition = commonCondition
@@ -40,7 +40,7 @@ class PipelineTemplateInfoService @Autowired constructor(
         )
     }
 
-    fun get(templateId: String): PipelineTemplateInfo {
+    fun get(templateId: String): PipelineTemplateInfoV2 {
         return pipelineTemplateInfoDao.get(
             dslContext = dslContext,
             templateId = templateId
@@ -52,7 +52,7 @@ class PipelineTemplateInfoService @Autowired constructor(
     fun get(
         projectId: String,
         templateId: String
-    ): PipelineTemplateInfo {
+    ): PipelineTemplateInfoV2 {
         return pipelineTemplateInfoDao.get(
             dslContext = dslContext,
             commonCondition = PipelineTemplateCommonCondition(
@@ -67,7 +67,7 @@ class PipelineTemplateInfoService @Autowired constructor(
     fun getOrNull(
         projectId: String,
         templateId: String
-    ): PipelineTemplateInfo? {
+    ): PipelineTemplateInfoV2? {
         return pipelineTemplateInfoDao.get(
             dslContext = dslContext,
             commonCondition = PipelineTemplateCommonCondition(
@@ -118,7 +118,7 @@ class PipelineTemplateInfoService @Autowired constructor(
         )
     }
 
-    fun list(commonCondition: PipelineTemplateCommonCondition): List<PipelineTemplateInfo> {
+    fun list(commonCondition: PipelineTemplateCommonCondition): List<PipelineTemplateInfoV2> {
         return pipelineTemplateInfoDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
@@ -134,6 +134,20 @@ class PipelineTemplateInfoService @Autowired constructor(
             dslContext = transactionContext ?: dslContext,
             commonCondition = commonCondition,
             record = record
+        )
+    }
+
+    fun updateInstancePipelineCount(
+        transactionContext: DSLContext? = null,
+        projectId: String,
+        templateId: String,
+        count: Int
+    ) {
+        pipelineTemplateInfoDao.updateInstancePipelineCount(
+            dslContext = transactionContext ?: dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            count = count
         )
     }
 }

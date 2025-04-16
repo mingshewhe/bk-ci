@@ -9,8 +9,8 @@ import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 class PipelineTemplateInfoDao {
     fun create(
         dslContext: DSLContext,
-        record: PipelineTemplateInfo
+        record: PipelineTemplateInfoV2
     ) {
         with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             val createTime = record.createdTime?.let {
@@ -133,10 +133,25 @@ class PipelineTemplateInfoDao {
         }
     }
 
+    fun updateInstancePipelineCount(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String,
+        count: Int
+    ) {
+        with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.update(this)
+                .set(INSTANCE_PIPELINE_COUNT, INSTANCE_PIPELINE_COUNT + count)
+                .where(PROJECT_ID.eq(projectId))
+                .and(ID.eq(templateId))
+                .execute()
+        }
+    }
+
     fun list(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateCommonCondition
-    ): List<PipelineTemplateInfo> {
+    ): List<PipelineTemplateInfoV2> {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
@@ -167,7 +182,7 @@ class PipelineTemplateInfoDao {
     fun get(
         dslContext: DSLContext,
         commonCondition: PipelineTemplateCommonCondition
-    ): PipelineTemplateInfo? {
+    ): PipelineTemplateInfoV2? {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectFrom(this)
                 .where(buildQueryCondition(commonCondition))
@@ -204,7 +219,7 @@ class PipelineTemplateInfoDao {
     fun get(
         dslContext: DSLContext,
         templateId: String
-    ): PipelineTemplateInfo? {
+    ): PipelineTemplateInfoV2? {
         return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.selectFrom(this)
                 .where(ID.eq(templateId))
@@ -255,9 +270,9 @@ class PipelineTemplateInfoDao {
         }
     }
 
-    fun TPipelineTemplateInfoRecord.convert(): PipelineTemplateInfo {
+    fun TPipelineTemplateInfoRecord.convert(): PipelineTemplateInfoV2 {
         val mode = TemplateType.valueOf(this.mode)
-        return PipelineTemplateInfo(
+        return PipelineTemplateInfoV2(
             id = this.id,
             projectId = this.projectId,
             name = this.name,

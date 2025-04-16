@@ -34,7 +34,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
@@ -102,7 +102,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 desc = marketTemplateInfo.desc
             )
 
-            val pipelineTemplateInfo = PipelineTemplateInfo(
+            val pipelineTemplateInfo = PipelineTemplateInfoV2(
                 id = newTemplateId,
                 projectId = projectId,
                 name = marketTemplateInfo.name,

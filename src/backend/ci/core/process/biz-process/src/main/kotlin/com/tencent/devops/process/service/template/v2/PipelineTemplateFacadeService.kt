@@ -12,7 +12,6 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.web.utils.I18nUtil
-import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -22,7 +21,6 @@ import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
-import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
@@ -34,7 +32,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -302,7 +300,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun listTemplateInfos(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): SQLPage<PipelineTemplateInfo> {
+    ): SQLPage<PipelineTemplateInfoV2> {
         logger.info("list template infos {}|{}", userId, commonCondition)
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)

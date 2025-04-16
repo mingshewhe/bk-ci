@@ -33,7 +33,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -80,7 +80,7 @@ class PipelineTemplateBranchPushReqConverter(
             val (newTemplateId, templateInfo) = if (templateId == null) {
                 val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
                 val templateSetting = modelTransferResult.templateSetting
-                val templateInfo = PipelineTemplateInfo(
+                val templateInfo = PipelineTemplateInfoV2(
                     id = newTemplateId,
                     projectId = projectId,
                     name = templateSetting.pipelineName,

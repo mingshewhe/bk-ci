@@ -36,7 +36,7 @@ import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
@@ -70,7 +70,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
      * 初始化创建流水线模版和权限（草稿/分支/正式）
      */
     fun initializeTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfo,
+        pipelineTemplateInfo: PipelineTemplateInfoV2,
         pipelineTemplateResource: PipelineTemplateResource,
         pipelineTemplateSetting: PipelineSetting
     ) {
@@ -100,7 +100,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     }
 
     fun createTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfo,
+        pipelineTemplateInfo: PipelineTemplateInfoV2,
         syncPermission: Boolean? = true
     ) {
         dslContext.transaction { configuration ->

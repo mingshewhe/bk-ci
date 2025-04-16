@@ -4,5 +4,5 @@ data class PipelineTemplateInfoPage(
     val count: Int,
     val countOfCustom:Int,
     val countOfMarket:Int,
-    val records: List<PipelineTemplateInfo>
+    val records: List<PipelineTemplateInfoV2>
 )

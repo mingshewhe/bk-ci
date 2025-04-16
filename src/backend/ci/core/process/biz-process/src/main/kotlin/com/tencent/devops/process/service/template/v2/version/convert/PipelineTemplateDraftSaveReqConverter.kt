@@ -36,7 +36,7 @@ import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -90,7 +90,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                     templateId = templateId
                 )
             } else {
-                PipelineTemplateInfo(
+                PipelineTemplateInfoV2(
                     id = pipelineTemplateGenerator.generateTemplateId(),
                     projectId = projectId,
                     name = modelTransferResult.templateSetting.pipelineName,

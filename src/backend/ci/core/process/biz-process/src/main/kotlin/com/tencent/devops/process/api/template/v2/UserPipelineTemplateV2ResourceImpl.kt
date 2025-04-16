@@ -48,7 +48,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -166,7 +166,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         request: PipelineTemplateCommonCondition
-    ): Result<SQLPage<PipelineTemplateInfo>> {
+    ): Result<SQLPage<PipelineTemplateInfoV2>> {
         return Result(templateFacadeService.listTemplateInfos(userId, request))
     }
 

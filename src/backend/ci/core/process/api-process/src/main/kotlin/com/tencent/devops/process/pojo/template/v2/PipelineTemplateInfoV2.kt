@@ -7,7 +7,7 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板基础信息")
-data class PipelineTemplateInfo(
+data class PipelineTemplateInfoV2(
     @get:Schema(title = "模板ID", required = true)
     val id: String,
     @get:Schema(title = "项目ID", required = true)
@@ -46,9 +46,9 @@ data class PipelineTemplateInfo(
     @get:Schema(title = "父模板项目ID", required = false)
     val srcTemplateProjectId: String? = null,
     @get:Schema(title = "调试流水线数", required = true)
-    val debugPipelineCount: Int? = 0,
+    val debugPipelineCount: Int = 0,
     @get:Schema(title = "实例流水线数", required = true)
-    val instancePipelineCount: Int? = 0,
+    val instancePipelineCount: Int = 0,
     @get:Schema(title = "升级策略-用于研发商店安装的模板", required = true)
     val upgradeStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "配置同步策略-用于研发商店安装的模板", required = true)

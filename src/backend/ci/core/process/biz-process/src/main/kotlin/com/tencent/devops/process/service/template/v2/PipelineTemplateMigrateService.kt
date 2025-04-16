@@ -45,7 +45,7 @@ import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.TemplateVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
@@ -296,7 +296,7 @@ class PipelineTemplateMigrateService(
         )
     }
 
-    fun createPipelineTemplateInfo(latestTemplate: TTemplateRecord): PipelineTemplateInfo {
+    fun createPipelineTemplateInfo(latestTemplate: TTemplateRecord): PipelineTemplateInfoV2 {
         val latestReleasedResource = pipelineTemplateResourceService.getLatestReleasedResource(
             projectId = latestTemplate.projectId,
             templateId = latestTemplate.id
@@ -312,7 +312,7 @@ class PipelineTemplateMigrateService(
         logger.info("template instance count {}|{}|{}", latestTemplate.projectId, latestTemplate.id, instanceSize)
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
-        return PipelineTemplateInfo(
+        return PipelineTemplateInfoV2(
             id = latestTemplate.id,
             projectId = latestTemplate.projectId,
             name = latestTemplate.templateName,

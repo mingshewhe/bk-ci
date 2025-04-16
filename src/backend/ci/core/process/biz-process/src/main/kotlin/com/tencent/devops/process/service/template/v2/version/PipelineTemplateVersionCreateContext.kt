@@ -32,7 +32,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
@@ -51,7 +51,7 @@ data class PipelineTemplateVersionCreateContext(
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
     @get:Schema(title = "模版信息", required = true)
-    val pipelineTemplateInfo: PipelineTemplateInfo,
+    val pipelineTemplateInfo: PipelineTemplateInfoV2,
     @get:Schema(title = "模版编排", required = true)
     val pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
     @get:Schema(title = "模版设置", required = true)
