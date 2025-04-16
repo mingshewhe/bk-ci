@@ -47,7 +47,7 @@ enum class PipelineVersionAction {
     DELETE_VERSION,
 
     @Schema(title = "删除所有版本")
-    DELETE_ALL_VERSION,
+    DELETE_ALL_VERSIONS,
 
     @Schema(title = "分支版本置为不活跃")
     INACTIVE_BRANCH,

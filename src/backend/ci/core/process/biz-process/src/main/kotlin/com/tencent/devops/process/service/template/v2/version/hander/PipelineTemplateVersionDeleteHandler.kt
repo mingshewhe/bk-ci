@@ -44,7 +44,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionDeleteContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,7 +60,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val operationLogService: PipelineOperationLogService,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService
+    private val pipelineTemplateTransactionService: PipelineTemplatePersistenceService
 ) {
 
     fun handle(context: PipelineTemplateVersionDeleteContext) {
@@ -91,7 +91,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
                 inactiveBranch()
             }
 
-            PipelineVersionAction.DELETE_ALL_VERSION -> {
+            PipelineVersionAction.DELETE_ALL_VERSIONS -> {
                 deleteAllVersions()
             }
 

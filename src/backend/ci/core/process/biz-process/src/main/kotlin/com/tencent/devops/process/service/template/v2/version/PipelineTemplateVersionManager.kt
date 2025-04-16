@@ -94,7 +94,7 @@ class PipelineTemplateVersionManager @Autowired constructor(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
-            versionAction = PipelineVersionAction.DELETE_ALL_VERSION
+            versionAction = PipelineVersionAction.DELETE_ALL_VERSIONS
         )
         versionDeleteHandler.handle(context = context)
     }
