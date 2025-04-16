@@ -137,9 +137,9 @@ class PipelineTemplateInstanceReqConverter(
                 buildNo = buildNo,
                 param = params,
                 instanceFromTemplate = true,
-                defaultStageTagId = defaultStageTagId
+                defaultStageTagId = defaultStageTagId,
+                templateId = templateId
             )
-            instanceModel.templateId = templateId
 
             // 生成流水线配置
             val pipelineSetting = getPipelineSetting(
@@ -246,7 +246,10 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineName = pipelineName
             )
         } else {
-            pipelineRepositoryService.getSetting(projectId = projectId, pipelineId = pipelineId)?.copy(
+            pipelineRepositoryService.getSetting(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )?.copy(
                 pipelineName = pipelineName
             ) ?: pipelineTemplateInstanceSettingService.getTemplateInstanceDefaultSetting(
                 projectId = projectId,

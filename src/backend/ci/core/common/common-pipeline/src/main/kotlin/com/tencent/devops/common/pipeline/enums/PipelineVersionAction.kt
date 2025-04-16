@@ -33,16 +33,25 @@ import io.swagger.v3.oas.annotations.media.Schema
 enum class PipelineVersionAction {
     @Schema(title = "保存草稿")
     SAVE_DRAFT,
+
     @Schema(title = "创建分支版本")
     CREATE_BRANCH,
+
     @Schema(title = "创建正式版本")
     CREATE_RELEASE,
+
     @Schema(title = "发布草稿")
     RELEASE_DRAFT,
+
     @Schema(title = "删除版本")
     DELETE_VERSION,
+
+    @Schema(title = "删除所有版本")
+    DELETE_ALL_VERSION,
+
     @Schema(title = "分支版本置为不活跃")
     INACTIVE_BRANCH,
+
     @Schema(title = "模版实例化")
     TEMPLATE_INSTANCE
 }

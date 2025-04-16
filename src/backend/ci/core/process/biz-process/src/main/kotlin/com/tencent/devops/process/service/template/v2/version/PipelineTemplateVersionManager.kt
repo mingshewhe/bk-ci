@@ -85,6 +85,20 @@ class PipelineTemplateVersionManager @Autowired constructor(
         versionDeleteHandler.handle(context = context)
     }
 
+    fun deleteAllVersions(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ) {
+        val context = PipelineTemplateVersionDeleteContext(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            versionAction = PipelineVersionAction.DELETE_ALL_VERSION
+        )
+        versionDeleteHandler.handle(context = context)
+    }
+
     fun inactiveBranch(
         userId: String,
         projectId: String,

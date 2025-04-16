@@ -211,7 +211,10 @@ object PipelineUtils {
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
         val instanceParam = if (templateTrigger.templateParams == null) {
-            BuildPropertyCompatibilityTools.mergeProperties(templateTrigger.params, param ?: emptyList())
+            BuildPropertyCompatibilityTools.mergeProperties(
+                from = templateTrigger.params,
+                to = param ?: emptyList()
+            )
         } else {
             BuildPropertyCompatibilityTools.mergeProperties(
                 from = templateTrigger.params,

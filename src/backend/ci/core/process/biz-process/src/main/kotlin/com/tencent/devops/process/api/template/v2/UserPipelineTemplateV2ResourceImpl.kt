@@ -131,7 +131,13 @@ class UserPipelineTemplateV2ResourceImpl(
             permission = AuthPermission.DELETE,
             templateId = templateId
         )
-        return Result(templateFacadeService.deleteTemplate(projectId = projectId, templateId = templateId))
+        return Result(
+            templateFacadeService.deleteTemplate(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId
+            )
+        )
     }
 
     override fun saveDraft(

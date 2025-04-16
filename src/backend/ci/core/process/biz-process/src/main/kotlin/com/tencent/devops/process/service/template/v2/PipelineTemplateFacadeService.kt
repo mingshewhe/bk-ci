@@ -104,47 +104,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun deleteTemplate(projectId: String, templateId: String): Boolean {
-        logger.info("Start to delete the template $projectId|$templateId")
-        val templateInfo = pipelineTemplateInfoService.get(
-            projectId = projectId,
-            templateId = templateId
-        )
-        val isTemplateExistInstances = pipelineTemplateRelatedService.isTemplateExistInstances(
-            projectId = projectId,
-            templateId = templateId
-        )
-
-        if (isTemplateExistInstances) {
-            throw ErrorCodeException(
-                errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
-            )
-        }
-
-        if (templateInfo.mode == TemplateType.CUSTOMIZE && templateInfo.storeFlag) {
-            throw ErrorCodeException(
-                errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_PUBLISH
-            )
-        }
-        val isExistInstalledTemplate = pipelineTemplateInfoService.count(
-            PipelineTemplateCommonCondition(
-                mode = TemplateType.CONSTRAINT,
-                srcTemplateProjectId = projectId,
-                srcTemplateId = templateId
-            )
-        ) > 0
-        if (templateInfo.mode == TemplateType.CUSTOMIZE && isExistInstalledTemplate) {
-            throw ErrorCodeException(
-                errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_INSTALL
-            )
-        }
-        pipelineTemplateTransactionService.deleteTemplate(
-            projectId = projectId,
-            templateId = templateId
-        )
-        return true
-    }
-
     /**
      * 保存草稿
      */
@@ -303,6 +262,23 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             version = version
         )
+    }
+
+
+    /**
+     * 删除模版所有版本
+     */
+    fun deleteTemplate(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Boolean {
+        pipelineTemplateVersionManager.deleteAllVersions(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId
+        )
+        return true
     }
 
     /**

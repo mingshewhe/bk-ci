@@ -136,6 +136,7 @@ class PTemplateYamlResourceService(
 
     override fun deletePipeline(userId: String, projectId: String, pipelineId: String) {
         pipelineTemplateFacadeService.deleteTemplate(
+            userId = userId,
             projectId = projectId,
             templateId = pipelineId
         )
