@@ -43,7 +43,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +55,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplateDraftReleaseHandler @Autowired constructor(
-    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
@@ -116,7 +116,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion.copy(status = versionStatus),
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateTransactionService.releaseDraft2ReleaseVersion(
+            pipelineTemplatePersistenceService.releaseDraft2ReleaseVersion(
                 userId = userId,
                 templateResource = templateResource,
                 templateSetting = pipelineTemplateSetting.copy(
@@ -124,7 +124,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 )
             )
         } else {
-            pipelineTemplateTransactionService.releaseDraft2BranchVersion(
+            pipelineTemplatePersistenceService.releaseDraft2BranchVersion(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,

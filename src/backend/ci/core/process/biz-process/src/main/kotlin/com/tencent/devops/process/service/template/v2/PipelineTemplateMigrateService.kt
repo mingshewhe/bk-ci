@@ -58,7 +58,7 @@ class PipelineTemplateMigrateService(
     val templateDao: TemplateDao,
     val dslContext: DSLContext,
     val templateFacadeService: TemplateFacadeService,
-    val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
+    val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     val pipelineSettingDao: PipelineSettingDao,
     val pipelineTemplateGenerator: PipelineTemplateGenerator,
     val pipelineTemplateResourceService: PipelineTemplateResourceService,
@@ -205,15 +205,16 @@ class PipelineTemplateMigrateService(
                 modelTransferResult = modelTransferResult,
             )
 
-            pipelineTemplateTransactionService.createTemplate(
-                pipelineTemplateResource = pipelineTemplateResource,
-                pipelineTemplateSetting = currentSetting,
+            pipelineTemplatePersistenceService.createReleaseVersion(
+                userId = templateVersionInfo.creator,
+                templateResource = pipelineTemplateResource,
+                templateSetting = currentSetting
             )
         }
 
         val pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate = latestTemplate)
 
-        pipelineTemplateTransactionService.createTemplate(
+        pipelineTemplatePersistenceService.createTemplate(
             pipelineTemplateInfo = pipelineTemplateInfo,
             syncPermission = false,
         )

@@ -41,7 +41,7 @@ import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
-import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -53,7 +53,7 @@ import java.time.LocalDateTime
 @Service
 class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation,
     private val operationLogService: PipelineOperationLogService
@@ -88,7 +88,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.RELEASED
             )
-            pipelineTemplateTransactionService.createTemplate(
+            pipelineTemplatePersistenceService.createTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo.copy(
                     releasedVersion = defaultTemplateVersion.version,
                     releasedVersionName = defaultTemplateVersion.versionName,
@@ -139,7 +139,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
             pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
-        pipelineTemplateTransactionService.createReleaseVersion(
+        pipelineTemplatePersistenceService.createReleaseVersion(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting.copy(

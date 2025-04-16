@@ -26,7 +26,10 @@ data class PipelineTemplateInfo(
     val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
-    @get:Schema(title = "最新发布版本号", required = true)
+    @get:Schema(title = "" +
+            "最新发布版本号,最新版本号可能是草稿版本,也可能是分支版本,只有发布过正式版本后,才表示最新的正式版本" +
+            "- 当只有草稿版本时,那么表示的是草稿版本" +
+            "- 当只有分支版本时,那么表示的是创建时的分支版本", required = true)
     val releasedVersion: Long? = null,
     @get:Schema(title = "最新发布版本名称", required = false)
     val releasedVersionName: String? = null,

@@ -41,6 +41,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
+import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
@@ -59,11 +60,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineOperationLogDao: PipelineOperationLogDao,
-    private val dslContext: DSLContext
+    private val dslContext: DSLContext,
+    private val pipelineYamlFacadeService: PipelineYamlFacadeService,
 ) {
     fun create(
         userId: String,
@@ -421,37 +423,51 @@ class PipelineTemplateFacadeService @Autowired constructor(
         templateId: String
     ): PipelineTemplateInfoResponse {
         val basicInfo = pipelineTemplateInfoService.get(projectId, templateId)
-        val draftVersionResource = pipelineTemplateResourceService.getDraftVersionResource(
+        val draftResource = pipelineTemplateResourceService.getDraftVersionResource(
             projectId = projectId,
             templateId = templateId
         )
-        val draftBaseVersionResource = pipelineTemplateResourceService.getDraftBaseVersionResource(
+        val releaseResource = pipelineTemplateResourceService.get(
             projectId = projectId,
-            templateId = templateId
+            templateId = templateId,
+            version = basicInfo.releasedVersion!!
         )
-        // 配合前端的展示需要，version有以下几种情况的返回值：
-        // 1 发布过且有草稿：version取草稿的版本号
-        // 2 发布过且有分支版本：version取最新正式的版本号
-        // 3 未发布过仅有草稿版本：version取草稿的版本号
-        // 4 未发布过仅有分支版本：version取最新的分支版本号
-        var versionName = basicInfo.releasedVersionName
-        val version = when (basicInfo.latestVersionStatus) {
-            VersionStatus.COMMITTING -> {
-                draftVersionResource?.version
-            }
+        val baseResource = draftResource?.baseVersion?.let {
+            pipelineTemplateResourceService.get(
+                projectId = projectId,
+                templateId = templateId,
+                version = it
+            )
+        }
 
+        /**
+         * 获取最新版本和版本名称
+         *
+         * 如果最新版本是分支版本,则需要获取分支最新的激活版本,否则最新版本可能是正式或者草稿版本
+         */
+        val (releaseVersion, releaseVersionName) = when (basicInfo.latestVersionStatus) {
+            // 分支版本,需要获取当前分支最新的激活版本
             VersionStatus.BRANCH -> {
-                val latestBranchResource = pipelineTemplateResourceService.getLatestBranchResource(
-                    projectId = projectId, templateId = templateId
-                )
-                versionName = latestBranchResource?.versionName
-                latestBranchResource?.version
+                val branchVersion = basicInfo.releasedVersionName?.let {
+                    pipelineTemplateResourceService.getLatestBranchResource(
+                        projectId = projectId,
+                        templateId = templateId,
+                        branchName = it
+                    )
+                }
+                Pair(branchVersion?.version ?: releaseResource.version, branchVersion?.versionName)
             }
 
             else -> {
-                draftVersionResource?.version
+                Pair(releaseResource.version, releaseResource.versionName)
             }
-        } ?: basicInfo.releasedVersion
+        }
+        // 草稿版本和版本名,如果有草稿版本,则使用草稿版本,否则使用最新版本
+        val (version, versionName) = if (draftResource == null) {
+            Pair(releaseVersion, releaseVersionName)
+        } else {
+            Pair(draftResource.version, null)
+        }
         val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
             userId = userId,
             projectId = projectId,
@@ -460,6 +476,15 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 AuthPermission.DELETE,
                 AuthPermission.EDIT
             )
+        )
+        val yamlInfo = pipelineYamlFacadeService.getPipelineYamlInfo(
+            projectId = projectId,
+            pipelineId = templateId,
+            version = releaseVersion.toInt()
+        )
+        val yamlExist = pipelineYamlFacadeService.yamlExistInDefaultBranch(
+            projectId = projectId,
+            pipelineId = templateId
         )
         return PipelineTemplateInfoResponse(
             id = basicInfo.id,
@@ -474,7 +499,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             storeFlag = basicInfo.storeFlag,
             srcTemplateId = basicInfo.srcTemplateId,
             srcTemplateProjectId = basicInfo.srcTemplateProjectId,
-            canDebug = draftVersionResource != null,
+            canDebug = draftResource != null,
             debugPipelineCount = basicInfo.debugPipelineCount,
             instancePipelineCount = basicInfo.instancePipelineCount,
             creator = basicInfo.creator,
@@ -484,21 +509,20 @@ class PipelineTemplateFacadeService @Autowired constructor(
             canView = permission2TemplatesMap[AuthPermission.VIEW]?.contains(basicInfo.id) ?: false,
             canEdit = permission2TemplatesMap[AuthPermission.EDIT]?.contains(basicInfo.id) ?: false,
             canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(basicInfo.id) ?: false,
-            canRelease = draftVersionResource?.model != null,
+            canRelease = draftResource?.model != null,
             version = version,
             versionName = versionName,
-            baseVersion = draftBaseVersionResource?.version,
-            baseVersionName = draftBaseVersionResource?.versionName,
-            baseVersionStatus = draftBaseVersionResource?.status,
-            releaseVersion = basicInfo.releasedVersion,
-            releaseVersionName = basicInfo.releasedVersionName,
+            baseVersion = baseResource?.version,
+            baseVersionName = baseResource?.versionName,
+            baseVersionStatus = baseResource?.status,
+            releaseVersion = releaseVersion,
+            releaseVersionName = releaseVersionName,
             latestVersionStatus = basicInfo.latestVersionStatus,
             pipelineAsCodeSettings = PipelineAsCodeSettings(
-                enable = basicInfo.enablePac
+                enable = yamlInfo != null
             ),
-            // todo 补充
-            yamlInfo = null,
-            yamlExist = false
+            yamlInfo = yamlInfo,
+            yamlExist = yamlExist
         )
     }
 

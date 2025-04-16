@@ -56,7 +56,7 @@ import java.time.LocalDateTime
  * 负责流水线模版持久化业务逻辑
  */
 @Service
-class PipelineTemplateTransactionService @Autowired constructor(
+class PipelineTemplatePersistenceService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
@@ -70,32 +70,46 @@ class PipelineTemplateTransactionService @Autowired constructor(
      * 创建流水线模版和权限,用于新建模版
      */
     fun createTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfo? = null,
-        pipelineTemplateResource: PipelineTemplateResource? = null,
-        pipelineTemplateSetting: PipelineSetting? = null,
+        pipelineTemplateInfo: PipelineTemplateInfo,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateInfoService.create(
+                transactionContext = context,
+                pipelineTemplateInfo = pipelineTemplateInfo.copy(
+                    releasedVersion = pipelineTemplateResource.version
+                )
+            )
+            pipelineTemplateResourceService.create(
+                transactionContext = context,
+                pipelineTemplateResource = pipelineTemplateResource
+            )
+            pipelineTemplateSettingService.create(
+                transactionContext = context,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
+            pipelineTemplatePermissionService.createResource(
+                userId = pipelineTemplateInfo.creator,
+                projectId = pipelineTemplateInfo.projectId,
+                templateId = pipelineTemplateInfo.id,
+                templateName = pipelineTemplateInfo.name
+            )
+        }
+    }
+
+    fun createTemplate(
+        pipelineTemplateInfo: PipelineTemplateInfo,
         syncPermission: Boolean? = true
     ) {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            pipelineTemplateInfo?.let {
-                pipelineTemplateInfoService.create(
-                    transactionContext = context,
-                    pipelineTemplateInfo = pipelineTemplateInfo
-                )
-            }
-            pipelineTemplateResource?.let {
-                pipelineTemplateResourceService.create(
-                    transactionContext = context,
-                    pipelineTemplateResource = pipelineTemplateResource
-                )
-            }
-            pipelineTemplateSetting?.let {
-                pipelineTemplateSettingService.create(
-                    transactionContext = context,
-                    pipelineTemplateSetting = pipelineTemplateSetting
-                )
-            }
-            if (syncPermission == true && pipelineTemplateInfo != null) {
+            pipelineTemplateInfoService.create(
+                transactionContext = context,
+                pipelineTemplateInfo = pipelineTemplateInfo
+            )
+            if (syncPermission == true) {
                 pipelineTemplatePermissionService.createResource(
                     userId = pipelineTemplateInfo.creator,
                     projectId = pipelineTemplateInfo.projectId,

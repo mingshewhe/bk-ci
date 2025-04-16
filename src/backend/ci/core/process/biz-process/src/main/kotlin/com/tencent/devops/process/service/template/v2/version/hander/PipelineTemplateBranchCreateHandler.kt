@@ -15,7 +15,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateTransactionService
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service
 class PipelineTemplateBranchCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateTransactionService: PipelineTemplateTransactionService,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val redisOperation: RedisOperation,
     private val operationLogService: PipelineOperationLogService
@@ -77,7 +77,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
                 versionStatus = VersionStatus.BRANCH,
                 branchName = branchName
             )
-            pipelineTemplateTransactionService.createTemplate(
+            pipelineTemplatePersistenceService.createTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
@@ -126,7 +126,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
             pTemplateResourceOnlyVersion = resourceOnlyVersion
         )
 
-        pipelineTemplateTransactionService.createBranchVersion(
+        pipelineTemplatePersistenceService.createBranchVersion(
             templateResource = pipelineTemplateResource,
             templateSetting = pipelineTemplateSetting.copy(
                 version = resourceOnlyVersion.settingVersion
