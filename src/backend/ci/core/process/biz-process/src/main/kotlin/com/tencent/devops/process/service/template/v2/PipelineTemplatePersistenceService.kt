@@ -67,9 +67,9 @@ class PipelineTemplatePersistenceService @Autowired constructor(
 ) {
 
     /**
-     * 创建流水线模版和权限,用于新建模版
+     * 初始化创建流水线模版和权限（草稿/分支/正式）
      */
-    fun createTemplate(
+    fun initializeTemplate(
         pipelineTemplateInfo: PipelineTemplateInfo,
         pipelineTemplateResource: PipelineTemplateResource,
         pipelineTemplateSetting: PipelineSetting
@@ -362,7 +362,27 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         }
     }
 
-    fun deleteTemplate(
+    fun deleteVersion(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ) {
+        val updateInfo = PipelineTemplateResourceUpdateInfo(
+            status = VersionStatus.DELETE
+        )
+        val condition = PipelineTemplateResourceCommonCondition(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        pipelineTemplateResourceService.update(
+            record = updateInfo,
+            commonCondition = condition
+        )
+    }
+
+    fun deleteTemplateAllVersions(
         projectId: String,
         templateId: String
     ) {
@@ -412,5 +432,25 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 templateId = templateId
             )
         }
+    }
+
+    fun inactiveBranch(
+        projectId: String,
+        templateId: String,
+        branch: String
+    ) {
+        val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
+            branchAction = BranchVersionAction.INACTIVE
+        )
+        val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
+            projectId = projectId,
+            templateId = templateId,
+            versionName = branch,
+            branchAction = BranchVersionAction.ACTIVE
+        )
+        pipelineTemplateResourceService.update(
+            record = inactiveBranchUpdateInfo,
+            commonCondition = inactiveBranchCondition
+        )
     }
 }

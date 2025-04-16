@@ -33,6 +33,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionCreateHandler
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionDeleteHandler
+import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionCreatePostProcessor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -44,7 +45,8 @@ class PipelineTemplateVersionManager @Autowired constructor(
     private val versionCreateHandlers: List<PipelineTemplateVersionCreateHandler>,
     private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
     private val pipelineTemplateModelValidator: PipelineTemplateModelValidator,
-    private val versionDeleteHandler: PipelineTemplateVersionDeleteHandler
+    private val versionDeleteHandler: PipelineTemplateVersionDeleteHandler,
+    private val versionCreatePostProcessor: List<PTemplateVersionCreatePostProcessor>
 ) {
 
     fun deployTemplate(
@@ -66,7 +68,9 @@ class PipelineTemplateVersionManager @Autowired constructor(
             pTemplateResourceWithoutVersion = context.pTemplateResourceWithoutVersion,
             pipelineSetting = context.pipelineTemplateSetting
         )
-        return getHandler(context).handle(context = context)
+        val result = getHandler(context).handle(context = context)
+        versionCreatePostProcessor.forEach { it.postProcessAfterCreation(result) }
+        return result
     }
 
     fun deleteVersion(

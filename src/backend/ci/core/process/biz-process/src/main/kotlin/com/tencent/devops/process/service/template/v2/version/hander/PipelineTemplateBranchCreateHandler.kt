@@ -29,8 +29,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation,
-    private val operationLogService: PipelineOperationLogService
+    private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.CREATE_BRANCH
@@ -77,7 +76,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
                 versionStatus = VersionStatus.BRANCH,
                 branchName = branchName
             )
-            pipelineTemplatePersistenceService.createTemplate(
+            pipelineTemplatePersistenceService.initializeTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
@@ -93,22 +92,17 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         } else {
             createBranchVersion()
         }
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = resourceOnlyVersion.version.toInt(),
-            operationLogType = OperationLogType.CREATE_BRANCH_VERSION,
-            params = resourceOnlyVersion.versionName ?: "",
-            description = null
-        )
         return DeployTemplateResult(
+            projectId = projectId,
+            userId = userId,
             version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
-            versionName = resourceOnlyVersion.versionName
+            versionName = resourceOnlyVersion.versionName,
+            versionAction = versionAction,
+            operationLogType = OperationLogType.CREATE_BRANCH_VERSION
         )
     }
 

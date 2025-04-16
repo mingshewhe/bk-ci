@@ -59,8 +59,6 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineOperationLogDao: PipelineOperationLogDao,

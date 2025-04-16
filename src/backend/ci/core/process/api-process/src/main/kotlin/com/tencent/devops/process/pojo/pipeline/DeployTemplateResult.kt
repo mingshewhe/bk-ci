@@ -27,12 +27,18 @@
 
 package com.tencent.devops.process.pojo.pipeline
 
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.process.enums.OperationLogType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "配置流水线结果")
 data class DeployTemplateResult(
     @get:Schema(title = "模版全局ID", required = true)
     val version: Long,
+    @get:Schema(title = "操作人", required = true)
+    val userId: String,
+    @get:Schema(title = "项目ID", required = true)
+    val projectId: String,
     @get:Schema(title = "模版ID", required = true)
     val templateId: String,
     @get:Schema(title = "模版名称", required = true)
@@ -48,5 +54,9 @@ data class DeployTemplateResult(
     @get:Schema(title = "yaml信息", required = false)
     val yamlInfo: PipelineYamlVo? = null,
     @get:Schema(title = "是否更新了推荐版本号基准值", required = false)
-    val updateBuildNo: Boolean? = null
+    val updateBuildNo: Boolean? = null,
+    @get:Schema(title = "版本动作", required = true)
+    val versionAction: PipelineVersionAction,
+    @get:Schema(title = "操作类型", required = true)
+    val operationLogType: OperationLogType
 )

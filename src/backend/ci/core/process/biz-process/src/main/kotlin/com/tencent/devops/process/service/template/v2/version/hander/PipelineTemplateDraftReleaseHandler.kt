@@ -60,8 +60,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val redisOperation: RedisOperation,
-    @Lazy private val pipelineYamlFacadeService: PipelineYamlFacadeService,
-    private val operationLogService: PipelineOperationLogService
+    @Lazy private val pipelineYamlFacadeService: PipelineYamlFacadeService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext) =
         context.versionAction == PipelineVersionAction.RELEASE_DRAFT
@@ -138,25 +137,18 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
 
         // 发布yaml文件
         val yamlFileReleaseResult = releaseYamlFile(resourceOnlyVersion = resourceOnlyVersion)
-
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = version.toInt(),
-            operationLogType = OperationLogType.RELEASE_MASTER_VERSION,
-            params = resourceOnlyVersion.versionName ?: "",
-            description = null
-        )
-
         return DeployTemplateResult(
+            projectId = projectId,
+            userId = userId,
             version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
             versionName = resourceOnlyVersion.versionName,
-            targetUrl = yamlFileReleaseResult?.mrUrl
+            targetUrl = yamlFileReleaseResult?.mrUrl,
+            versionAction = versionAction,
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
         )
     }
 

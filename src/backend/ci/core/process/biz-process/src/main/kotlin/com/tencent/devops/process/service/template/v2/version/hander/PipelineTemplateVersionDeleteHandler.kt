@@ -28,24 +28,19 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
-import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
-import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionDeleteContext
+import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionDeletePostProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -58,9 +53,9 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val redisOperation: RedisOperation,
-    private val operationLogService: PipelineOperationLogService,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val pipelineTemplateTransactionService: PipelineTemplatePersistenceService
+    private val pipelineTemplateTransactionService: PipelineTemplatePersistenceService,
+    private val versionDeletePostProcessor: PTemplateVersionDeletePostProcessor
 ) {
 
     fun handle(context: PipelineTemplateVersionDeleteContext) {
@@ -99,6 +94,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
 
             }
         }
+        versionDeletePostProcessor.postProcessAfterDelete(context = this)
     }
 
     private fun PipelineTemplateVersionDeleteContext.deleteVersion() {
@@ -113,26 +109,11 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             // 最新正式版本不能删除
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         }
-        val updateInfo = PipelineTemplateResourceUpdateInfo(
-            status = VersionStatus.DELETE
-        )
-        val condition = PipelineTemplateResourceCommonCondition(
+        pipelineTemplateTransactionService.deleteVersion(
+            userId = userId,
             projectId = projectId,
             templateId = templateId,
             version = version
-        )
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = version.toInt(),
-            operationLogType = OperationLogType.DELETE_PIPELINE_VERSION,
-            params = pipelineTemplateResourceService.get(condition).versionName ?: "",
-            description = null
-        )
-        pipelineTemplateResourceService.update(
-            record = updateInfo,
-            commonCondition = condition
         )
     }
 
@@ -170,7 +151,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_INSTALL
             )
         }
-        pipelineTemplateTransactionService.deleteTemplate(
+        pipelineTemplateTransactionService.deleteTemplateAllVersions(
             projectId = projectId,
             templateId = templateId
         )
@@ -180,18 +161,10 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
         if (branch == null) {
             throw IllegalArgumentException("branchName is null")
         }
-        val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            branchAction = BranchVersionAction.INACTIVE
-        )
-        val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
+        pipelineTemplateTransactionService.inactiveBranch(
             projectId = projectId,
             templateId = templateId,
-            versionName = branch,
-            branchAction = BranchVersionAction.ACTIVE
-        )
-        pipelineTemplateResourceService.update(
-            record = inactiveBranchUpdateInfo,
-            commonCondition = inactiveBranchCondition
+            branch = branch
         )
     }
 

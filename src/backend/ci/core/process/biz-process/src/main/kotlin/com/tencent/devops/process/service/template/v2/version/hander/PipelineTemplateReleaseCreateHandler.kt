@@ -55,8 +55,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation,
-    private val operationLogService: PipelineOperationLogService
+    private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
 
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
@@ -88,7 +87,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.RELEASED
             )
-            pipelineTemplatePersistenceService.createTemplate(
+            pipelineTemplatePersistenceService.initializeTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo.copy(
                     releasedVersion = defaultTemplateVersion.version,
                     releasedVersionName = defaultTemplateVersion.versionName,
@@ -109,22 +108,17 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         } else {
             createReleaseVersion()
         }
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = resourceOnlyVersion.version.toInt(),
-            operationLogType = OperationLogType.RELEASE_MASTER_VERSION,
-            params = resourceOnlyVersion.versionName ?: "",
-            description = null
-        )
         return DeployTemplateResult(
+            projectId = projectId,
+            userId = userId,
             version = resourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
-            versionName = resourceOnlyVersion.versionName
+            versionName = resourceOnlyVersion.versionName,
+            versionAction = versionAction,
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
         )
     }
 

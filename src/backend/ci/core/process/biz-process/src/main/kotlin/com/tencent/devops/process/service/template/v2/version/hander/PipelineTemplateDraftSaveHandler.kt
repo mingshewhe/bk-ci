@@ -55,8 +55,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation,
-    private val operationLogService: PipelineOperationLogService
+    private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
@@ -83,11 +82,11 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        val pTemplateResourceOnlyVersion = if (templateInfo == null) {
+        val (pTemplateResourceOnlyVersion, operationLogType) = if (templateInfo == null) {
             val defaultVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = VersionStatus.COMMITTING
             )
-            pipelineTemplatePersistenceService.createTemplate(
+            pipelineTemplatePersistenceService.initializeTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pipelineTemplateResource = PipelineTemplateResource(
                     pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
@@ -97,34 +96,29 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                     version = defaultVersion.settingVersion
                 )
             )
-            operationLogService.addOperationLog(
-                userId = userId,
-                projectId = projectId,
-                pipelineId = templateId,
-                version = defaultVersion.version.toInt(),
-                operationLogType = OperationLogType.CREATE_PIPELINE_AND_DRAFT,
-                params = "",
-                description = null
-            )
-            defaultVersion
+            Pair(defaultVersion, OperationLogType.CREATE_PIPELINE_AND_DRAFT)
         } else {
             val draftResource = pipelineTemplateResourceService.getDraftVersionResource(
                 projectId = projectId,
                 templateId = templateId
             )
             if (draftResource == null) {
-                createDraftVersion()
+                Pair(createDraftVersion(), OperationLogType.CREATE_DRAFT_VERSION)
             } else {
-                updateDraftVersion(draftResource = draftResource)
+                Pair(updateDraftVersion(draftResource), OperationLogType.UPDATE_DRAFT_VERSION)
             }
         }
         return DeployTemplateResult(
+            projectId = projectId,
+            userId = userId,
             version = pTemplateResourceOnlyVersion.version,
             templateId = templateId,
             templateName = pipelineTemplateInfo.name,
             number = pTemplateResourceOnlyVersion.number,
             versionNum = pTemplateResourceOnlyVersion.versionNum,
-            versionName = pTemplateResourceOnlyVersion.versionName
+            versionName = pTemplateResourceOnlyVersion.versionName,
+            versionAction = versionAction,
+            operationLogType = operationLogType
         )
     }
 
@@ -146,15 +140,6 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 version = resourceOnlyVersion.settingVersion
             )
         )
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = resourceOnlyVersion.version.toInt(),
-            operationLogType = OperationLogType.CREATE_DRAFT_VERSION,
-            params = latestVersion.versionName ?: "",
-            description = null
-        )
         return resourceOnlyVersion
     }
 
@@ -170,15 +155,6 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             userId = userId,
             templateResource = templateResource,
             templateSetting = pipelineTemplateSetting
-        )
-        operationLogService.addOperationLog(
-            userId = userId,
-            projectId = projectId,
-            pipelineId = templateId,
-            version = resourceOnlyVersion.version.toInt(),
-            operationLogType = OperationLogType.UPDATE_DRAFT_VERSION,
-            params = "",
-            description = null
         )
         return resourceOnlyVersion
     }
