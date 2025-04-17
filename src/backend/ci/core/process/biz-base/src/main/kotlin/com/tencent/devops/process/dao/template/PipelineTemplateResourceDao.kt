@@ -259,13 +259,16 @@ class PipelineTemplateResourceDao {
         templateId: String,
         status: VersionStatus? = null,
         version: Long? = null,
-        versionName: String? = null
+        versionName: String? = null,
+        includeDelete: Boolean = false
     ): PipelineTemplateResource? {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val conditions = mutableListOf<Condition>()
             conditions.add(PROJECT_ID.eq(projectId))
             conditions.add(TEMPLATE_ID.eq(templateId))
-            conditions.add(STATUS.ne(VersionStatus.DELETE.name))
+            if (!includeDelete) {
+                conditions.add(STATUS.ne(VersionStatus.DELETE.name))
+            }
             if (status != null) {
                 conditions.add(STATUS.eq(status.name))
                 // 获取活跃的分支版本
