@@ -756,41 +756,37 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         error: Throwable,
         failurePipelines: MutableList<String>
     ) {
-        if (type == TemplateInstanceType.CREATE) {
-            var errorMessage = ""
-            when (error) {
-                is DuplicateKeyException -> {
-                    logger.warn("TemplateCreateInstanceDuplicate|$projectId|$instance|$userId|${error.message}")
-                    errorMessage = "【${instance.pipelineName}】reason：duplicate！"
-                }
-
-                is ErrorCodeException -> {
-                    logger.warn("TemplateCreateInstanceErrorCode|$projectId|$instance|$userId|${error.message}")
-                    val reason = I18nUtil.generateResponseDataObject(
-                        messageCode = error.errorCode,
-                        params = error.params,
-                        data = null,
-                        defaultMessage = error.defaultMessage
-                    ).message ?: error.defaultMessage ?: "unknown!"
-                    errorMessage = "【${instance.pipelineName}】reason：$reason！"
-                }
-
-                else -> {
-                    logger.warn("TemplateCreateInstanceThrowable|$projectId|$instance|$userId|${error.message}")
-                    errorMessage = "【${instance.pipelineName}】reason：${error.message ?: "create instance fail"}！"
-                }
+        var errorMessage = ""
+        when (error) {
+            is DuplicateKeyException -> {
+                logger.warn("TemplateCreateInstanceDuplicate|$projectId|$instance|$userId|${error.message}")
+                errorMessage = "【${instance.pipelineName}】reason：duplicate！"
             }
-            templateInstanceItemDao.updateErrorMessage(
-                dslContext = dslContext,
-                projectId = projectId,
-                baseId = instance.baseId,
-                pipelineId = instance.pipelineId,
-                errorMessage = errorMessage
-            )
-            failurePipelines.add(errorMessage)
-        } else {
 
+            is ErrorCodeException -> {
+                logger.warn("TemplateCreateInstanceErrorCode|$projectId|$instance|$userId|${error.message}")
+                val reason = I18nUtil.generateResponseDataObject(
+                    messageCode = error.errorCode,
+                    params = error.params,
+                    data = null,
+                    defaultMessage = error.defaultMessage
+                ).message ?: error.defaultMessage ?: "unknown!"
+                errorMessage = "【${instance.pipelineName}】reason：$reason！"
+            }
+
+            else -> {
+                logger.warn("TemplateCreateInstanceThrowable|$projectId|$instance|$userId|${error.message}")
+                errorMessage = "【${instance.pipelineName}】reason：${error.message ?: "instance fail"}！"
+            }
         }
+        templateInstanceItemDao.updateErrorMessage(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = instance.baseId,
+            pipelineId = instance.pipelineId,
+            errorMessage = errorMessage
+        )
+        failurePipelines.add(errorMessage)
     }
 
     fun list(
