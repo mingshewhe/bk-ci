@@ -72,7 +72,7 @@ class PipelineTemplateSettingDao {
                 JsonUtil.toJson(successSubscriptionList),
                 JsonUtil.toJson(failSubscriptionList),
                 PipelineRunLockType.toValue(record.runLockType),
-                record.maxConRunningQueueSize ?: -1,
+                record.maxConRunningQueueSize ?: 50,
                 record.creator,
                 record.updater,
                 createTime,
