@@ -229,7 +229,7 @@ class PipelineTemplateResourceDao {
                 UPDATE_TIME
             ).from(this)
                 .where(buildQueryCondition(commonCondition))
-                .orderBy(SORT_WEIGHT.desc(), VERSION.desc())
+                .orderBy(SORT_WEIGHT.desc(), NUMBER.desc())
                 .fetch()
                 .map {
                     PipelineVersionSimple(

@@ -18,12 +18,13 @@ class PTemplateVersionCreateAuditPostProcessor(
 ) : PTemplateVersionCreatePostProcessor {
     override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
         with(postCreationContext) {
-            val params = if (operationLogType == OperationLogType.CREATE_DRAFT_VERSION) {
-                val latestVersion = pipelineTemplateResourceService.getLatestVersionResource(
+            val versionName = if (operationLogType == OperationLogType.CREATE_DRAFT_VERSION) {
+                pipelineTemplateResourceService.getLatestReleasedResource(
                     projectId = projectId,
                     templateId = templateId
-                ) ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
-                latestVersion.versionName
+                )?.versionName ?: throw ErrorCodeException(
+                    errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+                )
             } else {
                 versionName
             } ?: ""
@@ -33,7 +34,7 @@ class PTemplateVersionCreateAuditPostProcessor(
                 pipelineId = templateId,
                 version = version.toInt(),
                 operationLogType = operationLogType,
-                params = params,
+                params = versionName,
                 description = null
             )
         }

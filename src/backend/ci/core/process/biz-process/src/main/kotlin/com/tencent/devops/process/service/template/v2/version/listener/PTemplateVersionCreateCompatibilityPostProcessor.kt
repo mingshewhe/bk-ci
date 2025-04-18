@@ -39,58 +39,30 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
                 projectId = projectId,
                 version = version
             )
-            val templateInfo = v2TemplateInfoService.get(
+            val v2TemplateInfo = v2TemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
             )
-            val templateResource = v2TemplateResourceService.get(
+            val v2TemplateResource = v2TemplateResourceService.get(
                 projectId = projectId,
                 templateId = templateId,
                 version = version
             )
-            val templateSetting = v2TemplateSettingService.get(
+            val v2TemplateSetting = v2TemplateSettingService.get(
                 projectId = projectId,
                 templateId = templateId,
-                settingVersion = templateResource.settingVersion
+                settingVersion = v2TemplateResource.settingVersion
             )
-            // 初始创建
-            if (v1TemplateRecord == null) {
-                dslContext.transaction { configuration ->
-                    val transactionContext = DSL.using(configuration)
-                    v1TemplateDao.createTemplate(
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                if (v1TemplateRecord == null) {
+                    val saveRecordVersions = v1TemplateDao.listSaveRecordVersions(
                         dslContext = transactionContext,
                         projectId = projectId,
                         templateId = templateId,
-                        templateName = templateInfo.name,
-                        versionName = templateResource.versionName!!,
-                        userId = userId,
-                        template = JsonUtil.toJson(templateResource.model),
-                        type = templateInfo.mode.name,
-                        category = templateInfo.category,
-                        logoUrl = templateInfo.logoUrl,
-                        srcTemplateId = templateResource.srcTemplateId,
-                        storeFlag = templateInfo.storeFlag,
-                        weight = 0,
-                        version = version,
-                        desc = templateInfo.desc
+                        versionName = versionName!!,
+                        saveNum = maxSaveVersionRecordNum
                     )
-                    v1TemplateSettingService.saveSetting(
-                        dslContext = transactionContext,
-                        setting = templateSetting,
-                        isTemplate = true
-                    )
-                }
-            } else {
-                val saveRecordVersions = v1TemplateDao.listSaveRecordVersions(
-                    dslContext = dslContext,
-                    projectId = projectId,
-                    templateId = templateId,
-                    versionName = versionName!!,
-                    saveNum = maxSaveVersionRecordNum
-                )
-
-                dslContext.transaction { configuration ->
-                    val transactionContext = DSL.using(configuration)
                     if (saveRecordVersions?.isNotEmpty == true) {
                         // 版本名称为versionName的版本只保存最近maxSaveVersionRecordNum条记录
                         v1TemplateDao.deleteSpecVersion(
@@ -101,31 +73,28 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
                             saveVersions = saveRecordVersions.map { it.value1() }
                         )
                     }
-                    v1TemplateDao.createTemplate(
-                        dslContext = transactionContext,
-                        projectId = projectId,
-                        templateId = templateId,
-                        templateName = templateInfo.name,
-                        versionName = templateResource.versionName!!,
-                        userId = userId,
-                        template = JsonUtil.toJson(templateResource.model),
-                        type = templateInfo.mode.name,
-                        category = templateInfo.category,
-                        logoUrl = templateInfo.logoUrl,
-                        srcTemplateId = templateResource.srcTemplateId,
-                        storeFlag = templateInfo.storeFlag,
-                        weight = 0,
-                        version = version,
-                        desc = templateInfo.desc
-                    )
-                    v1TemplateSettingService.updateSetting(
-                        dslContext = transactionContext,
-                        projectId = projectId,
-                        pipelineId = templateId,
-                        name = templateInfo.name,
-                        desc = templateInfo.desc ?: ""
-                    )
                 }
+                v1TemplateDao.createTemplate(
+                    dslContext = transactionContext,
+                    projectId = projectId,
+                    templateId = templateId,
+                    templateName = v2TemplateInfo.name,
+                    versionName = v2TemplateResource.versionName!!,
+                    userId = userId,
+                    template = JsonUtil.toJson(v2TemplateResource.model),
+                    type = v2TemplateInfo.mode.name,
+                    category = v2TemplateInfo.category,
+                    logoUrl = v2TemplateInfo.logoUrl,
+                    srcTemplateId = v2TemplateResource.srcTemplateId,
+                    storeFlag = v2TemplateInfo.storeFlag,
+                    weight = 0,
+                    version = version,
+                    desc = v2TemplateInfo.desc
+                )
+                v1TemplateSettingService.saveSetting(
+                    dslContext = transactionContext,
+                    setting = v2TemplateSetting
+                )
             }
         }
     }
