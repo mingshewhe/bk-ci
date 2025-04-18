@@ -50,14 +50,14 @@ class PTemplateVersionDeletePostProcessor(
 
                 PipelineVersionAction.DELETE_ALL_VERSIONS -> {
                     dslContext.transactionResult { configuration ->
-                        val context = DSL.using(configuration)
+                        val transactionContext = DSL.using(configuration)
                         templateDao.delete(
-                            dslContext = context,
+                            dslContext = transactionContext,
                             projectId = projectId,
                             templateId = templateId
                         )
                         pipelineSettingDao.delete(
-                            dslContext = context,
+                            dslContext = transactionContext,
                             projectId = projectId,
                             pipelineId = templateId
                         )

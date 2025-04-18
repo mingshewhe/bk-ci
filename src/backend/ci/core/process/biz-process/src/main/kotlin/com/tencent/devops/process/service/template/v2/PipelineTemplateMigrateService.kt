@@ -35,6 +35,7 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.model.process.tables.records.TTemplateRecord
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
@@ -47,11 +48,13 @@ import com.tencent.devops.process.pojo.template.TemplateVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.concurrent.Executors
 
 @Service
 class PipelineTemplateMigrateService(
@@ -62,13 +65,16 @@ class PipelineTemplateMigrateService(
     val pipelineSettingDao: PipelineSettingDao,
     val pipelineTemplateGenerator: PipelineTemplateGenerator,
     val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    val templatePipelineDao: TemplatePipelineDao
+    val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    val templatePipelineDao: TemplatePipelineDao,
+    val redisOperation: RedisOperation
 ) {
 
     fun migrateTemplate(projectId: String) {
         logger.info("start to migrate project templates,{}", projectId)
         var offset = 0
         val limit = PageUtil.MAX_PAGE_SIZE / 2
+        val v1AllTemplateIds = mutableListOf<String>()
         do {
             val templateIds = templateDao.list(
                 dslContext = dslContext,
@@ -87,137 +93,191 @@ class PipelineTemplateMigrateService(
                     logger.warn("migrate template failed $projectId|$templateId|$ex")
                 }
             }
-
+            v1AllTemplateIds.addAll(templateIds)
             offset += limit
         } while (templateIds.size == limit)
+        migratePostProcess(
+            projectId = projectId,
+            v1AllTemplateIds = v1AllTemplateIds
+        )
+    }
+
+    private fun migratePostProcess(
+        projectId: String,
+        v1AllTemplateIds: List<String>
+    ) {
+        val v2AllTemplateIds = pipelineTemplateInfoService.listAllIds(projectId)
+        val deleteRecords = v2AllTemplateIds.filterNot { it in v1AllTemplateIds }
+        deleteRecords.forEach {
+            pipelineTemplatePersistenceService.deleteTemplateAllVersions(
+                projectId = projectId,
+                templateId = it
+            )
+        }
+    }
+
+    fun asyncMigrateTemplate(templateId: String, projectId: String) {
+        migrateTemplateExecutorService.execute {
+            migrateTemplate(
+                projectId = projectId,
+                templateId = templateId
+            )
+        }
     }
 
     fun migrateTemplate(templateId: String, projectId: String) {
-        logger.info("migrate template,{}|{}", projectId, templateId)
-        val latestTemplate = templateDao.getLatestTemplate(
-            dslContext = dslContext,
-            projectId = projectId,
-            templateId = templateId
-        )
-        logger.debug("migrate template latestTemplate {}", latestTemplate)
-        val setting = pipelineSettingDao.getSetting(
-            dslContext = dslContext,
-            projectId = projectId,
-            pipelineId = latestTemplate.id
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-        )
-        logger.debug("migrate template setting {}", setting)
-
-        val (srcTemplateProjectId, templateVersionInfos) = getTemplateVersions(latestTemplate = latestTemplate)
-        logger.debug(
-            "migrate template srcTemplateProjectId {},templateVersionInfos{}",
-            srcTemplateProjectId, templateVersionInfos
-        )
-
-
-        var versionSequence = 0
-        var pipelineVersion = 0
-        var triggerVersion = 0
-
-        templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
-            versionSequence += 1
-            val currentSetting = setting.copy(
-                version = versionSequence,
-                creator = templateVersionInfo.creator,
-                createdTime = latestTemplate.createdTime.timestampmilli(),
-                updateTime = latestTemplate.updateTime.timestampmilli()
-            )
-            // 当前实际模板，可能为当前模板的版本或父模板版本
-            val currentProjectId = srcTemplateProjectId ?: projectId
-            val currentTemplate = templateDao.getTemplate(
+        val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
+        try {
+            lock.lock()
+            logger.info("migrate template,{}|{}", projectId, templateId)
+            val latestTemplate = templateDao.getLatestTemplate(
                 dslContext = dslContext,
-                projectId = currentProjectId,
-                version = templateVersionInfo.version
+                projectId = projectId,
+                templateId = templateId
+            )
+            logger.debug("migrate template latestTemplate {}", latestTemplate)
+            val setting = pipelineSettingDao.getSetting(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = latestTemplate.id
             ) ?: throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
             )
+            logger.debug("migrate template setting {}", setting)
 
-            val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
-            val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
+            val (srcTemplateProjectId, templateVersionInfos) = getTemplateVersions(latestTemplate = latestTemplate)
+            logger.debug(
+                "migrate template srcTemplateProjectId {},templateVersionInfos{}",
+                srcTemplateProjectId, templateVersionInfos
+            )
 
-            if (index == 0) {
-                pipelineVersion = 1
-                triggerVersion = 1
-            } else {
-                // 上一个版本的模板
-                val previousVersionTemplate = templateDao.getTemplate(
+            var versionSequence = 0
+            var pipelineVersion = 0
+            var triggerVersion = 0
+
+            templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
+                versionSequence += 1
+                val currentSetting = setting.copy(
+                    version = versionSequence,
+                    creator = templateVersionInfo.creator,
+                    createdTime = latestTemplate.createdTime.timestampmilli(),
+                    updateTime = latestTemplate.updateTime.timestampmilli()
+                )
+                // 当前实际模板，可能为当前模板的版本或父模板版本
+                val currentProjectId = srcTemplateProjectId ?: projectId
+                val currentTemplate = templateDao.getTemplate(
                     dslContext = dslContext,
                     projectId = currentProjectId,
-                    version = templateVersionInfos[index - 1].version
+                    version = templateVersionInfo.version
                 ) ?: throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
                 )
 
-                val previousVersionTemplateModel = JsonUtil.to(previousVersionTemplate.template, Model::class.java)
-                val previousVersionTemplateParams = previousVersionTemplateModel.getTriggerContainer().params
+                val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
+                val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
 
-                pipelineVersion = PipelineVersionUtils.getPipelineVersion(
-                    currVersion = pipelineVersion,
-                    originTemplateModel = previousVersionTemplateModel,
-                    newTemplateModel = currentTemplateModel,
-                    originParams = previousVersionTemplateParams,
-                    newParams = currentTemplateParams
-                )
+                if (index == 0) {
+                    pipelineVersion = 1
+                    triggerVersion = 1
+                } else {
+                    // 上一个版本的模板
+                    val previousVersionTemplate = templateDao.getTemplate(
+                        dslContext = dslContext,
+                        projectId = currentProjectId,
+                        version = templateVersionInfos[index - 1].version
+                    ) ?: throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+                    )
 
-                triggerVersion = PipelineVersionUtils.getTriggerVersion(
-                    currVersion = triggerVersion,
-                    originModel = previousVersionTemplateModel,
-                    newModel = currentTemplateModel
-                )
-            }
+                    val previousVersionTemplateModel = JsonUtil.to(previousVersionTemplate.template, Model::class.java)
+                    val previousVersionTemplateParams = previousVersionTemplateModel.getTriggerContainer().params
 
-            logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
-            logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
-            val modelTransferResult = try {
-                pipelineTemplateGenerator.transfer(
-                    userId = latestTemplate.creator,
-                    projectId = latestTemplate.projectId,
-                    storageType = PipelineStorageType.MODEL,
-                    templateType = PipelineTemplateType.PIPELINE,
-                    templateModel = currentTemplateModel,
-                    templateSetting = currentSetting,
+                    pipelineVersion = PipelineVersionUtils.getPipelineVersion(
+                        currVersion = pipelineVersion,
+                        originTemplateModel = previousVersionTemplateModel,
+                        newTemplateModel = currentTemplateModel,
+                        originParams = previousVersionTemplateParams,
+                        newParams = currentTemplateParams
+                    )
+
+                    triggerVersion = PipelineVersionUtils.getTriggerVersion(
+                        currVersion = triggerVersion,
+                        originModel = previousVersionTemplateModel,
+                        newModel = currentTemplateModel
+                    )
+                }
+
+                logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
+                logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
+                val modelTransferResult = try {
+                    pipelineTemplateGenerator.transfer(
+                        userId = latestTemplate.creator,
+                        projectId = latestTemplate.projectId,
+                        storageType = PipelineStorageType.MODEL,
+                        templateType = PipelineTemplateType.PIPELINE,
+                        templateModel = currentTemplateModel,
+                        templateSetting = currentSetting,
+                        params = currentTemplateParams,
+                        yaml = null
+                    )
+                } catch (ex: Exception) {
+                    logger.warn("model Transfer failed:{}", ex.toString())
+                    PTemplateModelTransferResult(
+                        templateType = PipelineTemplateType.PIPELINE,
+                        templateModel = currentTemplateModel,
+                        templateSetting = currentSetting,
+                        yamlWithVersion = null
+                    )
+                }
+
+                val pipelineTemplateResource = createPipelineTemplateResource(
+                    latestTemplate = latestTemplate,
+                    currentTemplate = currentTemplate,
+                    seq = versionSequence,
+                    pipelineVersion = pipelineVersion,
+                    triggerVersion = triggerVersion,
                     params = currentTemplateParams,
-                    yaml = null
+                    modelTransferResult = modelTransferResult,
                 )
-            } catch (ex: Exception) {
-                logger.warn("model Transfer failed:{}", ex.toString())
-                PTemplateModelTransferResult(
-                    templateType = PipelineTemplateType.PIPELINE,
-                    templateModel = currentTemplateModel,
-                    templateSetting = currentSetting,
-                    yamlWithVersion = null
+
+                pipelineTemplatePersistenceService.createReleaseVersion(
+                    userId = templateVersionInfo.creator,
+                    templateResource = pipelineTemplateResource,
+                    templateSetting = currentSetting
                 )
             }
-
-            val pipelineTemplateResource = createPipelineTemplateResource(
-                latestTemplate = latestTemplate,
-                currentTemplate = currentTemplate,
-                seq = versionSequence,
-                pipelineVersion = pipelineVersion,
-                triggerVersion = triggerVersion,
-                params = currentTemplateParams,
-                modelTransferResult = modelTransferResult,
+            val pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate = latestTemplate)
+            pipelineTemplatePersistenceService.createTemplate(
+                pipelineTemplateInfo = pipelineTemplateInfo,
+                syncPermission = false,
             )
 
-            pipelineTemplatePersistenceService.createReleaseVersion(
-                userId = templateVersionInfo.creator,
-                templateResource = pipelineTemplateResource,
-                templateSetting = currentSetting
-            )
+            val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
+            // 防止生产已经删除版本，但新数据库表还未删除，导致的脏数据
+            val v1TemplateVersions = templateVersionInfos.map { it.version }
+            val v2TemplateVersions = pipelineTemplateResourceService.getTemplateVersions(
+                PipelineTemplateResourceCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            ).mapNotNull { resource ->
+                (if (isConstraint) resource.srcTemplateVersion else resource.version)?.toLong()
+            }.filterNot { it in v1TemplateVersions }
+                .takeIf { it.isNotEmpty() }
+
+            v2TemplateVersions?.let {
+                pipelineTemplateResourceService.delete(
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId,
+                        srcTemplateVersions = if (isConstraint) it else null,
+                        versions = if (isConstraint) null else it
+                    )
+                )
+            }
+        } finally {
+            lock.unlock()
         }
-
-        val pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate = latestTemplate)
-
-        pipelineTemplatePersistenceService.createTemplate(
-            pipelineTemplateInfo = pipelineTemplateInfo,
-            syncPermission = false,
-        )
     }
 
     fun getTemplateVersions(
@@ -341,5 +401,6 @@ class PipelineTemplateMigrateService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTemplateMigrateService::class.java)
+        private val migrateTemplateExecutorService = Executors.newFixedThreadPool(5)
     }
 }

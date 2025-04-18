@@ -85,11 +85,11 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
-    fun create(
+    fun createOrUpdate(
         transactionContext: DSLContext? = null,
         pipelineTemplateSetting: PipelineSetting
     ) {
-        pipelineTemplateSettingDao.create(
+        pipelineTemplateSettingDao.createOrUpdate(
             dslContext = transactionContext ?: dslContext,
             record = pipelineTemplateSetting
         )

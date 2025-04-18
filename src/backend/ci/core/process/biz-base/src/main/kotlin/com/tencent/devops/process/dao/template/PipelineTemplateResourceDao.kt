@@ -220,6 +220,7 @@ class PipelineTemplateResourceDao {
                 TRIGGER_VERSION,
                 BASE_VERSION,
                 BASE_VERSION_NAME,
+                SRC_TEMPLATE_VERSION,
                 STATUS,
                 DESCRIPTION,
                 CREATOR,
@@ -241,12 +242,13 @@ class PipelineTemplateResourceDao {
                         triggerVersion = it.value7(),
                         baseVersion = it.value8()?.toInt(),
                         baseVersionName = it.value9(),
-                        status = VersionStatus.get(it.value10()),
-                        description = it.value11(),
-                        creator = it.value12(),
-                        updater = it.value13(),
-                        createTime = it.value14().timestampmilli(),
-                        updateTime = it.value15().timestampmilli(),
+                        srcTemplateVersion = it.value10()?.toInt(),
+                        status = VersionStatus.get(it.value11()),
+                        description = it.value12(),
+                        creator = it.value13(),
+                        updater = it.value14(),
+                        createTime = it.value15().timestampmilli(),
+                        updateTime = it.value16().timestampmilli(),
                         yamlVersion = null
                     )
                 }
@@ -255,7 +257,7 @@ class PipelineTemplateResourceDao {
 
     fun getLatestRecord(
         dslContext: DSLContext,
-        projectId: String,
+        projectId: String? = null,
         templateId: String,
         status: VersionStatus? = null,
         version: Long? = null,
@@ -264,7 +266,9 @@ class PipelineTemplateResourceDao {
     ): PipelineTemplateResource? {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val conditions = mutableListOf<Condition>()
-            conditions.add(PROJECT_ID.eq(projectId))
+            if (projectId != null) {
+                conditions.add(PROJECT_ID.eq(projectId))
+            }
             conditions.add(TEMPLATE_ID.eq(templateId))
             if (!includeDelete) {
                 conditions.add(STATUS.ne(VersionStatus.DELETE.name))
@@ -317,6 +321,7 @@ class PipelineTemplateResourceDao {
                 if (type != null) conditions.add(TYPE.eq(type!!.value))
                 if (settingVersion != null) conditions.add(SETTING_VERSION.eq(settingVersion))
                 if (version != null) conditions.add(VERSION.eq(version))
+                if (!versions.isNullOrEmpty()) conditions.add(VERSION.`in`(versions))
                 if (number != null) conditions.add(NUMBER.eq(number))
                 if (versionName != null && versionName!!.isNotBlank()) conditions.add(VERSION_NAME.eq(versionName))
                 if (settingVersionNum != null) conditions.add(SETTING_VERSION_NUM.eq(settingVersionNum))
@@ -334,6 +339,9 @@ class PipelineTemplateResourceDao {
                 if (srcTemplateVersion != null) conditions.add(SRC_TEMPLATE_VERSION.eq(srcTemplateVersion))
                 if (description != null) conditions.add(DESCRIPTION.like("%$description%"))
                 if (includeDraft == false) conditions.add(STATUS.notEqual(VersionStatus.COMMITTING.name))
+                if (ltNumber != null) conditions.add(NUMBER.lt(ltNumber))
+                if (geNumber != null) conditions.add(NUMBER.ge(geNumber))
+                if (!srcTemplateVersions.isNullOrEmpty()) conditions.add(SRC_TEMPLATE_VERSION.`in`(srcTemplateVersions))
                 return conditions
             }
         }

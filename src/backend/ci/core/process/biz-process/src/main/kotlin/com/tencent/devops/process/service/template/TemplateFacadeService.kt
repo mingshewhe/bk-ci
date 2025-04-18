@@ -121,6 +121,7 @@ import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.TemplateVersion
 import com.tencent.devops.process.pojo.template.TemplateWithPermission
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompatibilityCreateReq
 import com.tencent.devops.process.service.ParamFacadeService
 import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.PipelineInfoFacadeService
@@ -128,16 +129,18 @@ import com.tencent.devops.process.service.PipelineRemoteAuthService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineMarketTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMigrateService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.TempNotifyTemplateUtils
 import com.tencent.devops.process.utils.KEY_PIPELINE_ID
 import com.tencent.devops.process.utils.KEY_TEMPLATE_ID
 import com.tencent.devops.process.utils.PipelineVersionUtils.differ
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import com.tencent.devops.repository.api.ServiceRepositoryResource
-import com.tencent.devops.store.api.common.ServiceStoreResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.atom.AtomCodeVersionReqItem
-import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import jakarta.ws.rs.NotFoundException
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
@@ -152,6 +155,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.text.MessageFormat
 import java.time.LocalDateTime
+import java.util.concurrent.Executors
 
 @Suppress("ALL")
 @Service
@@ -182,7 +186,11 @@ class TemplateFacadeService @Autowired constructor(
     private val pipelineSettingFacadeService: PipelineSettingFacadeService,
     private val templateCommonService: TemplateCommonService,
     private val templateSettingService: TemplateSettingService,
-    private val pipelineAsCodeService: PipelineAsCodeService
+    private val pipelineAsCodeService: PipelineAsCodeService,
+    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
+    private val pipelineMarketTemplateFacadeService: PipelineMarketTemplateFacadeService,
+    private val pipelineTemplateMigrateService: PipelineTemplateMigrateService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) {
 
     @Value("\${template.maxSyncInstanceNum:10}")
@@ -190,9 +198,6 @@ class TemplateFacadeService @Autowired constructor(
 
     @Value("\${template.maxUpdateInstanceNum:100}")
     private val maxUpdateInstanceNum: Int = 100
-
-    @Value("\${template.maxSaveVersionRecordNum:2}")
-    private val maxSaveVersionRecordNum: Int = 2
 
     @Value("\${template.instanceListUrl}")
     private val instanceListUrl: String = ""
@@ -218,37 +223,29 @@ class TemplateFacadeService @Autowired constructor(
         )
         checkTemplate(template, projectId, userId)
         val templateId = UUIDUtil.generate()
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            templateCommonService.checkTemplateName(context, template.name, projectId, templateId)
-            updateModelParam(template)
-            val version = templateDao.create(
-                dslContext = context,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = template.name,
-                versionName = INIT_TEMPLATE_NAME,
-                userId = userId,
-                template = JsonUtil.toJson(template, formatted = false),
-                storeFlag = false,
-                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data,
-                desc = template.desc
-            )
-            templateSettingService.saveDefaultTemplateSetting(
-                context = context,
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = template.name
-            )
-            pipelineTemplatePermissionService.createResource(
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = template.name
-            )
-            logger.info("Get the template version $version")
-        }
+        templateCommonService.checkTemplateName(
+            dslContext = dslContext,
+            name = template.name,
+            projectId = projectId,
+            templateId = templateId
+        )
+        updateModelParam(template)
+        val setting = templateCommonService.getDefaultSetting(
+            projectId = projectId,
+            templateId = templateId,
+            templateName = template.name
+        )
+        val request = PipelineTemplateCompatibilityCreateReq(
+            model = template,
+            setting = setting
+        )
+        val result = pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            request = request
+        )
+        logger.info("Get the template version ${result.version}")
         ActionAuditContext.current()
             .setInstanceId(templateId)
             .setInstanceName(template.name)
@@ -273,7 +270,6 @@ class TemplateFacadeService @Autowired constructor(
         copyTemplateReq: CopyTemplateReq
     ): String {
         logger.info("Start to copy the template, $srcTemplateId | $userId | $copyTemplateReq")
-
         pipelineTemplatePermissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
             projectId = projectId,
@@ -282,63 +278,47 @@ class TemplateFacadeService @Autowired constructor(
         )
 
         var latestTemplate = templateDao.getLatestTemplate(dslContext, projectId, srcTemplateId)
-        val template = latestTemplate
         if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
             latestTemplate = templateDao.getLatestTemplate(dslContext, latestTemplate.srcTemplateId)
         }
         val newTemplateId = UUIDUtil.generate()
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            templateCommonService.checkTemplateName(context, copyTemplateReq.templateName, projectId, newTemplateId)
-            val version = templateDao.createTemplate(
-                dslContext = context,
-                projectId = projectId,
-                templateId = newTemplateId,
-                templateName = copyTemplateReq.templateName,
-                versionName = INIT_TEMPLATE_NAME,
-                userId = userId,
-                template = latestTemplate.template,
-                type = TemplateType.CUSTOMIZE.name,
-                category = template.category,
-                logoUrl = template.logoUrl,
-                srcTemplateId = srcTemplateId,
-                storeFlag = false,
-                weight = 0,
-                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data,
-                desc = template.desc
+        templateCommonService.checkTemplateName(
+            dslContext = dslContext,
+            name = copyTemplateReq.templateName,
+            projectId = projectId,
+            templateId = newTemplateId
+        )
+        val setting = if (copyTemplateReq.isCopySetting) {
+            templateSettingService.copySetting(
+                templateSettingService.getTemplateSetting(
+                    projectId = projectId,
+                    userId = userId,
+                    templateId = srcTemplateId
+                ),
+                newTemplateId,
+                copyTemplateReq.templateName
             )
-
-            pipelineTemplatePermissionService.createResource(
-                userId = userId,
+        } else {
+            templateCommonService.getDefaultSetting(
                 projectId = projectId,
                 templateId = newTemplateId,
                 templateName = copyTemplateReq.templateName
             )
-
-            if (copyTemplateReq.isCopySetting) {
-                val setting = templateSettingService.copySetting(
-                    templateSettingService.getTemplateSetting(projectId, userId, srcTemplateId),
-                    newTemplateId,
-                    copyTemplateReq.templateName
-                )
-                templateSettingService.saveTemplatePipelineSetting(
-                    context = context,
-                    userId = userId,
-                    setting = setting
-                )
-            } else {
-                templateSettingService.saveDefaultTemplateSetting(
-                    context = context,
-                    userId = userId,
-                    projectId = projectId,
-                    templateId = newTemplateId,
-                    templateName = copyTemplateReq.templateName
-                )
-            }
-
-            logger.info("Get the template version $version")
         }
-
+        val request = PipelineTemplateCompatibilityCreateReq(
+            model = JsonUtil.to(latestTemplate.template, Model::class.java),
+            setting = setting,
+            category = latestTemplate.category,
+            logoUrl = latestTemplate.logoUrl,
+            storeFlag = false
+        )
+        val result = pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = newTemplateId,
+            request = request
+        )
+        logger.info("Get the template version ${result.version}")
         return newTemplateId
     }
 
@@ -366,7 +346,6 @@ class TemplateFacadeService @Autowired constructor(
             projectId = projectId,
             permission = AuthPermission.CREATE
         )
-
         val template = pipelineResourceDao.getLatestVersionModelString(
             dslContext, projectId, saveAsTemplateReq.pipelineId
         ) ?: throw ErrorCodeException(
@@ -376,56 +355,41 @@ class TemplateFacadeService @Autowired constructor(
         val templateModel: Model = PipelineUtils.fixedTemplateParam(objectMapper.readValue(template))
         checkTemplateAtomsForExplicitVersion(templateModel, userId)
         val templateId = UUIDUtil.generate()
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            templateCommonService.checkTemplateName(context, saveAsTemplateReq.templateName, projectId, templateId)
-            val version = templateDao.create(
-                dslContext = context,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = saveAsTemplateReq.templateName,
-                versionName = INIT_TEMPLATE_NAME,
-                userId = userId,
-                template = JsonUtil.toJson(templateModel, formatted = false),
-                storeFlag = false,
-                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data,
-                desc = null
+        templateCommonService.checkTemplateName(
+            dslContext = dslContext,
+            name = templateModel.name,
+            projectId = projectId,
+            templateId = templateId
+        )
+        val setting = if (saveAsTemplateReq.isCopySetting) {
+            templateSettingService.copySetting(
+                setting = templateSettingService.getTemplateSetting(
+                    projectId = projectId,
+                    userId = userId,
+                    templateId = saveAsTemplateReq.pipelineId
+                ),
+                pipelineId = templateId,
+                templateName = saveAsTemplateReq.templateName
             )
-
-            pipelineTemplatePermissionService.createResource(
-                userId = userId,
+        } else {
+            templateCommonService.getDefaultSetting(
                 projectId = projectId,
                 templateId = templateId,
                 templateName = saveAsTemplateReq.templateName
             )
-
-            if (saveAsTemplateReq.isCopySetting) {
-                val setting = templateSettingService.copySetting(
-                    setting = templateSettingService.getTemplateSetting(
-                        projectId = projectId,
-                        userId = userId,
-                        templateId = saveAsTemplateReq.pipelineId
-                    ),
-                    pipelineId = templateId,
-                    templateName = saveAsTemplateReq.templateName
-                )
-                templateSettingService.saveTemplatePipelineSetting(
-                    context = context,
-                    userId = userId,
-                    setting = setting
-                )
-            } else {
-                templateSettingService.saveDefaultTemplateSetting(
-                    context = context,
-                    userId = userId,
-                    projectId = projectId,
-                    templateId = templateId,
-                    templateName = saveAsTemplateReq.templateName
-                )
-            }
-            ActionAuditContext.current().setInstanceId(templateId).setInstanceName(saveAsTemplateReq.templateName)
-            logger.info("Get the template version $version")
         }
+
+        val request = PipelineTemplateCompatibilityCreateReq(
+            model = templateModel,
+            setting = setting
+        )
+        pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            request = request
+        )
+
         return templateId
     }
 
@@ -450,46 +414,11 @@ class TemplateFacadeService @Autowired constructor(
         ActionAuditContext.current()
             .setInstanceId(templateId)
             .setInstanceName(template.templateName)
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            val instanceSize = templatePipelineDao.countByVersionFeat(
-                dslContext = context,
-                projectId = projectId,
-                templateId = templateId,
-                instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type
-            )
-            if (instanceSize > 0) {
-                throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
-                )
-            }
-            if (template.type == TemplateType.CUSTOMIZE.name && template.storeFlag == true) {
-                throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_PUBLISH
-                )
-            }
-            if (template.type == TemplateType.CUSTOMIZE.name &&
-                templateDao.isExistInstalledTemplate(context, templateId)
-            ) {
-                throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_INSTALL
-                )
-            }
-            templatePipelineDao.deleteByTemplateId(context, projectId, templateId)
-            templateDao.delete(context, projectId, templateId)
-            pipelineTemplatePermissionService.deleteResource(
-                projectId = projectId,
-                templateId = templateId
-            )
-            pipelineSettingDao.delete(context, projectId, templateId)
-            if (template.type == TemplateType.CONSTRAINT.name) {
-                client.get(ServiceStoreResource::class).uninstall(
-                    storeCode = template.srcTemplateId,
-                    storeType = StoreTypeEnum.TEMPLATE,
-                    projectCode = template.projectId
-                )
-            }
-        }
+        pipelineTemplateVersionManager.deleteAllVersions(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId
+        )
         return true
     }
 
@@ -514,30 +443,13 @@ class TemplateFacadeService @Autowired constructor(
             .setInstanceId(templateId)
             .setInstanceName(templateId)
         templateCommonService.checkPermission(projectId, userId)
-        return dslContext.transactionResult { configuration ->
-            val context = DSL.using(configuration)
-            val instanceSize =
-                templatePipelineDao.countByVersionFeat(
-                    dslContext = context,
-                    projectId = projectId,
-                    templateId = templateId,
-                    instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
-                    version = version
-                )
-            if (instanceSize > 0) {
-                logger.warn("There are $instanceSize pipeline attach to $templateId of version $version")
-                throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
-                )
-            }
-            templatePipelineDao.deleteByVersion(
-                dslContext = dslContext,
-                projectId = projectId,
-                templateId = templateId,
-                version = version
-            )
-            templateDao.delete(dslContext, projectId, templateId, setOf(version)) == 1
-        }
+        pipelineTemplateVersionManager.deleteVersion(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        return true
     }
 
     @ActionAuditRecord(
@@ -549,7 +461,12 @@ class TemplateFacadeService @Autowired constructor(
         scopeId = "#projectId",
         content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
     )
-    fun deleteTemplate(projectId: String, userId: String, templateId: String, versionName: String): Boolean {
+    fun deleteTemplate(
+        projectId: String,
+        userId: String,
+        templateId: String,
+        versionName: String
+    ): Boolean {
         logger.info("Start to delete the template [$projectId|$userId|$templateId|$versionName]")
         pipelineTemplatePermissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -561,33 +478,13 @@ class TemplateFacadeService @Autowired constructor(
             .setInstanceId(templateId)
             .setInstanceName(templateId)
         templateCommonService.checkPermission(projectId, userId)
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            val instanceSize =
-                templatePipelineDao.countByVersionFeat(
-                    dslContext = context,
-                    projectId = projectId,
-                    templateId = templateId,
-                    instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
-                    versionName = versionName
-                )
-            if (instanceSize > 0) {
-                logger.warn("There are $instanceSize pipeline attach to $templateId of versionName $versionName")
-                throw ErrorCodeException(errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE)
-            }
-            templatePipelineDao.deleteByVersionName(
-                dslContext = dslContext,
-                projectId = projectId,
-                templateId = templateId,
-                versionName = versionName
-            )
-            templateDao.delete(
-                dslContext = dslContext,
-                projectId = projectId,
-                templateId = templateId,
-                versionName = versionName
-            )
-        }
+        pipelineTemplateVersionManager.deleteVersion(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            version = null,
+            versionName = versionName
+        )
         return true
     }
 
@@ -625,67 +522,46 @@ class TemplateFacadeService @Autowired constructor(
                 errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_UPDATE
             )
         }
-        var version: Long = 0
         ActionAuditContext.current()
             .setInstanceId(templateId)
             .setInstanceName(template.name)
         templateCommonService.checkTemplateName(dslContext, template.name, projectId, templateId)
         updateModelParam(template)
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineSettingDao.updateSetting(
-                dslContext = context,
+        val v2TemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = templateId
+        )
+        // 若还未迁移或新表和旧表的最新版本不一致时，进行重复迁移
+        if (v2TemplateResource == null || v2TemplateResource.version != latestTemplate.version) {
+            pipelineTemplateMigrateService.asyncMigrateTemplate(
                 projectId = projectId,
-                pipelineId = templateId,
-                name = template.name,
-                desc = template.desc ?: ""
+                templateId = templateId
             )
-            val saveRecordVersions = templateDao.listSaveRecordVersions(
-                dslContext = context,
-                projectId = projectId,
-                templateId = templateId,
+        } else {
+            val request = PipelineTemplateCompatibilityCreateReq(
+                model = template,
+                setting = PipelineSetting(
+                    pipelineName = template.name,
+                    desc = template.desc ?: "",
+                    pipelineAsCodeSettings = null
+                ),
                 versionName = versionName,
-                saveNum = maxSaveVersionRecordNum
-            )
-            if (saveRecordVersions?.isNotEmpty == true) {
-                // 版本名称为versionName的版本只保存最近maxSaveVersionRecordNum条记录
-                templateDao.deleteSpecVersion(
-                    dslContext = context,
-                    projectId = projectId,
-                    templateId = templateId,
-                    versionName = versionName,
-                    saveVersions = saveRecordVersions.map { it.value1() }
-                )
-            }
-            version = templateDao.createTemplate(
-                dslContext = context,
-                projectId = projectId,
-                templateId = templateId,
-                templateName = template.name,
-                versionName = versionName,
-                userId = userId,
-                template = JsonUtil.toJson(template, formatted = false),
-                type = latestTemplate.type,
                 category = latestTemplate.category,
                 logoUrl = latestTemplate.logoUrl,
-                srcTemplateId = latestTemplate.srcTemplateId,
-                storeFlag = latestTemplate.storeFlag,
-                weight = latestTemplate.weight,
-                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data,
-                desc = template.desc
+                storeFlag = latestTemplate.storeFlag
             )
-            if (checkPermissionFlag) {
-                pipelineTemplatePermissionService.modifyResource(
-                    userId = userId,
-                    projectId = projectId,
-                    templateId = templateId,
-                    templateName = template.name
-                )
-            }
-            logger.info("Get the update template version $version")
+            pipelineTemplateVersionManager.deployTemplate(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                request = request
+            )
         }
-
-        return version
+        val lastedVersion = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = templateId
+        )!!.version
+        return lastedVersion
     }
 
     fun listTemplate(
@@ -2485,6 +2361,7 @@ class TemplateFacadeService @Autowired constructor(
             templateDao.getLatestTemplate(dslContext, templateCode).versionName
         }
         val templateName = addMarketTemplateRequest.templateName
+        val templateId = UUIDUtil.generate()
         dslContext.transaction { t ->
             val context = DSL.using(t)
             // 判断模板名称是否已经关联过
@@ -2497,7 +2374,6 @@ class TemplateFacadeService @Autowired constructor(
             if (pipelineSettingRecord.isNotEmpty()) {
                 return@transaction
             }
-            val templateId = UUIDUtil.generate()
             templateDao.createTemplate(
                 dslContext = context,
                 projectId = projectId,
@@ -2530,6 +2406,10 @@ class TemplateFacadeService @Autowired constructor(
             )
             projectTemplateMap[projectId] = templateId
         }
+        pipelineTemplateMigrateService.asyncMigrateTemplate(
+            projectId = projectId,
+            templateId = templateId
+        )
         return projectTemplateMap
     }
 
@@ -2538,20 +2418,11 @@ class TemplateFacadeService @Autowired constructor(
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
     ): Boolean {
-        logger.info("the userId is:$userId,updateMarketTemplateReference Request is:$updateMarketTemplateRequest")
-        val templateCode = updateMarketTemplateRequest.templateCode
-        val category = JsonUtil.toJson(updateMarketTemplateRequest.categoryCodeList ?: listOf<String>(), false)
-        val referenceList = templateDao.listTemplateReferenceId(dslContext, templateCode).map { it["ID"] as String }
-        if (referenceList.isNotEmpty()) {
-            pipelineSettingDao.updateSettingName(dslContext, referenceList, updateMarketTemplateRequest.templateName)
-            templateDao.updateTemplateReference(
-                dslContext = dslContext,
-                srcTemplateId = templateCode,
-                name = updateMarketTemplateRequest.templateName,
-                category = category,
-                logoUrl = updateMarketTemplateRequest.logoUrl
-            )
-        }
+        pipelineMarketTemplateFacadeService.updateMarketTemplateReference(
+            userId = userId,
+            projectId = projectId,
+            updateMarketTemplateRequest = updateMarketTemplateRequest
+        )
         return true
     }
 
@@ -2561,8 +2432,7 @@ class TemplateFacadeService @Autowired constructor(
         templateId: String,
         storeFlag: Boolean
     ): Boolean {
-        templateDao.updateStoreFlag(
-            dslContext = dslContext,
+        pipelineMarketTemplateFacadeService.updateTemplateStoreFlag(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
@@ -2641,5 +2511,6 @@ class TemplateFacadeService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(TemplateFacadeService::class.java)
         private const val INIT_TEMPLATE_NAME = "init"
         private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
+        private val migrateTemplateExecutorService = Executors.newFixedThreadPool(5)
     }
 }

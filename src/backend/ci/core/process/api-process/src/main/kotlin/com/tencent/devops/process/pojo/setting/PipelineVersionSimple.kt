@@ -60,6 +60,8 @@ data class PipelineVersionSimple(
     val triggerVersion: Int? = null,
     @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int? = null,
+    @get:Schema(title = "父模板版本", required = true)
+    val srcTemplateVersion: Int? = null,
     @get:Schema(title = "草稿版本标识", required = false)
     val status: VersionStatus? = VersionStatus.RELEASED,
     @get:Schema(title = "版本变更说明", required = false)

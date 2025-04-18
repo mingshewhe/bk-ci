@@ -28,10 +28,12 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -41,6 +43,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedSer
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionDeleteContext
 import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionDeletePostProcessor
+import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -55,7 +58,9 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineTemplateTransactionService: PipelineTemplatePersistenceService,
-    private val versionDeletePostProcessor: PTemplateVersionDeletePostProcessor
+    private val versionDeletePostProcessor: PTemplateVersionDeletePostProcessor,
+    private val templatePipelineDao: TemplatePipelineDao,
+    private val dslContext: DSLContext
 ) {
 
     fun handle(context: PipelineTemplateVersionDeleteContext) {
@@ -108,6 +113,19 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
         if (latestReleasedResource?.version == version) {
             // 最新正式版本不能删除
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        }
+        val instanceSize = templatePipelineDao.countByVersionFeat(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            instanceType = PipelineInstanceTypeEnum.CONSTRAINT.type,
+            version = version
+        )
+        if (instanceSize > 0) {
+            logger.warn("There are $instanceSize pipeline attach to $templateId of version $version")
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_HAVE_INSTANCE
+            )
         }
         pipelineTemplateTransactionService.deleteVersion(
             userId = userId,

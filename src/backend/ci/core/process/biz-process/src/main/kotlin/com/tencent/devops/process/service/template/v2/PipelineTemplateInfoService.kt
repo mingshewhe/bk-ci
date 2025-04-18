@@ -21,7 +21,7 @@ class PipelineTemplateInfoService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateInfoDao: PipelineTemplateInfoDao
 ) {
-    fun create(
+    fun createOrUpdate(
         transactionContext: DSLContext? = null,
         pipelineTemplateInfo: PipelineTemplateInfoV2
     ) {
@@ -122,6 +122,24 @@ class PipelineTemplateInfoService @Autowired constructor(
         return pipelineTemplateInfoDao.list(
             dslContext = dslContext,
             commonCondition = commonCondition
+        )
+    }
+
+    fun listAllIds(
+        projectId: String
+    ): List<String> {
+        return pipelineTemplateInfoDao.listAllIds(
+            dslContext = dslContext,
+            projectId = projectId
+        )
+    }
+
+    fun listSrcTemplateIds(
+        projectId: String
+    ): List<String> {
+        return pipelineTemplateInfoDao.listSrcTemplateIds(
+            dslContext = dslContext,
+            projectId = projectId
         )
     }
 

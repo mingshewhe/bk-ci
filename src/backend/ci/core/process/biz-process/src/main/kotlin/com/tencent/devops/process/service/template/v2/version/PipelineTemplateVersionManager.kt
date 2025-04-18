@@ -29,8 +29,10 @@ package com.tencent.devops.process.service.template.v2.version
 
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionCreateHandler
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionDeleteHandler
 import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionCreatePostProcessor
@@ -46,7 +48,8 @@ class PipelineTemplateVersionManager @Autowired constructor(
     private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
     private val pipelineTemplateModelValidator: PipelineTemplateModelValidator,
     private val versionDeleteHandler: PipelineTemplateVersionDeleteHandler,
-    private val versionCreatePostProcessor: List<PTemplateVersionCreatePostProcessor>
+    private val versionCreatePostProcessor: List<PTemplateVersionCreatePostProcessor>,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) {
 
     fun deployTemplate(
@@ -77,13 +80,24 @@ class PipelineTemplateVersionManager @Autowired constructor(
         userId: String,
         projectId: String,
         templateId: String,
-        version: Long
+        version: Long?,
+        versionName: String? = null
     ) {
+        if (version == null && versionName == null) {
+            throw IllegalArgumentException("Version and version name cannot be null")
+        }
+        val finalVersion = version ?: pipelineTemplateResourceService.get(
+            PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                versionName = versionName
+            )
+        ).version
         val context = PipelineTemplateVersionDeleteContext(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
-            version = version,
+            version = finalVersion,
             versionAction = PipelineVersionAction.DELETE_VERSION
         )
         versionDeleteHandler.handle(context = context)

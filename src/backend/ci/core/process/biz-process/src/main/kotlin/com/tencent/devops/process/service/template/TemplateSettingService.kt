@@ -8,9 +8,15 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMigrateService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -30,7 +36,11 @@ class TemplateSettingService @Autowired constructor(
     private val modelCheckPlugin: ModelCheckPlugin,
     private val pipelineSettingVersionService: PipelineSettingVersionService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
-    private val pipelineAsCodeService: PipelineAsCodeService
+    private val pipelineAsCodeService: PipelineAsCodeService,
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateMigrateService: PipelineTemplateMigrateService
 ) {
     fun updateTemplateSetting(
         projectId: String,
@@ -40,6 +50,8 @@ class TemplateSettingService @Autowired constructor(
     ): Boolean {
         logger.info("Start to update the template setting - [$projectId|$userId|$templateId]")
         templateCommonService.checkPermission(projectId, userId)
+        setting.fixSubscriptions()
+        modelCheckPlugin.checkSettingIntegrity(setting, projectId)
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
             templateCommonService.checkTemplateName(
@@ -61,6 +73,44 @@ class TemplateSettingService @Autowired constructor(
                 setting = setting
             )
         }
+        val v2LatestTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
+            projectId = projectId,
+            templateId = templateId
+        )
+        val v1LatestTemplateResource = templateDao.getLatestTemplate(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId
+        )
+        // 若还未迁移或新表和旧表的最新版本不一致时，进行重复迁移
+        if (v2LatestTemplateResource == null || v2LatestTemplateResource.version != v1LatestTemplateResource.version) {
+            pipelineTemplateMigrateService.asyncMigrateTemplate(
+                projectId = projectId,
+                templateId = templateId
+            )
+        } else {
+            dslContext.transaction { configuration ->
+                val context = DSL.using(configuration)
+                pipelineTemplateInfoService.update(
+                    transactionContext = context,
+                    record = PipelineTemplateInfoUpdateInfo(
+                        name = setting.pipelineName,
+                        desc = setting.desc
+                    ),
+                    commonCondition = PipelineTemplateCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId
+                    )
+                )
+                pipelineTemplateSettingService.createOrUpdate(
+                    transactionContext = context,
+                    pipelineTemplateSetting = setting.copy(
+                        version = v2LatestTemplateResource.settingVersion,
+                        updater = userId
+                    )
+                )
+            }
+        }
         return true
     }
 
@@ -72,8 +122,6 @@ class TemplateSettingService @Autowired constructor(
         val projectId = setting.projectId
         val pipelineId = setting.pipelineId
         // 对齐新旧通知配置，统一根据新list数据保存
-        setting.fixSubscriptions()
-        modelCheckPlugin.checkSettingIntegrity(setting, projectId)
         val settingVersion = pipelineSettingVersionService.getSettingVersionAfterUpdate(
             projectId = projectId,
             pipelineId = pipelineId,

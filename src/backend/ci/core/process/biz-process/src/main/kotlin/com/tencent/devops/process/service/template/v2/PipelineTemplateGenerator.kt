@@ -133,7 +133,8 @@ class PipelineTemplateGenerator @Autowired constructor(
      */
     fun getDefaultVersion(
         versionStatus: VersionStatus,
-        branchName: String? = null
+        branchName: String? = null,
+        versionName: String? = null
     ): PTemplateResourceOnlyVersion {
         return when (versionStatus) {
             VersionStatus.COMMITTING -> {
@@ -154,7 +155,7 @@ class PipelineTemplateGenerator @Autowired constructor(
             }
 
             else -> {
-                val versionName = PipelineVersionUtils.getVersionName(
+                val fixVersionName = versionName ?: PipelineVersionUtils.getVersionName(
                     versionNum = PipelineTemplateConstant.INIT_VERSION,
                     pipelineVersion = PipelineTemplateConstant.INIT_VERSION,
                     triggerVersion = PipelineTemplateConstant.INIT_VERSION,
@@ -163,7 +164,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 PTemplateResourceOnlyVersion(
                     version = generateTemplateVersion(),
                     number = PipelineTemplateConstant.INIT_VERSION,
-                    versionName = versionName,
+                    versionName = fixVersionName,
                     versionNum = PipelineTemplateConstant.INIT_VERSION,
                     pipelineVersion = PipelineTemplateConstant.INIT_VERSION,
                     triggerVersion = PipelineTemplateConstant.INIT_VERSION,
@@ -309,7 +310,8 @@ class PipelineTemplateGenerator @Autowired constructor(
         templateId: String,
         draftResource: PipelineTemplateResource? = null,
         newResource: PTemplateResourceWithoutVersion,
-        newSetting: PipelineSetting
+        newSetting: PipelineSetting,
+        fixVersionName: String? = null
     ): PTemplateResourceOnlyVersion {
         val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId, templateId = templateId
@@ -390,7 +392,7 @@ class PipelineTemplateGenerator @Autowired constructor(
             PTemplateResourceOnlyVersion(
                 version = version,
                 number = number,
-                versionName = versionName,
+                versionName = fixVersionName ?: versionName,
                 versionNum = versionNum,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,

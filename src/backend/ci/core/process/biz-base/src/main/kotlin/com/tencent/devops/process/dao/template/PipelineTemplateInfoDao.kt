@@ -125,8 +125,8 @@ class PipelineTemplateInfoDao {
                     record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
                     record.upgradeStrategy?.let { set(UPGRADE_STRATEGY, it.name) }
                     record.settingSyncStrategy?.let { set(SETTING_SYNC_STRATEGY, it.name) }
+                    record.updater?.let { set(UPDATER, it) }
                 }
-                .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
                 .execute()
@@ -165,6 +165,33 @@ class PipelineTemplateInfoDao {
                     }
                 }
                 .fetch().map { it.convert() }
+        }
+    }
+
+    fun listAllIds(
+        dslContext: DSLContext,
+        projectId: String
+    ): List<String> {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.select(ID)
+                .from(this)
+                .where(PROJECT_ID.eq(projectId))
+                .fetch()
+                .map { it.value1() }
+        }
+    }
+
+    fun listSrcTemplateIds(
+        dslContext: DSLContext,
+        projectId: String
+    ): List<String> {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.select(SRC_TEMPLATE_ID)
+                .from(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(SRC_TEMPLATE_ID.isNotNull)  // 显式过滤非空值
+                .fetch()
+                .mapNotNull { it.value1() }      // 二次确保非空
         }
     }
 

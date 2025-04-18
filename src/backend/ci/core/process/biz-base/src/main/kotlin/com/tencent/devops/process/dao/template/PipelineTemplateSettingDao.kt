@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 
 @Repository
 class PipelineTemplateSettingDao {
-    fun create(
+    fun createOrUpdate(
         dslContext: DSLContext,
         record: PipelineSetting
     ) {
@@ -127,9 +127,9 @@ class PipelineTemplateSettingDao {
                     if (!record.desc.isNullOrBlank()) {
                         set(DESC, record.desc)
                     }
+                    record.updater?.let { set(UPDATER, record.updater) }
                 }
                 .set(UPDATE_TIME, now)
-                .set(UPDATER, record.updater)
                 .where(buildQueryCondition(commonCondition))
         }
     }

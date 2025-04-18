@@ -12,6 +12,10 @@ data class PipelineTemplateResourceCommonCondition(
     val projectId: String,
     @get:Schema(title = "版本排序号", required = true)
     val number: Int? = null,
+    @get:Schema(title = "大于等于排序号", required = true)
+    val geNumber: Int? = null,
+    @get:Schema(title = "小于排序号", required = true)
+    val ltNumber: Int? = null,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String? = null,
     @get:Schema(title = "模板类型", required = false)
@@ -20,6 +24,8 @@ data class PipelineTemplateResourceCommonCondition(
     val settingVersion: Int? = null,
     @get:Schema(title = "版本号", required = false)
     val version: Long? = null,
+    @get:Schema(title = "版本号列表", required = false)
+    val versions: List<Long>? = null,
     @get:Schema(title = "版本名称", required = false)
     val versionName: String? = null,
     @get:Schema(title = "模板配置发布版本号", required = false)
@@ -34,6 +40,8 @@ data class PipelineTemplateResourceCommonCondition(
     val srcTemplateId: String? = null,
     @get:Schema(title = "源模板版本", required = false)
     val srcTemplateVersion: Long? = null,
+    @get:Schema(title = "源模板版本列表", required = false)
+    val srcTemplateVersions: List<Long>? = null,
     @get:Schema(title = "模板触发器版本号", required = false)
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = false)

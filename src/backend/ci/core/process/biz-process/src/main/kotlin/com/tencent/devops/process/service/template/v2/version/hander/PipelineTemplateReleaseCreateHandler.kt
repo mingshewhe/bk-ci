@@ -37,11 +37,12 @@ import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.process.service.PipelineOperationLogService
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -55,6 +56,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
 
@@ -85,7 +87,8 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         )
         val resourceOnlyVersion = if (templateInfo == null) {
             val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.RELEASED
+                versionStatus = VersionStatus.RELEASED,
+                versionName = fixVersionName
             )
             pipelineTemplatePersistenceService.initializeTemplate(
                 pipelineTemplateInfo = pipelineTemplateInfo.copy(
@@ -123,11 +126,21 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionCreateContext.createReleaseVersion(): PTemplateResourceOnlyVersion {
+        fixVersionName?.let {
+            pipelineTemplateResourceService.delete(
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId,
+                    versionName = it
+                )
+            )
+        }
         val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseVersion(
             projectId = projectId,
             templateId = templateId,
             newResource = pTemplateResourceWithoutVersion,
-            newSetting = pipelineTemplateSetting
+            newSetting = pipelineTemplateSetting,
+            fixVersionName = fixVersionName
         )
         val templateResource = PipelineTemplateResource(
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

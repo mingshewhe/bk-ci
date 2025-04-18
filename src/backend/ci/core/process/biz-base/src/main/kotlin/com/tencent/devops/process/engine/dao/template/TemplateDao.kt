@@ -665,12 +665,13 @@ class TemplateDao {
     fun listTemplateReferenceId(
         dslContext: DSLContext,
         templateId: String
-    ): Result<Record1<String>> {
+    ): Map<String, String> {
         with(TTemplate.T_TEMPLATE) {
-            return dslContext.selectDistinct(ID).from(this)
+            return dslContext.select(PROJECT_ID, ID).from(this)
                 .where(TYPE.eq(TemplateType.CONSTRAINT.name))
                 .and(SRC_TEMPLATE_ID.eq(templateId))
-                .fetch()
+                .groupBy(PROJECT_ID, ID)
+                .fetch().map { Pair(it.value1(), it.value2()) }.toMap()
         }
     }
 

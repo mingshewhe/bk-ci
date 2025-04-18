@@ -35,5 +35,5 @@ data class PipelineTemplateInfoUpdateInfo(
     @get:Schema(title = "实例流水线数", required = true)
     val instancePipelineCount: Int? = null,
     @get:Schema(title = "更新人", required = true)
-    val updater: String
+    val updater: String? = null
 )

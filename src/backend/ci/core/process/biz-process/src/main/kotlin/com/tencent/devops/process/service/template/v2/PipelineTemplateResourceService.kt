@@ -53,7 +53,7 @@ class PipelineTemplateResourceService @Autowired constructor(
     }
 
     fun getLatestReleasedResource(
-        projectId: String,
+        projectId: String? = null,
         templateId: String
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.getLatestRecord(
@@ -141,6 +141,13 @@ class PipelineTemplateResourceService @Autowired constructor(
             commonCondition = commonCondition,
             dslContext = dslContext
         ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+    }
+
+    fun getOrNull(commonCondition: PipelineTemplateResourceCommonCondition): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.get(
+            commonCondition = commonCondition,
+            dslContext = dslContext
+        )
     }
 
     fun get(

@@ -44,6 +44,7 @@ import com.tencent.devops.process.pojo.template.TemplateDetailInfo
 import com.tencent.devops.process.pojo.template.TemplateListModel
 import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -92,25 +93,34 @@ interface ServicePipelineTemplateV2Resource {
         updateMarketTemplateRequest: MarketTemplateRequest
     ): Result<Boolean>
 
-    @Operation(summary = "查询模板详情")
+    @Operation(summary = "查看模板详情")
     @GET
-    @Path("/store/templateCodes/{templateCode}")
-    fun getTemplateDetailInfo(
-        @Parameter(description = "模板代码", required = true)
-        @PathParam("templateCode")
-        templateCode: String
-    ): Result<TemplateDetailInfo?>
+    @Path("/{projectId}/{templateId}details/")
+    fun getTemplateDetails(
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "版本", required = false)
+        @QueryParam("version")
+        version: Long?
+    ): Result<PipelineTemplateDetailsResponse>
 
     @Operation(summary = "判断模板镜像是否发布")
     @GET
-    @Path("/store/templates/{templateCode}/images/releaseStatus/check")
+    @Path("/store/templates/{projectId}/{templateId}/images/releaseStatus/check")
     fun checkImageReleaseStatus(
         @Parameter(description = "userId", required = true)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
         @Parameter(description = "模板代码", required = true)
-        @PathParam("templateCode")
-        templateCode: String
+        @PathParam("templateId")
+        templateId: String
     ): Result<String?>
 
     @Operation(summary = "查询项目下所有源模板的ID")

@@ -33,11 +33,12 @@ import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -63,7 +64,8 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val dslContext: DSLContext,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
-    private val client: Client
+    private val client: Client,
+    private val templatePipelineDao: TemplatePipelineDao
 ) {
 
     /**
@@ -76,7 +78,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     ) {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            pipelineTemplateInfoService.create(
+            pipelineTemplateInfoService.createOrUpdate(
                 transactionContext = context,
                 pipelineTemplateInfo = pipelineTemplateInfo.copy(
                     releasedVersion = pipelineTemplateResource.version
@@ -86,7 +88,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 transactionContext = context,
                 pipelineTemplateResource = pipelineTemplateResource
             )
-            pipelineTemplateSettingService.create(
+            pipelineTemplateSettingService.createOrUpdate(
                 transactionContext = context,
                 pipelineTemplateSetting = pipelineTemplateSetting
             )
@@ -105,7 +107,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     ) {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            pipelineTemplateInfoService.create(
+            pipelineTemplateInfoService.createOrUpdate(
                 transactionContext = context,
                 pipelineTemplateInfo = pipelineTemplateInfo
             )
@@ -154,11 +156,11 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     releaseTime = LocalDateTime.now().timestampmilli()
                 )
             )
-            pipelineTemplateSettingService.create(
+            pipelineTemplateSettingService.createOrUpdate(
                 transactionContext = context,
                 pipelineTemplateSetting = templateSetting
             )
-            pipelineTemplatePermissionService.createResource(
+            pipelineTemplatePermissionService.modifyResource(
                 userId = userId,
                 projectId = templateResource.projectId,
                 templateId = templateResource.templateId,
@@ -177,7 +179,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 transactionContext = transactionContext,
                 pipelineTemplateResource = templateResource
             )
-            pipelineTemplateSettingService.create(
+            pipelineTemplateSettingService.createOrUpdate(
                 transactionContext = transactionContext,
                 pipelineTemplateSetting = templateSetting
             )
@@ -211,7 +213,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     branchAction = BranchVersionAction.ACTIVE
                 )
             )
-            pipelineTemplateSettingService.create(
+            pipelineTemplateSettingService.createOrUpdate(
                 transactionContext = transactionContext,
                 pipelineTemplateSetting = templateSetting
             )
@@ -378,10 +380,20 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             templateId = templateId,
             version = version
         )
-        pipelineTemplateResourceService.update(
-            record = updateInfo,
-            commonCondition = condition
-        )
+        dslContext.transaction { configuration ->
+            val transactionContext = DSL.using(configuration)
+            pipelineTemplateResourceService.update(
+                transactionContext = transactionContext,
+                record = updateInfo,
+                commonCondition = condition
+            )
+            templatePipelineDao.deleteByVersion(
+                dslContext = transactionContext,
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            )
+        }
     }
 
     fun deleteTemplateAllVersions(

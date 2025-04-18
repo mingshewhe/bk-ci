@@ -10,6 +10,8 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceSe
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -24,12 +26,19 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
     val v1TemplateSettingService: PipelineSettingDao,
     val dslContext: DSLContext
 ) : PTemplateVersionCreatePostProcessor {
+    @Value("\${template.maxSaveVersionRecordNum:2}")
+    private val maxSaveVersionRecordNum: Int = 2
     override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
         with(postCreationContext) {
             if (versionAction != PipelineVersionAction.RELEASE_DRAFT &&
                 versionAction != PipelineVersionAction.CREATE_RELEASE) {
                 return
             }
+            val v1TemplateRecord = v1TemplateDao.getTemplate(
+                dslContext = dslContext,
+                projectId = projectId,
+                version = version
+            )
             val templateInfo = v2TemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
@@ -44,36 +53,84 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
                 templateId = templateId,
                 settingVersion = templateResource.settingVersion
             )
-            dslContext.transaction { configuration ->
-                val transactionContext = DSL.using(configuration)
-                v1TemplateDao.createTemplate(
-                    dslContext = transactionContext,
+            // 初始创建
+            if (v1TemplateRecord == null) {
+                dslContext.transaction { configuration ->
+                    val transactionContext = DSL.using(configuration)
+                    v1TemplateDao.createTemplate(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        templateId = templateId,
+                        templateName = templateInfo.name,
+                        versionName = templateResource.versionName!!,
+                        userId = userId,
+                        template = JsonUtil.toJson(templateResource.model),
+                        type = templateInfo.mode.name,
+                        category = templateInfo.category,
+                        logoUrl = templateInfo.logoUrl,
+                        srcTemplateId = templateResource.srcTemplateId,
+                        storeFlag = templateInfo.storeFlag,
+                        weight = 0,
+                        version = version,
+                        desc = templateInfo.desc
+                    )
+                    v1TemplateSettingService.saveSetting(
+                        dslContext = transactionContext,
+                        setting = templateSetting,
+                        isTemplate = true
+                    )
+                }
+            } else {
+                val saveRecordVersions = v1TemplateDao.listSaveRecordVersions(
+                    dslContext = dslContext,
                     projectId = projectId,
                     templateId = templateId,
-                    templateName = templateInfo.name,
-                    versionName = templateResource.versionName!!,
-                    userId = userId,
-                    template = JsonUtil.toJson(templateResource.model),
-                    type = templateInfo.mode.name,
-                    category = templateInfo.category,
-                    logoUrl = templateInfo.logoUrl,
-                    srcTemplateId = templateResource.srcTemplateId,
-                    storeFlag = templateInfo.storeFlag,
-                    weight = 0,
-                    version = version,
-                    desc = templateInfo.desc
+                    versionName = versionName!!,
+                    saveNum = maxSaveVersionRecordNum
                 )
-                v1TemplateSettingService.delete(
-                    dslContext = transactionContext,
-                    projectId = projectId,
-                    pipelineId = templateId
-                )
-                v1TemplateSettingService.saveSetting(
-                    dslContext = transactionContext,
-                    setting = templateSetting,
-                    isTemplate = true
-                )
+
+                dslContext.transaction { configuration ->
+                    val transactionContext = DSL.using(configuration)
+                    if (saveRecordVersions?.isNotEmpty == true) {
+                        // 版本名称为versionName的版本只保存最近maxSaveVersionRecordNum条记录
+                        v1TemplateDao.deleteSpecVersion(
+                            dslContext = transactionContext,
+                            projectId = projectId,
+                            templateId = templateId,
+                            versionName = versionName!!,
+                            saveVersions = saveRecordVersions.map { it.value1() }
+                        )
+                    }
+                    v1TemplateDao.createTemplate(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        templateId = templateId,
+                        templateName = templateInfo.name,
+                        versionName = templateResource.versionName!!,
+                        userId = userId,
+                        template = JsonUtil.toJson(templateResource.model),
+                        type = templateInfo.mode.name,
+                        category = templateInfo.category,
+                        logoUrl = templateInfo.logoUrl,
+                        srcTemplateId = templateResource.srcTemplateId,
+                        storeFlag = templateInfo.storeFlag,
+                        weight = 0,
+                        version = version,
+                        desc = templateInfo.desc
+                    )
+                    v1TemplateSettingService.updateSetting(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        pipelineId = templateId,
+                        name = templateInfo.name,
+                        desc = templateInfo.desc ?: ""
+                    )
+                }
             }
         }
+    }
+
+    companion object {
+        val logger = LoggerFactory.getLogger(PTemplateVersionCreateCompatibilityPostProcessor::class.java)
     }
 }

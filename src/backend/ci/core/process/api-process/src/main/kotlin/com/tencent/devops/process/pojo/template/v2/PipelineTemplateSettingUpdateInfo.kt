@@ -79,7 +79,7 @@ data class PipelineTemplateSettingUpdateInfo(
     @get:Schema(title = "YAML流水线特殊配置", required = false)
     val pipelineAsCodeSettings: PipelineAsCodeSettings? = null,
     @get:Schema(title = "更新人", required = false)
-    val updater: String
+    val updater: String? = null
 ) {
     constructor(userId: String, pipelineSetting: PipelineSetting) : this(
         name = pipelineSetting.pipelineName,

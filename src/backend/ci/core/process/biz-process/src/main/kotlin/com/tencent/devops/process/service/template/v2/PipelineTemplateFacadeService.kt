@@ -32,8 +32,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
@@ -358,13 +358,20 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateDetails(
         projectId: String,
         templateId: String,
-        version: Long
+        version: Long?
     ): PipelineTemplateDetailsResponse {
-        val templateResource = pipelineTemplateResourceService.get(
-            projectId = projectId,
-            templateId = templateId,
-            version = version
-        )
+        val templateResource = if (version == null) {
+            pipelineTemplateResourceService.getLatestReleasedResource(
+                projectId = projectId,
+                templateId = templateId
+            )
+        } else {
+            pipelineTemplateResourceService.get(
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            )
+        } ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val setting = pipelineTemplateSettingService.get(
             projectId = projectId,
             templateId = templateId,
