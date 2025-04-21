@@ -101,34 +101,14 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         }
     }
 
-    fun createTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfoV2,
-        syncPermission: Boolean? = true
-    ) {
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineTemplateInfoService.createOrUpdate(
-                transactionContext = context,
-                pipelineTemplateInfo = pipelineTemplateInfo
-            )
-            if (syncPermission == true) {
-                pipelineTemplatePermissionService.createResource(
-                    userId = pipelineTemplateInfo.creator,
-                    projectId = pipelineTemplateInfo.projectId,
-                    templateId = pipelineTemplateInfo.id,
-                    templateName = pipelineTemplateInfo.name
-                )
-            }
-        }
-    }
-
     /**
      * 创建正式版本
      */
     fun createReleaseVersion(
         userId: String,
         templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting
+        templateSetting: PipelineSetting,
+        syncPermission: Boolean? = true
     ) {
         val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
             name = templateSetting.pipelineName,
@@ -160,12 +140,14 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 transactionContext = context,
                 pipelineTemplateSetting = templateSetting
             )
-            pipelineTemplatePermissionService.modifyResource(
-                userId = userId,
-                projectId = templateResource.projectId,
-                templateId = templateResource.templateId,
-                templateName = templateSetting.pipelineName
-            )
+            if (syncPermission == true) {
+                pipelineTemplatePermissionService.modifyResource(
+                    userId = userId,
+                    projectId = templateResource.projectId,
+                    templateId = templateResource.templateId,
+                    templateName = templateSetting.pipelineName
+                )
+            }
         }
     }
 

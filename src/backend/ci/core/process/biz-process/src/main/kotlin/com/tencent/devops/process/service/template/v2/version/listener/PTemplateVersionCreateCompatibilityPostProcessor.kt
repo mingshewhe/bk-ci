@@ -30,6 +30,7 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
     private val maxSaveVersionRecordNum: Int = 2
     override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
         with(postCreationContext) {
+            logger.info("post process after creation :$postCreationContext")
             if (versionAction != PipelineVersionAction.RELEASE_DRAFT &&
                 versionAction != PipelineVersionAction.CREATE_RELEASE) {
                 return
@@ -55,7 +56,7 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
             )
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
-                if (v1TemplateRecord == null) {
+                if (v1TemplateRecord != null) {
                     val saveRecordVersions = v1TemplateDao.listSaveRecordVersions(
                         dslContext = transactionContext,
                         projectId = projectId,

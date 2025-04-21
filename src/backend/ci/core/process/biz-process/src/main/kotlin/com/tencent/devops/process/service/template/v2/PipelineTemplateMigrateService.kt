@@ -70,7 +70,7 @@ class PipelineTemplateMigrateService(
     val redisOperation: RedisOperation
 ) {
 
-    fun migrateTemplate(projectId: String) {
+    fun migrateTemplates(projectId: String) {
         logger.info("start to migrate project templates,{}", projectId)
         var offset = 0
         val limit = PageUtil.MAX_PAGE_SIZE / 2
@@ -82,7 +82,7 @@ class PipelineTemplateMigrateService(
                 limit = limit,
                 offset = offset
             )
-            logger.info("templates->{}", templateIds)
+            logger.info("migrate project templates->{}", templateIds)
             templateIds.forEach { templateId ->
                 try {
                     migrateTemplate(
@@ -146,7 +146,7 @@ class PipelineTemplateMigrateService(
             logger.debug("migrate template setting {}", setting)
 
             val (srcTemplateProjectId, templateVersionInfos) = getTemplateVersions(latestTemplate = latestTemplate)
-            logger.debug(
+            logger.info(
                 "migrate template srcTemplateProjectId {},templateVersionInfos{}",
                 srcTemplateProjectId, templateVersionInfos
             )
@@ -176,6 +176,7 @@ class PipelineTemplateMigrateService(
                 val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
                 val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
 
+                // 计算获取获取版本信息
                 if (index == 0) {
                     pipelineVersion = 1
                     triggerVersion = 1
@@ -243,13 +244,13 @@ class PipelineTemplateMigrateService(
                 pipelineTemplatePersistenceService.createReleaseVersion(
                     userId = templateVersionInfo.creator,
                     templateResource = pipelineTemplateResource,
-                    templateSetting = currentSetting
+                    templateSetting = currentSetting,
+                    syncPermission = false
                 )
             }
-            val pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate = latestTemplate)
-            pipelineTemplatePersistenceService.createTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
-                syncPermission = false,
+
+            pipelineTemplateInfoService.createOrUpdate(
+                pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate)
             )
 
             val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
@@ -258,20 +259,23 @@ class PipelineTemplateMigrateService(
             val v2TemplateVersions = pipelineTemplateResourceService.getTemplateVersions(
                 PipelineTemplateResourceCommonCondition(
                     projectId = projectId,
-                    templateId = templateId
+                    templateId = templateId,
+                    status = VersionStatus.RELEASED
                 )
-            ).mapNotNull { resource ->
+            )
+            val deletedRecords = v2TemplateVersions.mapNotNull { resource ->
                 (if (isConstraint) resource.srcTemplateVersion else resource.version)?.toLong()
-            }.filterNot { it in v1TemplateVersions }
-                .takeIf { it.isNotEmpty() }
+            }.filterNot { it in v1TemplateVersions }.takeIf { it.isNotEmpty() }
 
-            v2TemplateVersions?.let {
+            deletedRecords?.let {
+                logger.info("template versions need to be deleted :$it")
                 pipelineTemplateResourceService.delete(
                     commonCondition = PipelineTemplateResourceCommonCondition(
                         projectId = projectId,
                         templateId = templateId,
                         srcTemplateVersions = if (isConstraint) it else null,
-                        versions = if (isConstraint) null else it
+                        versions = if (isConstraint) null else it,
+                        status = VersionStatus.RELEASED
                     )
                 )
             }

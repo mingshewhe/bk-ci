@@ -281,12 +281,12 @@ class TemplateFacadeService @Autowired constructor(
         if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
             latestTemplate = templateDao.getLatestTemplate(dslContext, latestTemplate.srcTemplateId)
         }
-        val newTemplateId = UUIDUtil.generate()
+        val templateId = UUIDUtil.generate()
         templateCommonService.checkTemplateName(
             dslContext = dslContext,
             name = copyTemplateReq.templateName,
             projectId = projectId,
-            templateId = newTemplateId
+            templateId = templateId
         )
         val setting = if (copyTemplateReq.isCopySetting) {
             templateSettingService.copySetting(
@@ -295,13 +295,13 @@ class TemplateFacadeService @Autowired constructor(
                     userId = userId,
                     templateId = srcTemplateId
                 ),
-                newTemplateId,
+                templateId,
                 copyTemplateReq.templateName
             )
         } else {
             templateCommonService.getDefaultSetting(
                 projectId = projectId,
-                templateId = newTemplateId,
+                templateId = templateId,
                 templateName = copyTemplateReq.templateName
             )
         }
@@ -315,11 +315,11 @@ class TemplateFacadeService @Autowired constructor(
         val result = pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
-            templateId = newTemplateId,
+            templateId = templateId,
             request = request
         )
         logger.info("Get the template version ${result.version}")
-        return newTemplateId
+        return templateId
     }
 
     /**
@@ -1860,6 +1860,7 @@ class TemplateFacadeService @Autowired constructor(
                 failurePipelines = failurePipelines
             )
         } else {
+            // todo 超过100，直接抛异常吧。
             // 检查流水线是否处于更新中
             val pipelineIds = instances.map { it.pipelineId }.toSet()
             val templateInstanceItems =
