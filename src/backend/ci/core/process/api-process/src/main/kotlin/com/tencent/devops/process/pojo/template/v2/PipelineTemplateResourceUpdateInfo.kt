@@ -52,6 +52,8 @@ data class PipelineTemplateResourceUpdateInfo(
     val triggerVersion: Int? = null,
     @get:Schema(title = "草稿来源版本", required = true)
     val baseVersion: Long? = null,
+    @get:Schema(title = "草稿来源版本名称", required = true)
+    val baseVersionName: String? = null,
     @get:Schema(title = "构建参数", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "编排", required = true)

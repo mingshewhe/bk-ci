@@ -133,6 +133,7 @@ class PipelineTemplateResourceDao {
                     record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
                     record.baseVersion?.let { set(BASE_VERSION, it) }
+                    record.baseVersionName?.let { set(BASE_VERSION_NAME, it) }
                     record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
                     record.model?.let { set(MODEL, JsonUtil.toJson(it)) }
                     record.yaml?.let { set(YAML, it) }

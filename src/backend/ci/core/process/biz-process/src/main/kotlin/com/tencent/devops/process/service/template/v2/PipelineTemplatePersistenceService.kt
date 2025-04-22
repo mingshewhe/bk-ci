@@ -212,6 +212,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             model = templateResource.model,
             yaml = templateResource.yaml,
             baseVersion = templateResource.baseVersion,
+            baseVersionName = templateResource.baseVersionName,
             updater = userId,
             sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
         )
