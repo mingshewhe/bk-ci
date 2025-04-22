@@ -10,7 +10,7 @@ import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -40,6 +40,7 @@ class PipelineTemplateResourceDao {
                 PROJECT_ID,
                 TEMPLATE_ID,
                 TYPE,
+                STORE_FLAG,
                 SETTING_VERSION,
                 VERSION,
                 NUMBER,
@@ -69,6 +70,7 @@ class PipelineTemplateResourceDao {
                 record.projectId,
                 record.templateId,
                 record.type.name,
+                record.storeFlag,
                 record.settingVersion,
                 record.version,
                 record.number,
@@ -95,6 +97,7 @@ class PipelineTemplateResourceDao {
                 createTime,
                 updateTime
             ).onDuplicateKeyUpdate()
+                .set(STORE_FLAG, record.storeFlag)
                 .set(SETTING_VERSION, record.settingVersion)
                 .set(VERSION, record.version)
                 .set(NUMBER, record.number)
@@ -143,6 +146,7 @@ class PipelineTemplateResourceDao {
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
                     record.updater?.let { set(UPDATER, it) }
                     record.sortWeight?.let { set(SORT_WEIGHT, it) }
+                    record.storeFlag?.let { set(STORE_FLAG, it) }
                 }
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
@@ -343,6 +347,7 @@ class PipelineTemplateResourceDao {
                 if (ltNumber != null) conditions.add(NUMBER.lt(ltNumber))
                 if (geNumber != null) conditions.add(NUMBER.ge(geNumber))
                 if (!srcTemplateVersions.isNullOrEmpty()) conditions.add(SRC_TEMPLATE_VERSION.`in`(srcTemplateVersions))
+                if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))
                 return conditions
             }
         }
@@ -375,7 +380,8 @@ class PipelineTemplateResourceDao {
             creator = this.creator,
             updater = this.updater,
             releaseTime = this.releaseTime?.timestampmilli(),
-            sortWeight = this.sortWeight
+            sortWeight = this.sortWeight,
+            storeFlag = this.storeFlag
         )
     }
 }

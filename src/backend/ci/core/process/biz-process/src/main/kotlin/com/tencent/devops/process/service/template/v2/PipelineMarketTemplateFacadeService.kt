@@ -10,11 +10,18 @@ import com.tencent.devops.common.pipeline.type.StoreDispatchType
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
+import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
+import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateReleaseCreateHandler
 import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
 import org.jooq.DSLContext
@@ -35,7 +42,9 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
     private val templateDao: TemplateDao,
     private val pipelineSettingDao: PipelineSettingDao,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val client: Client
+    private val client: Client,
+    private val pipelineTemplateReleaseCreateHandler: PipelineTemplateReleaseCreateHandler,
+    private val pipelineTemplateCopyCreateReqConverter: PipelineTemplateCopyCreateReqConverter
 ) {
 
     fun updateMarketTemplateReference(
@@ -118,6 +127,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                 transactionContext = context,
                 record = PipelineTemplateInfoUpdateInfo(
                     storeFlag = storeFlag,
+                    publishStrategy = UpgradeStrategyEnum.AUTO,
                     updater = userId
                 ),
                 commonCondition = PipelineTemplateCommonCondition(
@@ -128,6 +138,92 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
             )
         }
         return true
+    }
+
+    fun updateTemplatePublishStrategy(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ) {
+        pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        pipelineTemplateInfoService.update(
+            record = PipelineTemplateInfoUpdateInfo(
+                storeFlag = true
+            ),
+            commonCondition = PipelineTemplateCommonCondition(
+                projectId = projectId,
+                templateId = templateId
+            )
+        )
+    }
+
+    fun upgradeTemplateAuto(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ) {
+        val srcTemplateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        // 检查模板是否已上传到研发商店并设置发布策略为自动。
+        if (!(srcTemplateInfo.storeFlag && srcTemplateInfo.publishStrategy == UpgradeStrategyEnum.AUTO))
+            return
+        // 同步上传当前版本至研发商店
+        pipelineTemplateResourceService.update(
+            record = PipelineTemplateResourceUpdateInfo(
+                storeFlag = true
+            ),
+            commonCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            )
+        )
+
+        val srcTemplateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        val srcTemplateSetting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = srcTemplateResource.settingVersion
+        )
+
+        // todo 最好分页
+        val templatesOfAutoUpgrade = pipelineTemplateInfoService.list(
+            commonCondition = PipelineTemplateCommonCondition(
+                mode = TemplateType.CONSTRAINT,
+                srcTemplateProjectId = projectId,
+                srcTemplateId = templateId,
+                upgradeStrategy = UpgradeStrategyEnum.AUTO
+            )
+        )
+
+        templatesOfAutoUpgrade.forEach { templateInfo ->
+            val isSyncSetting = templateInfo.settingSyncStrategy == UpgradeStrategyEnum.AUTO
+            val pipelineTemplateCopyCreateReq = PipelineTemplateCopyCreateReq(
+                srcTemplateId = templateId,
+                srcTemplateVersion = version,
+                copySetting = isSyncSetting,
+                name = if (isSyncSetting) srcTemplateSetting.pipelineName else templateInfo.name
+            )
+            pipelineTemplateReleaseCreateHandler.handle(
+                pipelineTemplateCopyCreateReqConverter.convert(
+                    userId = userId,
+                    projectId = projectId,
+                    templateId = templateInfo.id,
+                    version = null,
+                    request = pipelineTemplateCopyCreateReq
+                )
+            )
+        }
     }
 
     fun checkImageReleaseStatus(

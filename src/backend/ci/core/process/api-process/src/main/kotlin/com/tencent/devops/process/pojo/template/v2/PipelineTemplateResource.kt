@@ -31,7 +31,7 @@ import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版资源")
@@ -42,6 +42,8 @@ data class PipelineTemplateResource(
     val templateId: String,
     @get:Schema(title = "模板类型", required = true)
     val type: PipelineTemplateType,
+    @get:Schema(title = "是否上架至研发商店", required = true)
+    val storeFlag: Boolean? = null,
     @get:Schema(title = "配置版本号", required = false)
     val settingVersion: Int,
     @get:Schema(title = "模版全局ID", required = true)

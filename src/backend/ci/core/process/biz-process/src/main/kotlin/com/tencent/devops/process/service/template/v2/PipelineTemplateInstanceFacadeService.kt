@@ -45,9 +45,9 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
@@ -61,6 +61,7 @@ import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
+import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -95,7 +96,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
     private val pipelineResourceDao: PipelineResourceDao,
     private val objectMapper: ObjectMapper,
-    private val paramService: ParamFacadeService
+    private val paramService: ParamFacadeService,
+    private val pipelineVersionFacadeService: PipelineVersionFacadeService
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -930,6 +932,40 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 errorCode = ProcessMessageCode.FAIL_TO_LIST_TEMPLATE_PARAMS
             )
         }
+    }
+
+    fun compare(
+        userId: String,
+        projectId: String,
+        pipelineId: String,
+        templateId: String,
+        compareVersion: Long?
+    ): PipelineTemplateInstanceCompareResponse {
+        val comparedVersionResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = compareVersion ?: pipelineTemplateInfoService.get(projectId, templateId).releasedVersion!!
+        )
+        val lastedPipelineVersion = pipelineResourceDao.getReleaseVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        )?.version ?: throw ErrorCodeException(
+            statusCode = Response.Status.NOT_FOUND.statusCode,
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+            params = arrayOf(pipelineId)
+        )
+        val pipelineYaml = pipelineVersionFacadeService.getVersion(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            version = lastedPipelineVersion
+        ).yamlPreview?.yaml ?: ""
+
+        return PipelineTemplateInstanceCompareResponse(
+            baseVersionYaml = pipelineYaml,
+            comparedVersionYaml = comparedVersionResource.yaml ?: ""
+        )
     }
 
     companion object {

@@ -31,8 +31,7 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
     override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
         with(postCreationContext) {
             logger.info("post process after creation :$postCreationContext")
-            if (versionAction != PipelineVersionAction.RELEASE_DRAFT &&
-                versionAction != PipelineVersionAction.CREATE_RELEASE) {
+            if (!versionAction.isCreateReleaseVersion()) {
                 return
             }
             val v1TemplateRecord = v1TemplateDao.getTemplate(

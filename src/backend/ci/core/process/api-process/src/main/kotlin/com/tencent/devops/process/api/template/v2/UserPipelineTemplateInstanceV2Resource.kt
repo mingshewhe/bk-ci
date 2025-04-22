@@ -35,6 +35,8 @@ import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import io.swagger.v3.oas.annotations.Operation
@@ -170,4 +172,25 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "创建实例", required = true)
         pipelineIds: Set<String>
     ): Result<Map<String/*pipelineId*/, TemplateInstanceParams>>
+
+    @Operation(summary = "版本对比")
+    @GET
+    @Path("/{templateId}/compare/")
+    fun compare(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "流水线Id", required = true)
+        @QueryParam("pipelineId")
+        pipelineId: String,
+        @Parameter(description = "比较版本（可为空，默认为最新版本）", required = false)
+        @QueryParam("comparedVersion")
+        comparedVersion: Long?
+    ): Result<PipelineTemplateInstanceCompareResponse>
 }

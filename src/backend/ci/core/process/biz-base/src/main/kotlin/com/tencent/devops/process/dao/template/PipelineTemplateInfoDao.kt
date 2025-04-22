@@ -5,8 +5,8 @@ import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
@@ -37,6 +37,7 @@ class PipelineTemplateInfoDao {
                 NAME,
                 DESC,
                 MODE,
+                PUBLISH_STRATEGY,
                 UPGRADE_STRATEGY,
                 SETTING_SYNC_STRATEGY,
                 CATEGORY,
@@ -62,6 +63,7 @@ class PipelineTemplateInfoDao {
                 record.name,
                 record.desc,
                 record.mode.name,
+                record.publishStrategy?.name,
                 record.upgradeStrategy?.name,
                 record.settingSyncStrategy?.name,
                 record.category,
@@ -84,6 +86,7 @@ class PipelineTemplateInfoDao {
             ).onDuplicateKeyUpdate()
                 .set(NAME, record.name)
                 .set(DESC, record.desc)
+                .set(PUBLISH_STRATEGY, record.publishStrategy?.name)
                 .set(UPGRADE_STRATEGY, record.upgradeStrategy?.name)
                 .set(SETTING_SYNC_STRATEGY, record.settingSyncStrategy?.name)
                 .set(CATEGORY, record.category)
@@ -123,6 +126,7 @@ class PipelineTemplateInfoDao {
                     record.debugPipelineCount?.let { set(DEBUG_PIPELINE_COUNT, it) }
                     record.instancePipelineCount?.let { set(INSTANCE_PIPELINE_COUNT, it) }
                     record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
+                    record.publishStrategy?.let { set(PUBLISH_STRATEGY, it.name) }
                     record.upgradeStrategy?.let { set(UPGRADE_STRATEGY, it.name) }
                     record.settingSyncStrategy?.let { set(SETTING_SYNC_STRATEGY, it.name) }
                     record.updater?.let { set(UPDATER, it) }
@@ -165,6 +169,19 @@ class PipelineTemplateInfoDao {
                     }
                 }
                 .fetch().map { it.convert() }
+        }
+    }
+
+    fun listIds(
+        dslContext: DSLContext,
+        commonCondition: PipelineTemplateCommonCondition
+    ): List<String> {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.select(ID)
+                .from(this)
+                .where(buildQueryCondition(commonCondition))
+                .fetch()
+                .map { it.value1() }
         }
     }
 
@@ -292,6 +309,7 @@ class PipelineTemplateInfoDao {
                 if (updater != null) conditions.add(UPDATER.eq(updater))
                 if (!filterTemplateIds.isNullOrEmpty()) conditions.add(ID.`in`(filterTemplateIds))
                 if (latestVersionStatus != null) conditions.add(LATEST_VERSION_STATUS.eq(latestVersionStatus!!.name))
+                if (upgradeStrategy != null) conditions.add(UPGRADE_STRATEGY.eq(upgradeStrategy!!.name))
                 conditions
             }
         }
@@ -307,6 +325,7 @@ class PipelineTemplateInfoDao {
             mode = mode,
             upgradeStrategy = this.upgradeStrategy?.let { UpgradeStrategyEnum.valueOf(it) },
             settingSyncStrategy = this.settingSyncStrategy?.let { UpgradeStrategyEnum.valueOf(it) },
+            publishStrategy = this.publishStrategy?.let { UpgradeStrategyEnum.valueOf(it) },
             sourceName = TemplateType.getDisplayName(mode),
             category = this.category,
             type = PipelineTemplateType.valueOf(this.type),

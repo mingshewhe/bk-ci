@@ -25,33 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.store.pojo.template
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.store.pojo.template.enums.TemplateTypeEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "上架模板请求报文体")
-data class MarketTemplateUpdateRequest(
-    @get:Schema(title = "模板代码", required = true)
-    val templateCode: String,
-    @get:Schema(title = "模板名称", required = true)
-    val templateName: String,
-    @get:Schema(title = "模板类型，FREEDOM：自由模式 CONSTRAINT：约束模式", required = true)
-    val templateType: TemplateTypeEnum,
-    @get:Schema(title = "应用范畴列表", required = true)
-    val categoryIdList: ArrayList<String>,
-    @get:Schema(title = "模板分类代码", required = true)
-    val classifyCode: String,
-    @get:Schema(title = "模板标签列表", required = false)
-    val labelIdList: ArrayList<String>?,
-    @get:Schema(title = "插件简介", required = false)
-    val summary: String?,
-    @get:Schema(title = "插件描述", required = false)
-    val description: String?,
-    @get:Schema(title = "logo地址", required = false)
-    val logoUrl: String?,
-    @get:Schema(title = "发布者", required = true)
-    val publisher: String,
-    @get:Schema(title = "发布者描述", required = false)
-    val pubDescription: String?
+@Schema(title = "流水线实例对比")
+data class PipelineTemplateInstanceCompareResponse(
+    @get:Schema(title = "基准版本（流水线）", required = true)
+    val baseVersionYaml: String,
+    @get:Schema(title = "对比版本（最新模板）", required = true)
+    val comparedVersionYaml: String
 )

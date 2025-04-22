@@ -2,7 +2,8 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.api.exception.InvalidParamException
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 import kotlin.reflect.full.memberProperties
@@ -23,6 +24,8 @@ data class PipelineTemplateCommonCondition(
     val desc: String? = null,
     @get:Schema(title = "公共/约束/自定义模式", required = false)
     val mode: TemplateType? = null,
+    @get:Schema(title = "升级策略-用于研发商店安装的模板", required = true)
+    val upgradeStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "应用范畴", required = false)
     val category: String? = null,
     @get:Schema(title = "模板类型", required = false)

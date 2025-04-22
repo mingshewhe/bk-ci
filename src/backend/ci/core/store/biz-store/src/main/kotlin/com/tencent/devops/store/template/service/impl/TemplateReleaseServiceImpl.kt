@@ -59,6 +59,7 @@ import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.common.publication.StoreReleaseCreateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
@@ -374,6 +375,13 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
         )
         // 发通知消息
         templateNotifyService.sendTemplateReleaseAuditNotifyMessage(templateId, AuditTypeEnum.AUDIT_SUCCESS)
+    }
+
+    override fun releaseMarketTemplate(
+        userId: String,
+        request: MarketTemplateUpdateV2Request
+    ) {
+
     }
 
     override fun handleTemplateRelease(

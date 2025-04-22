@@ -1,7 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
@@ -10,6 +10,8 @@ import java.time.LocalDateTime
 data class PipelineTemplateResourceCommonCondition(
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
+    @get:Schema(title = "是否上架至研发商店", required = true)
+    val storeFlag: Boolean? = null,
     @get:Schema(title = "版本排序号", required = true)
     val number: Int? = null,
     @get:Schema(title = "大于等于排序号", required = true)

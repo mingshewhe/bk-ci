@@ -27,17 +27,23 @@
 
 package com.tencent.devops.store.pojo.template
 
-import com.tencent.devops.store.pojo.template.enums.TemplateTypeEnum
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
+import com.tencent.devops.store.pojo.common.visible.DeptInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "上架模板请求报文体")
-data class MarketTemplateUpdateRequest(
+@Schema(title = "上架模板请求V2报文体")
+data class MarketTemplateUpdateV2Request(
+    @get:Schema(title = "项目ID", required = true)
+    val projectId: String,
     @get:Schema(title = "模板代码", required = true)
     val templateCode: String,
     @get:Schema(title = "模板名称", required = true)
     val templateName: String,
-    @get:Schema(title = "模板类型，FREEDOM：自由模式 CONSTRAINT：约束模式", required = true)
-    val templateType: TemplateTypeEnum,
+    @get:Schema(title = "模板类型", required = true)
+    val templateType: PipelineTemplateType = PipelineTemplateType.PIPELINE,
+    @get:Schema(title = "发布策略", required = true)
+    val publishStrategy: UpgradeStrategyEnum,
     @get:Schema(title = "应用范畴列表", required = true)
     val categoryIdList: ArrayList<String>,
     @get:Schema(title = "模板分类代码", required = true)
@@ -45,13 +51,17 @@ data class MarketTemplateUpdateRequest(
     @get:Schema(title = "模板标签列表", required = false)
     val labelIdList: ArrayList<String>?,
     @get:Schema(title = "插件简介", required = false)
-    val summary: String?,
+    val summary: String,
     @get:Schema(title = "插件描述", required = false)
-    val description: String?,
+    val description: String,
     @get:Schema(title = "logo地址", required = false)
-    val logoUrl: String?,
+    val logoUrl: String,
     @get:Schema(title = "发布者", required = true)
     val publisher: String,
+    @get:Schema(title = "是否全部可见", required = true)
+    val fullScopeVisible: Boolean?,
+    @get:Schema(title = "部分可见范围", required = false)
+    val deptInfos: List<DeptInfo>?,
     @get:Schema(title = "发布者描述", required = false)
-    val pubDescription: String?
+    val pubDescription: String
 )

@@ -41,8 +41,8 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.TemplateVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -327,6 +327,8 @@ class PipelineTemplateMigrateService(
             } else {
                 Triple(null, null, null)
             }
+        val storeFlag = !isConstraint && latestTemplate.storeFlag
+
         return PipelineTemplateResource(
             projectId = latestTemplate.projectId,
             templateId = latestTemplate.id,
@@ -337,6 +339,7 @@ class PipelineTemplateMigrateService(
             } else {
                 currentTemplate.version
             },
+            storeFlag = storeFlag,
             number = seq,
             versionName = currentTemplate.versionName,
             versionNum = seq,
@@ -376,6 +379,11 @@ class PipelineTemplateMigrateService(
         logger.info("template instance count {}|{}|{}", latestTemplate.projectId, latestTemplate.id, instanceSize)
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
+        // 迁移到新表后，storeFlag仅代表该模板是否上传到研发商店。
+        // 在老表中storeFlag有两种情况，一种是该模板已经上传到研发商店。另一种是该模板是从研发商店安装的。
+        val storeFlag = latestTemplate.storeFlag && !isConstraint
+        // 旧版中，如果模板已经上传研发商店，发布策略默认为自动
+        val publishStrategy = if (storeFlag) UpgradeStrategyEnum.AUTO else null
         return PipelineTemplateInfoV2(
             id = latestTemplate.id,
             projectId = latestTemplate.projectId,
@@ -390,10 +398,11 @@ class PipelineTemplateMigrateService(
             releasedVersionName = latestReleasedResource.versionName,
             releasedSettingVersion = latestReleasedResource.settingVersion,
             latestVersionStatus = VersionStatus.RELEASED,
-            storeFlag = latestTemplate.storeFlag,
+            storeFlag = storeFlag,
             srcTemplateId = latestReleasedResource.srcTemplateId,
             srcTemplateProjectId = latestReleasedResource.srcTemplateProjectId,
             instancePipelineCount = instanceSize,
+            publishStrategy = publishStrategy,
             upgradeStrategy = strategy,
             settingSyncStrategy = strategy,
             creator = latestTemplate.creator,

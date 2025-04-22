@@ -1,8 +1,8 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
-import com.tencent.devops.process.pojo.enums.UpgradeStrategyEnum
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -26,10 +26,12 @@ data class PipelineTemplateInfoV2(
     val logoUrl: String? = null,
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean,
-    @get:Schema(title = "" +
+    @get:Schema(
+        title = "" +
             "最新发布版本号,最新版本号可能是草稿版本,也可能是分支版本,只有发布过正式版本后,才表示最新的正式版本" +
             "- 当只有草稿版本时,那么表示的是草稿版本" +
-            "- 当只有分支版本时,那么表示的是创建时的分支版本", required = true)
+            "- 当只有分支版本时,那么表示的是创建时的分支版本", required = true
+    )
     val releasedVersion: Long? = null,
     @get:Schema(title = "最新发布版本名称", required = false)
     val releasedVersionName: String? = null,
@@ -40,7 +42,7 @@ data class PipelineTemplateInfoV2(
     @get:Schema(title = "来源名称", required = true)
     val sourceName: String? = null,
     @get:Schema(title = "是否上架至研发商店", required = true)
-    val storeFlag: Boolean,
+    val storeFlag: Boolean = false,
     @get:Schema(title = "父模板ID", required = false)
     val srcTemplateId: String? = null,
     @get:Schema(title = "父模板项目ID", required = false)
@@ -53,6 +55,8 @@ data class PipelineTemplateInfoV2(
     val upgradeStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "配置同步策略-用于研发商店安装的模板", required = true)
     val settingSyncStrategy: UpgradeStrategyEnum? = null,
+    @get:Schema(title = "发布策略-研发商店", required = true)
+    val publishStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = false)

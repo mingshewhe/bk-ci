@@ -24,9 +24,21 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.tencent.devops.process.pojo.enums
 
-enum class UpgradeStrategyEnum(val value: String) {
-    Manual("手动升级"),
-    AUTO("自动升级")
+package com.tencent.devops.common.pipeline.template
+
+enum class PipelineTemplateType(val value: String) {
+    PIPELINE("pipeline"),
+    STAGE("stage"),
+    JOB("job"),
+    STEP("step");
+
+    companion object {
+        fun get(value: String): PipelineTemplateType {
+            PipelineTemplateType.values().forEach {
+                if (value == it.value) return it
+            }
+            throw IllegalArgumentException("No enum for constant $value")
+        }
+    }
 }

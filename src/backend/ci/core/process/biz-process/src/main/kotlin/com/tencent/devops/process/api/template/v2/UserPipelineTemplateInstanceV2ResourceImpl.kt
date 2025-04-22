@@ -32,6 +32,8 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
@@ -132,6 +134,24 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 projectId = projectId,
                 templateId = templateId,
                 pipelineIds = pipelineIds
+            )
+        )
+    }
+
+    override fun compare(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        pipelineId: String,
+        comparedVersion: Long?
+    ): Result<PipelineTemplateInstanceCompareResponse> {
+        return Result(
+            instanceFacadeService.compare(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                pipelineId = pipelineId,
+                compareVersion = comparedVersion
             )
         )
     }

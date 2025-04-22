@@ -33,7 +33,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
-import com.tencent.devops.process.pojo.enums.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -82,7 +82,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
             if (srcTemplateInfo.latestVersionStatus != VersionStatus.RELEASED) {
                 throw ErrorCodeException(errorCode = "")
             }
-            val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
+            val newTemplateId = templateId ?: pipelineTemplateGenerator.generateTemplateId()
             pipelineTemplateCommonService.checkTemplateBasicInfo(
                 projectId = projectId,
                 name = name
@@ -90,7 +90,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
             val srcTemplateResource = pipelineTemplateResourceService.get(
                 projectId = projectId,
                 templateId = srcTemplateId,
-                version = srcTemplateInfo.releasedVersion!!
+                version = srcTemplateVersion ?: srcTemplateInfo.releasedVersion!!
             )
 
             if (srcTemplateInfo.type == PipelineTemplateType.PIPELINE) {
@@ -102,7 +102,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 val srcTemplateSetting = pipelineTemplateSettingService.get(
                     projectId = projectId,
                     templateId = srcTemplateId,
-                    settingVersion = srcTemplateInfo.releasedSettingVersion!!
+                    settingVersion = srcTemplateResource.settingVersion
                 )
                 srcTemplateSetting.copy(
                     pipelineId = newTemplateId,
@@ -122,7 +122,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 )
             }
 
-            val yaml = pipelineTemplateGenerator.transfer(
+            val transferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = PipelineStorageType.MODEL,
@@ -131,7 +131,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 templateSetting = setting,
                 params = srcTemplateResource.params,
                 yaml = null
-            ).yamlWithVersion?.yamlStr ?: ""
+            )
 
             val pipelineTemplateInfo = PipelineTemplateInfoV2(
                 id = newTemplateId,
@@ -143,10 +143,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 type = srcTemplateInfo.type,
                 logoUrl = srcTemplateInfo.logoUrl,
                 enablePac = srcTemplateInfo.enablePac,
-                releasedVersion = version,
-                releasedVersionName = "V1(P1.T1.1)",
-                releasedSettingVersion = PipelineTemplateConstant.INIT_VERSION,
-                storeFlag = srcTemplateInfo.storeFlag,
+                storeFlag = false,
                 creator = userId,
                 latestVersionStatus = VersionStatus.RELEASED
             )
@@ -154,9 +151,9 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 templateId = newTemplateId,
                 type = srcTemplateResource.type,
-                params = srcTemplateResource.params,
-                model = srcTemplateResource.model,
-                yaml = yaml,
+                params = transferResult.params,
+                model = transferResult.templateModel,
+                yaml = transferResult.yamlWithVersion?.yamlStr ?: "",
                 status = VersionStatus.RELEASED,
                 creator = userId,
                 updater = userId
@@ -168,7 +165,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = setting
+                pipelineTemplateSetting = transferResult.templateSetting
             )
         }
     }

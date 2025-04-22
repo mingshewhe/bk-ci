@@ -32,6 +32,7 @@ import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import org.jooq.DSLContext
 
 @Suppress("ALL")
@@ -43,7 +44,15 @@ interface TemplateReleaseService {
         marketTemplateRelRequest: MarketTemplateRelRequest
     ): Result<Boolean>
 
-    fun updateMarketTemplate(userId: String, marketTemplateUpdateRequest: MarketTemplateUpdateRequest): Result<String?>
+    fun updateMarketTemplate(
+        userId: String,
+        marketTemplateUpdateRequest: MarketTemplateUpdateRequest
+    ): Result<String?>
+
+    fun releaseMarketTemplate(
+        userId: String,
+        marketTemplateUpdateRequest: MarketTemplateUpdateV2Request
+    )
 
     fun handleTemplateRelease(
         context: DSLContext,
