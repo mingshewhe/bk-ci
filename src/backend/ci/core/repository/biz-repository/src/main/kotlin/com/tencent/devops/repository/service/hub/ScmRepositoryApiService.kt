@@ -27,6 +27,7 @@
 
 package com.tencent.devops.repository.service.hub
 
+import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.repository.pojo.AuthorizeResult
 import com.tencent.devops.repository.pojo.credential.AuthRepository
@@ -70,6 +71,24 @@ class ScmRepositoryApiService @Autowired constructor(
     providerRepositoryFactory = providerRepositoryFactory,
     repositoryScmConfigService = repositoryScmConfigService
 ) {
+
+    fun findRepository(
+        projectId: String,
+        repositoryType: RepositoryType?,
+        repoHashIdOrName: String
+    ): ScmServerRepository {
+        return invokeApi(
+            projectId = projectId,
+            repositoryType = repositoryType,
+            repoHashIdOrName = repoHashIdOrName
+        ) { providerProperties, providerRepository ->
+            scmApiManager.findRepository(
+                providerProperties = providerProperties,
+                providerRepository = providerRepository
+            )
+        }
+    }
+
     fun findRepository(
         projectId: String,
         authRepository: AuthRepository

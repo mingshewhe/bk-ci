@@ -110,6 +110,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             draftResource = draftResource,
             draftSetting = templateSetting,
             enablePac = enablePac,
+            repoHashId = yamlFileInfo?.repoHashId,
             targetAction = targetAction,
             targetBranch = branchName
         )

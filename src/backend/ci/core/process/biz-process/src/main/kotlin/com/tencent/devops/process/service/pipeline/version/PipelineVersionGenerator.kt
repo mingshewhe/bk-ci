@@ -27,7 +27,9 @@
 
 package com.tencent.devops.process.service.pipeline.version
 
+import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -39,6 +41,8 @@ import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.utils.PipelineVersionUtils
+import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
+import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
 import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 
@@ -51,6 +55,7 @@ class PipelineVersionGenerator constructor(
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineResourceDao: PipelineResourceDao,
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
+    private val client: Client
 ) {
 
     /**
@@ -252,28 +257,63 @@ class PipelineVersionGenerator constructor(
         targetBranch: String? = null
     ): Pair<VersionStatus, String?> {
         return if (enablePac) {
-            return when (targetAction) {
-                CodeTargetAction.COMMIT_TO_MASTER -> {
-                    Pair(VersionStatus.RELEASED, null)
-                }
-
-                CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
-                CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
-                    val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
-                    Pair(VersionStatus.BRANCH, branchName)
-                }
-
-                // TODO 需要判断是否为默认分支
-                CodeTargetAction.COMMIT_TO_BRANCH -> {
-                    Pair(VersionStatus.BRANCH, targetBranch)
-                }
-
-                else -> {
-                    Pair(VersionStatus.RELEASED, null)
-                }
-            }
+            return getVersionStatusAndBranchNameWithPac(
+                projectId = projectId,
+                templateId = templateId,
+                templateVersion = templateVersion,
+                repoHashId = repoHashId,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            )
         } else {
             Pair(VersionStatus.RELEASED, null)
+        }
+    }
+
+    private fun getVersionStatusAndBranchNameWithPac(
+        projectId: String,
+        templateId: String,
+        templateVersion: Long,
+        repoHashId: String?,
+        targetAction: CodeTargetAction?,
+        targetBranch: String?
+    ): Pair<VersionStatus, String?> {
+        if (repoHashId.isNullOrBlank()) {
+            throw IllegalArgumentException("repoHashId is null")
+        }
+        return when (targetAction) {
+
+            CodeTargetAction.COMMIT_TO_MASTER -> {
+                Pair(VersionStatus.RELEASED, null)
+            }
+
+            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
+                val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
+                Pair(VersionStatus.BRANCH, branchName)
+            }
+
+            CodeTargetAction.COMMIT_TO_BRANCH -> {
+                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
+                    projectId = projectId,
+                    repositoryType = RepositoryType.ID,
+                    repoHashIdOrName = repoHashId
+                ).data
+                if (serverRepository !is GitScmServerRepository) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+                    )
+                }
+                if (serverRepository.defaultBranch == targetBranch) {
+                    Pair(VersionStatus.RELEASED, null)
+                } else {
+                    Pair(VersionStatus.BRANCH, targetBranch)
+                }
+            }
+
+            else -> {
+                throw IllegalArgumentException("targetAction is illegal")
+            }
         }
     }
 
@@ -298,6 +338,7 @@ class PipelineVersionGenerator constructor(
                 pipelineId = pipelineId,
                 newResource = newResource,
                 newSetting = newSetting,
+                repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch,
                 templateId = templateId,
@@ -322,11 +363,15 @@ class PipelineVersionGenerator constructor(
         pipelineId: String,
         newResource: PipelineResourceWithoutVersion,
         newSetting: PipelineSettingVersion,
+        repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null,
         templateId: String,
         templateVersion: Long
     ): PipelineResourceOnlyVersion {
+        if (repoHashId.isNullOrBlank()) {
+            throw IllegalArgumentException("repoHashId is null")
+        }
         return when (targetAction) {
             CodeTargetAction.COMMIT_TO_MASTER -> {
                 generateReleaseVersion(
@@ -351,12 +396,31 @@ class PipelineVersionGenerator constructor(
                 if (targetBranch == null) {
                     throw IllegalArgumentException("targetBranch is null")
                 }
-                // TODO 需要判断是否为默认分支
-                generateBranchVersion(
+                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
                     projectId = projectId,
-                    pipelineId = pipelineId,
-                    branchName = targetBranch
-                )
+                    repositoryType = RepositoryType.ID,
+                    repoHashIdOrName = repoHashId
+                ).data
+                if (serverRepository !is GitScmServerRepository) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+                    )
+                }
+                // 如果选择的是默认分支,则应该发布正式版本
+                if (targetBranch == serverRepository.defaultBranch) {
+                    generateReleaseVersion(
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        newResource = newResource,
+                        newSetting = newSetting,
+                    )
+                } else {
+                    generateBranchVersion(
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        branchName = targetBranch
+                    )
+                }
             }
 
             else -> {

@@ -176,6 +176,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         templateId: String,
         version: Long,
         enablePac: Boolean,
+        repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String?
     ): TemplatePrefetchReleaseResult {
@@ -194,6 +195,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             draftResource = draftResource,
             draftSetting = templateSetting,
             enablePac = enablePac,
+            repoHashId = repoHashId,
             targetAction = targetAction,
             targetBranch = targetBranch
         ).second

@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.check.Preconditions
+import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.client.Client
@@ -47,6 +48,7 @@ import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
+import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.pojo.enums.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
@@ -62,6 +64,8 @@ import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.C
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.process.yaml.transfer.TransferMapper
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
+import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
+import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -215,6 +219,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         draftResource: PipelineTemplateResource,
         draftSetting: PipelineSetting,
         enablePac: Boolean,
+        repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null
     ): Pair<VersionStatus, PTemplateResourceOnlyVersion> {
@@ -226,6 +231,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 draftResource = draftResource,
                 newResource = newResource,
                 newSetting = draftSetting,
+                repoHashId = repoHashId!!,
                 targetAction = targetAction,
                 targetBranch = targetBranch
             )
@@ -247,6 +253,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         draftResource: PipelineTemplateResource,
         newResource: PTemplateResourceWithoutVersion,
         newSetting: PipelineSetting,
+        repoHashId: String,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null
     ): Pair<VersionStatus, PTemplateResourceOnlyVersion> {
@@ -288,10 +295,31 @@ class PipelineTemplateGenerator @Autowired constructor(
                 if (targetBranch == null) {
                     throw IllegalArgumentException("targetBranch is null")
                 }
-                // TODO 需要判断是否为默认分支
-                val resourceOnlyVersion =
-                    PTemplateResourceOnlyVersion(draftResource).copy(versionName = targetBranch)
-                Pair(VersionStatus.BRANCH, resourceOnlyVersion)
+                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
+                    projectId = projectId,
+                    repositoryType = RepositoryType.ID,
+                    repoHashIdOrName = repoHashId
+                ).data
+                if (serverRepository !is GitScmServerRepository) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+                    )
+                }
+                // 如果选择的是默认分支,则应该发布正式版本
+                if (targetBranch == serverRepository.defaultBranch) {
+                    val resourceOnlyVersion = generateReleaseVersion(
+                        projectId = projectId,
+                        templateId = templateId,
+                        draftResource = draftResource,
+                        newResource = newResource,
+                        newSetting = newSetting
+                    )
+                    Pair(VersionStatus.RELEASED, resourceOnlyVersion)
+                } else {
+                    val resourceOnlyVersion =
+                        PTemplateResourceOnlyVersion(draftResource).copy(versionName = targetBranch)
+                    Pair(VersionStatus.BRANCH, resourceOnlyVersion)
+                }
             }
 
             else -> {

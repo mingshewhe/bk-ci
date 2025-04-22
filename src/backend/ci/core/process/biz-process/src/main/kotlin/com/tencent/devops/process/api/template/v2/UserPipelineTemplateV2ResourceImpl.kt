@@ -287,6 +287,7 @@ class UserPipelineTemplateV2ResourceImpl(
                 templateId = templateId,
                 version = version,
                 enablePac = enablePac,
+                repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch
             )
