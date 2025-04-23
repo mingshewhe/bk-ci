@@ -37,7 +37,8 @@ import java.util.LinkedList
 
 @Service
 class PipelineYamlResourceManager @Autowired constructor(
-    private val pipelineYamlResourceService: PipelineYamlResourceService
+    private val pipelineYamlResourceService: PipelineYamlResourceService,
+    private val pTemplateYamlResourceService: PTemplateYamlResourceService
 ) {
     fun createYamlPipeline(
         userId: String,
@@ -146,6 +147,10 @@ class PipelineYamlResourceManager @Autowired constructor(
     }
 
     fun getService(isTemplate: Boolean): IPipelineYamlResourceService {
-        return pipelineYamlResourceService
+        return if (isTemplate) {
+            pTemplateYamlResourceService
+        } else {
+            pipelineYamlResourceService
+        }
     }
 }

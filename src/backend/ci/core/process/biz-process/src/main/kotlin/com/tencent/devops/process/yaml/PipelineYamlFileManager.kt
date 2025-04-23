@@ -47,7 +47,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileSyncReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
 import com.tencent.devops.process.pojo.trigger.PipelineTriggerEvent
 import com.tencent.devops.process.pojo.trigger.PipelineTriggerType
@@ -61,7 +60,6 @@ import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import com.tencent.devops.process.yaml.pojo.PipelineYamlTriggerLock
 import com.tencent.devops.process.yaml.pojo.YamlFileActionType
 import com.tencent.devops.process.yaml.pojo.YamlPipelineActionType
-import com.tencent.devops.process.yaml.transfer.aspect.PipelineTransferAspectLoader
 import com.tencent.devops.repository.api.ServiceRepositoryResource
 import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
 import com.tencent.devops.repository.api.scm.ServiceScmPullRequestApiResource
@@ -452,7 +450,7 @@ class PipelineYamlFileManager @Autowired constructor(
             val pipelineName = pipelineYamlResourceManager.getPipelineName(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                isTemplate = GitActionCommon.isTemplateFile(filePath)
+                isTemplate = isTemplate
             ) ?: run {
                 throw ErrorCodeException(
                     errorCode = ERROR_PIPELINE_NOT_EXISTS,
@@ -558,7 +556,7 @@ class PipelineYamlFileManager @Autowired constructor(
             isDefaultBranch = isDefaultBranch,
             description = commit.commitMsg,
             yamlFileInfo = yamlFileInfo,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         )
         val pipelineId = deployPipelineResult.pipelineId
         val version = deployPipelineResult.version
@@ -782,7 +780,7 @@ class PipelineYamlFileManager @Autowired constructor(
             isDefaultBranch = ref == defaultBranch,
             description = commit.commitMsg,
             yamlFileInfo = yamlFileInfo,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         )
         pipelineYamlService.update(
             projectId = projectId,
@@ -825,7 +823,7 @@ class PipelineYamlFileManager @Autowired constructor(
         val pipelineName = pipelineYamlResourceManager.getPipelineName(
             projectId = projectId,
             pipelineId = pipelineId,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         ) ?: run {
             throw ErrorCodeException(
                 errorCode = ERROR_PIPELINE_NOT_EXISTS,
@@ -872,7 +870,7 @@ class PipelineYamlFileManager @Autowired constructor(
         val releaseVersionExists = pipelineYamlResourceManager.existsReleaseVersion(
             projectId = projectId,
             pipelineId = pipelineId,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         )
         if (releaseVersionExists) {
             logger.info(
@@ -950,7 +948,7 @@ class PipelineYamlFileManager @Autowired constructor(
             branchName = ref,
             releaseBranch = true,
             branchVersionAction = BranchVersionAction.INACTIVE,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         )
         pipelineYamlService.refreshPipelineYamlStatus(
             projectId = projectId,
@@ -979,7 +977,7 @@ class PipelineYamlFileManager @Autowired constructor(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,
-            isTemplate = GitActionCommon.isTemplateFile(filePath)
+            isTemplate = isTemplate
         )
     }
 }

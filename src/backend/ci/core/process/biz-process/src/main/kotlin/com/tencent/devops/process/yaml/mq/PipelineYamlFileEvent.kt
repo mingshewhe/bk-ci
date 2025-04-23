@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.devops.common.event.annotation.Event
 import com.tencent.devops.common.event.pojo.IEvent
 import com.tencent.devops.common.stream.constants.StreamBinding
+import com.tencent.devops.process.yaml.actions.GitActionCommon
 import com.tencent.devops.process.yaml.pojo.YamlFileActionType
 import com.tencent.devops.repository.pojo.Repository
 import com.tencent.devops.repository.pojo.credential.AuthRepository
@@ -91,6 +92,9 @@ data class PipelineYamlFileEvent(
 ) : IEvent() {
     @JsonIgnore
     val repoHashId = repository.repoHashId!!
+    // 是否是模版
+    @JsonIgnore
+    val isTemplate = GitActionCommon.isTemplateFile(filePath)
 }
 
 data class FileCommit(
