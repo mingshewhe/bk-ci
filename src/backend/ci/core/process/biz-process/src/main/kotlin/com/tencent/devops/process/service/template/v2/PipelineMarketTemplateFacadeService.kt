@@ -6,6 +6,7 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.VMBuildContainer
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
 import com.tencent.devops.common.web.utils.I18nUtil
@@ -245,16 +246,19 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
     fun checkImageReleaseStatus(
         userId: String,
         projectId: String,
-        templateId: String
+        templateId: String,
+        version: Long
     ): Result<String?> {
-        logger.info("start checkImageReleaseStatus templateCode is:$projectId|$templateId")
-        val templateModel = (pipelineTemplateResourceService.getLatestReleasedResource(
+        logger.info("start checkImageReleaseStatus templateCode is:$projectId|$templateId|$version")
+        val template = pipelineTemplateResourceService.get(
             projectId = projectId,
-            templateId = templateId
-        )?.model ?: return I18nUtil.generateResponseDataObject(
-            CommonMessageCode.SYSTEM_ERROR,
-            language = I18nUtil.getLanguage(userId)
-        )) as Model
+            templateId = templateId,
+            version = version
+        )
+        // todo 二期，局部模板需要进行改造
+        if (template.type == PipelineTemplateType.PIPELINE)
+            return Result(null)
+        val templateModel = template as Model
         var code: String? = null
         val images = mutableSetOf<String>()
         run releaseStatus@{

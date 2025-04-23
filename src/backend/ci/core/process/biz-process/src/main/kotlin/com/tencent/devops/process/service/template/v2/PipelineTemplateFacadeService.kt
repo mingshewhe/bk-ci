@@ -11,13 +11,13 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
@@ -695,6 +695,24 @@ class PipelineTemplateFacadeService @Autowired constructor(
             count = opCount.toLong(),
             records = detailList
         )
+    }
+
+    fun checkTemplate(
+        projectId: String,
+        userId: String,
+        templateId: String,
+        version: Long
+    ): Boolean {
+        val templateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        // todo 检查是否已经上架过
+        if (templateResource.storeFlag == true)
+            throw ErrorCodeException(errorCode = "该版本已经发布")
+        // todo 检查模型
+        return true
     }
 
     companion object {

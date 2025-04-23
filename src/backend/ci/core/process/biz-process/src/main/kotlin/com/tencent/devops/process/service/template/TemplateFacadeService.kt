@@ -557,11 +557,11 @@ class TemplateFacadeService @Autowired constructor(
                 request = request
             )
         }
-        val lastedVersion = pipelineTemplateResourceService.getLatestReleasedResource(
+        val latestVersion = pipelineTemplateResourceService.getLatestReleasedResource(
             projectId = projectId,
             templateId = templateId
         )!!.version
-        return lastedVersion
+        return latestVersion
     }
 
     fun listTemplate(

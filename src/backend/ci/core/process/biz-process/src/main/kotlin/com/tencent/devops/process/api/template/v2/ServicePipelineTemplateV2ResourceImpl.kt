@@ -78,12 +78,14 @@ class ServicePipelineTemplateV2ResourceImpl(
     override fun checkImageReleaseStatus(
         userId: String,
         projectId: String,
-        templateId: String
+        templateId: String,
+        version: Long
     ): Result<String?> {
         return pipelineMarketTemplateFacadeService.checkImageReleaseStatus(
             userId = userId,
             projectId = projectId,
-            templateId = templateId
+            templateId = templateId,
+            version = version
         )
     }
 
@@ -158,9 +160,16 @@ class ServicePipelineTemplateV2ResourceImpl(
     override fun checkTemplate(
         userId: String,
         projectId: String,
-        templateId: String
+        templateId: String,
+        version: Long
     ): Result<Boolean> {
-        TODO("Not yet implemented")
+        return Result(
+            pipelineTemplateFacadeService.checkTemplate(
+                projectId = projectId,
+                userId = userId,
+                templateId = templateId,
+                version = version
+            )
+        )
     }
-
 }

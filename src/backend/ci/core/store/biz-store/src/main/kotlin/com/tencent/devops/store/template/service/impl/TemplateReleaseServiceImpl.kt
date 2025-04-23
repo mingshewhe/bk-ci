@@ -71,7 +71,6 @@ import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
 import com.tencent.devops.store.template.service.TemplateNotifyService
 import com.tencent.devops.store.template.service.TemplateReleaseService
-import io.swagger.v3.oas.annotations.media.Schema
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -539,17 +538,20 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                 )
             }
             // 校验模板是否合法
-            val checkResult = client.get(ServicePTemplateResource::class).checkTemplate(
+            val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkTemplate(
                 userId = userId,
                 projectId = projectCode,
-                templateId = templateCode
+                templateId = templateCode,
+                version = templateVersion
             )
             if (checkResult.isNotOk()) {
                 return checkResult
             }
-            val releaseResult = client.get(ServicePTemplateResource::class).checkImageReleaseStatus(
+            val releaseResult = client.get(ServicePipelineTemplateV2Resource::class).checkImageReleaseStatus(
                 userId = userId,
-                templateCode = templateCode
+                templateId = templateCode,
+                projectId = projectCode,
+                version = templateVersion
             )
             val imageCode = releaseResult.data
             if (!imageCode.isNullOrBlank()) {
@@ -563,8 +565,6 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                 fullScopeVisible = fullScopeVisible,
                 deptInfos = deptInfos
             )
-            // 检测模板版本是否已经上传过商店
-
         }
         return Result(true)
     }

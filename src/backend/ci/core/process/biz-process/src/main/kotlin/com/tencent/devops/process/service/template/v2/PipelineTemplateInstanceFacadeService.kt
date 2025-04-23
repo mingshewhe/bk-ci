@@ -45,7 +45,6 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.TemplateOperationMessage
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
@@ -379,7 +378,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             errorCode = ProcessMessageCode.PIPELINE_SETTING_NOT_EXISTS
         )
 
-        val lastedPipelineSetting = if (useTemplateSettings) {
+        val latestPipelineSetting = if (useTemplateSettings) {
             pipelineTemplateInstanceSettingService.getTemplateInstanceSetting(
                 projectId = projectId,
                 templateId = templateId,
@@ -402,7 +401,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             data = TransferBody(
                 modelAndSetting = PipelineModelAndSetting(
                     model = instanceModel,
-                    setting = lastedPipelineSetting
+                    setting = latestPipelineSetting
                 )
             )
         )
@@ -946,7 +945,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             templateId = templateId,
             version = compareVersion ?: pipelineTemplateInfoService.get(projectId, templateId).releasedVersion!!
         )
-        val lastedPipelineVersion = pipelineResourceDao.getReleaseVersionResource(
+        val latestPipelineVersion = pipelineResourceDao.getReleaseVersionResource(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
@@ -959,7 +958,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,
-            version = lastedPipelineVersion
+            version = latestPipelineVersion
         ).yamlPreview?.yaml ?: ""
 
         return PipelineTemplateInstanceCompareResponse(

@@ -192,6 +192,27 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    override fun getLatestTemplateDetails(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<PipelineTemplateDetailsResponse> {
+        logger.info("get latest template details {}|{}|{}|{}", userId, projectId, templateId)
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.getTemplateDetails(
+                projectId = projectId,
+                templateId = templateId,
+                version = null
+            )
+        )
+    }
+
     override fun getTemplateInfo(
         userId: String,
         projectId: String,

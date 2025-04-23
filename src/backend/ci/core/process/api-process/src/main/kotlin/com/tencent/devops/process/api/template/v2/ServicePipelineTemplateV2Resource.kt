@@ -114,7 +114,10 @@ interface ServicePipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateId")
-        templateId: String
+        templateId: String,
+        @Parameter(description = "模版版本", required = false)
+        @QueryParam("version")
+        version: Long
     ): Result<String?>
 
     @Operation(summary = "查询项目下所有源模板的ID")
@@ -256,6 +259,9 @@ interface ServicePipelineTemplateV2Resource {
         projectId: String,
         @Parameter(description = "模版ID", required = true)
         @PathParam("templateId")
-        templateId: String
+        templateId: String,
+        @Parameter(description = "模版版本", required = false)
+        @QueryParam("version")
+        version: Long
     ): Result<Boolean>
 }

@@ -153,6 +153,21 @@ interface UserPipelineTemplateV2Resource {
         version: Long
     ): Result<PipelineTemplateDetailsResponse>
 
+    @Operation(summary = "查看模板最新详情")
+    @GET
+    @Path("/{templateId}/latest/details/")
+    fun getLatestTemplateDetails(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<PipelineTemplateDetailsResponse>
+
     @Operation(summary = "查看模板基本信息")
     @GET
     @Path("/{templateId}/info/")
