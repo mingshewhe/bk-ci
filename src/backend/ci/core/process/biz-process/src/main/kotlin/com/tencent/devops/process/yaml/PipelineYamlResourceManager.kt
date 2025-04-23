@@ -32,13 +32,14 @@ import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import java.util.LinkedList
 
 @Service
 class PipelineYamlResourceManager @Autowired constructor(
     private val pipelineYamlResourceService: PipelineYamlResourceService,
-    private val pTemplateYamlResourceService: PTemplateYamlResourceService
+    @Lazy private val pTemplateYamlResourceService: PTemplateYamlResourceService
 ) {
     fun createYamlPipeline(
         userId: String,
