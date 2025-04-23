@@ -40,10 +40,10 @@ import com.tencent.devops.process.pojo.PTemplateSortType
 import com.tencent.devops.process.pojo.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.OptionalTemplateList
-import com.tencent.devops.process.pojo.template.TemplateDetailInfo
 import com.tencent.devops.process.pojo.template.TemplateListModel
 import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -79,18 +79,12 @@ interface ServicePipelineTemplateV2Resource {
         addMarketTemplateRequest: MarketTemplateRequest
     ): Result<Map<String, String>>
 
-    @Operation(summary = "更新已安装的模版")
+    @Operation(summary = "更新研发商店模板")
     @POST
     @Path("/store/update")
-    fun updateMarketTemplateReference(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @HeaderParam(AUTH_HEADER_PROJECT_ID)
-        projectId: String,
+    fun updateMarketTemplateReferenceV2(
         @Parameter(description = "安装模板请求报文体", required = true)
-        updateMarketTemplateRequest: MarketTemplateRequest
+        request: MarketTemplateV2Request
     ): Result<Boolean>
 
     @Operation(summary = "查看模板详情")

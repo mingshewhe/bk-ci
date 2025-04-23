@@ -6,13 +6,14 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.VMBuildContainer
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
@@ -108,6 +109,29 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
         return true
     }
 
+    fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Boolean {
+        with(request) {
+            updateTemplateStoreFlag(
+                userId = publisher,
+                projectId = projectId,
+                templateId = templateCode,
+                storeFlag = true
+            )
+            updateMarketTemplateReference(
+                userId = publisher,
+                projectId = projectId,
+                updateMarketTemplateRequest = MarketTemplateRequest(request)
+            )
+            upgradeTemplateAuto(
+                userId = publisher,
+                projectId = projectId,
+                templateId = templateCode,
+                version = templateVersion
+            )
+        }
+        return true
+    }
+
     fun updateTemplateStoreFlag(
         userId: String,
         projectId: String,
@@ -166,13 +190,17 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
         templateId: String,
         version: Long
     ) {
-        val srcTemplateInfo = pipelineTemplateInfoService.get(
+        val srcTemplateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
-            templateId = templateId
+            templateId = templateId,
+            version = version
         )
-        // 检查模板是否已上传到研发商店并设置发布策略为自动。
-        if (!(srcTemplateInfo.storeFlag && srcTemplateInfo.publishStrategy == UpgradeStrategyEnum.AUTO))
-            return
+
+        val srcTemplateSetting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = srcTemplateResource.settingVersion
+        )
         // 同步上传当前版本至研发商店
         pipelineTemplateResourceService.update(
             record = PipelineTemplateResourceUpdateInfo(
@@ -184,18 +212,6 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                 version = version
             )
         )
-
-        val srcTemplateResource = pipelineTemplateResourceService.get(
-            projectId = projectId,
-            templateId = templateId,
-            version = version
-        )
-        val srcTemplateSetting = pipelineTemplateSettingService.get(
-            projectId = projectId,
-            templateId = templateId,
-            settingVersion = srcTemplateResource.settingVersion
-        )
-
         // todo 最好分页
         val templatesOfAutoUpgrade = pipelineTemplateInfoService.list(
             commonCondition = PipelineTemplateCommonCondition(

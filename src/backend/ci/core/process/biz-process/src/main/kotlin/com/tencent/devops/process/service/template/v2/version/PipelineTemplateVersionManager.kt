@@ -72,7 +72,7 @@ class PipelineTemplateVersionManager @Autowired constructor(
             pipelineSetting = context.pipelineTemplateSetting
         )
         val result = getHandler(context).handle(context = context)
-        versionCreatePostProcessor.forEach { it.postProcessAfterCreation(result) }
+        versionCreatePostProcessor.forEach { it.postProcessAfterCreation(context, result) }
         return result
     }
 

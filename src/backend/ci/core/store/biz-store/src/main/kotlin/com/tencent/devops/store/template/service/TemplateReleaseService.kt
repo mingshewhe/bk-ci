@@ -51,8 +51,8 @@ interface TemplateReleaseService {
 
     fun releaseMarketTemplate(
         userId: String,
-        marketTemplateUpdateRequest: MarketTemplateUpdateV2Request
-    )
+        request: MarketTemplateUpdateV2Request
+    ): Result<String>
 
     fun handleTemplateRelease(
         context: DSLContext,

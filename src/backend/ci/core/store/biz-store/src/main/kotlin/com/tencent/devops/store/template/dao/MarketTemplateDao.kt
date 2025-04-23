@@ -40,6 +40,7 @@ import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.store.pojo.common.KEY_CREATE_TIME
 import com.tencent.devops.store.pojo.common.KEY_PROJECT_CODE
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
+import com.tencent.devops.store.pojo.template.MarketTemplateInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
@@ -261,7 +262,8 @@ class MarketTemplateDao {
         marketTemplateRelRequest: MarketTemplateRelRequest
     ) {
         with(TTemplate.T_TEMPLATE) {
-            dslContext.insertInto(this,
+            dslContext.insertInto(
+                this,
                 ID,
                 TEMPLATE_NAME,
                 TEMPLATE_CODE,
@@ -298,8 +300,10 @@ class MarketTemplateDao {
     ) {
         val tClassify = TClassify.T_CLASSIFY
         val classifyId = dslContext.select(tClassify.ID).from(tClassify)
-            .where(tClassify.CLASSIFY_CODE.eq(marketTemplateUpdateRequest.classifyCode)
-                .and(tClassify.TYPE.eq(1)))
+            .where(
+                tClassify.CLASSIFY_CODE.eq(marketTemplateUpdateRequest.classifyCode)
+                    .and(tClassify.TYPE.eq(1))
+            )
             .fetchOne(0, String::class.java)
         with(TTemplate.T_TEMPLATE) {
             dslContext.update(this)
@@ -331,11 +335,14 @@ class MarketTemplateDao {
         val tClassify = TClassify.T_CLASSIFY
         val classifyId = dslContext.select(tClassify.ID)
             .from(tClassify)
-            .where(tClassify.CLASSIFY_CODE.eq(marketTemplateUpdateRequest.classifyCode)
-                .and(tClassify.TYPE.eq(1)))
+            .where(
+                tClassify.CLASSIFY_CODE.eq(marketTemplateUpdateRequest.classifyCode)
+                    .and(tClassify.TYPE.eq(1))
+            )
             .fetchOne(0, String::class.java)
         with(TTemplate.T_TEMPLATE) {
-            dslContext.insertInto(this,
+            dslContext.insertInto(
+                this,
                 ID,
                 TEMPLATE_NAME,
                 TEMPLATE_CODE,
@@ -373,6 +380,52 @@ class MarketTemplateDao {
         }
     }
 
+    fun insert(
+        dslContext: DSLContext,
+        marketTemplateInfo: MarketTemplateInfo
+    ) {
+        with(TTemplate.T_TEMPLATE) {
+            dslContext.insertInto(
+                this,
+                ID,
+                TEMPLATE_NAME,
+                TEMPLATE_CODE,
+                CLASSIFY_ID,
+                VERSION,
+                TEMPLATE_STATUS,
+                TEMPLATE_STATUS_MSG,
+                LOGO_URL,
+                SUMMARY,
+                DESCRIPTION,
+                PUBLISHER,
+                PUB_DESCRIPTION,
+                PUBLIC_FLAG,
+                LATEST_FLAG,
+                CREATOR,
+                MODIFIER,
+                PUB_TIME
+            ).values(
+                marketTemplateInfo.id,
+                marketTemplateInfo.templateName,
+                marketTemplateInfo.templateCode,
+                marketTemplateInfo.classifyId,
+                marketTemplateInfo.version,
+                marketTemplateInfo.templateStatus.status.toByte(),
+                marketTemplateInfo.templateStatusMsg,
+                marketTemplateInfo.logoUrl,
+                marketTemplateInfo.summary,
+                marketTemplateInfo.description,
+                marketTemplateInfo.publisher,
+                marketTemplateInfo.pubDescription,
+                marketTemplateInfo.publicFlag,
+                marketTemplateInfo.latestFlag,
+                marketTemplateInfo.creator,
+                marketTemplateInfo.modifier,
+                marketTemplateInfo.pubTime
+            ).execute()
+        }
+    }
+
     fun delete(dslContext: DSLContext, templateCode: String): Int {
         with(TTemplate.T_TEMPLATE) {
             return dslContext.deleteFrom(this)
@@ -406,8 +459,10 @@ class MarketTemplateDao {
     fun countByIdAndCode(dslContext: DSLContext, templateId: String, templateCode: String): Int {
         with(TTemplate.T_TEMPLATE) {
             return dslContext.selectCount().from(this)
-                .where(ID.eq(templateId)
-                    .and(TEMPLATE_CODE.eq(templateCode)))
+                .where(
+                    ID.eq(templateId)
+                        .and(TEMPLATE_CODE.eq(templateCode))
+                )
                 .fetchOne(0, Int::class.java)!!
         }
     }
@@ -415,8 +470,10 @@ class MarketTemplateDao {
     fun countReleaseTemplateByCode(dslContext: DSLContext, templateCode: String): Int {
         with(TTemplate.T_TEMPLATE) {
             return dslContext.selectCount().from(this)
-                .where(TEMPLATE_CODE.eq(templateCode)
-                    .and(TEMPLATE_STATUS.eq(TemplateStatusEnum.RELEASED.status.toByte())))
+                .where(
+                    TEMPLATE_CODE.eq(templateCode)
+                        .and(TEMPLATE_STATUS.eq(TemplateStatusEnum.RELEASED.status.toByte()))
+                )
                 .fetchOne(0, Int::class.java)!!
         }
     }
@@ -555,8 +612,10 @@ class MarketTemplateDao {
         )
             .from(tTemplate)
             .join(t)
-            .on(tTemplate.TEMPLATE_CODE.eq(t.field(tTemplate.TEMPLATE_CODE.name, String::class.java))
-                .and(tTemplate.CREATE_TIME.eq(t.field(KEY_CREATE_TIME, LocalDateTime::class.java))))
+            .on(
+                tTemplate.TEMPLATE_CODE.eq(t.field(tTemplate.TEMPLATE_CODE.name, String::class.java))
+                    .and(tTemplate.CREATE_TIME.eq(t.field(KEY_CREATE_TIME, LocalDateTime::class.java)))
+            )
             .leftJoin(tStoreMember)
             .on(tTemplate.TEMPLATE_CODE.eq(tStoreMember.STORE_CODE))
             .join(tStoreProjectRel)

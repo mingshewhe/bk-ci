@@ -25,49 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.store.pojo.template
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
-import com.tencent.devops.store.pojo.common.visible.DeptInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "上架模板请求V2报文体")
-data class MarketTemplateUpdateV2Request(
-    @get:Schema(title = "研发商店模板ID，更新时必传。创建时，不需要传递", required = false)
-    val templateId: String?,
+@Schema(title = "模板市场-模板请求V2报文体")
+data class MarketTemplateV2Request(
     @get:Schema(title = "项目ID", required = true)
-    val projectCode: String,
+    val projectId: String,
     @get:Schema(title = "模板代码", required = true)
     val templateCode: String,
-    @get:Schema(title = "模板名称", required = true)
-    val templateName: String,
     @get:Schema(title = "模板版本", required = true)
     val templateVersion: Long,
-    @get:Schema(title = "模板类型", required = true)
-    val templateType: PipelineTemplateType = PipelineTemplateType.PIPELINE,
     @get:Schema(title = "发布策略", required = true)
     val publishStrategy: UpgradeStrategyEnum,
-    @get:Schema(title = "应用范畴列表", required = true)
-    val categoryIdList: ArrayList<String>,
-    @get:Schema(title = "模板分类代码", required = true)
-    val classifyCode: String,
-    @get:Schema(title = "模板标签列表", required = false)
-    val labelIdList: ArrayList<String>?,
-    @get:Schema(title = "插件简介", required = false)
-    val summary: String,
-    @get:Schema(title = "插件描述", required = false)
-    val description: String,
-    @get:Schema(title = "logo地址", required = false)
-    val logoUrl: String,
-    @get:Schema(title = "发布者", required = true)
-    val publisher: String,
-    @get:Schema(title = "是否全部可见", required = true)
-    val fullScopeVisible: Boolean?,
-    @get:Schema(title = "部分可见范围", required = false)
-    val deptInfos: List<DeptInfo>?,
-    @get:Schema(title = "发布者描述", required = false)
-    val pubDescription: String,
-    @get:Schema(title = "是否为公共模板", required = false)
-    val publicFlag: Boolean = false
+    @get:Schema(title = "模板名称", required = true)
+    val templateName: String,
+    @get:Schema(title = "模板logo", required = false)
+    val logoUrl: String?,
+    @get:Schema(title = "范畴代码列表", required = false)
+    val categoryCodeList: List<String>?,
+    @get:Schema(title = "是否为公共模版", required = true)
+    val publicFlag: Boolean,
+    @get:Schema(title = "发布者", required = false)
+    val publisher: String
 )

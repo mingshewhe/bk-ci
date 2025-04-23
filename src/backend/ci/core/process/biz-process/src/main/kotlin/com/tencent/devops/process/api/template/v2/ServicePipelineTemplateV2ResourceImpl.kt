@@ -37,16 +37,15 @@ import com.tencent.devops.process.pojo.template.OptionalTemplateList
 import com.tencent.devops.process.pojo.template.TemplateListModel
 import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.service.template.v2.PipelineMarketTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 
 @RestResource
 class ServicePipelineTemplateV2ResourceImpl(
     private val pipelineMarketTemplateFacadeService: PipelineMarketTemplateFacadeService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService
 ) : ServicePipelineTemplateV2Resource {
@@ -58,18 +57,8 @@ class ServicePipelineTemplateV2ResourceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun updateMarketTemplateReference(
-        userId: String,
-        projectId: String,
-        updateMarketTemplateRequest: MarketTemplateRequest
-    ): Result<Boolean> {
-        return Result(
-            pipelineMarketTemplateFacadeService.updateMarketTemplateReference(
-                userId = userId,
-                projectId = projectId,
-                updateMarketTemplateRequest = updateMarketTemplateRequest
-            )
-        )
+    override fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Result<Boolean> {
+        return Result(pipelineMarketTemplateFacadeService.updateMarketTemplateReferenceV2(request))
     }
 
     override fun getTemplateDetails(

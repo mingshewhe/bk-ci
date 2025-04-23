@@ -35,7 +35,10 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.process.api.template.ServicePTemplateResource
+import com.tencent.devops.process.api.template.v2.ServicePipelineTemplateV2Resource
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
+import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
+import com.tencent.devops.store.common.dao.ClassifyDao
 import com.tencent.devops.store.common.dao.StoreMemberDao
 import com.tencent.devops.store.common.dao.StoreProjectRelDao
 import com.tencent.devops.store.common.dao.StoreReleaseDao
@@ -57,6 +60,8 @@ import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import com.tencent.devops.store.pojo.common.publication.ReleaseProcessItem
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.common.publication.StoreReleaseCreateRequest
+import com.tencent.devops.store.pojo.common.visible.DeptInfo
+import com.tencent.devops.store.pojo.template.MarketTemplateInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
@@ -66,6 +71,7 @@ import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
 import com.tencent.devops.store.template.service.TemplateNotifyService
 import com.tencent.devops.store.template.service.TemplateReleaseService
+import io.swagger.v3.oas.annotations.media.Schema
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -96,6 +102,9 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
 
     @Autowired
     lateinit var storeReleaseDao: StoreReleaseDao
+
+    @Autowired
+    lateinit var classifyDao: ClassifyDao
 
     @Autowired
     lateinit var storeStatisticTotalDao: StoreStatisticTotalDao
@@ -380,8 +389,184 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
     override fun releaseMarketTemplate(
         userId: String,
         request: MarketTemplateUpdateV2Request
-    ) {
+    ): Result<String> {
+        logger.info("release market template:$userId|$request")
 
+        return request.run {
+            val isInitialRelease = templateId == null && marketTemplateDao.countByCode(dslContext, templateCode) == 0
+
+            checkWhenReleaseTemplate(
+                isInitialRelease = isInitialRelease,
+                userId = userId,
+                request = request
+            )
+            val marketTemplateId = templateId ?: UUIDUtil.generate()
+            val classifyId = classifyDao.getClassifyByCode(dslContext, classifyCode, StoreTypeEnum.TEMPLATE)?.id ?: ""
+
+            dslContext.transaction { t ->
+                val context = DSL.using(t)
+
+                val version = if (isInitialRelease) {
+                    "1"
+                } else {
+                    val latest = marketTemplateDao.getUpToDateTemplateByCode(dslContext, templateCode)!!
+                    marketTemplateDao.cleanLatestFlag(context, templateCode)
+                    (latest.version.toInt() + 1).toString()
+                }
+
+                // 模板数据操作
+                marketTemplateDao.insert(
+                    dslContext = context,
+                    MarketTemplateInfo(
+                        id = marketTemplateId,
+                        templateName = templateName,
+                        templateCode = templateCode,
+                        classifyId = classifyId,
+                        version = version,
+                        templateStatus = TemplateStatusEnum.RELEASED,
+                        logoUrl = logoUrl,
+                        summary = summary,
+                        description = description,
+                        pubDescription = pubDescription,
+                        publicFlag = false,
+                        latestFlag = true,
+                        publisher = userId,
+                        creator = userId,
+                        modifier = userId,
+                        pubTime = LocalDateTime.now()
+                    )
+                )
+
+                // 关联数据操作
+                if (isInitialRelease) {
+                    storeProjectRelDao.addStoreProjectRel(
+                        dslContext = context,
+                        userId = userId,
+                        storeCode = templateCode,
+                        projectCode = projectCode,
+                        type = StoreProjectTypeEnum.INIT.type.toByte(),
+                        storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+                    )
+                    storeMemberDao.addStoreMember(
+                        dslContext = context,
+                        userId = userId,
+                        storeCode = templateCode,
+                        userName = userId,
+                        type = StoreMemberTypeEnum.ADMIN.type.toByte(),
+                        storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+                    )
+                    storeStatisticTotalDao.initStatisticData(
+                        dslContext = context,
+                        storeCode = templateCode,
+                        storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+                    )
+                }
+
+                // 标签和分类处理
+                labelIdList?.takeIf { it.isNotEmpty() }?.let {
+                    templateLabelRelDao.deleteByTemplateId(context, marketTemplateId)
+                    templateLabelRelDao.batchAdd(context, userId, marketTemplateId, it)
+                }
+                categoryIdList.takeIf { it.isNotEmpty() }?.let {
+                    templateCategoryRelDao.deleteByTemplateId(context, marketTemplateId)
+                    templateCategoryRelDao.batchAdd(context, userId, marketTemplateId, it)
+                }
+                storeReleaseDao.addStoreReleaseInfo(
+                    dslContext = context,
+                    userId = userId,
+                    storeReleaseCreateRequest = StoreReleaseCreateRequest(
+                        storeCode = templateCode,
+                        storeType = StoreTypeEnum.TEMPLATE,
+                        latestUpgrader = userId,
+                        latestUpgradeTime = LocalDateTime.now()
+                    )
+                )
+            }
+            // 更新可见范围
+            addTemplateVisibleDept(
+                userId = userId,
+                templateCode = templateCode,
+                fullScopeVisible = fullScopeVisible,
+                deptInfos = deptInfos
+            )
+            // 更新引用
+            val categoryCodeList = templateCategoryRelDao.getCategorysByTemplateId(dslContext, marketTemplateId)
+                ?.map { it[KEY_CATEGORY_CODE].toString() }
+            client.get(ServicePipelineTemplateV2Resource::class).updateMarketTemplateReferenceV2(
+                MarketTemplateV2Request(
+                    projectId = projectCode,
+                    templateCode = templateCode,
+                    templateVersion = templateVersion,
+                    publishStrategy = publishStrategy,
+                    templateName = templateName,
+                    logoUrl = logoUrl,
+                    categoryCodeList = categoryCodeList,
+                    publicFlag = publicFlag,
+                    publisher = userId
+                )
+            )
+            Result(marketTemplateId)
+        }
+    }
+
+    private fun checkWhenReleaseTemplate(
+        isInitialRelease: Boolean,
+        userId: String,
+        request: MarketTemplateUpdateV2Request
+    ): Result<Boolean> {
+        with(request) {
+            if (isInitialRelease) {
+                // 判断模板是否已经上架过研发商店
+                val isReleased = marketTemplateDao.countByCode(dslContext, templateCode) > 0
+                if (isReleased) {
+                    return I18nUtil.generateResponseDataObject(
+                        messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                        params = arrayOf(templateCode),
+                        data = false,
+                        language = I18nUtil.getLanguage(userId)
+                    )
+                }
+            }
+            // 检查名称是否重复
+            val nameCount = marketTemplateDao.countByName(dslContext, templateName)
+            if (nameCount > 0) {
+                // 抛出错误提示
+                return I18nUtil.generateResponseDataObject(
+                    messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                    params = arrayOf(templateName),
+                    data = false,
+                    language = I18nUtil.getLanguage(userId)
+                )
+            }
+            // 校验模板是否合法
+            val checkResult = client.get(ServicePTemplateResource::class).checkTemplate(
+                userId = userId,
+                projectId = projectCode,
+                templateId = templateCode
+            )
+            if (checkResult.isNotOk()) {
+                return checkResult
+            }
+            val releaseResult = client.get(ServicePTemplateResource::class).checkImageReleaseStatus(
+                userId = userId,
+                templateCode = templateCode
+            )
+            val imageCode = releaseResult.data
+            if (!imageCode.isNullOrBlank()) {
+                throw ErrorCodeException(
+                    errorCode = USER_TEMPLATE_IMAGE_IS_INVALID,
+                    params = arrayOf(imageCode)
+                )
+            }
+            validateTemplateVisibleDept(
+                templateCode = templateCode,
+                fullScopeVisible = fullScopeVisible,
+                deptInfos = deptInfos
+            )
+            // 检测模板版本是否已经上传过商店
+
+        }
+        return Result(true)
     }
 
     override fun handleTemplateRelease(
@@ -451,6 +636,19 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
     }
 
     abstract fun validateTemplateVisibleDept(templateCode: String)
+
+    abstract fun validateTemplateVisibleDept(
+        templateCode: String,
+        fullScopeVisible: Boolean?,
+        deptInfos: List<DeptInfo>?
+    )
+
+    abstract fun addTemplateVisibleDept(
+        userId: String,
+        templateCode: String,
+        fullScopeVisible: Boolean?,
+        deptInfos: List<DeptInfo>?
+    )
 
     private fun validateNameIsExist(
         templateCode: String,

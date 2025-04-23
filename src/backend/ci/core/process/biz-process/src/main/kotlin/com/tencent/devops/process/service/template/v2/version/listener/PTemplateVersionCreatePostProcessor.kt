@@ -28,11 +28,15 @@
 package com.tencent.devops.process.service.template.v2.version.listener
 
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 
 /**
  * 流水线模板版本创建后置处理器
  */
 interface PTemplateVersionCreatePostProcessor {
 
-    fun postProcessAfterCreation(postCreationContext: DeployTemplateResult)
+    fun postProcessAfterCreation(
+        context: PipelineTemplateVersionCreateContext,
+        deployTemplateResult: DeployTemplateResult
+    )
 }

@@ -32,6 +32,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -75,6 +76,17 @@ interface UserTemplateReleaseResource {
         userId: String,
         @Parameter(description = "上架模板请求报文体", required = true)
         marketTemplateUpdateRequest: MarketTemplateUpdateRequest
+    ): Result<String?>
+
+    @Operation(summary = "上架模板-v2版本")
+    @PUT
+    @Path("/desk/template/v2/release")
+    fun releaseMarketTemplate(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "上架模板请求报文体", required = true)
+        request: MarketTemplateUpdateV2Request
     ): Result<String?>
 
     @Operation(summary = "根据模板版本ID获取模板版本进度")

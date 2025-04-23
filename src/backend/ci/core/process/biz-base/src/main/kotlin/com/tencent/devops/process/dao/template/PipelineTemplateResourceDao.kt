@@ -8,9 +8,9 @@ import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.model.process.tables.TPipelineTemplateResourceVersion
 import com.tencent.devops.model.process.tables.records.TPipelineTemplateResourceVersionRecord
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -347,7 +347,12 @@ class PipelineTemplateResourceDao {
                 if (ltNumber != null) conditions.add(NUMBER.lt(ltNumber))
                 if (geNumber != null) conditions.add(NUMBER.ge(geNumber))
                 if (!srcTemplateVersions.isNullOrEmpty()) conditions.add(SRC_TEMPLATE_VERSION.`in`(srcTemplateVersions))
-                if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))
+                if (storeFlag == true) {
+                    conditions.add(STORE_FLAG.eq(true))
+                }
+                if (storeFlag == false) {
+                    conditions.add(STORE_FLAG.isNull.or(STORE_FLAG.eq(true)))
+                }
                 return conditions
             }
         }

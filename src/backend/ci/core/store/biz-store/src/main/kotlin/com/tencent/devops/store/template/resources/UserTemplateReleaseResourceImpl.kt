@@ -32,6 +32,7 @@ import com.tencent.devops.store.api.template.UserTemplateReleaseResource
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import com.tencent.devops.store.template.service.TemplateReleaseService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -53,6 +54,13 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
         marketTemplateUpdateRequest: MarketTemplateUpdateRequest
     ): Result<String?> {
         return templateReleaseService.updateMarketTemplate(userId, marketTemplateUpdateRequest)
+    }
+
+    override fun releaseMarketTemplate(
+        userId: String,
+        request: MarketTemplateUpdateV2Request
+    ): Result<String?> {
+        return templateReleaseService.releaseMarketTemplate(userId, request)
     }
 
     override fun getProcessInfo(userId: String, templateId: String): Result<StoreProcessInfo> {

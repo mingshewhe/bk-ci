@@ -1,11 +1,10 @@
 package com.tencent.devops.process.service.template.v2.version.listener
 
-import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.stereotype.Service
 
 /**
@@ -16,15 +15,24 @@ class PTemplateVersionCreateAuditPostProcessor(
     private val operationLogService: PipelineOperationLogService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : PTemplateVersionCreatePostProcessor {
-    override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
-        with(postCreationContext) {
+    override fun postProcessAfterCreation(
+        context: PipelineTemplateVersionCreateContext,
+        deployTemplateResult: DeployTemplateResult
+    ) {
+        with(deployTemplateResult) {
             val versionName = if (operationLogType == OperationLogType.CREATE_DRAFT_VERSION) {
-                pipelineTemplateResourceService.getLatestReleasedResource(
+                val baseVersion = pipelineTemplateResourceService.get(
                     projectId = projectId,
-                    templateId = templateId
-                )?.versionName ?: throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-                )
+                    templateId = templateId,
+                    version = version
+                ).baseVersion
+                baseVersion?.let {
+                    pipelineTemplateResourceService.get(
+                        projectId = projectId,
+                        templateId = templateId,
+                        version = it
+                    ).versionName
+                }
             } else {
                 versionName
             } ?: ""

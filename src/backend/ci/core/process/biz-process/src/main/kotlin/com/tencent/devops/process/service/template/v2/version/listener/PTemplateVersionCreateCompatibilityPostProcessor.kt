@@ -1,13 +1,13 @@
 package com.tencent.devops.process.service.template.v2.version.listener
 
 import com.tencent.devops.common.api.util.JsonUtil
-import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -28,9 +28,12 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
 ) : PTemplateVersionCreatePostProcessor {
     @Value("\${template.maxSaveVersionRecordNum:2}")
     private val maxSaveVersionRecordNum: Int = 2
-    override fun postProcessAfterCreation(postCreationContext: DeployTemplateResult) {
-        with(postCreationContext) {
-            logger.info("post process after creation :$postCreationContext")
+    override fun postProcessAfterCreation(
+        context: PipelineTemplateVersionCreateContext,
+        deployTemplateResult: DeployTemplateResult
+    ) {
+        with(deployTemplateResult) {
+            logger.info("post process after creation :$deployTemplateResult")
             if (!versionAction.isCreateReleaseVersion()) {
                 return
             }
