@@ -31,18 +31,21 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.auth.api.pojo.ProjectConditionDTO
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.common.service.trace.TraceTag
 import com.tencent.devops.model.process.tables.records.TTemplateRecord
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.TemplateVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
@@ -51,8 +54,10 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
+import com.tencent.devops.project.api.service.ServiceProjectResource
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.stereotype.Service
 import java.util.concurrent.Executors
 
@@ -67,8 +72,30 @@ class PipelineTemplateMigrateService(
     val pipelineTemplateResourceService: PipelineTemplateResourceService,
     val pipelineTemplateInfoService: PipelineTemplateInfoService,
     val templatePipelineDao: TemplatePipelineDao,
-    val redisOperation: RedisOperation
+    val redisOperation: RedisOperation,
+    val client: Client
 ) {
+    fun migrateTemplatesByCondition(projectConditionDTO: ProjectConditionDTO) {
+        logger.info("start to migrate Templates by condition|$projectConditionDTO")
+        val traceId = MDC.get(TraceTag.BIZID)
+        var offset = 0
+        val limit = PageUtil.MAX_PAGE_SIZE / 2
+        do {
+            val projectCodes = client.get(ServiceProjectResource::class).listProjectsByCondition(
+                projectConditionDTO = projectConditionDTO,
+                limit = limit,
+                offset = offset
+            ).data ?: break
+            projectCodes.forEach {
+                migrateProjectTemplateExecutorService.execute {
+                    MDC.put(TraceTag.BIZID, traceId)
+                    migrateTemplates(it.englishName)
+                }
+            }
+            offset += limit
+        } while (projectCodes.size == limit)
+    }
+
 
     fun migrateTemplates(projectId: String) {
         logger.info("start to migrate project templates,{}", projectId)
@@ -415,5 +442,6 @@ class PipelineTemplateMigrateService(
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTemplateMigrateService::class.java)
         private val migrateTemplateExecutorService = Executors.newFixedThreadPool(5)
+        private val migrateProjectTemplateExecutorService = Executors.newFixedThreadPool(5)
     }
 }
