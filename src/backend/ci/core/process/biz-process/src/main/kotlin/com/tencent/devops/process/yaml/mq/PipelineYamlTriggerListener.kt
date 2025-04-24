@@ -207,7 +207,7 @@ class PipelineYamlTriggerListener @Autowired constructor(
             YamlFileActionType.CREATE, YamlFileActionType.UPDATE -> {
                 pipelineYamlFileManager.createOrUpdateYamlFile(this)
                 // 只有流水线才需要触发
-                if (isTemplate) {
+                if (!isTemplate) {
                     webhookTriggerBuildService.yamlTrigger(this)
                 }
             }
@@ -219,7 +219,7 @@ class PipelineYamlTriggerListener @Autowired constructor(
             YamlFileActionType.RENAME -> {
                 pipelineYamlFileManager.renameYamlFile(event = this)
                 // 只有流水线才需要触发
-                if (isTemplate) {
+                if (!isTemplate) {
                     webhookTriggerBuildService.yamlTrigger(this)
                 }
             }

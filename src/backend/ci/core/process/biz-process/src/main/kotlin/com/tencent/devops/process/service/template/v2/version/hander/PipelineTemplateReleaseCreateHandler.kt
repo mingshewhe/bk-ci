@@ -57,7 +57,8 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val pipelineTemplateVersionCommonService: PipelineTemplateVersionCommonService
 ) : PipelineTemplateVersionCreateHandler {
 
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
@@ -86,28 +87,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             templateId = templateId
         )
         val resourceOnlyVersion = if (templateInfo == null) {
-            val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.RELEASED,
-                versionName = fixVersionName
-            )
-            pipelineTemplatePersistenceService.initializeTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo.copy(
-                    releasedVersion = defaultTemplateVersion.version,
-                    releasedVersionName = defaultTemplateVersion.versionName,
-                    releasedSettingVersion = defaultTemplateVersion.settingVersion,
-                    latestVersionStatus = VersionStatus.RELEASED
-                ),
-                pipelineTemplateResource = PipelineTemplateResource(
-                    pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                    pTemplateResourceOnlyVersion = defaultTemplateVersion
-                ).copy(
-                    releaseTime = LocalDateTime.now().timestampmilli()
-                ),
-                pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultTemplateVersion.settingVersion
-                )
-            )
-            defaultTemplateVersion
+            pipelineTemplateVersionCommonService.initializeTemplate(context = this)
         } else {
             createReleaseVersion()
         }

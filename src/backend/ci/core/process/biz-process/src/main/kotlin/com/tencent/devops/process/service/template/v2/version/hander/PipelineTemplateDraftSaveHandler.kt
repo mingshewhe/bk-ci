@@ -55,7 +55,8 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val pipelineTemplateVersionCommonService: PipelineTemplateVersionCommonService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
@@ -83,19 +84,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             templateId = templateId
         )
         val (pTemplateResourceOnlyVersion, operationLogType) = if (templateInfo == null) {
-            val defaultVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.COMMITTING
-            )
-            pipelineTemplatePersistenceService.initializeTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
-                pipelineTemplateResource = PipelineTemplateResource(
-                    pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                    pTemplateResourceOnlyVersion = defaultVersion
-                ),
-                pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultVersion.settingVersion
-                )
-            )
+            val defaultVersion = pipelineTemplateVersionCommonService.initializeTemplate(context = this)
             Pair(defaultVersion, OperationLogType.CREATE_PIPELINE_AND_DRAFT)
         } else {
             val draftResource = pipelineTemplateResourceService.getDraftVersionResource(

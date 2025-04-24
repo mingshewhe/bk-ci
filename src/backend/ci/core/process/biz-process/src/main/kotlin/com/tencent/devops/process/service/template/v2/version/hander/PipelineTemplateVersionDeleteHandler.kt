@@ -88,7 +88,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             }
 
             PipelineVersionAction.INACTIVE_BRANCH -> {
-                inactiveBranch()
+                inactiveBranchVersion()
             }
 
             PipelineVersionAction.DELETE_ALL_VERSIONS -> {
@@ -175,11 +175,11 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
         )
     }
 
-    private fun PipelineTemplateVersionDeleteContext.inactiveBranch() {
+    private fun PipelineTemplateVersionDeleteContext.inactiveBranchVersion() {
         if (branch == null) {
             throw IllegalArgumentException("branchName is null")
         }
-        pipelineTemplateTransactionService.inactiveBranch(
+        pipelineTemplateTransactionService.inactiveBranchVersion(
             projectId = projectId,
             templateId = templateId,
             branch = branch

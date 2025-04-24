@@ -7,8 +7,8 @@ import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -98,6 +98,19 @@ class PipelineTemplateInfoService @Autowired constructor(
             all = custom + market,
             custom = custom,
             market = market
+        )
+    }
+
+    fun isNameExist(
+        projectId: String,
+        templateName: String,
+        excludeTemplateId: String?
+    ): Boolean {
+        return pipelineTemplateInfoDao.isNameExist(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateName = templateName,
+            excludeTemplateId = excludeTemplateId
         )
     }
 

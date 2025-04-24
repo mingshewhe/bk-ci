@@ -29,7 +29,8 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val pipelineTemplateVersionCommonService: PipelineTemplateVersionCommonService
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.CREATE_BRANCH
@@ -72,23 +73,7 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
             templateId = templateId
         )
         val resourceOnlyVersion = if (templateInfo == null) {
-            val defaultTemplateVersion = pipelineTemplateGenerator.getDefaultVersion(
-                versionStatus = VersionStatus.BRANCH,
-                branchName = branchName
-            )
-            pipelineTemplatePersistenceService.initializeTemplate(
-                pipelineTemplateInfo = pipelineTemplateInfo,
-                pipelineTemplateResource = PipelineTemplateResource(
-                    pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                    pTemplateResourceOnlyVersion = defaultTemplateVersion
-                ).copy(
-                    branchAction = BranchVersionAction.ACTIVE
-                ),
-                pipelineTemplateSetting = pipelineTemplateSetting.copy(
-                    version = defaultTemplateVersion.settingVersion
-                )
-            )
-            defaultTemplateVersion
+            pipelineTemplateVersionCommonService.initializeTemplate(context = this)
         } else {
             createBranchVersion()
         }

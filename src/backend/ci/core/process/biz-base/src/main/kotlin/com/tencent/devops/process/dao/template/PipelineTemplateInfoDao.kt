@@ -3,10 +3,10 @@ package com.tencent.devops.process.dao.template
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
-import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
+import com.tencent.devops.model.process.tables.TPipelineTemplateInfo
+import com.tencent.devops.model.process.tables.records.TPipelineTemplateInfoRecord
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
@@ -268,6 +268,25 @@ class PipelineTemplateInfoDao {
             dslContext.selectFrom(this)
                 .where(ID.eq(templateId))
                 .fetchOne()?.convert()
+        }
+    }
+
+    fun isNameExist(
+        dslContext: DSLContext,
+        projectId: String,
+        templateName: String,
+        excludeTemplateId: String?
+    ): Boolean {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            val where = dslContext.select(ID)
+                .from(this)
+                .where(PROJECT_ID.eq(projectId))
+
+            if (excludeTemplateId != null) {
+                where.and(ID.notEqual(excludeTemplateId))
+            }
+
+            where.and(NAME.eq(templateName)).fetch().isNotEmpty
         }
     }
 

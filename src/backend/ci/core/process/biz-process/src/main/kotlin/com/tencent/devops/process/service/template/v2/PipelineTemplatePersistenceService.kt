@@ -80,9 +80,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             val context = DSL.using(configuration)
             pipelineTemplateInfoService.createOrUpdate(
                 transactionContext = context,
-                pipelineTemplateInfo = pipelineTemplateInfo.copy(
-                    releasedVersion = pipelineTemplateResource.version
-                )
+                pipelineTemplateInfo = pipelineTemplateInfo
             )
             pipelineTemplateResourceService.create(
                 transactionContext = context,
@@ -431,7 +429,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         }
     }
 
-    fun inactiveBranch(
+    fun inactiveBranchVersion(
         projectId: String,
         templateId: String,
         branch: String

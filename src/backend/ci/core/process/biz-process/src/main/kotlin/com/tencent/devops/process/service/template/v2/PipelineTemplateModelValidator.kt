@@ -27,17 +27,34 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
+import jakarta.ws.rs.core.Response
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class PipelineTemplateModelValidator {
+class PipelineTemplateModelValidator @Autowired constructor(
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+) {
 
     fun validate(
         projectId: String,
-        pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion?,
-        pipelineSetting: PipelineSetting?
+        pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
+        pipelineSetting: PipelineSetting
     ) {
+        if (pipelineTemplateInfoService.isNameExist(
+                projectId = pipelineSetting.projectId,
+                templateName = pipelineSetting.pipelineName,
+                excludeTemplateId = pTemplateResourceWithoutVersion.templateId
+            )
+        ) {
+            throw ErrorCodeException(
+                statusCode = Response.Status.CONFLICT.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_NAME_EXISTS
+            )
+        }
     }
 }
