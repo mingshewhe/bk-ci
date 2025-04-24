@@ -464,7 +464,8 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 mode = TemplateType.CUSTOMIZE,
                 srcTemplateId = null,
                 srcTemplateProjectId = null,
-                publishStrategy = null,
+                upgradeStrategy = null,
+                settingSyncStrategy = null,
                 updater = userId,
                 updateTime = LocalDateTime.now().timestampmilli()
             )
