@@ -89,7 +89,10 @@ class PacWebhookEventListener(
                 repository = repository,
                 yamlFileEvents = filterYamlFileEvents
             )
-            filterYamlFileEvents.forEach {
+            filterYamlFileEvents.filterNot {
+                // 模版不需要触发
+                it.isTemplate && it.actionType == YamlFileActionType.TRIGGER
+            }.forEach {
                 eventDispatcher.dispatch(it)
             }
         } catch (ignored: Exception) {

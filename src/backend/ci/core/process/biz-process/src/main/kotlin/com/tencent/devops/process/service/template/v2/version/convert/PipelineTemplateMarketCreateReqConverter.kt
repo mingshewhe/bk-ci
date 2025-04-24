@@ -112,6 +112,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 enablePac = false,
                 storeFlag = false,
                 creator = userId,
+                updater = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,
                 srcTemplateId = marketTemplateInfo.id,
                 category = marketTemplateDetails.classifyCode,

@@ -96,6 +96,7 @@ class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
                 category = category,
                 logoUrl = logoUrl,
                 creator = userId,
+                updater = userId,
                 latestVersionStatus = VersionStatus.RELEASED
             )
 

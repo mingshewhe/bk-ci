@@ -145,6 +145,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 enablePac = srcTemplateInfo.enablePac,
                 storeFlag = false,
                 creator = userId,
+                updater = userId,
                 latestVersionStatus = VersionStatus.RELEASED
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(

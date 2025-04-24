@@ -100,6 +100,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                     enablePac = false,
                     storeFlag = false,
                     creator = userId,
+                    updater = userId,
                     latestVersionStatus = VersionStatus.COMMITTING
                 )
             }

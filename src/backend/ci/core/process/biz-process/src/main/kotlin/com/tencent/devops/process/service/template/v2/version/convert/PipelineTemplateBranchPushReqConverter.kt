@@ -90,6 +90,7 @@ class PipelineTemplateBranchPushReqConverter(
                     enablePac = true,
                     storeFlag = false,
                     creator = userId,
+                    updater = userId,
                     latestVersionStatus = status
                 )
                 Pair(newTemplateId, templateInfo)
