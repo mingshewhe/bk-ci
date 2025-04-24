@@ -17,8 +17,10 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import org.jooq.Condition
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
+
 
 @Repository
 class PipelineTemplateResourceDao {
@@ -33,6 +35,9 @@ class PipelineTemplateResourceDao {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
             } ?: LocalDateTime.now()
             val updateTime = record.updateTime?.let {
+                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
+            } ?: LocalDateTime.now()
+            val releaseTime = record.releaseTime?.let {
                 DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
             } ?: LocalDateTime.now()
             dslContext.insertInto(
@@ -93,7 +98,7 @@ class PipelineTemplateResourceDao {
                 record.sortWeight,
                 record.creator,
                 record.updater,
-                record.releaseTime,
+                releaseTime,
                 createTime,
                 updateTime
             ).onDuplicateKeyUpdate()
@@ -116,6 +121,7 @@ class PipelineTemplateResourceDao {
                 .set(SORT_WEIGHT, record.sortWeight)
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, updateTime)
+                .set(RELEASE_TIME, releaseTime)
                 .execute()
         }
     }
@@ -150,6 +156,22 @@ class PipelineTemplateResourceDao {
                 }
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
+                .execute()
+        }
+    }
+
+    fun transformTemplateToCustom(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String
+    ) {
+        with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            dslContext.update(this)
+                .set(SRC_TEMPLATE_VERSION, DSL.inline(null as Long?))
+                .set(SRC_TEMPLATE_PROJECT_ID, DSL.inline(null as String?))
+                .set(SRC_TEMPLATE_ID, DSL.inline(null as String?))
+                .where(PROJECT_ID.eq(projectId))
+                .and(TEMPLATE_ID.eq(templateId))
                 .execute()
         }
     }

@@ -8,6 +8,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
@@ -430,11 +431,47 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "流水线Id", required = true)
+        @Parameter(description = "模板ID", required = true)
         @PathParam("templateId")
         templateId: String,
         @Parameter(description = "导出的目标版本", required = false)
         @QueryParam("version")
         version: Long?
     ): Response
+
+    @Operation(summary = "转化模板为自定义")
+    @POST
+    @Path("{templateId}/transformTemplateToCustom")
+    fun transformTemplateToCustom(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<Boolean>
+
+    @Operation(summary = "更新升级策略")
+    @PUT
+    @Path("{templateId}/updateUpgradeStrategy")
+    fun updateUpgradeStrategy(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "升级策略", required = false)
+        @QueryParam("upgradeStrategy")
+        upgradeStrategy: UpgradeStrategyEnum,
+        @Parameter(description = "配置升级策略", required = false)
+        @QueryParam("settingSyncStrategy")
+        settingSyncStrategy: UpgradeStrategyEnum
+    ): Result<Boolean>
 }

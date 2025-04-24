@@ -33,6 +33,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
@@ -48,8 +49,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCustomCreateR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
@@ -197,13 +198,7 @@ class UserPipelineTemplateV2ResourceImpl(
         projectId: String,
         templateId: String
     ): Result<PipelineTemplateDetailsResponse> {
-        logger.info("get latest template details {}|{}|{}|{}", userId, projectId, templateId)
-        permissionService.checkPipelineTemplatePermissionWithMessage(
-            userId = userId,
-            projectId = projectId,
-            permission = AuthPermission.VIEW,
-            templateId = templateId
-        )
+        logger.info("get latest template details {}|{}|{}", userId, projectId, templateId)
         return Result(
             templateFacadeService.getTemplateDetails(
                 projectId = projectId,
@@ -460,6 +455,50 @@ class UserPipelineTemplateV2ResourceImpl(
             projectId = projectId,
             templateId = templateId,
             version = version
+        )
+    }
+
+    override fun transformTemplateToCustom(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<Boolean> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.transformTemplateToCustom(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId
+            )
+        )
+    }
+
+    override fun updateUpgradeStrategy(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        upgradeStrategy: UpgradeStrategyEnum,
+        settingSyncStrategy: UpgradeStrategyEnum
+    ): Result<Boolean> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
+        return Result(
+            templateFacadeService.updateUpgradeStrategy(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                upgradeStrategy = upgradeStrategy,
+                settingSyncStrategy = settingSyncStrategy
+            )
         )
     }
 

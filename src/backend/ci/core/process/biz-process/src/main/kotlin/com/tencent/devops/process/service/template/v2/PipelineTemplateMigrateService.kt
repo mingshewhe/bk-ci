@@ -407,7 +407,7 @@ class PipelineTemplateMigrateService(
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
         // 迁移到新表后，storeFlag仅代表该模板是否上传到研发商店。
-        // 在老表中storeFlag有两种情况，一种是该模板已经上传到研发商店。另一种是该模板是从研发商店安装的。
+        // 在老表中storeFlag有两种情况，一种是该模板已经上传到研发商店。另一种是该模板是从研发商店安装的，此时storeFlag仅为1.有点混淆。
         val storeFlag = latestTemplate.storeFlag && !isConstraint
         // 旧版中，如果模板已经上传研发商店，发布策略默认为自动
         val publishStrategy = if (storeFlag) UpgradeStrategyEnum.AUTO else null

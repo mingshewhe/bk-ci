@@ -32,11 +32,11 @@ data class PipelineTemplateInfoV2(
             "- 当只有草稿版本时,那么表示的是草稿版本" +
             "- 当只有分支版本时,那么表示的是创建时的分支版本", required = true
     )
-    val releasedVersion: Long? = null,
+    val releasedVersion: Long = 0,
     @get:Schema(title = "最新发布版本名称", required = false)
     val releasedVersionName: String? = null,
     @get:Schema(title = "最新发布配置版本号", required = false)
-    val releasedSettingVersion: Int? = null,
+    val releasedSettingVersion: Int = 0,
     @get:Schema(title = "模板状态", required = false)
     val latestVersionStatus: VersionStatus,
     @get:Schema(title = "来源名称", required = true)

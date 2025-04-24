@@ -208,4 +208,16 @@ class PipelineTemplateResourceService @Autowired constructor(
             commonCondition = commonCondition
         )
     }
+
+    fun transformTemplateToCustom(
+        transactionContext: DSLContext,
+        projectId: String,
+        templateId: String
+    ) {
+        pipelineTemplateResourceDao.transformTemplateToCustom(
+            dslContext = transactionContext,
+            projectId = projectId,
+            templateId = templateId
+        )
+    }
 }

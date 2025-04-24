@@ -448,4 +448,47 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             commonCondition = inactiveBranchCondition
         )
     }
+
+    fun transformTemplateToCustom(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ) {
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            val templateInfo = pipelineTemplateInfoService.get(
+                projectId = projectId,
+                templateId = templateId
+            )
+            val newTemplateInfo = templateInfo.copy(
+                mode = TemplateType.CUSTOMIZE,
+                srcTemplateId = null,
+                srcTemplateProjectId = null,
+                publishStrategy = null,
+                updater = userId,
+                updateTime = LocalDateTime.now().timestampmilli()
+            )
+            pipelineTemplateInfoService.delete(
+                transactionContext = context,
+                commonCondition = PipelineTemplateCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+            pipelineTemplateInfoService.createOrUpdate(
+                transactionContext = context,
+                pipelineTemplateInfo = newTemplateInfo
+            )
+            pipelineTemplateResourceService.transformTemplateToCustom(
+                transactionContext = context,
+                projectId = projectId,
+                templateId = templateId
+            )
+            client.get(ServiceStoreResource::class).uninstall(
+                storeCode = templateInfo.srcTemplateId!!,
+                storeType = StoreTypeEnum.TEMPLATE,
+                projectCode = templateInfo.projectId
+            )
+        }
+    }
 }

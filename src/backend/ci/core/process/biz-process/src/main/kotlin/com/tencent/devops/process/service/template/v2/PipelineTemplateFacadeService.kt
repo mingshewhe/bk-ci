@@ -12,6 +12,7 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
@@ -21,6 +22,7 @@ import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
+import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
@@ -33,8 +35,10 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketRelatedInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
@@ -62,6 +66,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineOperationLogDao: PipelineOperationLogDao,
     private val dslContext: DSLContext,
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService
 ) {
     fun create(
         userId: String,
@@ -489,6 +494,43 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             pipelineId = templateId
         )
+
+        val pipelineTemplateMarketRelatedInfo = basicInfo.takeIf { it.mode == TemplateType.CONSTRAINT }?.let {
+            val latestInstalledTemplate = pipelineTemplateResourceService.getLatestReleasedResource(
+                projectId = it.projectId,
+                templateId = it.id
+            )!!
+
+            if (it.srcTemplateProjectId == null || it.srcTemplateId == null) {
+                throw IllegalArgumentException("srcTemplateProjectId or srcTemplateId is null")
+            }
+            val latestInstalledVersionName = pipelineTemplateResourceService.get(
+                projectId = it.srcTemplateProjectId!!,
+                templateId = it.srcTemplateId!!,
+                version = latestInstalledTemplate.srcTemplateVersion!!
+            ).versionName!!
+
+            val srcMarketTemplateInfo = pipelineTemplateInfoService.get(
+                projectId = it.srcTemplateProjectId!!,
+                templateId = it.srcTemplateId!!
+            )
+            val latestSrcMarketTemplate = pipelineTemplateResourceService.getLatestReleasedResource(
+                projectId = it.srcTemplateProjectId!!,
+                templateId = it.srcTemplateId!!
+            )!!
+
+            PipelineTemplateMarketRelatedInfo(
+                srcMarketProjectId = srcMarketTemplateInfo.projectId,
+                srcMarketTemplateId = srcMarketTemplateInfo.id,
+                srcMarketTemplateName = srcMarketTemplateInfo.name,
+                srcMarketTemplateLatestVersion = latestSrcMarketTemplate.version,
+                srcMarketTemplateLatestVersionName = latestSrcMarketTemplate.versionName!!,
+                latestInstalledVersion = latestInstalledTemplate.srcTemplateVersion!!,
+                latestInstalledVersionName = latestInstalledVersionName,
+                upgradeStrategy = it.upgradeStrategy!!,
+                settingSyncStrategy = it.settingSyncStrategy!!
+            )
+        }
         return PipelineTemplateInfoResponse(
             id = basicInfo.id,
             projectId = basicInfo.projectId,
@@ -525,11 +567,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 enable = yamlInfo != null
             ),
             yamlInfo = yamlInfo,
-            yamlExist = yamlExist
+            yamlExist = yamlExist,
+            pipelineTemplateMarketRelatedInfo = pipelineTemplateMarketRelatedInfo
         )
     }
 
-    // 查看全部模板版本历史
     fun getTemplateVersions(
         commonCondition: PipelineTemplateResourceCommonCondition
     ): Page<PipelineVersionSimple> {
@@ -633,6 +675,26 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    fun transformTemplateToCustom(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Boolean {
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
+        if (templateInfo.mode != TemplateType.CONSTRAINT) {
+            throw ErrorCodeException(errorCode = "")
+        }
+        pipelineTemplatePersistenceService.transformTemplateToCustom(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId
+        )
+        return true
+    }
+
     fun getOperationLogsInPage(
         userId: String,
         projectId: String,
@@ -712,6 +774,27 @@ class PipelineTemplateFacadeService @Autowired constructor(
         if (templateResource.storeFlag == true)
             throw ErrorCodeException(errorCode = "该版本已经发布")
         // todo 检查模型
+        return true
+    }
+
+    fun updateUpgradeStrategy(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        upgradeStrategy: UpgradeStrategyEnum,
+        settingSyncStrategy: UpgradeStrategyEnum,
+    ): Boolean {
+        pipelineTemplateInfoService.update(
+            record = PipelineTemplateInfoUpdateInfo(
+                upgradeStrategy = upgradeStrategy,
+                settingSyncStrategy = settingSyncStrategy,
+                updater = userId
+            ),
+            commonCondition = PipelineTemplateCommonCondition(
+                projectId = projectId,
+                templateId = templateId
+            )
+        )
         return true
     }
 
