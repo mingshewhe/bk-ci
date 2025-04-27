@@ -39,13 +39,13 @@ import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
-import com.tencent.devops.process.service.template.v2.PipelineMarketTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 
 @RestResource
 class ServicePipelineTemplateV2ResourceImpl(
-    private val pipelineMarketTemplateFacadeService: PipelineMarketTemplateFacadeService,
+    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService
 ) : ServicePipelineTemplateV2Resource {
@@ -58,7 +58,7 @@ class ServicePipelineTemplateV2ResourceImpl(
     }
 
     override fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Result<Boolean> {
-        return Result(pipelineMarketTemplateFacadeService.updateMarketTemplateReferenceV2(request))
+        return Result(pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReferenceV2(request))
     }
 
     override fun getTemplateDetails(
@@ -81,7 +81,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         templateId: String,
         version: Long
     ): Result<String?> {
-        return pipelineMarketTemplateFacadeService.checkImageReleaseStatus(
+        return pipelineTemplateMarketTemplateFacadeService.checkImageReleaseStatus(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
@@ -107,7 +107,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         storeFlag: Boolean
     ): Result<Boolean> {
         return Result(
-            pipelineMarketTemplateFacadeService.updateTemplateStoreFlag(
+            pipelineTemplateMarketTemplateFacadeService.updateTemplateStoreFlag(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,

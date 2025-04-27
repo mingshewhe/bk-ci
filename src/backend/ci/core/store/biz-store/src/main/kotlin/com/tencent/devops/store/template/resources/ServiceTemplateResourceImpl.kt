@@ -36,6 +36,7 @@ import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.TemplateDetail
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
@@ -117,6 +118,13 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         templateVersionRelationInfo: TemplateVersionRelationInfo
     ): Result<Boolean> {
         marketTemplateService.createTemplateVersionRel(templateVersionRelationInfo)
+        return Result(true)
+    }
+
+    override fun createTemplateVersionInstallHistory(
+        installHistoryInfo: TemplateVersionInstallHistoryInfo
+    ): Result<Boolean> {
+        marketTemplateService.createTemplateVersionInstallHistory(installHistoryInfo)
         return Result(true)
     }
 }

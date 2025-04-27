@@ -26,6 +26,7 @@ import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -37,7 +38,7 @@ import java.util.concurrent.Executors
  * 流水线市场模版门面类
  */
 @Service
-class PipelineMarketTemplateFacadeService @Autowired constructor(
+class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val dslContext: DSLContext,
@@ -233,6 +234,16 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                     request = pipelineTemplateCopyCreateReq
                 )
             )
+            client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+                TemplateVersionInstallHistoryInfo(
+                    srcMarketTemplateProjectCode = srcTemplateResource.projectId,
+                    srcMarketTemplateCode = srcTemplateResource.templateId,
+                    projectCode = templateInfo.projectId,
+                    templateCode = templateInfo.id,
+                    version = srcTemplateResource.version,
+                    versionName = srcTemplateResource.versionName!!
+                )
+            )
         }
     }
 
@@ -290,7 +301,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PipelineMarketTemplateFacadeService::class.java)
+        private val logger = LoggerFactory.getLogger(PipelineTemplateMarketTemplateFacadeService::class.java)
         private val updateMarketTemplateExecutorService = Executors.newFixedThreadPool(3)
     }
 }

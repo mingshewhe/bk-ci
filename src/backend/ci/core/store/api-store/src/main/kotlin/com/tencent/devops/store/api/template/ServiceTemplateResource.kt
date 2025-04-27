@@ -34,6 +34,7 @@ import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.MarketTemplateSimple
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
@@ -128,9 +129,17 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "创建模板版本关联关系")
     @POST
-    @Path("createTemplateVersionRel")
+    @Path("/createTemplateVersionRel")
     fun createTemplateVersionRel(
         @Parameter(description = "模板版本发布关联实体", required = true)
         templateVersionRelationInfo: TemplateVersionRelationInfo
+    ): Result<Boolean>
+
+    @Operation(summary = "记录模板版本安装历史")
+    @POST
+    @Path("/createTemplateVersionInstallHistory")
+    fun createTemplateVersionInstallHistory(
+        @Parameter(description = "模板版本安装历史实体", required = true)
+        installHistoryInfo: TemplateVersionInstallHistoryInfo
     ): Result<Boolean>
 }

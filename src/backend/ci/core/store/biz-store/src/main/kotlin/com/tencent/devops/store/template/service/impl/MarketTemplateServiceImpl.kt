@@ -99,6 +99,7 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.TemplateDetail
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
@@ -106,6 +107,7 @@ import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
+import com.tencent.devops.store.template.dao.TemplateVersionInstallHistoryDao
 import com.tencent.devops.store.template.dao.TemplateVersionReleasedRelDao
 import com.tencent.devops.store.template.service.MarketTemplateService
 import com.tencent.devops.store.template.service.TemplateCategoryService
@@ -194,6 +196,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     @Autowired
     lateinit var templateVersionReleasedRelDao: TemplateVersionReleasedRelDao
+
+    @Autowired
+    lateinit var templateVersionInstallHistoryDao: TemplateVersionInstallHistoryDao
 
     companion object {
         private val logger = LoggerFactory.getLogger(MarketTemplateServiceImpl::class.java)
@@ -1205,9 +1210,26 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     override fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo) {
         logger.info("create Template Version Rel :$templateVersionRelationInfo")
+        val templateId = marketTemplateDao.getLatestTemplateByCode(
+            dslContext = dslContext,
+            templateCode = templateVersionRelationInfo.templateCode
+        )!!.id
+
         templateVersionReleasedRelDao.createOrUpdate(
             dslContext = dslContext,
-            record = templateVersionRelationInfo
+            record = templateVersionRelationInfo.copy(templateId = templateId)
+        )
+    }
+
+    override fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo) {
+        logger.info("create template version install history:$installHistoryInfo")
+        val srcMarketTemplateId = marketTemplateDao.getLatestTemplateByCode(
+            dslContext = dslContext,
+            templateCode = installHistoryInfo.srcMarketTemplateCode
+        )!!.id
+        templateVersionInstallHistoryDao.create(
+            dslContext = dslContext,
+            record = installHistoryInfo.copy(srcMarketTemplateId = srcMarketTemplateId)
         )
     }
 }

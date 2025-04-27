@@ -38,6 +38,7 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.MarketTemplateSimple
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
@@ -152,4 +153,9 @@ interface MarketTemplateService {
      * 创建模板版本发布关联实体
      * */
     fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo)
+
+    /**
+     * 记录模板版本安装历史
+     * */
+    fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo)
 }

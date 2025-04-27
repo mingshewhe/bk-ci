@@ -56,6 +56,7 @@ import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
@@ -282,6 +283,30 @@ class PipelineTemplateMigrateService(
                     templateSetting = currentSetting,
                     syncPermission = false
                 )
+
+                // 如果该模板是从研发商店安装的，需要记录其安装的版本历史
+                if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
+                    val srcTemplateResource = templateDao.getTemplate(
+                        dslContext = dslContext,
+                        projectId = pipelineTemplateResource.srcTemplateProjectId!!,
+                        version = pipelineTemplateResource.srcTemplateVersion!!
+                    ) ?: throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+                    )
+
+                    client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+                        TemplateVersionInstallHistoryInfo(
+                            srcMarketTemplateProjectCode = srcTemplateResource.projectId,
+                            srcMarketTemplateCode = srcTemplateResource.id,
+                            projectCode = latestTemplate.projectId,
+                            templateCode = latestTemplate.id,
+                            version = srcTemplateResource.version,
+                            versionName = srcTemplateResource.versionName
+                        )
+                    )
+                }
+
+                // 如果该模板已经上架至研发商店，需要记录发布的版本历史
                 if (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
                     marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED) {
                     client.get(ServiceTemplateResource::class).createTemplateVersionRel(
@@ -299,7 +324,10 @@ class PipelineTemplateMigrateService(
                 }
             }
             pipelineTemplateInfoService.createOrUpdate(
-                pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate)
+                pipelineTemplateInfo = createPipelineTemplateInfo(
+                    marketTemplateStatus = marketTemplateStatus,
+                    latestTemplate = latestTemplate
+                )
             )
 
             val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
@@ -420,7 +448,10 @@ class PipelineTemplateMigrateService(
         )
     }
 
-    fun createPipelineTemplateInfo(latestTemplate: TTemplateRecord): PipelineTemplateInfoV2 {
+    fun createPipelineTemplateInfo(
+        marketTemplateStatus: TemplateStatusEnum,
+        latestTemplate: TTemplateRecord
+    ): PipelineTemplateInfoV2 {
         val latestReleasedResource = pipelineTemplateResourceService.getLatestReleasedResource(
             projectId = latestTemplate.projectId,
             templateId = latestTemplate.id
@@ -435,13 +466,11 @@ class PipelineTemplateMigrateService(
         )
         logger.info("template instance count {}|{}|{}", latestTemplate.projectId, latestTemplate.id, instanceSize)
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
-        val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
-        // 迁移到新表后，storeFlag仅代表该模板是否上传到研发商店。
-        // 在老表中storeFlag有两种情况，一种是该模板已经上传到研发商店。另一种是该模板是从研发商店安装的，此时storeFlag仅为1.有点混淆。
-        // todo 仅关联，但未上架研发商店，是否要 设置为true呢？
-        val storeFlag = latestTemplate.storeFlag && !isConstraint
-        // 旧版中，如果模板已经上传研发商店，发布策略默认为自动
+        // 新版本中，storeFlag表示为是否已经上架研发商店。关联和下架模板storeFlag都为false
+        val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
+        // 如果模板已经上传研发商店，发布策略默认为自动
         val publishStrategy = if (storeFlag) UpgradeStrategyEnum.AUTO else null
+        val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
         return PipelineTemplateInfoV2(
             id = latestTemplate.id,
             projectId = latestTemplate.projectId,
