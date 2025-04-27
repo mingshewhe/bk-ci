@@ -26,7 +26,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -276,7 +276,7 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "指定提交的分支", required = false)
         @QueryParam("targetBranch")
         targetBranch: String? = null
-    ): Result<TemplatePrefetchReleaseResult>
+    ): Result<PreFetchTemplateReleaseResult>
 
     @Operation(summary = "将当前草稿发布为正式版本")
     @POST

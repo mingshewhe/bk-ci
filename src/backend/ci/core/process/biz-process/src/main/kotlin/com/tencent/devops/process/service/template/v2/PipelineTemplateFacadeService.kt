@@ -40,7 +40,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketRelatedInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
@@ -184,7 +184,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String?
-    ): TemplatePrefetchReleaseResult {
+    ): PreFetchTemplateReleaseResult {
         val draftResource = pipelineTemplateResourceService.get(
             projectId = projectId, templateId = templateId, version = version
         )
@@ -204,7 +204,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             targetAction = targetAction,
             targetBranch = targetBranch
         ).second
-        return TemplatePrefetchReleaseResult(
+        return PreFetchTemplateReleaseResult(
             templateId = templateId,
             templateName = templateSetting.pipelineName,
             version = resourceOnlyVersion.version,

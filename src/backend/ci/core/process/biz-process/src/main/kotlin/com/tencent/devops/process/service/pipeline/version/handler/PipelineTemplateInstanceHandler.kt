@@ -84,13 +84,13 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
         val pipelineInfo =
             pipelineInfoDao.getPipelineInfo(dslContext = dslContext, projectId = projectId, pipelineId = pipelineId)
         val resourceOnlyVersion = if (pipelineInfo == null) {
-            pipelineVersionCreateCommonService.createPipeline(context = this)
+            pipelineVersionCreateCommonService.initializeTemplate(context = this)
         } else {
             val resourceOnlyVersion = pipelineVersionGenerator.generateInstanceVersion(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newResource = pipelineResourceWithoutVersion,
-                newSetting = PipelineSettingVersion.convertFromSetting(pipelineSetting),
+                newModel = pipelineResourceWithoutVersion.model,
+                useTemplateSettings = useTemplateSettings,
                 enablePac = enablePac,
                 repoHashId = yamlFileInfo?.repoHashId,
                 targetAction = targetAction,

@@ -30,16 +30,21 @@ package com.tencent.devops.process.service.pipeline.version
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
+import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
+import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
+import com.tencent.devops.process.service.StageTagService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
@@ -55,7 +60,9 @@ class PipelineVersionGenerator constructor(
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineResourceDao: PipelineResourceDao,
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
-    private val client: Client
+    private val client: Client,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val stageTagService: StageTagService
 ) {
 
     /**
@@ -157,14 +164,18 @@ class PipelineVersionGenerator constructor(
 
     /**
      * 生成正式版本
+     *
+     * @param draftResource 草稿版本编排
+     * @param newModel 新版编排
+     * @param useTemplateSettings 是否使用模版设置
      */
     fun generateReleaseVersion(
         projectId: String,
         pipelineId: String,
         draftResource: PipelineResourceVersion? = null,
-        draftSetting: PipelineSettingVersion? = null,
-        newResource: PipelineResourceWithoutVersion,
-        newSetting: PipelineSettingVersion
+        newModel: Model,
+        instanceFromTemplate: Boolean = false,
+        useTemplateSettings: Boolean = false
     ): PipelineResourceOnlyVersion {
         val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
             dslContext = dslContext,
@@ -185,16 +196,14 @@ class PipelineVersionGenerator constructor(
             projectId = projectId,
             pipelineId = pipelineId
         )
-        val latestReleaseSetting = latestReleaseResource?.let {
-            pipelineSettingVersionDao.getSettingVersion(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = pipelineId,
-                version = latestReleaseResource.settingVersion ?: latestReleaseResource.version
-            )
-        }
         val (version, settingVersion) = if (draftResource == null) {
-            Pair(latestResource.version + 1, latestSetting.version + 1)
+            // 不使用模版设置,则使用流水线最新版本,如果最新版本不存在,则创建一个新的
+            val newSettingVersion = if (instanceFromTemplate && !useTemplateSettings) {
+                latestReleaseResource?.settingVersion ?: (latestSetting.version + 1)
+            } else {
+                latestSetting.version + 1
+            }
+            Pair(latestResource.version + 1, newSettingVersion)
         } else {
             Pair(draftResource.version, draftResource.settingVersion)
         }
@@ -223,12 +232,12 @@ class PipelineVersionGenerator constructor(
             val pipelineVersion = PipelineVersionUtils.getPipelineVersion(
                 currVersion = latestReleaseResource.pipelineVersion ?: latestReleaseResource.version,
                 originModel = latestReleaseResource.model,
-                newModel = newResource.model
+                newModel = newModel
             )
             val triggerVersion = PipelineVersionUtils.getTriggerVersion(
                 currVersion = latestReleaseResource.triggerVersion ?: 0,
                 originModel = latestReleaseResource.model,
-                newModel = newResource.model
+                newModel = newModel
             ).coerceAtLeast(1)
             val versionName = PipelineVersionUtils.getVersionName(
                 versionNum = versionNum,
@@ -294,17 +303,8 @@ class PipelineVersionGenerator constructor(
             }
 
             CodeTargetAction.COMMIT_TO_BRANCH -> {
-                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
-                    projectId = projectId,
-                    repositoryType = RepositoryType.ID,
-                    repoHashIdOrName = repoHashId
-                ).data
-                if (serverRepository !is GitScmServerRepository) {
-                    throw ErrorCodeException(
-                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
-                    )
-                }
-                if (serverRepository.defaultBranch == targetBranch) {
+                val defaultBranch = getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
+                if (defaultBranch == targetBranch) {
                     Pair(VersionStatus.RELEASED, null)
                 } else {
                     Pair(VersionStatus.BRANCH, targetBranch)
@@ -319,28 +319,32 @@ class PipelineVersionGenerator constructor(
 
     /**
      * 生成模版实例化版本
+     *
      */
     fun generateInstanceVersion(
         projectId: String,
         pipelineId: String,
-        newResource: PipelineResourceWithoutVersion,
-        newSetting: PipelineSettingVersion,
+        newModel: Model,
+        useTemplateSettings: Boolean,
         enablePac: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null,
+        defaultBranch: String? = null,
         templateId: String,
         templateVersion: Long
     ): PipelineResourceOnlyVersion {
+
         return if (enablePac) {
             generateInstanceVersionWithPac(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newResource = newResource,
-                newSetting = newSetting,
+                newModel = newModel,
+                useTemplateSettings = useTemplateSettings,
                 repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch,
+                defaultBranch = defaultBranch,
                 templateId = templateId,
                 templateVersion = templateVersion
             )
@@ -348,8 +352,9 @@ class PipelineVersionGenerator constructor(
             val resourceOnlyVersion = generateReleaseVersion(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newResource = newResource,
-                newSetting = newSetting,
+                newModel = newModel,
+                instanceFromTemplate = true,
+                useTemplateSettings = useTemplateSettings
             )
             resourceOnlyVersion
         }
@@ -361,13 +366,14 @@ class PipelineVersionGenerator constructor(
     fun generateInstanceVersionWithPac(
         projectId: String,
         pipelineId: String,
-        newResource: PipelineResourceWithoutVersion,
-        newSetting: PipelineSettingVersion,
+        newModel: Model,
+        useTemplateSettings: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null,
+        defaultBranch: String? = null,
         templateId: String,
-        templateVersion: Long
+        templateVersion: Long,
     ): PipelineResourceOnlyVersion {
         if (repoHashId.isNullOrBlank()) {
             throw IllegalArgumentException("repoHashId is null")
@@ -377,8 +383,9 @@ class PipelineVersionGenerator constructor(
                 generateReleaseVersion(
                     projectId = projectId,
                     pipelineId = pipelineId,
-                    newResource = newResource,
-                    newSetting = newSetting,
+                    newModel = newModel,
+                    instanceFromTemplate = true,
+                    useTemplateSettings = useTemplateSettings
                 )
             }
 
@@ -396,23 +403,16 @@ class PipelineVersionGenerator constructor(
                 if (targetBranch == null) {
                     throw IllegalArgumentException("targetBranch is null")
                 }
-                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
-                    projectId = projectId,
-                    repositoryType = RepositoryType.ID,
-                    repoHashIdOrName = repoHashId
-                ).data
-                if (serverRepository !is GitScmServerRepository) {
-                    throw ErrorCodeException(
-                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
-                    )
-                }
+                val finalDefaultBranch =
+                    defaultBranch ?: getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
                 // 如果选择的是默认分支,则应该发布正式版本
-                if (targetBranch == serverRepository.defaultBranch) {
+                if (targetBranch == finalDefaultBranch) {
                     generateReleaseVersion(
                         projectId = projectId,
                         pipelineId = pipelineId,
-                        newResource = newResource,
-                        newSetting = newSetting,
+                        newModel = newModel,
+                        instanceFromTemplate = true,
+                        useTemplateSettings = useTemplateSettings
                     )
                 } else {
                     generateBranchVersion(
@@ -427,6 +427,79 @@ class PipelineVersionGenerator constructor(
                 throw IllegalArgumentException("targetAction is illegal")
             }
         }
+    }
+
+    fun batchGenerateInstanceVersion(
+        projectId: String,
+        templateId: String,
+        version: Long,
+        useTemplateSettings: Boolean,
+        request: PipelineTemplateInstancesRequest
+    ): List<PrefetchReleaseResult> {
+        val templateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        )
+        with(request) {
+            val defaultBranch = targetAction?.takeIf { enablePac && it == CodeTargetAction.COMMIT_TO_BRANCH }?.let {
+                getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
+            }
+
+            val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
+            return instanceReleaseInfos.map { releaseInfo ->
+                val instanceModel = PipelineUtils.instanceModel(
+                    templateModel = templateResource.model as Model,
+                    pipelineName = releaseInfo.pipelineName,
+                    buildNo = releaseInfo.buildNo,
+                    param = releaseInfo.param,
+                    instanceFromTemplate = true,
+                    defaultStageTagId = defaultStageTagId,
+                    templateId = templateId
+                )
+                val resourceOnlyVersion = generateInstanceVersion(
+                    projectId = projectId,
+                    pipelineId = releaseInfo.pipelineId,
+                    newModel = instanceModel,
+                    useTemplateSettings = useTemplateSettings,
+                    enablePac = enablePac,
+                    repoHashId = repoHashId,
+                    targetAction = targetAction,
+                    targetBranch = targetBranch,
+                    defaultBranch = defaultBranch,
+                    templateId = templateId,
+                    templateVersion = version
+                )
+                PrefetchReleaseResult(
+                    pipelineId = releaseInfo.pipelineId,
+                    pipelineName = releaseInfo.pipelineName,
+                    version = resourceOnlyVersion.version,
+                    newVersionNum = resourceOnlyVersion.versionNum!!,
+                    newVersionName = resourceOnlyVersion.versionName!!
+                )
+            }
+        }
+
+    }
+
+    private fun getDefaultBranch(
+        projectId: String,
+        repoHashId: String?
+    ): String? {
+        if (repoHashId.isNullOrBlank()) {
+            throw IllegalArgumentException("repoHashId is null")
+        }
+        val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepositoryById(
+            projectId = projectId,
+            repositoryType = RepositoryType.ID,
+            repoHashIdOrName = repoHashId
+        ).data
+        if (serverRepository !is GitScmServerRepository) {
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+            )
+        }
+        return serverRepository.defaultBranch
     }
 
     companion object {

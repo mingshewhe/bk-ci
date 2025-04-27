@@ -33,9 +33,10 @@ import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
+import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
@@ -173,6 +174,29 @@ interface UserPipelineTemplateInstanceV2Resource {
         pipelineIds: Set<String>
     ): Result<Map<String/*pipelineId*/, TemplateInstanceParams>>
 
+    @Operation(summary = "模版实例化发布时版本信息预览")
+    @POST
+    @Path("/templates/{templateId}/{version}/preFetch")
+    fun preFetchTemplateInstance(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "模版版本", required = true)
+        @PathParam("version")
+        version: Long,
+        @Parameter(description = "是否应用模板设置")
+        @QueryParam("useTemplateSettings")
+        useTemplateSettings: Boolean,
+        @Parameter(description = "更新实例", required = true)
+        request: PipelineTemplateInstancesRequest
+    ): Result<List<PrefetchReleaseResult>>
+
     @Operation(summary = "版本对比")
     @GET
     @Path("/{templateId}/compare/")
@@ -193,4 +217,73 @@ interface UserPipelineTemplateInstanceV2Resource {
         @QueryParam("comparedVersion")
         comparedVersion: Long?
     ): Result<PipelineTemplateInstanceCompareResponse>
+
+    @Operation(summary = "获取模版实例任务")
+    @GET
+    @Path("/templates/{templateId}/task/{baseId}")
+    fun getTemplateInstanceTask(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "任务ID", required = true)
+        @PathParam("baseId")
+        baseId: String
+    ): Result<PipelineTemplateInstanceBase>
+
+    @Operation(summary = "获取运行中模版实例任务列表")
+    @GET
+    @Path("/templates/{templateId}/task")
+    fun listTemplateInstanceTask(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<List<PipelineTemplateInstanceBase>>
+
+    @Operation(summary = "重试模版实例任务,返回新的任务ID")
+    @POST
+    @Path("/templates/{templateId}/task/{baseId}/retry")
+    fun retryTemplateInstanceTask(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "任务ID", required = true)
+        @PathParam("baseId")
+        baseId: String
+    ): Result<String>
+
+    @Operation(summary = "获取模版实例任务")
+    @GET
+    @Path("/templates/{templateId}/task/{baseId}/detail")
+    fun getTemplateInstanceTaskDetail(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "任务ID", required = true)
+        @PathParam("baseId")
+        baseId: String
+    ): Result<PipelineTemplateInstancesRequest>
 }

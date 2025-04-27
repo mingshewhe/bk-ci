@@ -21,7 +21,6 @@ data class PipelineTemplateInstanceBase(
     val targetAction: CodeTargetAction?,
     val type: TemplateInstanceType,
     val repoHashId: String?,
-    val scmType: ScmType?,
     val targetBranch: String?,
     val creator: String,
     val modifier: String,

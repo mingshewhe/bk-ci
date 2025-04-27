@@ -67,7 +67,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private val versionCreateListeners: List<PipelineVersionCreatePostProcessor>
 ) {
 
-    fun createPipeline(
+    fun initializeTemplate(
         userId: String,
         pipelineBasicInfo: PipelineBasicInfo,
         pipelineModelBasicInfo: PipelineModelBasicInfo,

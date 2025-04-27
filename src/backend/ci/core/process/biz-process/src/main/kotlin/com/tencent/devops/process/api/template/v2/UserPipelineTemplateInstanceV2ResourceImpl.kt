@@ -30,9 +30,10 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
@@ -138,6 +139,26 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
+    override fun preFetchTemplateInstance(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long,
+        useTemplateSettings: Boolean,
+        request: PipelineTemplateInstancesRequest
+    ): Result<List<PrefetchReleaseResult>> {
+        return Result(
+            instanceFacadeService.preFetchTemplateInstance(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                version = version,
+                useTemplateSettings = useTemplateSettings,
+                request = request
+            )
+        )
+    }
+
     override fun compare(
         userId: String,
         projectId: String,
@@ -154,5 +175,40 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 compareVersion = comparedVersion
             )
         )
+    }
+
+    override fun getTemplateInstanceTask(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        baseId: String
+    ): Result<PipelineTemplateInstanceBase> {
+        TODO("Not yet implemented")
+    }
+
+    override fun listTemplateInstanceTask(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<List<PipelineTemplateInstanceBase>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun retryTemplateInstanceTask(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        baseId: String
+    ): Result<String> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getTemplateInstanceTaskDetail(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        baseId: String
+    ): Result<PipelineTemplateInstancesRequest> {
+        TODO("Not yet implemented")
     }
 }

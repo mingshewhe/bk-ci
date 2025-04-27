@@ -51,7 +51,7 @@ class PipelineVersionCreateCommonService @Autowired constructor(
     /**
      * 创建流水线
      */
-    fun createPipeline(context: PipelineVersionCreateContext): PipelineResourceOnlyVersion {
+    fun initializeTemplate(context: PipelineVersionCreateContext): PipelineResourceOnlyVersion {
         with(context) {
             val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
                 versionStatus = pipelineResourceWithoutVersion.status,
@@ -61,7 +61,7 @@ class PipelineVersionCreateCommonService @Autowired constructor(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineVersionPersistenceService.createPipeline(
+            pipelineVersionPersistenceService.initializeTemplate(
                 userId = userId,
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelBasicInfo = pipelineModelBasicInfo,

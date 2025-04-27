@@ -46,5 +46,9 @@ data class TemplateInstanceParams(
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>,
     @get:Schema(title = "是否更新了推荐版本号基准值", required = false)
-    val updateBuildNo: Boolean? = null
+    val updateBuildNo: Boolean? = null,
+    @get:Schema(title = "yaml文件代码库hashId", required = false)
+    val repoHashId: String? = null,
+    @get:Schema(title = "yaml文件路径", required = false)
+    val filePath: String? = null
 )

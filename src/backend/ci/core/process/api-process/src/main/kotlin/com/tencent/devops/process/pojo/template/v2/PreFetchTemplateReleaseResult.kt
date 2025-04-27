@@ -27,22 +27,20 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.api.enums.ScmType
-import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "模板实例请求体")
-data class PipelineTemplateInstancesRequest(
-    @get:Schema(title = "是否本次开启PAC", required = true)
-    val enablePac: Boolean,
-    @get:Schema(title = "版本描述", required = false)
-    val description: String?,
-    @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
-    val targetAction: CodeTargetAction?,
-    @get:Schema(title = "代码库hashId", required = true)
-    val repoHashId: String?,
-    @get:Schema(title = "目标分支", required = true)
-    val targetBranch: String?,
-    @get:Schema(title = "模板实例发布实体", required = true)
-    val instanceReleaseInfos: List<PipelineTemplateInstanceReleaseInfo>
+@Schema(title = "流水线模版发布预览结果")
+data class PreFetchTemplateReleaseResult(
+    @get:Schema(title = "模版ID", required = true)
+    val templateId: String,
+    @get:Schema(title = "模版名称", required = true)
+    val templateName: String,
+    @get:Schema(title = "草稿版本", required = true)
+    val version: Long,
+    @get:Schema(title = "版本排序号", required = true)
+    val number: Int,
+    @get:Schema(title = "发布版本号", required = false)
+    val newVersionNum: Int?,
+    @get:Schema(title = "生成版本名称", required = false)
+    val newVersionName: String
 )

@@ -27,20 +27,20 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.process.pojo.PipelineIdAndName
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模版发布预览结果")
-data class TemplatePrefetchReleaseResult(
-    @get:Schema(title = "模版ID", required = true)
-    val templateId: String,
-    @get:Schema(title = "模版名称", required = true)
-    val templateName: String,
-    @get:Schema(title = "草稿版本", required = true)
-    val version: Long,
-    @get:Schema(title = "版本排序号", required = true)
-    val number: Int,
-    @get:Schema(title = "发布版本号", required = false)
-    val newVersionNum: Int?,
-    @get:Schema(title = "生成版本名称", required = false)
-    val newVersionName: String
+@Schema(title = "流水线模版实例化发布预览请求")
+data class PreFetchTemplateInstanceReleaseReq(
+    @get:Schema(title = "流水线ID和名称", required = true)
+    val pipelineIdAndNames: List<PipelineIdAndName>,
+    @get:Schema(title = "启用PAC", required = true)
+    val enablePac: Boolean = false,
+    @get:Schema(title = "提交动作", required = true)
+    val targetAction: CodeTargetAction? = null,
+    @get:Schema(title = "代码库hashId", required = true)
+    val repoHashId: String? = null,
+    @get:Schema(title = "指定提交的分支", required = true)
+    val targetBranch: String? = null,
 )

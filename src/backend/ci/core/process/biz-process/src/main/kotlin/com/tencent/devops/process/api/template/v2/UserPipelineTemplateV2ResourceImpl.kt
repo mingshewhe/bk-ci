@@ -53,7 +53,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
-import com.tencent.devops.process.pojo.template.v2.TemplatePrefetchReleaseResult
+import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -290,7 +290,7 @@ class UserPipelineTemplateV2ResourceImpl(
         targetAction: CodeTargetAction?,
         repoHashId: String?,
         targetBranch: String?
-    ): Result<TemplatePrefetchReleaseResult> {
+    ): Result<PreFetchTemplateReleaseResult> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
             projectId = projectId,

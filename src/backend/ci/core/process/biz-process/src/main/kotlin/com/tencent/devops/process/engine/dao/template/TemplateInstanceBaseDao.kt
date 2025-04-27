@@ -59,7 +59,6 @@ class TemplateInstanceBaseDao {
         description: String? = null,
         type: String? = TemplateInstanceType.UPDATE.name,
         repoHashId: String? = null,
-        scmType: ScmType? = null,
         targetBranch: String? = null
     ) {
         with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
@@ -80,7 +79,6 @@ class TemplateInstanceBaseDao {
                     DESCRIPTION,
                     TYPE,
                     REPO_HASH_ID,
-                    SCM_TYPE,
                     TARGET_BRANCH
                 ).values(
                     baseId,
@@ -97,7 +95,6 @@ class TemplateInstanceBaseDao {
                     description,
                     type,
                     repoHashId,
-                    scmType?.name,
                     targetBranch
                 )
                     .onDuplicateKeyUpdate()
@@ -113,7 +110,6 @@ class TemplateInstanceBaseDao {
                     .set(TYPE, type)
                     .set(DESCRIPTION, description)
                     .set(REPO_HASH_ID, repoHashId)
-                    .set(SCM_TYPE, scmType?.name)
                     .set(TARGET_BRANCH, targetBranch)
                     .execute()
             )
@@ -229,7 +225,6 @@ class TemplateInstanceBaseDao {
             pac = pac,
             targetAction = targetAction?.let { CodeTargetAction.valueOf(targetAction) },
             type = TemplateInstanceType.valueOf(type),
-            scmType = scmType?.let { ScmType.valueOf(scmType) },
             repoHashId = repoHashId,
             targetBranch = targetBranch,
             creator = creator,

@@ -42,5 +42,5 @@ data class PipelineTemplateInstanceReleaseInfo(
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>? = null,
     @get:Schema(title = "yaml文件路径", required = true)
-    val filePath: String?
+    val filePath: String? = null
 )

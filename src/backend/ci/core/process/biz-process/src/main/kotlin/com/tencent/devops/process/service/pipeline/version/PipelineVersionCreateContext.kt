@@ -65,6 +65,10 @@ data class PipelineVersionCreateContext(
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时的分支或者代码库推送的分支", required = false)
     val branchName: String? = null,
+    @get:Schema(title = "是否从模版实例化", required = false)
+    val instanceFromTemplate: Boolean = false,
+    @get:Schema(title = "是否使用模版设置", required = false)
+    val useTemplateSettings: Boolean = false,
     @get:Schema(title = "模版实例化信息", required = false)
     val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null
 )
