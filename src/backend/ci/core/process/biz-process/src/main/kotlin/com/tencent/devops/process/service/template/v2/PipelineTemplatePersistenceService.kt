@@ -130,9 +130,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             )
             pipelineTemplateResourceService.create(
                 transactionContext = context,
-                pipelineTemplateResource = templateResource.copy(
-                    releaseTime = LocalDateTime.now().timestampmilli()
-                )
+                pipelineTemplateResource = templateResource
             )
             pipelineTemplateSettingService.createOrUpdate(
                 transactionContext = context,

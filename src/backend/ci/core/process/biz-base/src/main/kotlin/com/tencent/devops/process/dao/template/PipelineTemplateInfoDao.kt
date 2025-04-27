@@ -2,6 +2,7 @@ package com.tencent.devops.process.dao.template
 
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
@@ -24,12 +25,6 @@ class PipelineTemplateInfoDao {
         record: PipelineTemplateInfoV2
     ) {
         with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
-            val createTime = record.createdTime?.let {
-                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            } ?: LocalDateTime.now()
-            val updateTime = record.updateTime?.let {
-                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            } ?: LocalDateTime.now()
             dslContext.insertInto(
                 this,
                 ID,
@@ -81,8 +76,8 @@ class PipelineTemplateInfoDao {
                 record.instancePipelineCount,
                 record.creator,
                 record.updater,
-                createTime,
-                updateTime
+                record.createdTime.toLocalDateTimeOrDefault(),
+                record.updateTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
                 .set(NAME, record.name)
                 .set(DESC, record.desc)
@@ -100,7 +95,7 @@ class PipelineTemplateInfoDao {
                 .set(DEBUG_PIPELINE_COUNT, record.debugPipelineCount)
                 .set(INSTANCE_PIPELINE_COUNT, record.instancePipelineCount)
                 .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, updateTime)
+                .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
                 .execute()
         }
     }
@@ -169,19 +164,6 @@ class PipelineTemplateInfoDao {
                     }
                 }
                 .fetch().map { it.convert() }
-        }
-    }
-
-    fun listIds(
-        dslContext: DSLContext,
-        commonCondition: PipelineTemplateCommonCondition
-    ): List<String> {
-        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
-            dslContext.select(ID)
-                .from(this)
-                .where(buildQueryCondition(commonCondition))
-                .fetch()
-                .map { it.value1() }
         }
     }
 

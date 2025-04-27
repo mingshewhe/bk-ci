@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
@@ -27,12 +28,6 @@ class PipelineTemplateSettingDao {
         val waitQueueTimeSecond = DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute)
         val labelStr = JsonUtil.toJson(record.labels)
         val pipelineAsCodeSettings = record.pipelineAsCodeSettings?.let { self -> JsonUtil.toJson(self) }
-        val createTime = record.createdTime?.let {
-            DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-        } ?: LocalDateTime.now()
-        val updateTime = record.updateTime?.let {
-            DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-        } ?: LocalDateTime.now()
         with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.insertInto(
                 this,
@@ -75,8 +70,8 @@ class PipelineTemplateSettingDao {
                 record.maxConRunningQueueSize ?: 50,
                 record.creator,
                 record.updater,
-                createTime,
-                updateTime
+                record.createdTime.toLocalDateTimeOrDefault(),
+                record.updateTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
                 .set(NAME, record.pipelineName)
                 .set(DESC, record.desc)
@@ -92,7 +87,7 @@ class PipelineTemplateSettingDao {
                 .set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType))
                 .set(MAX_CON_RUNNING_QUEUE_SIZE, record.maxConRunningQueueSize)
                 .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, updateTime)
+                .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
                 .execute()
         }
     }

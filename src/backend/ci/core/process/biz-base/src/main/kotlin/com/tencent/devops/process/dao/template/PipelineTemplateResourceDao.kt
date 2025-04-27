@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
@@ -31,15 +32,6 @@ class PipelineTemplateResourceDao {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val params = record.params?.let { JsonUtil.toJson(it) }
             val model = record.model.let { JsonUtil.toJson(it) }
-            val createTime = record.createdTime?.let {
-                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            } ?: LocalDateTime.now()
-            val updateTime = record.updateTime?.let {
-                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            } ?: LocalDateTime.now()
-            val releaseTime = record.releaseTime?.let {
-                DateTimeUtil.convertTimestampToLocalDateTime(it / 1000)
-            } ?: LocalDateTime.now()
             dslContext.insertInto(
                 this,
                 PROJECT_ID,
@@ -98,9 +90,9 @@ class PipelineTemplateResourceDao {
                 record.sortWeight,
                 record.creator,
                 record.updater,
-                releaseTime,
-                createTime,
-                updateTime
+                record.releaseTime.toLocalDateTimeOrDefault(),
+                record.createdTime.toLocalDateTimeOrDefault(),
+                record.updateTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
                 .set(STORE_FLAG, record.storeFlag)
                 .set(SETTING_VERSION, record.settingVersion)
@@ -120,8 +112,8 @@ class PipelineTemplateResourceDao {
                 .set(DESCRIPTION, record.description)
                 .set(SORT_WEIGHT, record.sortWeight)
                 .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, updateTime)
-                .set(RELEASE_TIME, releaseTime)
+                .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
+                .set(RELEASE_TIME, record.releaseTime.toLocalDateTimeOrDefault())
                 .execute()
         }
     }
