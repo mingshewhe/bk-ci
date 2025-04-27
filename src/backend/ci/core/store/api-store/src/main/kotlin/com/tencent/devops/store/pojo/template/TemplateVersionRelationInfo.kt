@@ -1,0 +1,26 @@
+package com.tencent.devops.store.pojo.template
+
+import io.swagger.v3.oas.annotations.media.Schema
+import org.joda.time.LocalDateTime
+
+@Schema(title = "模板版本发布关联实体")
+data class TemplateVersionRelationInfo(
+    @get:Schema(title = "研发商店模板ID")
+    val templateId: String,
+    @get:Schema(title = "模板代码（对应process数据库的ID）")
+    val templateCode: String,
+    @get:Schema(title = "发布版本号")
+    val version: Long,
+    @get:Schema(title = "发布版本名称")
+    val versionName: String,
+    @get:Schema(title = "是否发布")
+    val published: Boolean,
+    @get:Schema(title = "创建人")
+    val creator: String,
+    @get:Schema(title = "更新人")
+    val updater: String,
+    @get:Schema(title = "创建时间")
+    val createTime: LocalDateTime? = null,
+    @get:Schema(title = "更新时间")
+    val updateTime: LocalDateTime? = null
+)

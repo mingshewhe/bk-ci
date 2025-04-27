@@ -104,6 +104,8 @@ import com.tencent.devops.store.common.service.StoreUserService
 import com.tencent.devops.store.common.service.action.StoreDecorateFactory
 import com.tencent.devops.store.pojo.common.InstallStoreReq
 import com.tencent.devops.store.pojo.common.enums.StoreProjectTypeEnum
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.template.dao.TemplateVersionReleasedRelDao
 import com.tencent.devops.store.template.service.MarketTemplateService
 import com.tencent.devops.store.template.service.TemplateCategoryService
 import com.tencent.devops.store.template.service.TemplateLabelService
@@ -188,6 +190,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     @Autowired
     lateinit var client: Client
+
+    @Autowired
+    lateinit var templateVersionReleasedRelDao: TemplateVersionReleasedRelDao
 
     companion object {
         private val logger = LoggerFactory.getLogger(MarketTemplateServiceImpl::class.java)
@@ -1178,5 +1183,12 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             )
         }
         return Result(true)
+    }
+
+    override fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo) {
+        templateVersionReleasedRelDao.createOrUpdate(
+            dslContext = dslContext,
+            record = templateVersionRelationInfo
+        )
     }
 }

@@ -65,10 +65,13 @@ import com.tencent.devops.store.pojo.template.MarketTemplateInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
+import com.tencent.devops.store.pojo.template.TemplatePublishedCheckResult
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
+import com.tencent.devops.store.template.dao.TemplateVersionReleasedRelDao
 import com.tencent.devops.store.template.service.TemplateNotifyService
 import com.tencent.devops.store.template.service.TemplateReleaseService
 import org.jooq.DSLContext
@@ -116,6 +119,9 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
 
     @Autowired
     lateinit var client: Client
+
+    @Autowired
+    lateinit var templateVersionReleasedRelDao: TemplateVersionReleasedRelDao
 
     private val logger = LoggerFactory.getLogger(TemplateReleaseServiceImpl::class.java)
 
@@ -400,8 +406,16 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                 request = request
             )
             val marketTemplateId = templateId ?: UUIDUtil.generate()
-            val classifyId = classifyDao.getClassifyByCode(dslContext, classifyCode, StoreTypeEnum.TEMPLATE)?.id ?: ""
-
+            val classifyId = classifyDao.getClassifyByCode(
+                dslContext = dslContext,
+                classifyCode = classifyCode,
+                type = StoreTypeEnum.TEMPLATE
+            )?.id ?: ""
+            val templateResource = client.get(ServicePipelineTemplateV2Resource::class).getTemplateDetails(
+                projectId = projectCode,
+                templateId = templateCode,
+                version = templateVersion
+            )
             dslContext.transaction { t ->
                 val context = DSL.using(t)
 
@@ -427,7 +441,7 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                         summary = summary,
                         description = description,
                         pubDescription = pubDescription,
-                        publicFlag = false,
+                        publicFlag = publicFlag,
                         latestFlag = true,
                         publisher = userId,
                         creator = userId,
@@ -480,6 +494,18 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                         latestUpgradeTime = LocalDateTime.now()
                     )
                 )
+                templateVersionReleasedRelDao.createOrUpdate(
+                    dslContext = context,
+                    record = TemplateVersionRelationInfo(
+                        templateId = marketTemplateId,
+                        templateCode = templateCode,
+                        version = templateVersion,
+                        versionName = templateResource.data?.resource?.versionName ?: "",
+                        published = true,
+                        creator = publisher,
+                        updater = publisher
+                    )
+                )
             }
             // 更新可见范围
             addTemplateVisibleDept(
@@ -494,6 +520,7 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
             client.get(ServicePipelineTemplateV2Resource::class).updateMarketTemplateReferenceV2(
                 MarketTemplateV2Request(
                     projectId = projectCode,
+                    marketTemplateId = marketTemplateId,
                     templateCode = templateCode,
                     templateVersion = templateVersion,
                     publishStrategy = publishStrategy,
@@ -866,5 +893,19 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
             }
         }
         return Result(true)
+    }
+
+    override fun judgeMarketTemplatePublished(templateCode: String): TemplatePublishedCheckResult {
+        val isPublished = marketTemplateDao.judgeMarketTemplatePublished(dslContext, templateCode)
+        return if (isPublished) {
+            TemplatePublishedCheckResult(
+                published = true,
+                templateId = marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)?.id ?: ""
+            )
+        } else {
+            TemplatePublishedCheckResult(
+                published = false
+            )
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.tencent.devops.process.service.template.v2
 
-import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
@@ -9,7 +8,6 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
-import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
@@ -22,10 +20,11 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
-import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateReleaseCreateHandler
 import com.tencent.devops.store.api.image.ServiceStoreImageResource
+import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -46,7 +45,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
     private val pipelineTemplateReleaseCreateHandler: PipelineTemplateReleaseCreateHandler,
-    private val pipelineTemplateCopyCreateReqConverter: PipelineTemplateCopyCreateReqConverter
+    private val pipelineTemplateCopyCreateReqConverter: PipelineTempelateCopyCreateReqConverter
 ) {
 
     fun updateMarketTemplateReference(
@@ -58,7 +57,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
         with(updateMarketTemplateRequest) {
             val srcTemplateId = templateCode
             val category = JsonUtil.toJson(categoryCodeList ?: emptyList<String>(), false)
-            // todo 待上线稳定后，从新表中获取
+            // todo 待上线后稳定后，从新表获取。
             val projectId2TemplateIdOfReference = templateDao.listTemplateReferenceId(
                 dslContext = dslContext,
                 templateId = srcTemplateId
@@ -126,6 +125,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
             upgradeTemplateAuto(
                 userId = publisher,
                 projectId = projectId,
+                marketTemplateId = marketTemplateId,
                 templateId = templateCode,
                 version = templateVersion
             )
@@ -157,37 +157,17 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                 ),
                 commonCondition = PipelineTemplateCommonCondition(
                     projectId = projectId,
-                    templateId = templateId,
-                    storeFlag = storeFlag
+                    templateId = templateId
                 )
             )
         }
         return true
     }
 
-    fun updateTemplatePublishStrategy(
-        userId: String,
-        projectId: String,
-        templateId: String
-    ) {
-        pipelineTemplateInfoService.get(
-            projectId = projectId,
-            templateId = templateId
-        )
-        pipelineTemplateInfoService.update(
-            record = PipelineTemplateInfoUpdateInfo(
-                storeFlag = true
-            ),
-            commonCondition = PipelineTemplateCommonCondition(
-                projectId = projectId,
-                templateId = templateId
-            )
-        )
-    }
-
     fun upgradeTemplateAuto(
         userId: String,
         projectId: String,
+        marketTemplateId: String,
         templateId: String,
         version: Long
     ) {
@@ -211,6 +191,17 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                 projectId = projectId,
                 templateId = templateId,
                 version = version
+            )
+        )
+        client.get(ServiceTemplateResource::class).createTemplateVersionRel(
+            TemplateVersionRelationInfo(
+                templateId = marketTemplateId,
+                templateCode = templateId,
+                version = version,
+                versionName = srcTemplateResource.versionName!!,
+                published = true,
+                creator = userId,
+                updater = userId
             )
         )
         // todo 最好分页

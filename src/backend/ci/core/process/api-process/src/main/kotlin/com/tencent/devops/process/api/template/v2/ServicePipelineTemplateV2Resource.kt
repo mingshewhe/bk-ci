@@ -89,7 +89,7 @@ interface ServicePipelineTemplateV2Resource {
 
     @Operation(summary = "查看模板详情")
     @GET
-    @Path("/{projectId}/{templateId}details/")
+    @Path("/{projectId}/{templateId}/details/")
     fun getTemplateDetails(
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")

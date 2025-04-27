@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.redis.RedisOperation
@@ -114,6 +115,18 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             // 最新正式版本不能删除
             throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         }
+        val storeFlag = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = version
+        ).storeFlag
+
+        if (storeFlag == true) {
+            throw ErrorCodeException(
+                errorCode = "该版本已发布，不允许直接删除，需下架研发商店版本"
+            )
+        }
+
         val instanceSize = templatePipelineDao.countByVersionFeat(
             dslContext = dslContext,
             projectId = projectId,

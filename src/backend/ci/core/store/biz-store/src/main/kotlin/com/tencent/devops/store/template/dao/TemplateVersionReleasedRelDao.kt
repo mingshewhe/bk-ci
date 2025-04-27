@@ -25,31 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.store.template.dao
 
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import org.jooq.DSLContext
+import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
-@Schema(title = "模板市场-模板请求V2报文体")
-data class MarketTemplateV2Request(
-    @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "研发商店模板ID", required = true)
-    val marketTemplateId: String,
-    @get:Schema(title = "模板代码", required = true)
-    val templateCode: String,
-    @get:Schema(title = "模板版本", required = true)
-    val templateVersion: Long,
-    @get:Schema(title = "发布策略", required = true)
-    val publishStrategy: UpgradeStrategyEnum,
-    @get:Schema(title = "模板名称", required = true)
-    val templateName: String,
-    @get:Schema(title = "模板logo", required = false)
-    val logoUrl: String?,
-    @get:Schema(title = "范畴代码列表", required = false)
-    val categoryCodeList: List<String>?,
-    @get:Schema(title = "是否为公共模版", required = true)
-    val publicFlag: Boolean,
-    @get:Schema(title = "发布者", required = false)
-    val publisher: String
-)
+@Suppress("ALL")
+@Repository
+class TemplateVersionReleasedRelDao {
+    fun createOrUpdate(
+        dslContext: DSLContext,
+        record: TemplateVersionRelationInfo
+    ) {
+        with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+            dslContext.insertInto(
+                this,
+                TEMPLATE_ID,
+                TEMPLATE_CODE,
+                VERSION,
+                VERSION_NAME,
+                PUBLISHED,
+                CREATOR,
+                UPDATER
+            ).values(
+                record.templateId,
+                record.templateCode,
+                record.version,
+                record.versionName,
+                record.published,
+                record.creator,
+                record.updater
+            ).onDuplicateKeyUpdate()
+                .set(PUBLISHED, record.published)
+                .set(UPDATER, record.updater)
+                .set(UPDATE_TIME, LocalDateTime.now())
+                .execute()
+        }
+    }
+}

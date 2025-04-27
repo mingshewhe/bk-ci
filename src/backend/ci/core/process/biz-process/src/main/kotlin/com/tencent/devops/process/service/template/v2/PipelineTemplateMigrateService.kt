@@ -55,6 +55,8 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceProjectResource
+import com.tencent.devops.store.api.template.ServiceTemplateResource
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -177,6 +179,10 @@ class PipelineTemplateMigrateService(
                 "migrate template srcTemplateProjectId {},templateVersionInfos{}",
                 srcTemplateProjectId, templateVersionInfos
             )
+            val publishedCheckResult = client.get(ServiceTemplateResource::class).judgeMarketTemplatePublished(
+                templateCode = templateId
+            ).data
+            val isTemplatePublishedToMarket = publishedCheckResult?.published ?: false
 
             var versionSequence = 0
             var pipelineVersion = 0
@@ -266,6 +272,7 @@ class PipelineTemplateMigrateService(
                     triggerVersion = triggerVersion,
                     params = currentTemplateParams,
                     modelTransferResult = modelTransferResult,
+                    isTemplatePublishedToMarket = isTemplatePublishedToMarket
                 )
 
                 pipelineTemplatePersistenceService.createReleaseVersion(
@@ -274,8 +281,21 @@ class PipelineTemplateMigrateService(
                     templateSetting = currentSetting,
                     syncPermission = false
                 )
-            }
 
+                if (isTemplatePublishedToMarket) {
+                    client.get(ServiceTemplateResource::class).createTemplateVersionRel(
+                        TemplateVersionRelationInfo(
+                            templateId = publishedCheckResult?.templateId ?: "",
+                            templateCode = templateId,
+                            version = pipelineTemplateResource.version,
+                            versionName = pipelineTemplateResource.versionName!!,
+                            published = true,
+                            creator = templateVersionInfo.creator,
+                            updater = templateVersionInfo.creator
+                        )
+                    )
+                }
+            }
             pipelineTemplateInfoService.createOrUpdate(
                 pipelineTemplateInfo = createPipelineTemplateInfo(latestTemplate)
             )
@@ -345,7 +365,8 @@ class PipelineTemplateMigrateService(
         modelTransferResult: PTemplateModelTransferResult,
         seq: Int,
         pipelineVersion: Int,
-        triggerVersion: Int
+        triggerVersion: Int,
+        isTemplatePublishedToMarket: Boolean
     ): PipelineTemplateResource {
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val (srcTemplateProjectId, srcTemplateVersion, srcTemplateId) =
@@ -354,7 +375,7 @@ class PipelineTemplateMigrateService(
             } else {
                 Triple(null, null, null)
             }
-        val storeFlag = !isConstraint && latestTemplate.storeFlag
+        val storeFlag = !isConstraint && isTemplatePublishedToMarket
 
         return PipelineTemplateResource(
             projectId = latestTemplate.projectId,
@@ -408,6 +429,7 @@ class PipelineTemplateMigrateService(
         val strategy = if (isConstraint) UpgradeStrategyEnum.AUTO else null
         // 迁移到新表后，storeFlag仅代表该模板是否上传到研发商店。
         // 在老表中storeFlag有两种情况，一种是该模板已经上传到研发商店。另一种是该模板是从研发商店安装的，此时storeFlag仅为1.有点混淆。
+        // todo 仅关联，但未上架研发商店，是否要 设置为true呢？
         val storeFlag = latestTemplate.storeFlag && !isConstraint
         // 旧版中，如果模板已经上传研发商店，发布策略默认为自动
         val publishStrategy = if (storeFlag) UpgradeStrategyEnum.AUTO else null

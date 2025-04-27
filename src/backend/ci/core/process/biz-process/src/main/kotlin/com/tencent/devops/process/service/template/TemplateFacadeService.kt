@@ -2424,6 +2424,10 @@ class TemplateFacadeService @Autowired constructor(
             projectId = projectId,
             updateMarketTemplateRequest = updateMarketTemplateRequest
         )
+        pipelineTemplateMigrateService.asyncMigrateTemplate(
+            projectId = projectId,
+            templateId = updateMarketTemplateRequest.templateCode
+        )
         return true
     }
 

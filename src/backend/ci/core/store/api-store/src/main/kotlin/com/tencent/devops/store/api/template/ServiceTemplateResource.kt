@@ -33,6 +33,8 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.TemplateDetail
+import com.tencent.devops.store.pojo.template.TemplatePublishedCheckResult
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -114,4 +116,21 @@ interface ServiceTemplateResource {
         @PathParam("templateCode")
         templateCode: String
     ): Result<TemplateDetail?>
+
+    @Operation(summary = "创建模板版本关联关系")
+    @POST
+    @Path("createTemplateVersionRel")
+    fun createTemplateVersionRel(
+        @Parameter(description = "模板版本发布关联实体", required = true)
+        templateVersionRelationInfo: TemplateVersionRelationInfo
+    ): Result<Boolean>
+
+    @Operation(summary = "判断研发商店模板是否上架")
+    @GET
+    @Path("/templateCodes/{templateCode}")
+    fun judgeMarketTemplatePublished(
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String
+    ): Result<TemplatePublishedCheckResult>
 }

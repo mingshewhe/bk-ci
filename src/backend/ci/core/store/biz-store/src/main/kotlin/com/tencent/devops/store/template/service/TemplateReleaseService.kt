@@ -33,6 +33,7 @@ import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
+import com.tencent.devops.store.pojo.template.TemplatePublishedCheckResult
 import org.jooq.DSLContext
 
 @Suppress("ALL")
@@ -77,4 +78,9 @@ interface TemplateReleaseService {
      * 下架模板
      */
     fun offlineTemplate(userId: String, templateCode: String, version: String?, reason: String?): Result<Boolean>
+
+    /**
+     * 模板是否上架
+     */
+    fun judgeMarketTemplatePublished(templateCode: String): TemplatePublishedCheckResult
 }
