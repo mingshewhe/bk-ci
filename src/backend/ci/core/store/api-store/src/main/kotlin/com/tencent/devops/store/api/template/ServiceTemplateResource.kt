@@ -127,7 +127,7 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "判断研发商店模板是否上架")
     @GET
-    @Path("/templateCodes/{templateCode}")
+    @Path("/templateCodes/judgeMarketTemplatePublished/{templateCode}")
     fun judgeMarketTemplatePublished(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
