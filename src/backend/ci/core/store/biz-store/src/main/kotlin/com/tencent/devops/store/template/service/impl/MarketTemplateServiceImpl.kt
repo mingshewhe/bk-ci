@@ -1204,6 +1204,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
     }
 
     override fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo) {
+        logger.info("create Template Version Rel :$templateVersionRelationInfo")
         templateVersionReleasedRelDao.createOrUpdate(
             dslContext = dslContext,
             record = templateVersionRelationInfo

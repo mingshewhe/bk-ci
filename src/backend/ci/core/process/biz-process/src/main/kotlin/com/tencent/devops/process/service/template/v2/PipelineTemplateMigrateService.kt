@@ -283,7 +283,7 @@ class PipelineTemplateMigrateService(
                     syncPermission = false
                 )
                 if (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
-                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED){
+                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED) {
                     client.get(ServiceTemplateResource::class).createTemplateVersionRel(
                         TemplateVersionRelationInfo(
                             templateId = marketTemplateInfo.templateId,
@@ -378,17 +378,24 @@ class PipelineTemplateMigrateService(
                 Triple(null, null, null)
             }
         val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
+        val version = if (isConstraint) {
+            pipelineTemplateResourceService.getOrNull(
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = latestTemplate.projectId,
+                    templateId = latestTemplate.id,
+                    srcTemplateVersion = srcTemplateVersion
+                )
+            )?.version ?: pipelineTemplateGenerator.generateTemplateVersion()
+        } else {
+            currentTemplate.version
+        }
 
         return PipelineTemplateResource(
             projectId = latestTemplate.projectId,
             templateId = latestTemplate.id,
             type = PipelineTemplateType.PIPELINE,
             settingVersion = seq,
-            version = if (isConstraint) {
-                pipelineTemplateGenerator.generateTemplateVersion()
-            } else {
-                currentTemplate.version
-            },
+            version = version,
             storeFlag = storeFlag,
             number = seq,
             versionName = currentTemplate.versionName,

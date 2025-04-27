@@ -784,6 +784,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         upgradeStrategy: UpgradeStrategyEnum,
         settingSyncStrategy: UpgradeStrategyEnum,
     ): Boolean {
+        // todo 当策略是自动升级时，将安装最新版本
         pipelineTemplateInfoService.update(
             record = PipelineTemplateInfoUpdateInfo(
                 upgradeStrategy = upgradeStrategy,
