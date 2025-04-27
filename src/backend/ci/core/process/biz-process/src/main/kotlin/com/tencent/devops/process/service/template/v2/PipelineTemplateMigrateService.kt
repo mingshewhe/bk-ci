@@ -57,6 +57,7 @@ import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -179,10 +180,10 @@ class PipelineTemplateMigrateService(
                 "migrate template srcTemplateProjectId {},templateVersionInfos{}",
                 srcTemplateProjectId, templateVersionInfos
             )
-            val publishedCheckResult = client.get(ServiceTemplateResource::class).judgeMarketTemplatePublished(
+            val marketTemplateInfo = client.get(ServiceTemplateResource::class).getMarketTemplateInfo(
                 templateCode = templateId
-            ).data
-            val isTemplatePublishedToMarket = publishedCheckResult?.published ?: false
+            ).data!!
+            val marketTemplateStatus = marketTemplateInfo.status
 
             var versionSequence = 0
             var pipelineVersion = 0
@@ -272,7 +273,7 @@ class PipelineTemplateMigrateService(
                     triggerVersion = triggerVersion,
                     params = currentTemplateParams,
                     modelTransferResult = modelTransferResult,
-                    isTemplatePublishedToMarket = isTemplatePublishedToMarket
+                    marketTemplateStatus = marketTemplateStatus
                 )
 
                 pipelineTemplatePersistenceService.createReleaseVersion(
@@ -281,15 +282,16 @@ class PipelineTemplateMigrateService(
                     templateSetting = currentSetting,
                     syncPermission = false
                 )
-
-                if (isTemplatePublishedToMarket) {
+                if (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
+                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED){
                     client.get(ServiceTemplateResource::class).createTemplateVersionRel(
                         TemplateVersionRelationInfo(
-                            templateId = publishedCheckResult?.templateId ?: "",
+                            templateId = marketTemplateInfo.templateId,
                             templateCode = templateId,
                             version = pipelineTemplateResource.version,
                             versionName = pipelineTemplateResource.versionName!!,
-                            published = true,
+                            number = pipelineTemplateResource.number,
+                            published = marketTemplateStatus == TemplateStatusEnum.RELEASED,
                             creator = templateVersionInfo.creator,
                             updater = templateVersionInfo.creator
                         )
@@ -366,7 +368,7 @@ class PipelineTemplateMigrateService(
         seq: Int,
         pipelineVersion: Int,
         triggerVersion: Int,
-        isTemplatePublishedToMarket: Boolean
+        marketTemplateStatus: TemplateStatusEnum
     ): PipelineTemplateResource {
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val (srcTemplateProjectId, srcTemplateVersion, srcTemplateId) =
@@ -375,7 +377,7 @@ class PipelineTemplateMigrateService(
             } else {
                 Triple(null, null, null)
             }
-        val storeFlag = !isConstraint && isTemplatePublishedToMarket
+        val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
 
         return PipelineTemplateResource(
             projectId = latestTemplate.projectId,

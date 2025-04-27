@@ -65,8 +65,6 @@ import com.tencent.devops.store.pojo.template.MarketTemplateInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
-import com.tencent.devops.store.pojo.template.TemplatePublishedCheckResult
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
@@ -82,7 +80,7 @@ import org.springframework.beans.factory.annotation.Value
 import java.time.LocalDateTime
 
 @Suppress("ALL")
-abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateReleaseService {
+abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
 
     @Autowired
     lateinit var dslContext: DSLContext
@@ -411,11 +409,6 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                 classifyCode = classifyCode,
                 type = StoreTypeEnum.TEMPLATE
             )?.id ?: ""
-            val templateResource = client.get(ServicePipelineTemplateV2Resource::class).getTemplateDetails(
-                projectId = projectCode,
-                templateId = templateCode,
-                version = templateVersion
-            )
             dslContext.transaction { t ->
                 val context = DSL.using(t)
 
@@ -492,18 +485,6 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
                         storeType = StoreTypeEnum.TEMPLATE,
                         latestUpgrader = userId,
                         latestUpgradeTime = LocalDateTime.now()
-                    )
-                )
-                templateVersionReleasedRelDao.createOrUpdate(
-                    dslContext = context,
-                    record = TemplateVersionRelationInfo(
-                        templateId = marketTemplateId,
-                        templateCode = templateCode,
-                        version = templateVersion,
-                        versionName = templateResource.data?.resource?.versionName ?: "",
-                        published = true,
-                        creator = publisher,
-                        updater = publisher
                     )
                 )
             }
@@ -893,19 +874,5 @@ abstract class TemplateReleaseServiceImpl @Autowired constructor() : TemplateRel
             }
         }
         return Result(true)
-    }
-
-    override fun judgeMarketTemplatePublished(templateCode: String): TemplatePublishedCheckResult {
-        val isPublished = marketTemplateDao.judgeMarketTemplatePublished(dslContext, templateCode)
-        return if (isPublished) {
-            TemplatePublishedCheckResult(
-                published = true,
-                templateId = marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)?.id ?: ""
-            )
-        } else {
-            TemplatePublishedCheckResult(
-                published = false
-            )
-        }
     }
 }

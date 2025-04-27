@@ -11,6 +11,8 @@ data class TemplateVersionRelationInfo(
     val templateCode: String,
     @get:Schema(title = "发布版本号")
     val version: Long,
+    @get:Schema(title = "版本排序号")
+    val number: Int,
     @get:Schema(title = "发布版本名称")
     val versionName: String,
     @get:Schema(title = "是否发布")

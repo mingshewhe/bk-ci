@@ -7,6 +7,7 @@ import com.tencent.devops.process.service.template.v2.PipelineMarketTemplateFaca
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.store.api.template.ServiceTemplateResource
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.springframework.stereotype.Service
 
 /**
@@ -31,16 +32,18 @@ class PTemplateVersionCreateMarketPostProcessor(
                 templateId = templateId
             )
             // 检查模板是否已上架到研发商店并设置发布策略为自动。
-            val publishedCheckResult = client.get(ServiceTemplateResource::class).judgeMarketTemplatePublished(
+            val marketTemplateInfo = client.get(ServiceTemplateResource::class).getMarketTemplateInfo(
                 templateCode = templateId
-            ).data
-            val isTemplatePublishedToMarket = publishedCheckResult?.published ?: false
+            ).data!!
+            // 检查是否处于上架状态
+            val isTemplatePublishedToMarket = marketTemplateInfo.status == TemplateStatusEnum.RELEASED
             if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
+
             pipelineMarketTemplateFacadeService.upgradeTemplateAuto(
                 userId = userId,
                 projectId = projectId,
-                marketTemplateId = publishedCheckResult?.templateId ?: "",
+                marketTemplateId = marketTemplateInfo.templateId,
                 templateId = templateId,
                 version = version
             )

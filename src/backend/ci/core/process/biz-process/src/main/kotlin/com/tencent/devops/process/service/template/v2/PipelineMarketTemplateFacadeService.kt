@@ -200,6 +200,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
                 templateCode = templateId,
                 version = version,
                 versionName = srcTemplateResource.versionName!!,
+                number = srcTemplateResource.number,
                 published = true,
                 creator = userId,
                 updater = userId

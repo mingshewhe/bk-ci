@@ -34,17 +34,15 @@ import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
+import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.TemplatePublishedCheckResult
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.template.service.MarketTemplateService
-import com.tencent.devops.store.template.service.TemplateReleaseService
 import org.springframework.beans.factory.annotation.Autowired
 
 @RestResource
 class ServiceTemplateResourceImpl @Autowired constructor(
-    private val marketTemplateService: MarketTemplateService,
-    private val templateReleaseService: TemplateReleaseService
+    private val marketTemplateService: MarketTemplateService
 ) : ServiceTemplateResource {
     override fun installTemplate(userId: String, installTemplateReq: InstallTemplateReq): Result<Boolean> {
         // 可见与可安装鉴权在marketTemplateService中实现
@@ -111,14 +109,14 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         return marketTemplateService.getTemplateDetailByCode(userId, templateCode)
     }
 
+    override fun getMarketTemplateInfo(templateCode: String): Result<MarketTemplateSimple> {
+        return Result(marketTemplateService.getMarketTemplateInfo(templateCode))
+    }
+
     override fun createTemplateVersionRel(
         templateVersionRelationInfo: TemplateVersionRelationInfo
     ): Result<Boolean> {
         marketTemplateService.createTemplateVersionRel(templateVersionRelationInfo)
         return Result(true)
-    }
-
-    override fun judgeMarketTemplatePublished(templateCode: String): Result<TemplatePublishedCheckResult> {
-        return Result(templateReleaseService.judgeMarketTemplatePublished(templateCode))
     }
 }

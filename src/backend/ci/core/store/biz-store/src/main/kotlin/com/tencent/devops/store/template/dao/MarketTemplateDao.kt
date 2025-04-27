@@ -721,16 +721,4 @@ class MarketTemplateDao {
                 .execute()
         }
     }
-
-    fun judgeMarketTemplatePublished(
-        dslContext: DSLContext,
-        templateCode: String
-    ): Boolean {
-        return with(TTemplate.T_TEMPLATE) {
-            dslContext.selectCount().from(this)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .and(TEMPLATE_STATUS.eq(TemplateStatusEnum.RELEASED.status.toByte()))
-                .fetchOne(0, Int::class.java)!! > 0
-        }
-    }
 }
