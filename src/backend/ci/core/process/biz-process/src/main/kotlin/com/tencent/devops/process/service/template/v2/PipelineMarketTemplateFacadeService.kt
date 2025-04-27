@@ -25,6 +25,7 @@ import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -45,7 +46,7 @@ class PipelineMarketTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
     private val pipelineTemplateReleaseCreateHandler: PipelineTemplateReleaseCreateHandler,
-    private val pipelineTemplateCopyCreateReqConverter: PipelineTempelateCopyCreateReqConverter
+    private val pipelineTemplateCopyCreateReqConverter: PipelineTemplateCopyCreateReqConverter
 ) {
 
     fun updateMarketTemplateReference(
