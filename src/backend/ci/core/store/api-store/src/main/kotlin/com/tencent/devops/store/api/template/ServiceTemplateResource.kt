@@ -137,7 +137,7 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "获取模板最新发布历史")
     @GET
-    @Path("/{projectCode}/{templateCode}/latest/released")
+    @Path("{templateCode}/latest/released")
     fun getLatestTemplateReleasedVersion(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
