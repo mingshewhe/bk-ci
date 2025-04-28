@@ -237,7 +237,7 @@ interface UserPipelineTemplateInstanceV2Resource {
         templateId: String,
         @Parameter(
             description = "任务状态,值为INIT,INSTANCING,SUCCESS,FAILED,多个用,分割,默认值INIT,INSTANCING",
-            required = true
+            required = false
         )
         @QueryParam("status")
         status: String?
@@ -245,7 +245,7 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "重试失败的模版实例任务,返回新的任务ID")
     @POST
-    @Path("/templates/{templateId}/task/{baseId}/retry")
+    @Path("/task/{baseId}/retry")
     fun retryTemplateInstanceTask(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
@@ -260,7 +260,7 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "获取失败的实例化任务配置")
     @GET
-    @Path("/templates/{templateId}/task/{baseId}/config")
+    @Path("/task/{baseId}/config")
     fun getTemplateInstanceTaskConfig(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)

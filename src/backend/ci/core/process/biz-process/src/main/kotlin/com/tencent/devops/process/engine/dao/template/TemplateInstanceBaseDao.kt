@@ -205,8 +205,8 @@ class TemplateInstanceBaseDao {
         return with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
             dslContext.selectFrom(this)
                 .where(PROJECT_ID.eq(projectId))
-                .let { if (statusList.isNullOrEmpty()) it.and(STATUS.`in`(statusList)) else it }
-                .let { if (excludeStatusList.isNullOrEmpty()) it.and(STATUS.notIn(excludeStatusList)) else it }
+                .let { if (statusList.isNullOrEmpty()) it else it.and(STATUS.`in`(statusList)) }
+                .let { if (excludeStatusList.isNullOrEmpty()) it else it.and(STATUS.notIn(excludeStatusList)) }
                 .let { if (type != null) it.and(TYPE.eq(type.name)) else it }
                 .let { if (templateId != null) it.and(TEMPLATE_ID.eq(templateId)) else it }
                 .fetch().map { it.convert() }
