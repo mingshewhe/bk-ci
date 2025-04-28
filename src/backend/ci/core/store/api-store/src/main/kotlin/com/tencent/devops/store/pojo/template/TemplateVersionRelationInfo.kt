@@ -1,10 +1,11 @@
 package com.tencent.devops.store.pojo.template
 
 import io.swagger.v3.oas.annotations.media.Schema
-import org.joda.time.LocalDateTime
 
 @Schema(title = "模板版本发布关联实体")
 data class TemplateVersionRelationInfo(
+    @get:Schema(title = "项目ID")
+    val projectCode: String,
     @get:Schema(title = "研发商店模板ID")
     val templateId: String = "",
     @get:Schema(title = "模板代码（对应process数据库的ID）")

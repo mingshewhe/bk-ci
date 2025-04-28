@@ -42,6 +42,7 @@ import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 
 @Suppress("ALL")
 interface MarketTemplateService {
@@ -81,11 +82,9 @@ interface MarketTemplateService {
     ): Result<TemplateDetail?>
 
     /**
-     * 获取研发商店模板信息
+     * 获取研发商店模板状态
      */
-    fun getMarketTemplateInfo(
-        templateCode: String
-    ): MarketTemplateSimple
+    fun getMarketTemplateStatus(templateCode: String): TemplateStatusEnum
 
     /**
      * 根据模版ID获取模版

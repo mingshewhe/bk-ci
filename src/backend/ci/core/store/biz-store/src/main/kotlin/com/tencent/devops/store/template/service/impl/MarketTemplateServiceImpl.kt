@@ -555,20 +555,15 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         return getTemplateDetail(templateRecord, userId)
     }
 
-    override fun getMarketTemplateInfo(templateCode: String): MarketTemplateSimple {
+    override fun getMarketTemplateStatus(templateCode: String): TemplateStatusEnum {
         val templateRecord = marketTemplateDao.getLatestTemplateByCode(
             dslContext = dslContext,
             templateCode = templateCode
         )
         return if (templateRecord == null) {
-            MarketTemplateSimple(
-                status = TemplateStatusEnum.NEVER_PUBLISHED
-            )
+            TemplateStatusEnum.NEVER_PUBLISHED
         } else {
-            MarketTemplateSimple(
-                templateId = templateRecord.id,
-                status = TemplateStatusEnum.getTemplateStatusEnum(templateRecord.templateStatus.toInt())
-            )
+            TemplateStatusEnum.getTemplateStatusEnum(templateRecord.templateStatus.toInt())
         }
     }
 

@@ -181,10 +181,9 @@ class PipelineTemplateMigrateService(
                 "migrate template srcTemplateProjectId {},templateVersionInfos{}",
                 srcTemplateProjectId, templateVersionInfos
             )
-            val marketTemplateInfo = client.get(ServiceTemplateResource::class).getMarketTemplateInfo(
+            val marketTemplateStatus = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
                 templateCode = templateId
             ).data!!
-            val marketTemplateStatus = marketTemplateInfo.status
 
             var versionSequence = 0
             var pipelineVersion = 0
@@ -312,7 +311,7 @@ class PipelineTemplateMigrateService(
                     marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED) {
                     client.get(ServiceTemplateResource::class).createTemplateVersionRel(
                         TemplateVersionRelationInfo(
-                            templateId = marketTemplateInfo.templateId,
+                            projectCode = pipelineTemplateResource.projectId,
                             templateCode = templateId,
                             version = pipelineTemplateResource.version,
                             versionName = pipelineTemplateResource.versionName!!,
@@ -403,11 +402,10 @@ class PipelineTemplateMigrateService(
     ): PipelineTemplateResource {
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
         val (srcTemplateProjectId, srcTemplateVersion, srcTemplateId) =
-            if (isConstraint) {
-                Triple(currentTemplate.projectId, currentTemplate.version, currentTemplate.id)
-            } else {
-                Triple(null, null, null)
-            }
+            currentTemplate.takeIf { isConstraint }?.let {
+                Triple(it.projectId, it.version, it.id)
+            } ?: Triple(null, null, null)
+
         val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
         val version = if (isConstraint) {
             pipelineTemplateResourceService.getOrNull(

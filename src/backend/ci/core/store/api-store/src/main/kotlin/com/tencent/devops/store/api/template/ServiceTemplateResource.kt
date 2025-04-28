@@ -33,12 +33,12 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
-import io.swagger.v3.oas.annotations.tags.Tag
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.GET
@@ -118,14 +118,14 @@ interface ServiceTemplateResource {
         templateCode: String
     ): Result<TemplateDetail?>
 
-    @Operation(summary = "获取模板信息")
+    @Operation(summary = "获取研发商店模板状态")
     @GET
-    @Path("/getMarketTemplateInfo/{templateCode}")
-    fun getMarketTemplateInfo(
+    @Path("/getMarketTemplateStatus/{templateCode}")
+    fun getMarketTemplateStatus(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
-    ): Result<MarketTemplateSimple>
+    ): Result<TemplateStatusEnum>
 
     @Operation(summary = "创建模板版本关联关系")
     @POST

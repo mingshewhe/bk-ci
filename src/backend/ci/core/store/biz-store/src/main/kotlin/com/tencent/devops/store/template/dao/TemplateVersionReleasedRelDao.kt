@@ -44,6 +44,7 @@ class TemplateVersionReleasedRelDao {
         with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.insertInto(
                 this,
+                PROJECT_CODE,
                 TEMPLATE_ID,
                 TEMPLATE_CODE,
                 VERSION,
@@ -55,6 +56,7 @@ class TemplateVersionReleasedRelDao {
                 CREATE_TIME,
                 UPDATE_TIME
             ).values(
+                record.projectCode,
                 record.templateId,
                 record.templateCode,
                 record.version,
@@ -85,6 +87,7 @@ class TemplateVersionReleasedRelDao {
                 .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionRelationInfo(
+                        projectCode = it.projectCode,
                         templateId = it.templateId,
                         templateCode = it.templateCode,
                         version = it.version,

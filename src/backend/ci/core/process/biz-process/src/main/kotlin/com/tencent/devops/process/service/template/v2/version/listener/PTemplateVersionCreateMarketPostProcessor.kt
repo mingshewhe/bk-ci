@@ -32,18 +32,15 @@ class PTemplateVersionCreateMarketPostProcessor(
                 templateId = templateId
             )
             // 检查模板是否已上架到研发商店并设置发布策略为自动。
-            val marketTemplateInfo = client.get(ServiceTemplateResource::class).getMarketTemplateInfo(
+            val isTemplatePublishedToMarket = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
                 templateCode = templateId
-            ).data!!
-            // 检查是否处于上架状态
-            val isTemplatePublishedToMarket = marketTemplateInfo.status == TemplateStatusEnum.RELEASED
+            ).data!! == TemplateStatusEnum.RELEASED
             if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
 
             pipelineTemplateMarketTemplateFacadeService.upgradeTemplateAuto(
                 userId = userId,
                 projectId = projectId,
-                marketTemplateId = marketTemplateInfo.templateId,
                 templateId = templateId,
                 version = version
             )

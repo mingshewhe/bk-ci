@@ -34,10 +34,10 @@ import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
-import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -110,8 +110,8 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         return marketTemplateService.getTemplateDetailByCode(userId, templateCode)
     }
 
-    override fun getMarketTemplateInfo(templateCode: String): Result<MarketTemplateSimple> {
-        return Result(marketTemplateService.getMarketTemplateInfo(templateCode))
+    override fun getMarketTemplateStatus(templateCode: String): Result<TemplateStatusEnum> {
+        return Result(marketTemplateService.getMarketTemplateStatus(templateCode))
     }
 
     override fun createTemplateVersionRel(

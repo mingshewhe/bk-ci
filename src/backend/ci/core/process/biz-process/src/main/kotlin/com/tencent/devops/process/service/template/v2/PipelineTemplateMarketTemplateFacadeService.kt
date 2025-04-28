@@ -127,7 +127,6 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             upgradeTemplateAuto(
                 userId = publisher,
                 projectId = projectId,
-                marketTemplateId = marketTemplateId,
                 templateId = templateCode,
                 version = templateVersion
             )
@@ -169,7 +168,6 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     fun upgradeTemplateAuto(
         userId: String,
         projectId: String,
-        marketTemplateId: String,
         templateId: String,
         version: Long
     ) {
@@ -197,7 +195,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         )
         client.get(ServiceTemplateResource::class).createTemplateVersionRel(
             TemplateVersionRelationInfo(
-                templateId = marketTemplateId,
+                projectCode = projectId,
                 templateCode = templateId,
                 version = version,
                 versionName = srcTemplateResource.versionName!!,
