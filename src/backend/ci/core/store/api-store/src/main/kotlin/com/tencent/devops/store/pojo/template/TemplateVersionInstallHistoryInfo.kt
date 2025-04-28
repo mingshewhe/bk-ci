@@ -22,5 +22,5 @@ data class TemplateVersionInstallHistoryInfo(
     @get:Schema(title = "创建人")
     val creator: String = "system",
     @get:Schema(title = "创建时间")
-    val createTime: LocalDateTime? = null
+    val createTime: Long? = null
 )

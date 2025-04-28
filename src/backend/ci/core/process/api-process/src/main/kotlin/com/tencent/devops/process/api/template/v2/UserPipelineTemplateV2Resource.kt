@@ -26,6 +26,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -468,10 +469,6 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("templateId")
         templateId: String,
         @Parameter(description = "升级策略", required = false)
-        @QueryParam("upgradeStrategy")
-        upgradeStrategy: UpgradeStrategyEnum,
-        @Parameter(description = "配置升级策略", required = false)
-        @QueryParam("settingSyncStrategy")
-        settingSyncStrategy: UpgradeStrategyEnum
+        request: PipelineTemplateStrategyUpdateInfo
     ): Result<Boolean>
 }

@@ -53,6 +53,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
@@ -482,8 +483,7 @@ class UserPipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        upgradeStrategy: UpgradeStrategyEnum,
-        settingSyncStrategy: UpgradeStrategyEnum
+        request: PipelineTemplateStrategyUpdateInfo
     ): Result<Boolean> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -496,8 +496,7 @@ class UserPipelineTemplateV2ResourceImpl(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
-                upgradeStrategy = upgradeStrategy,
-                settingSyncStrategy = settingSyncStrategy
+                request = request
             )
         )
     }

@@ -121,10 +121,32 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         return Result(true)
     }
 
+    override fun getLatestTemplateReleasedVersion(
+        templateCode: String
+    ): Result<TemplateVersionRelationInfo?> {
+        return Result(
+            marketTemplateService.getLatestTemplateReleasedVersion(
+                templateCode = templateCode
+            )
+        )
+    }
+
     override fun createTemplateVersionInstallHistory(
         installHistoryInfo: TemplateVersionInstallHistoryInfo
     ): Result<Boolean> {
         marketTemplateService.createTemplateVersionInstallHistory(installHistoryInfo)
         return Result(true)
+    }
+
+    override fun getLatestTemplateVersionInstallHistory(
+        projectCode: String,
+        templateCode: String
+    ): Result<TemplateVersionInstallHistoryInfo?> {
+        return Result(
+            marketTemplateService.getLatestTemplateVersionInstallHistory(
+                projectCode = projectCode,
+                templateCode = templateCode
+            )
+        )
     }
 }

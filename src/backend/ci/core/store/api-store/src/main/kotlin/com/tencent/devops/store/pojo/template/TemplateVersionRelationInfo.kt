@@ -22,7 +22,7 @@ data class TemplateVersionRelationInfo(
     @get:Schema(title = "更新人")
     val updater: String,
     @get:Schema(title = "创建时间")
-    val createTime: LocalDateTime? = null,
+    val createTime: Long? = null,
     @get:Schema(title = "更新时间")
-    val updateTime: LocalDateTime? = null
+    val updateTime: Long? = null
 )

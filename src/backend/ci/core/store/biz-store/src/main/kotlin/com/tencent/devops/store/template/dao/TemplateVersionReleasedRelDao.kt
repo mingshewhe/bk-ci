@@ -27,11 +27,12 @@
 
 package com.tencent.devops.store.template.dao
 
+import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
 
 @Suppress("ALL")
 @Repository
@@ -50,7 +51,9 @@ class TemplateVersionReleasedRelDao {
                 VERSION_NAME,
                 PUBLISHED,
                 CREATOR,
-                UPDATER
+                UPDATER,
+                CREATE_TIME,
+                UPDATE_TIME
             ).values(
                 record.templateId,
                 record.templateCode,
@@ -59,12 +62,40 @@ class TemplateVersionReleasedRelDao {
                 record.versionName,
                 record.published,
                 record.creator,
-                record.updater
+                record.updater,
+                record.createTime.toLocalDateTimeOrDefault(),
+                record.updateTime.toLocalDateTimeOrDefault(),
             ).onDuplicateKeyUpdate()
                 .set(PUBLISHED, record.published)
                 .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, LocalDateTime.now())
+                .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
                 .execute()
+        }
+    }
+
+    fun getLatestReleasedVersion(
+        dslContext: DSLContext,
+        templateId: String
+    ): TemplateVersionRelationInfo? {
+        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+            dslContext.selectFrom(this)
+                .where(TEMPLATE_ID.eq(templateId))
+                .and(PUBLISHED.eq(true))
+                .orderBy(CREATE_TIME.desc())
+                .fetchOne()?.let {
+                    TemplateVersionRelationInfo(
+                        templateId = it.templateId,
+                        templateCode = it.templateCode,
+                        version = it.version,
+                        number = it.number,
+                        versionName = it.versionName,
+                        published = it.published,
+                        createTime = it.createTime.timestampmilli(),
+                        updateTime = it.updateTime.timestampmilli(),
+                        creator = it.creator,
+                        updater = it.updater
+                    )
+                }
         }
     }
 }

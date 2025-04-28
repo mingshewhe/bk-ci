@@ -301,7 +301,8 @@ class PipelineTemplateMigrateService(
                             projectCode = latestTemplate.projectId,
                             templateCode = latestTemplate.id,
                             version = srcTemplateResource.version,
-                            versionName = srcTemplateResource.versionName
+                            versionName = srcTemplateResource.versionName,
+                            createTime = pipelineTemplateResource.releaseTime
                         )
                     )
                 }
@@ -318,7 +319,9 @@ class PipelineTemplateMigrateService(
                             number = pipelineTemplateResource.number,
                             published = marketTemplateStatus == TemplateStatusEnum.RELEASED,
                             creator = templateVersionInfo.creator,
-                            updater = templateVersionInfo.creator
+                            updater = templateVersionInfo.creator,
+                            createTime = pipelineTemplateResource.createdTime,
+                            updateTime = pipelineTemplateResource.updateTime
                         )
                     )
                 }

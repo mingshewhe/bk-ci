@@ -7,12 +7,12 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
@@ -40,11 +40,13 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketRelatedInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
+import com.tencent.devops.store.api.template.ServiceTemplateResource
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
@@ -66,7 +68,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineOperationLogDao: PipelineOperationLogDao,
     private val dslContext: DSLContext,
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
-    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService
+    private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
+    private val client: Client
 ) {
     fun create(
         userId: String,
@@ -496,39 +499,37 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
 
         val pipelineTemplateMarketRelatedInfo = basicInfo.takeIf { it.mode == TemplateType.CONSTRAINT }?.let {
-            val latestInstalledTemplate = pipelineTemplateResourceService.getLatestReleasedResource(
-                projectId = it.projectId,
-                templateId = it.id
-            )!!
-
             if (it.srcTemplateProjectId == null || it.srcTemplateId == null) {
                 throw IllegalArgumentException("srcTemplateProjectId or srcTemplateId is null")
             }
-            val latestInstalledVersionName = pipelineTemplateResourceService.get(
-                projectId = it.srcTemplateProjectId!!,
-                templateId = it.srcTemplateId!!,
-                version = latestInstalledTemplate.srcTemplateVersion!!
-            ).versionName!!
+            val latestInstalledTemplateVersion =
+                client.get(ServiceTemplateResource::class).getLatestTemplateVersionInstallHistory(
+                    projectCode = projectId,
+                    templateCode = templateId
+                ).data ?: throw ErrorCodeException(errorCode = "")
+
+            val srcTemplateLatestReleasedVersion =
+                client.get(ServiceTemplateResource::class).getLatestTemplateReleasedVersion(
+                    templateCode = it.srcTemplateId!!
+                ).data ?: throw ErrorCodeException(errorCode = "")
 
             val srcMarketTemplateInfo = pipelineTemplateInfoService.get(
                 projectId = it.srcTemplateProjectId!!,
                 templateId = it.srcTemplateId!!
             )
-            val latestSrcMarketTemplate = pipelineTemplateResourceService.getLatestReleasedResource(
-                projectId = it.srcTemplateProjectId!!,
-                templateId = it.srcTemplateId!!
-            )!!
 
             PipelineTemplateMarketRelatedInfo(
                 srcMarketProjectId = srcMarketTemplateInfo.projectId,
                 srcMarketTemplateId = srcMarketTemplateInfo.id,
                 srcMarketTemplateName = srcMarketTemplateInfo.name,
-                srcMarketTemplateLatestVersion = latestSrcMarketTemplate.version,
-                srcMarketTemplateLatestVersionName = latestSrcMarketTemplate.versionName!!,
-                latestInstalledVersion = latestInstalledTemplate.srcTemplateVersion!!,
-                latestInstalledVersionName = latestInstalledVersionName,
+                srcMarketTemplateLatestVersion = srcTemplateLatestReleasedVersion.version,
+                srcMarketTemplateLatestVersionName = srcTemplateLatestReleasedVersion.versionName,
+                latestInstalledVersion = latestInstalledTemplateVersion.version,
+                latestInstalledVersionName = latestInstalledTemplateVersion.versionName,
                 upgradeStrategy = it.upgradeStrategy!!,
-                settingSyncStrategy = it.settingSyncStrategy!!
+                settingSyncStrategy = it.settingSyncStrategy!!,
+                latestInstaller = latestInstalledTemplateVersion.creator,
+                latestInstalledTime = latestInstalledTemplateVersion.createTime!!
             )
         }
         return PipelineTemplateInfoResponse(
@@ -781,14 +782,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         userId: String,
         projectId: String,
         templateId: String,
-        upgradeStrategy: UpgradeStrategyEnum,
-        settingSyncStrategy: UpgradeStrategyEnum,
+        request: PipelineTemplateStrategyUpdateInfo
     ): Boolean {
         // todo 当策略是自动升级时，将安装最新版本
         pipelineTemplateInfoService.update(
             record = PipelineTemplateInfoUpdateInfo(
-                upgradeStrategy = upgradeStrategy,
-                settingSyncStrategy = settingSyncStrategy,
+                upgradeStrategy = request.upgradeStrategy,
+                settingSyncStrategy = request.settingSyncStrategy,
                 updater = userId
             ),
             commonCondition = PipelineTemplateCommonCondition(

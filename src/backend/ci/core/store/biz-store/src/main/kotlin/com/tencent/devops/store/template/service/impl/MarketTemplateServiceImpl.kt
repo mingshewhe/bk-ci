@@ -1221,6 +1221,17 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
+    override fun getLatestTemplateReleasedVersion(templateCode: String): TemplateVersionRelationInfo? {
+        val srcMarketTemplateId = marketTemplateDao.getLatestTemplateByCode(
+            dslContext = dslContext,
+            templateCode = templateCode
+        )!!.id
+        return templateVersionReleasedRelDao.getLatestReleasedVersion(
+            dslContext = dslContext,
+            templateId = srcMarketTemplateId
+        )
+    }
+
     override fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo) {
         logger.info("create template version install history:$installHistoryInfo")
         val srcMarketTemplateId = marketTemplateDao.getLatestTemplateByCode(
@@ -1230,6 +1241,17 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         templateVersionInstallHistoryDao.create(
             dslContext = dslContext,
             record = installHistoryInfo.copy(srcMarketTemplateId = srcMarketTemplateId)
+        )
+    }
+
+    override fun getLatestTemplateVersionInstallHistory(
+        projectCode: String,
+        templateCode: String
+    ): TemplateVersionInstallHistoryInfo? {
+        return templateVersionInstallHistoryDao.getLatestRecord(
+            dslContext = dslContext,
+            projectCode = projectCode,
+            templateCode = templateCode
         )
     }
 }

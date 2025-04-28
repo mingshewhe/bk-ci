@@ -46,6 +46,10 @@ data class PipelineTemplateMarketRelatedInfo(
     val latestInstalledVersion: Long,
     @get:Schema(title = "最近安装版本名称", required = true)
     val latestInstalledVersionName: String,
+    @get:Schema(title = "最近安装用户", required = true)
+    val latestInstaller: String,
+    @get:Schema(title = "最新安装时间", required = true)
+    val latestInstalledTime: Long,
     @get:Schema(title = "升级策略-用于研发商店安装的模板", required = true)
     val upgradeStrategy: UpgradeStrategyEnum,
     @get:Schema(title = "配置同步策略-用于研发商店安装的模板", required = true)

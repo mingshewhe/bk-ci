@@ -27,6 +27,7 @@
 
 package com.tencent.devops.store.template.dao
 
+import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.model.store.tables.TTemplateVersionInstallHistory
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import org.jooq.DSLContext
@@ -60,6 +61,32 @@ class TemplateVersionInstallHistoryDao {
                 record.versionName,
                 record.creator
             ).execute()
+        }
+    }
+
+    fun getLatestRecord(
+        dslContext: DSLContext,
+        projectCode: String,
+        templateCode: String
+    ): TemplateVersionInstallHistoryInfo? {
+        return with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
+            dslContext.selectFrom(this)
+                .where(PROJECT_CODE.eq(projectCode))
+                .and(TEMPLATE_CODE.eq(templateCode))
+                .orderBy(CREATE_TIME.desc())
+                .fetchOne()?.let {
+                    TemplateVersionInstallHistoryInfo(
+                        srcMarketTemplateId = it.srcMarketTemplateId,
+                        srcMarketTemplateProjectCode = it.srcMarketTemplateCode,
+                        srcMarketTemplateCode = it.srcMarketTemplateCode,
+                        projectCode = it.projectCode,
+                        templateCode = it.templateCode,
+                        version = it.version,
+                        versionName = it.versionName,
+                        creator = it.creator,
+                        createTime = it.createTime.timestampmilli()
+                    )
+                }
         }
     }
 }
