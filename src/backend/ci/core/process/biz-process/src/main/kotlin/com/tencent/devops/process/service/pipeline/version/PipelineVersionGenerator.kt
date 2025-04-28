@@ -325,7 +325,7 @@ class PipelineVersionGenerator constructor(
         projectId: String,
         pipelineId: String,
         newModel: Model,
-        useTemplateSettings: Boolean,
+        useTemplateSetting: Boolean,
         enablePac: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
@@ -340,7 +340,7 @@ class PipelineVersionGenerator constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 newModel = newModel,
-                useTemplateSettings = useTemplateSettings,
+                useTemplateSetting = useTemplateSetting,
                 repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch,
@@ -354,7 +354,7 @@ class PipelineVersionGenerator constructor(
                 pipelineId = pipelineId,
                 newModel = newModel,
                 instanceFromTemplate = true,
-                useTemplateSettings = useTemplateSettings
+                useTemplateSettings = useTemplateSetting
             )
             resourceOnlyVersion
         }
@@ -367,7 +367,7 @@ class PipelineVersionGenerator constructor(
         projectId: String,
         pipelineId: String,
         newModel: Model,
-        useTemplateSettings: Boolean,
+        useTemplateSetting: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
         targetBranch: String? = null,
@@ -385,7 +385,7 @@ class PipelineVersionGenerator constructor(
                     pipelineId = pipelineId,
                     newModel = newModel,
                     instanceFromTemplate = true,
-                    useTemplateSettings = useTemplateSettings
+                    useTemplateSettings = useTemplateSetting
                 )
             }
 
@@ -412,7 +412,7 @@ class PipelineVersionGenerator constructor(
                         pipelineId = pipelineId,
                         newModel = newModel,
                         instanceFromTemplate = true,
-                        useTemplateSettings = useTemplateSettings
+                        useTemplateSettings = useTemplateSetting
                     )
                 } else {
                     generateBranchVersion(
@@ -433,7 +433,6 @@ class PipelineVersionGenerator constructor(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): List<PrefetchReleaseResult> {
         val templateResource = pipelineTemplateResourceService.get(
@@ -461,7 +460,7 @@ class PipelineVersionGenerator constructor(
                     projectId = projectId,
                     pipelineId = releaseInfo.pipelineId,
                     newModel = instanceModel,
-                    useTemplateSettings = useTemplateSettings,
+                    useTemplateSetting = request.useTemplateSetting,
                     enablePac = enablePac,
                     repoHashId = repoHashId,
                     targetAction = targetAction,

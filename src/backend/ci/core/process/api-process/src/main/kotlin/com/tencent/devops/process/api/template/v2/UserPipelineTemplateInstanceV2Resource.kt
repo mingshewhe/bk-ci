@@ -38,6 +38,7 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import io.swagger.v3.oas.annotations.Operation
@@ -76,9 +77,6 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
         version: Long,
-        @Parameter(description = "是否应用模板设置")
-        @QueryParam("useTemplateSettings")
-        useTemplateSettings: Boolean,
         @Parameter(description = "创建实例", required = true)
         request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet
@@ -99,9 +97,6 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
         version: Long,
-        @Parameter(description = "是否应用模板设置")
-        @QueryParam("useTemplateSettings")
-        useTemplateSettings: Boolean,
         @Parameter(description = "创建实例", required = true)
         request: PipelineTemplateInstancesRequest
     ): Result<String>
@@ -122,9 +117,6 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "模板版本", required = true)
         @QueryParam("version")
         version: Long,
-        @Parameter(description = "是否应用模板设置")
-        @QueryParam("useTemplateSettings")
-        useTemplateSettings: Boolean,
         @Parameter(description = "更新实例", required = true)
         request: PipelineTemplateInstancesRequest
     ): Result<String>
@@ -190,9 +182,6 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "模版版本", required = true)
         @PathParam("version")
         version: Long,
-        @Parameter(description = "是否应用模板设置")
-        @QueryParam("useTemplateSettings")
-        useTemplateSettings: Boolean,
         @Parameter(description = "更新实例", required = true)
         request: PipelineTemplateInstancesRequest
     ): Result<List<PrefetchReleaseResult>>
@@ -220,23 +209,20 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "获取模版实例任务")
     @GET
-    @Path("/templates/{templateId}/task/{baseId}")
-    fun getTemplateInstanceTask(
+    @Path("/task/{baseId}")
+    fun getInstanceTask(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
         @Parameter(description = "任务ID", required = true)
         @PathParam("baseId")
         baseId: String
     ): Result<PipelineTemplateInstanceBase>
 
-    @Operation(summary = "获取运行中模版实例任务列表")
+    @Operation(summary = "获取模版实例任务列表")
     @GET
     @Path("/templates/{templateId}/task")
     fun listTemplateInstanceTask(
@@ -248,10 +234,16 @@ interface UserPipelineTemplateInstanceV2Resource {
         projectId: String,
         @Parameter(description = "模板ID", required = true)
         @PathParam("templateId")
-        templateId: String
+        templateId: String,
+        @Parameter(
+            description = "任务状态,值为INIT,INSTANCING,SUCCESS,FAILED,多个用,分割,默认值INIT,INSTANCING",
+            required = true
+        )
+        @QueryParam("status")
+        status: String?
     ): Result<List<PipelineTemplateInstanceBase>>
 
-    @Operation(summary = "重试模版实例任务,返回新的任务ID")
+    @Operation(summary = "重试失败的模版实例任务,返回新的任务ID")
     @POST
     @Path("/templates/{templateId}/task/{baseId}/retry")
     fun retryTemplateInstanceTask(
@@ -261,29 +253,23 @@ interface UserPipelineTemplateInstanceV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
         @Parameter(description = "任务ID", required = true)
         @PathParam("baseId")
         baseId: String
     ): Result<String>
 
-    @Operation(summary = "获取模版实例任务")
+    @Operation(summary = "获取失败的实例化任务配置")
     @GET
-    @Path("/templates/{templateId}/task/{baseId}/detail")
-    fun getTemplateInstanceTaskDetail(
+    @Path("/templates/{templateId}/task/{baseId}/config")
+    fun getTemplateInstanceTaskConfig(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
-        @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
         @Parameter(description = "任务ID", required = true)
         @PathParam("baseId")
         baseId: String
-    ): Result<PipelineTemplateInstancesRequest>
+    ): Result<PipelineTemplateInstancesConfig>
 }

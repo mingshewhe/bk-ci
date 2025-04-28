@@ -14,6 +14,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
@@ -34,6 +35,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
@@ -77,7 +79,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         userId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet {
         logger.info("template instance creation start $projectId|$userId|$templateId")
@@ -96,7 +97,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
                     params = instance.param,
-                    useTemplateSetting = useTemplateSettings,
+                    useTemplateSetting = request.useTemplateSetting,
                     enablePac = request.enablePac,
                     repoHashId = request.repoHashId,
                     filePath = instance.filePath,
@@ -173,12 +174,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         userId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): String {
         logger.info(
-            "async template instance creation start $projectId|$userId|$templateId|" +
-                "$version|$useTemplateSettings|$request"
+            "async template instance creation start $projectId|$userId|$templateId|$version|$request"
         )
         pipelineTemplateResourceService.get(projectId, templateId, version)
         val instances = request.instanceReleaseInfos.map {
@@ -206,7 +205,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 baseId = baseId,
                 templateId = templateId,
                 templateVersion = version.toString(),
-                useTemplateSettingsFlag = useTemplateSettings,
+                useTemplateSettingsFlag = request.useTemplateSetting,
                 projectId = projectId,
                 totalItemNum = instances.size,
                 status = TemplateInstanceStatus.INIT.name,
@@ -247,10 +246,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         userId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): String {
-        logger.info("asyncUpdateTemplateInstances [$projectId|$userId|$templateId|$version|$useTemplateSettings]")
+        logger.info("asyncUpdateTemplateInstances [$projectId|$userId|$templateId|$version")
         val templateResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
@@ -265,7 +263,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 baseId = baseId,
                 templateId = templateId,
                 templateVersion = templateResource.version.toString(),
-                useTemplateSettingsFlag = useTemplateSettings,
+                useTemplateSettingsFlag = request.useTemplateSetting,
                 projectId = projectId,
                 totalItemNum = instances.size,
                 status = TemplateInstanceStatus.INIT.name,
@@ -685,14 +683,12 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): List<PrefetchReleaseResult> {
         return pipelineVersionGenerator.batchGenerateInstanceVersion(
             projectId = projectId,
             templateId = templateId,
             version = version,
-            useTemplateSettings = useTemplateSettings,
             request = request
         )
     }
@@ -728,6 +724,112 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         return PipelineTemplateInstanceCompareResponse(
             baseVersionYaml = pipelineYaml,
             comparedVersionYaml = comparedVersionResource.yaml ?: ""
+        )
+    }
+
+    fun getTemplateInstanceTask(
+        projectId: String,
+        baseId: String
+    ): PipelineTemplateInstanceBase {
+        return templateInstanceBaseDao.getTemplateInstanceBase(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = baseId
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NOT_EXISTS,
+            params = arrayOf(baseId)
+        )
+    }
+
+    fun listTemplateInstanceTask(
+        projectId: String,
+        templateId: String,
+        statusList: List<String>?,
+    ): List<PipelineTemplateInstanceBase> {
+        return templateInstanceBaseDao.list(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            statusList = statusList
+        )
+    }
+
+    fun retryTemplateInstanceTask(
+        userId: String,
+        projectId: String,
+        baseId: String
+    ): String {
+        val taskDetail = getTemplateInstanceTaskConfig(
+            projectId = projectId,
+            baseId = baseId
+        )
+        return with(taskDetail) {
+            if (instanceType == TemplateInstanceType.CREATE) {
+                asyncCreateTemplateInstances(
+                    userId = userId,
+                    projectId = projectId,
+                    templateId = templateId,
+                    version = version,
+                    request = request
+                )
+            } else {
+                asyncUpdateTemplateInstances(
+                    userId = userId,
+                    projectId = projectId,
+                    templateId = templateId,
+                    version = version,
+                    request = request
+                )
+            }
+        }
+    }
+
+    fun getTemplateInstanceTaskConfig(
+        projectId: String,
+        baseId: String
+    ): PipelineTemplateInstancesConfig {
+        val instanceBase = templateInstanceBaseDao.getTemplateInstanceBase(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseId = baseId
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NOT_EXISTS,
+            params = arrayOf(baseId)
+        )
+        val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseIds = listOf(baseId),
+            statusList = listOf(TemplateInstanceStatus.FAILED.name),
+            page = 1,
+            pageSize = PageUtil.MAX_PAGE_SIZE
+        )
+        val instanceReleaseInfos = templateInstanceItems.map {
+            PipelineTemplateInstanceReleaseInfo(
+                pipelineId = it.pipelineId,
+                pipelineName = it.pipelineName,
+                buildNo = it.buildNo,
+                param = it.params,
+                filePath = it.filePath
+            )
+        }
+        val request = with(instanceBase) {
+            PipelineTemplateInstancesRequest(
+                useTemplateSetting = useTemplateSetting,
+                enablePac = pac,
+                description = description,
+                targetAction = targetAction,
+                repoHashId = repoHashId,
+                targetBranch = targetBranch,
+                instanceReleaseInfos = instanceReleaseInfos,
+            )
+        }
+        return PipelineTemplateInstancesConfig(
+            projectId = instanceBase.projectId,
+            templateId = instanceBase.templateId,
+            instanceType = instanceBase.type,
+            version = instanceBase.templateVersion,
+            request = request
         )
     }
 

@@ -38,12 +38,11 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
+import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import org.springframework.beans.factory.annotation.Autowired
@@ -127,7 +126,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 templateResource = templateResource,
                 templateSetting = pipelineTemplateSetting.copy(
                     version = resourceOnlyVersion.settingVersion
-                )
+                ),
+                enablePac = enablePac
             )
         } else {
             pipelineTemplatePersistenceService.releaseDraft2BranchVersion(
@@ -135,6 +135,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
+                needUpdateInfo = pipelineTemplateInfo.enablePac != enablePac,
                 versionName = resourceOnlyVersion.versionName!!,
                 description = pTemplateResourceWithoutVersion.description!!
             )

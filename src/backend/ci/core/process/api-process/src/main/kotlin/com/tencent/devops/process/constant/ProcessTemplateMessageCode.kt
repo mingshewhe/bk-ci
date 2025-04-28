@@ -25,25 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.process.constant
 
-import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import io.swagger.v3.oas.annotations.media.Schema
-
-@Schema(title = "模板实例请求体")
-data class PipelineTemplateInstancesRequest(
-    @get:Schema(title = "是否使用模版设置", required = true)
-    val useTemplateSetting: Boolean,
-    @get:Schema(title = "是否本次开启PAC", required = true)
-    val enablePac: Boolean,
-    @get:Schema(title = "版本描述", required = false)
-    val description: String?,
-    @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
-    val targetAction: CodeTargetAction?,
-    @get:Schema(title = "代码库hashId", required = true)
-    val repoHashId: String?,
-    @get:Schema(title = "目标分支", required = true)
-    val targetBranch: String?,
-    @get:Schema(title = "模板实例发布实体", required = true)
-    val instanceReleaseInfos: List<PipelineTemplateInstanceReleaseInfo>
-)
+object ProcessTemplateMessageCode {
+    const val ERROR_TEMPLATE_INSTANCE_NOT_EXISTS = "2101272"
+}

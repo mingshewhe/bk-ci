@@ -32,9 +32,11 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
@@ -48,7 +50,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): TemplateOperationRet {
         return instanceFacadeService.createTemplateInstances(
@@ -56,7 +57,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
             userId = userId,
             templateId = templateId,
             version = version,
-            useTemplateSettings = useTemplateSettings,
             request = request
         )
     }
@@ -66,7 +66,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): Result<String> {
         return Result(
@@ -75,7 +74,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 userId = userId,
                 templateId = templateId,
                 version = version,
-                useTemplateSettings = useTemplateSettings,
                 request = request
             )
         )
@@ -86,7 +84,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): Result<String> {
         return Result(
@@ -95,7 +92,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 userId = userId,
                 templateId = templateId,
                 version = version,
-                useTemplateSettings = useTemplateSettings,
                 request = request
             )
         )
@@ -144,7 +140,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         projectId: String,
         templateId: String,
         version: Long,
-        useTemplateSettings: Boolean,
         request: PipelineTemplateInstancesRequest
     ): Result<List<PrefetchReleaseResult>> {
         return Result(
@@ -153,7 +148,6 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
-                useTemplateSettings = useTemplateSettings,
                 request = request
             )
         )
@@ -177,38 +171,62 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
-    override fun getTemplateInstanceTask(
+    override fun getInstanceTask(
         userId: String,
         projectId: String,
-        templateId: String,
         baseId: String
     ): Result<PipelineTemplateInstanceBase> {
-        TODO("Not yet implemented")
+        return Result(
+            instanceFacadeService.getTemplateInstanceTask(
+                projectId = projectId,
+                baseId = baseId
+            )
+        )
     }
 
     override fun listTemplateInstanceTask(
         userId: String,
         projectId: String,
-        templateId: String
+        templateId: String,
+        status: String?
     ): Result<List<PipelineTemplateInstanceBase>> {
-        TODO("Not yet implemented")
+        val statusList = status?.split(",") ?: listOf(
+            TemplateInstanceStatus.INIT.name,
+            TemplateInstanceStatus.INSTANCING.name
+        )
+        return Result(
+            instanceFacadeService.listTemplateInstanceTask(
+                projectId = projectId,
+                templateId = templateId,
+                statusList = statusList
+            )
+        )
     }
 
     override fun retryTemplateInstanceTask(
         userId: String,
         projectId: String,
-        templateId: String,
         baseId: String
     ): Result<String> {
-        TODO("Not yet implemented")
+        return Result(
+            instanceFacadeService.retryTemplateInstanceTask(
+                userId = userId,
+                projectId = projectId,
+                baseId = baseId
+            )
+        )
     }
 
-    override fun getTemplateInstanceTaskDetail(
+    override fun getTemplateInstanceTaskConfig(
         userId: String,
         projectId: String,
-        templateId: String,
         baseId: String
-    ): Result<PipelineTemplateInstancesRequest> {
-        TODO("Not yet implemented")
+    ): Result<PipelineTemplateInstancesConfig> {
+        return Result(
+            instanceFacadeService.getTemplateInstanceTaskConfig(
+                projectId = projectId,
+                baseId = baseId
+            )
+        )
     }
 }

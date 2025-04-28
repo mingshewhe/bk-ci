@@ -27,7 +27,6 @@
 
 package com.tencent.devops.process.engine.dao.template
 
-import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.model.process.tables.TTemplateInstanceBase
@@ -198,14 +197,18 @@ class TemplateInstanceBaseDao {
     fun list(
         dslContext: DSLContext,
         projectId: String,
-        excludeStatusList: List<String>,
-        type: TemplateInstanceType
+        statusList: List<String>? = null,
+        excludeStatusList: List<String>? = null,
+        type: TemplateInstanceType? = null,
+        templateId: String? = null
     ): List<PipelineTemplateInstanceBase> {
         return with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
             dslContext.selectFrom(this)
                 .where(PROJECT_ID.eq(projectId))
-                .and(STATUS.notIn(excludeStatusList))
-                .and(TYPE.eq(type.name))
+                .let { if (statusList.isNullOrEmpty()) it.and(STATUS.`in`(statusList)) else it }
+                .let { if (excludeStatusList.isNullOrEmpty()) it.and(STATUS.notIn(excludeStatusList)) else it }
+                .let { if (type != null) it.and(TYPE.eq(type.name)) else it }
+                .let { if (templateId != null) it.and(TEMPLATE_ID.eq(templateId)) else it }
                 .fetch().map { it.convert() }
         }
     }

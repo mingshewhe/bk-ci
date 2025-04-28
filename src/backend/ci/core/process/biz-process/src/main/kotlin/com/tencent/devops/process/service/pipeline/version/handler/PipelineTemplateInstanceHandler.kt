@@ -34,7 +34,6 @@ import com.tencent.devops.process.engine.control.lock.PipelineModelLock
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
-import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
@@ -90,7 +89,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 newModel = pipelineResourceWithoutVersion.model,
-                useTemplateSettings = useTemplateSettings,
+                useTemplateSetting = useTemplateSettings,
                 enablePac = enablePac,
                 repoHashId = yamlFileInfo?.repoHashId,
                 targetAction = targetAction,

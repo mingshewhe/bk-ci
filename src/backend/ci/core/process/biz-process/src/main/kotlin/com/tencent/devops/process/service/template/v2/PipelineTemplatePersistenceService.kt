@@ -247,7 +247,8 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     fun releaseDraft2ReleaseVersion(
         userId: String,
         templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting
+        templateSetting: PipelineSetting,
+        enablePac: Boolean
     ) {
         val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
             name = templateSetting.pipelineName,
@@ -256,6 +257,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             releasedVersionName = templateResource.versionName,
             releasedSettingVersion = templateResource.settingVersion,
             latestVersionStatus = VersionStatus.RELEASED,
+            enablePac = enablePac,
             updater = userId
         )
         val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
@@ -279,14 +281,14 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             version = templateResource.version
         )
         dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
+            val transactionContext = DSL.using(configuration)
             pipelineTemplateInfoService.update(
-                transactionContext = context,
+                transactionContext = transactionContext,
                 record = pipelineTemplateInfoUpdateInfo,
                 commonCondition = pipelineTemplateCommonCondition
             )
             pipelineTemplateResourceService.update(
-                transactionContext = context,
+                transactionContext = transactionContext,
                 record = templateResourceUpdateInfo,
                 commonCondition = templateResourceCondition
             )
@@ -304,9 +306,18 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         projectId: String,
         templateId: String,
         version: Long,
+        needUpdateInfo: Boolean,
         versionName: String,
         description: String
     ) {
+        val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+            enablePac = true,
+            updater = userId
+        )
+        val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+            projectId = projectId,
+            templateId = templateId
+        )
         val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
             branchAction = BranchVersionAction.INACTIVE
         )
@@ -331,6 +342,13 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         )
         dslContext.transaction { configuration ->
             val transactionContext = DSL.using(configuration)
+            if (needUpdateInfo) {
+                pipelineTemplateInfoService.update(
+                    transactionContext = transactionContext,
+                    record = pipelineTemplateInfoUpdateInfo,
+                    commonCondition = pipelineTemplateCommonCondition
+                )
+            }
             // 创建分支版本,需要把原来的活跃的分支置为非活跃
             pipelineTemplateResourceService.update(
                 transactionContext = transactionContext,
