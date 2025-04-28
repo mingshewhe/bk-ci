@@ -82,6 +82,7 @@ class TemplateVersionReleasedRelDao {
                 .where(TEMPLATE_ID.eq(templateId))
                 .and(PUBLISHED.eq(true))
                 .orderBy(CREATE_TIME.desc())
+                .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionRelationInfo(
                         templateId = it.templateId,

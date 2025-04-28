@@ -28,6 +28,7 @@
 package com.tencent.devops.store.template.dao
 
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionInstallHistory
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import org.jooq.DSLContext
@@ -50,7 +51,8 @@ class TemplateVersionInstallHistoryDao {
                 TEMPLATE_CODE,
                 VERSION,
                 VERSION_NAME,
-                CREATOR
+                CREATOR,
+                CREATE_TIME
             ).values(
                 record.srcMarketTemplateId,
                 record.srcMarketTemplateCode,
@@ -59,8 +61,12 @@ class TemplateVersionInstallHistoryDao {
                 record.templateCode,
                 record.version,
                 record.versionName,
-                record.creator
-            ).execute()
+                record.creator,
+                record.createTime.toLocalDateTimeOrDefault()
+            ).onDuplicateKeyUpdate()
+                .set(CREATOR, record.creator)
+                .set(CREATE_TIME, record.createTime.toLocalDateTimeOrDefault())
+                .execute()
         }
     }
 
@@ -74,6 +80,7 @@ class TemplateVersionInstallHistoryDao {
                 .where(PROJECT_CODE.eq(projectCode))
                 .and(TEMPLATE_CODE.eq(templateCode))
                 .orderBy(CREATE_TIME.desc())
+                .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionInstallHistoryInfo(
                         srcMarketTemplateId = it.srcMarketTemplateId,
