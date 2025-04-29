@@ -75,6 +75,7 @@ import com.tencent.devops.store.common.service.StoreMemberService
 import com.tencent.devops.store.common.service.StoreProjectService
 import com.tencent.devops.store.common.service.StoreTotalStatisticService
 import com.tencent.devops.store.common.service.StoreUserService
+import com.tencent.devops.store.common.service.StoreVisibleDeptService
 import com.tencent.devops.store.common.service.action.StoreDecorateFactory
 import com.tencent.devops.store.constant.StoreMessageCode
 import com.tencent.devops.store.constant.StoreMessageCode.NO_COMPONENT_ADMIN_PERMISSION
@@ -97,7 +98,6 @@ import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.InstallTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
-import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
@@ -200,6 +200,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     @Autowired
     lateinit var templateVersionInstallHistoryDao: TemplateVersionInstallHistoryDao
+
+    @Autowired
+    lateinit var storeVisibleDeptService: StoreVisibleDeptService
 
     companion object {
         private val logger = LoggerFactory.getLogger(MarketTemplateServiceImpl::class.java)
@@ -630,6 +633,11 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             storeCode = templateCode,
             storeType = StoreTypeEnum.TEMPLATE
         )
+        val visibleDept = storeVisibleDeptService.getVisibleDept(
+            storeCode = templateCode,
+            storeType = StoreTypeEnum.TEMPLATE
+        ).data
+
         return Result(
             TemplateDetail(
                 projectCode = projectCode,
@@ -661,7 +669,8 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 releaseFlag = releaseFlag,
                 userCommentInfo = userCommentInfo,
                 honorInfos = templateHonorInfos,
-                indexInfos = templateIndexInfos
+                indexInfos = templateIndexInfos,
+                storeVisibleDept = visibleDept
             )
         )
     }

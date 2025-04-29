@@ -33,6 +33,7 @@ import com.tencent.devops.store.pojo.common.comment.StoreUserCommentInfo
 import com.tencent.devops.store.pojo.common.honor.HonorInfo
 import com.tencent.devops.store.pojo.common.index.StoreIndexInfo
 import com.tencent.devops.store.pojo.common.label.Label
+import com.tencent.devops.store.pojo.common.visible.StoreVisibleDeptResp
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板详情")
@@ -61,8 +62,10 @@ data class TemplateDetail(
     val score: Double?,
     @get:Schema(title = "简介", required = false)
     val summary: String?,
-    @get:Schema(title = "模板状态，INIT：初始化|AUDITING：审核中|AUDIT_REJECT：审核驳回|RELEASED：已发布|" +
-        "GROUNDING_SUSPENSION：上架中止|UNDERCARRIAGED：已下架", required = true)
+    @get:Schema(
+        title = "模板状态，INIT：初始化|AUDITING：审核中|AUDIT_REJECT：审核驳回|RELEASED：已发布|" +
+            "GROUNDING_SUSPENSION：上架中止|UNDERCARRIAGED：已下架", required = true
+    )
     val templateStatus: String,
     @get:Schema(title = "模板描述", required = false)
     val description: String?,
@@ -89,5 +92,7 @@ data class TemplateDetail(
     @get:Schema(title = "荣誉信息", required = false)
     val honorInfos: List<HonorInfo>? = null,
     @get:Schema(title = "指标信息", required = false)
-    val indexInfos: List<StoreIndexInfo>? = null
+    val indexInfos: List<StoreIndexInfo>? = null,
+    @get:Schema(title = "可见范围", required = false)
+    val storeVisibleDept: StoreVisibleDeptResp? = null
 )
