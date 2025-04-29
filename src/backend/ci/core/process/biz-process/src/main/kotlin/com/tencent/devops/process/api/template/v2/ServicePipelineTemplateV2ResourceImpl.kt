@@ -39,6 +39,7 @@ import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
@@ -169,6 +170,20 @@ class ServicePipelineTemplateV2ResourceImpl(
                 userId = userId,
                 templateId = templateId,
                 version = version
+            )
+        )
+    }
+
+    override fun getTemplateInfo(
+        userId: String,
+        projectId: String,
+        templateId: String
+    ): Result<PipelineTemplateInfoResponse> {
+        return Result(
+            pipelineTemplateFacadeService.getTemplateInfo(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId
             )
         )
     }

@@ -53,6 +53,7 @@ import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.model.store.tables.TTemplate
 import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.process.api.template.ServicePTemplateResource
+import com.tencent.devops.process.api.template.v2.ServicePipelineTemplateV2Resource
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.project.api.service.ServiceUserResource
@@ -586,6 +587,26 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             storeCode = templateCode,
             storeType = StoreTypeEnum.TEMPLATE.type.toByte()
         )
+        val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
+            dslContext = dslContext,
+            storeCode = templateCode,
+            storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+        )
+        val projectName = projectCode?.let { client.get(ServiceProjectResource::class).get(it).data?.projectName }
+
+        val publishStrategy = projectCode?.let {
+            try {
+                client.get(ServicePipelineTemplateV2Resource::class).getTemplateInfo(
+                    userId = userId,
+                    projectId = it,
+                    templateId = templateCode
+                ).data?.publishStrategy
+            } catch (ex: Exception) {
+                logger.warn("get Template Info failed $templateCode|$it$ex")
+                null
+            }
+        }
+
         val templateHonorInfos = storeHonorService.getStoreHonor(userId, StoreTypeEnum.TEMPLATE, templateCode)
         val templateIndexInfos =
             storeIndexManageService.getStoreIndexInfosByStoreCode(StoreTypeEnum.TEMPLATE, templateCode)
@@ -611,6 +632,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
         return Result(
             TemplateDetail(
+                projectCode = projectCode,
+                projectName = projectName,
+                publishStrategy = publishStrategy,
                 templateId = templateRecord.id,
                 templateCode = templateCode,
                 templateName = templateRecord.templateName,

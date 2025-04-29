@@ -3,6 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateType
 import io.swagger.v3.oas.annotations.media.Schema
@@ -20,6 +21,8 @@ data class PipelineTemplateInfoResponse(
     val desc: String?,
     @get:Schema(title = "公共/约束/自定义模式", required = true)
     val mode: TemplateType,
+    @get:Schema(title = "发布策略-研发商店", required = true)
+    val publishStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "应用范畴", required = true)
     val category: String? = null,
     @get:Schema(title = "模板类型", required = true)

@@ -27,15 +27,22 @@
 
 package com.tencent.devops.store.pojo.template
 
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.store.pojo.common.category.Category
-import com.tencent.devops.store.pojo.common.honor.HonorInfo
-import com.tencent.devops.store.pojo.common.label.Label
-import com.tencent.devops.store.pojo.common.index.StoreIndexInfo
 import com.tencent.devops.store.pojo.common.comment.StoreUserCommentInfo
+import com.tencent.devops.store.pojo.common.honor.HonorInfo
+import com.tencent.devops.store.pojo.common.index.StoreIndexInfo
+import com.tencent.devops.store.pojo.common.label.Label
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板详情")
 data class TemplateDetail(
+    @get:Schema(title = "所属项目CODE", required = true)
+    val projectCode: String?,
+    @get:Schema(title = "所属项目名称", required = true)
+    val projectName: String?,
+    @get:Schema(title = "发布策略-研发商店", required = true)
+    val publishStrategy: UpgradeStrategyEnum? = null,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String,
     @get:Schema(title = "模板代码", required = true)

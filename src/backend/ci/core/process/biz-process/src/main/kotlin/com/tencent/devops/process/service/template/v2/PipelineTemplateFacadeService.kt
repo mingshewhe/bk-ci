@@ -441,7 +441,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val releaseResource = pipelineTemplateResourceService.get(
             projectId = projectId,
             templateId = templateId,
-            version = basicInfo.releasedVersion!!
+            version = basicInfo.releasedVersion
         )
         val baseResource = draftResource?.baseVersion?.let {
             pipelineTemplateResourceService.get(
@@ -538,6 +538,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             name = basicInfo.name,
             desc = basicInfo.desc,
             mode = basicInfo.mode,
+            publishStrategy = basicInfo.publishStrategy,
             category = basicInfo.category,
             type = basicInfo.type,
             logoUrl = basicInfo.logoUrl,

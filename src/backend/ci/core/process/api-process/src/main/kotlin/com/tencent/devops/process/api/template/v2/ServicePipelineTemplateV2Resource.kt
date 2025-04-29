@@ -45,6 +45,7 @@ import com.tencent.devops.process.pojo.template.TemplateModelDetail
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -264,4 +265,19 @@ interface ServicePipelineTemplateV2Resource {
         @QueryParam("version")
         version: Long
     ): Result<Boolean>
+
+    @Operation(summary = "查看模板基本信息")
+    @GET
+    @Path("/{projectId}/{templateId}/info/")
+    fun getTemplateInfo(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String
+    ): Result<PipelineTemplateInfoResponse>
 }
