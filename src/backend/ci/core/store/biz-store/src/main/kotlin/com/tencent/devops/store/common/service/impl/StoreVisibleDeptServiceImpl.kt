@@ -85,13 +85,12 @@ class StoreVisibleDeptServiceImpl @Autowired constructor(
                 val deptInfos = mutableListOf<DeptInfo>()
                 storeDeptRelRecords.forEach {
                     if (!fullScopeVisible) {
-                        // 判断该组件的可见范围是否设置了全公司可见
-                        val parentDeptInfoList = client.get(ServiceProjectOrganizationResource::class)
-                            .getParentDeptInfos(it.toString(), 1).data
-                        if (null != parentDeptInfoList && parentDeptInfoList.isEmpty()) {
-                            // 没有上级机构说明设置的可见范围是全公司
-                            fullScopeVisible = true
-                        }
+                        // 判断该组件的可见范围是否设置了全公司可见，层级为0，最顶层部门，为全公司
+                        fullScopeVisible = client.get(ServiceProjectOrganizationResource::class)
+                            .getDeptInfo(
+                                userId = null,
+                                id = it.deptId
+                            ).data?.level?.toInt() == 0
                     }
                     deptInfos.add(
                         DeptInfo(
