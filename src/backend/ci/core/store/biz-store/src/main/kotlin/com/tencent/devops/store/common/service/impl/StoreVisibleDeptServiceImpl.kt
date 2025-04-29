@@ -36,11 +36,11 @@ import com.tencent.devops.project.api.service.ServiceProjectOrganizationResource
 import com.tencent.devops.store.common.dao.StoreDeptRelDao
 import com.tencent.devops.store.common.dao.StoreMemberDao
 import com.tencent.devops.store.common.service.StoreVisibleDeptService
-import com.tencent.devops.store.pojo.common.visible.UserStoreDeptInfoRequest
 import com.tencent.devops.store.pojo.common.enums.DeptStatusEnum
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import com.tencent.devops.store.pojo.common.visible.DeptInfo
 import com.tencent.devops.store.pojo.common.visible.StoreVisibleDeptResp
+import com.tencent.devops.store.pojo.common.visible.UserStoreDeptInfoRequest
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -81,16 +81,31 @@ class StoreVisibleDeptServiceImpl @Autowired constructor(
             if (storeDeptRelRecords == null) {
                 null
             } else {
+                var fullScopeVisible = false
                 val deptInfos = mutableListOf<DeptInfo>()
                 storeDeptRelRecords.forEach {
-                    deptInfos.add(DeptInfo(
-                        deptId = it.deptId,
-                        deptName = it.deptName,
-                        status = DeptStatusEnum.getStatus(it.status.toInt()),
-                        comment = it.comment
-                    ))
+                    if (!fullScopeVisible) {
+                        // 判断该组件的可见范围是否设置了全公司可见
+                        val parentDeptInfoList = client.get(ServiceProjectOrganizationResource::class)
+                            .getParentDeptInfos(it.toString(), 1).data
+                        if (null != parentDeptInfoList && parentDeptInfoList.isEmpty()) {
+                            // 没有上级机构说明设置的可见范围是全公司
+                            fullScopeVisible = true
+                        }
+                    }
+                    deptInfos.add(
+                        DeptInfo(
+                            deptId = it.deptId,
+                            deptName = it.deptName,
+                            status = DeptStatusEnum.getStatus(it.status.toInt()),
+                            comment = it.comment
+                        )
+                    )
                 }
-                StoreVisibleDeptResp(deptInfos)
+                StoreVisibleDeptResp(
+                    deptInfos = deptInfos,
+                    fullScopeVisible = fullScopeVisible
+                )
             }
         )
     }
@@ -153,7 +168,7 @@ class StoreVisibleDeptServiceImpl @Autowired constructor(
                 deptId = it.deptId,
                 storeType = storeType.type.toByte()
             )
-            if (count> 0) {
+            if (count > 0) {
                 return@forEach
             }
             pendingDeptInfoList.add(it)
