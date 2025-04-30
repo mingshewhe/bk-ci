@@ -610,7 +610,7 @@ class MarketTemplateDao {
             projectCodes = projectCodes,
             status = status,
             modifier = modifier,
-            description = modifier,
+            description = description,
             excludeStatus = excludeStatus
         )
         return dslContext.select(
@@ -665,7 +665,7 @@ class MarketTemplateDao {
             projectCodes = projectCodes,
             status = status,
             modifier = modifier,
-            description = modifier,
+            description = description,
             excludeStatus = excludeStatus
         )
         return dslContext.select(
