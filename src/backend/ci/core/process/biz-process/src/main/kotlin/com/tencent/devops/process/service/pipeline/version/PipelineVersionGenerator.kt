@@ -263,7 +263,8 @@ class PipelineVersionGenerator constructor(
         enablePac: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
-        targetBranch: String? = null
+        targetBranch: String? = null,
+        defaultBranch: String? = null
     ): Pair<VersionStatus, String?> {
         return if (enablePac) {
             return getVersionStatusAndBranchNameWithPac(
@@ -272,7 +273,8 @@ class PipelineVersionGenerator constructor(
                 templateVersion = templateVersion,
                 repoHashId = repoHashId,
                 targetAction = targetAction,
-                targetBranch = targetBranch
+                targetBranch = targetBranch,
+                defaultBranch = defaultBranch
             )
         } else {
             Pair(VersionStatus.RELEASED, null)
@@ -285,7 +287,8 @@ class PipelineVersionGenerator constructor(
         templateVersion: Long,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
-        targetBranch: String?
+        targetBranch: String?,
+        defaultBranch: String? = null,
     ): Pair<VersionStatus, String?> {
         if (repoHashId.isNullOrBlank()) {
             throw IllegalArgumentException("repoHashId is null")
@@ -303,8 +306,9 @@ class PipelineVersionGenerator constructor(
             }
 
             CodeTargetAction.COMMIT_TO_BRANCH -> {
-                val defaultBranch = getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
-                if (defaultBranch == targetBranch) {
+                val finalDefaultBranch =
+                    defaultBranch ?: getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
+                if (defaultBranch == finalDefaultBranch) {
                     Pair(VersionStatus.RELEASED, null)
                 } else {
                     Pair(VersionStatus.BRANCH, targetBranch)
@@ -447,38 +451,56 @@ class PipelineVersionGenerator constructor(
 
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
             return instanceReleaseInfos.map { releaseInfo ->
-                val instanceModel = PipelineUtils.instanceModel(
-                    templateModel = templateResource.model as Model,
-                    pipelineName = releaseInfo.pipelineName,
-                    buildNo = releaseInfo.buildNo,
-                    param = releaseInfo.param,
-                    instanceFromTemplate = true,
-                    defaultStageTagId = defaultStageTagId,
-                    templateId = templateId
-                )
-                val resourceOnlyVersion = generateInstanceVersion(
-                    projectId = projectId,
-                    pipelineId = releaseInfo.pipelineId,
-                    newModel = instanceModel,
-                    useTemplateSetting = request.useTemplateSetting,
-                    enablePac = enablePac,
-                    repoHashId = repoHashId,
-                    targetAction = targetAction,
-                    targetBranch = targetBranch,
-                    defaultBranch = defaultBranch,
-                    templateId = templateId,
-                    templateVersion = version
-                )
+                // 新增实例化
+                val resourceOnlyVersion = if (releaseInfo.pipelineId.isEmpty()) {
+                    val (versionStatus, branchName) = getVersionStatusAndBranchName(
+                        projectId = projectId,
+                        templateId = templateId,
+                        templateVersion = version,
+                        enablePac = enablePac,
+                        repoHashId = repoHashId,
+                        targetAction = targetAction,
+                        targetBranch = targetBranch,
+                        defaultBranch = defaultBranch
+                    )
+                    getDefaultVersion(
+                        versionStatus = versionStatus,
+                        branchName = branchName,
+                    )
+                } else {
+                    val instanceModel = PipelineUtils.instanceModel(
+                        templateModel = templateResource.model as Model,
+                        pipelineName = releaseInfo.pipelineName,
+                        buildNo = releaseInfo.buildNo,
+                        param = releaseInfo.param,
+                        instanceFromTemplate = true,
+                        defaultStageTagId = defaultStageTagId,
+                        templateId = templateId
+                    )
+                    generateInstanceVersion(
+                        projectId = projectId,
+                        pipelineId = releaseInfo.pipelineId,
+                        newModel = instanceModel,
+                        useTemplateSetting = request.useTemplateSetting,
+                        enablePac = enablePac,
+                        repoHashId = repoHashId,
+                        targetAction = targetAction,
+                        targetBranch = targetBranch,
+                        defaultBranch = defaultBranch,
+                        templateId = templateId,
+                        templateVersion = version
+                    )
+                }
                 PrefetchReleaseResult(
                     pipelineId = releaseInfo.pipelineId,
                     pipelineName = releaseInfo.pipelineName,
                     version = resourceOnlyVersion.version,
-                    newVersionNum = resourceOnlyVersion.versionNum!!,
+                    newVersionNum = resourceOnlyVersion.versionNum ?: INIT_VERSION,
                     newVersionName = resourceOnlyVersion.versionName!!
                 )
+
             }
         }
-
     }
 
     private fun getDefaultBranch(
