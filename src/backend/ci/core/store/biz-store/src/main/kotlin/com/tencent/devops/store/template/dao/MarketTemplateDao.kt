@@ -584,9 +584,14 @@ class MarketTemplateDao {
         dslContext: DSLContext,
         userId: String,
         templateName: String?,
+        projectCodes: List<String>?,
+        status: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?,
+        excludeStatus: TemplateStatusEnum? = null,
         page: Int,
         pageSize: Int
-    ): Result<out Record>? {
+    ): Result<out Record> {
         val tTemplate = TTemplate.T_TEMPLATE
         val tStoreMember = TStoreMember.T_STORE_MEMBER
         val tStoreProjectRel = TStoreProjectRel.T_STORE_PROJECT_REL
@@ -596,7 +601,18 @@ class MarketTemplateDao {
         )
             .from(tTemplate)
             .groupBy(tTemplate.TEMPLATE_CODE) // 查找每组templateCode最新的记录
-        val conditions = generateGetMyTemplatesConditions(tTemplate, userId, tStoreMember, tStoreProjectRel, templateName)
+        val conditions = generateGetMyTemplatesConditions(
+            tTemplate = tTemplate,
+            userId = userId,
+            tStoreMember = tStoreMember,
+            tStoreProjectRel = tStoreProjectRel,
+            templateName = templateName,
+            projectCodes = projectCodes,
+            status = status,
+            modifier = modifier,
+            description = modifier,
+            excludeStatus = excludeStatus
+        )
         return dslContext.select(
             tTemplate.ID,
             tTemplate.TEMPLATE_CODE,
@@ -630,7 +646,12 @@ class MarketTemplateDao {
     fun getMyTemplatesCount(
         dslContext: DSLContext,
         userId: String,
-        templateName: String?
+        templateName: String?,
+        projectCodes: List<String>? = emptyList(),
+        status: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?,
+        excludeStatus: TemplateStatusEnum? = null,
     ): Long {
         val tTemplate = TTemplate.T_TEMPLATE
         val tStoreMember = TStoreMember.T_STORE_MEMBER
@@ -640,7 +661,12 @@ class MarketTemplateDao {
             userId = userId,
             tStoreMember = tStoreMember,
             tStoreProjectRel = tStoreProjectRel,
-            templateName = templateName
+            templateName = templateName,
+            projectCodes = projectCodes,
+            status = status,
+            modifier = modifier,
+            description = modifier,
+            excludeStatus = excludeStatus
         )
         return dslContext.select(
             DSL.countDistinct(tTemplate.TEMPLATE_CODE)
@@ -659,7 +685,12 @@ class MarketTemplateDao {
         userId: String,
         tStoreMember: TStoreMember,
         tStoreProjectRel: TStoreProjectRel,
-        templateName: String?
+        templateName: String?,
+        projectCodes: List<String>? = emptyList(),
+        status: TemplateStatusEnum?,
+        excludeStatus: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?
     ): MutableList<Condition> {
         val conditions = mutableListOf<Condition>()
         conditions.add(tTemplate.CREATOR.eq(userId).or(tStoreMember.USERNAME.eq(userId)))
@@ -667,6 +698,21 @@ class MarketTemplateDao {
         conditions.add(tStoreProjectRel.STORE_TYPE.eq(StoreTypeEnum.TEMPLATE.type.toByte()))
         if (null != templateName) {
             conditions.add(tTemplate.TEMPLATE_NAME.contains(templateName))
+        }
+        if (!projectCodes.isNullOrEmpty()) {
+            conditions.add(tStoreProjectRel.PROJECT_CODE.`in`(projectCodes))
+        }
+        if (status != null) {
+            conditions.add(tTemplate.TEMPLATE_STATUS.eq(status.status.toByte()))
+        }
+        if (excludeStatus != null) {
+            conditions.add(tTemplate.TEMPLATE_STATUS.ne(excludeStatus.status.toByte()))
+        }
+        if (!modifier.isNullOrBlank()) {
+            conditions.add(tTemplate.MODIFIER.eq(modifier))
+        }
+        if (!description.isNullOrBlank()) {
+            conditions.add(tTemplate.DESCRIPTION.eq(description))
         }
         conditions.add(tStoreMember.STORE_TYPE.eq(StoreTypeEnum.TEMPLATE.type.toByte()))
         return conditions

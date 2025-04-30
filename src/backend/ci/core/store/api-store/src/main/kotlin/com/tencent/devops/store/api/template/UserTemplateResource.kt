@@ -36,9 +36,11 @@ import com.tencent.devops.store.pojo.template.InstallTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
+import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -201,4 +203,34 @@ interface UserTemplateResource {
         @QueryParam("pageSize")
         pageSize: Int
     ): Result<Page<MyTemplateItem>?>
+
+    @Operation(summary = "根据用户获取原子工作台模板列表-v2")
+    @GET
+    @Path("/desk/template/v2/list")
+    fun getMyTemplatesNew(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "模版名称", required = false)
+        @QueryParam("templateName")
+        templateName: String?,
+        @Parameter(description = "项目名称", required = false)
+        @QueryParam("projectName")
+        projectName: String?,
+        @Parameter(description = "状态", required = false)
+        @QueryParam("status")
+        status: TemplateStatusEnum?,
+        @Parameter(description = "最后更新人", required = false)
+        @QueryParam("modifier")
+        modifier: String?,
+        @Parameter(description = "描述", required = false)
+        @QueryParam("description")
+        description: String?,
+        @Parameter(description = "页码", required = true)
+        @QueryParam("page")
+        page: Int,
+        @Parameter(description = "每页数量", required = true)
+        @QueryParam("pageSize")
+        pageSize: Int
+    ): Result<Page<MyTemplateItemResponse>>
 }

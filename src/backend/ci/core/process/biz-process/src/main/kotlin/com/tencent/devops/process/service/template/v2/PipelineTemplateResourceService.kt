@@ -64,6 +64,13 @@ class PipelineTemplateResourceService @Autowired constructor(
         )
     }
 
+    fun listLatestReleasedVersions(templateIds: List<String>): List<PipelineVersionSimple> {
+        return pipelineTemplateResourceDao.listLatestReleasedVersions(
+            dslContext = dslContext,
+            templateIds = templateIds
+        )
+    }
+
     fun getLatestBranchResource(
         projectId: String,
         templateId: String,

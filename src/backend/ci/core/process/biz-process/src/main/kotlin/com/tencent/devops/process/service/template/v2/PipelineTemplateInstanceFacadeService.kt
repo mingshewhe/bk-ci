@@ -546,10 +546,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     ): SQLPage<PipelineTemplateRelatedResp> {
         val (offset, limit) = PageUtil.convertPageSizeToSQLLimit(page, pageSize)
         val templateInfo = pipelineTemplateInfoService.get(projectId, templateId)
-        // todo 错误码
-        val templateReleasedVersion = templateInfo.releasedVersion ?: throw ErrorCodeException(
-            errorCode = ""
-        )
 
         val hasPermissionList = pipelinePermissionService.getResourceByPermission(
             userId = userId,
@@ -597,7 +593,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 templateInstanceItem = templateInstanceItem,
                 templatePipelineId = it.pipelineId,
                 templatePipelineVersion = it.version,
-                templateReleasedVersion = templateReleasedVersion,
+                templateReleasedVersion = templateInfo.releasedVersion,
             )
             val enabledPac = pipeline2PacSettings[it.pipelineId]?.enable ?: false
             PipelineTemplateRelatedResp(

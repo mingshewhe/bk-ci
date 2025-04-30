@@ -40,6 +40,7 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.api.util.ThreadLocalUtil
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.auth.api.pojo.ProjectConditionDTO
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Container
@@ -88,6 +89,7 @@ import com.tencent.devops.store.pojo.common.LATEST
 import com.tencent.devops.store.pojo.common.MarketItem
 import com.tencent.devops.store.pojo.common.MarketMainItemLabel
 import com.tencent.devops.store.pojo.common.StoreBaseInfo
+import com.tencent.devops.store.pojo.common.enums.DeptStatusEnum
 import com.tencent.devops.store.pojo.common.enums.StoreProjectTypeEnum
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import com.tencent.devops.store.pojo.common.visible.DeptInfo
@@ -99,6 +101,7 @@ import com.tencent.devops.store.pojo.template.InstallTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
+import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
@@ -635,7 +638,8 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
         val visibleDept = storeVisibleDeptService.getVisibleDept(
             storeCode = templateCode,
-            storeType = StoreTypeEnum.TEMPLATE
+            storeType = StoreTypeEnum.TEMPLATE,
+            deptStatusInfos = DeptStatusEnum.APPROVED.name
         ).data
 
         return Result(
@@ -1168,7 +1172,17 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         page: Int,
         pageSize: Int
     ): Result<Page<MyTemplateItem>?> {
-        val records = marketTemplateDao.getMyTemplates(dslContext, userId, templateName, page, pageSize)
+        val records = marketTemplateDao.getMyTemplates(
+            dslContext = dslContext,
+            userId = userId,
+            templateName = templateName,
+            projectCodes = emptyList(),
+            status = null,
+            modifier = null,
+            description = null,
+            page = page,
+            pageSize = pageSize
+        )
         // 获取项目代码对应的名称
         val projectCodeList = mutableListOf<String>()
         records?.forEach {
@@ -1206,7 +1220,15 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 )
             )
         }
-        val templateCount = marketTemplateDao.getMyTemplatesCount(dslContext, userId, templateName)
+        val templateCount = marketTemplateDao.getMyTemplatesCount(
+            dslContext = dslContext,
+            userId = userId,
+            templateName = templateName,
+            projectCodes = emptyList(),
+            status = null,
+            modifier = null,
+            description = null,
+        )
         val totalPages = PageUtil.calTotalPage(pageSize, templateCount)
         return Result(
             Page(
@@ -1216,6 +1238,120 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 totalPages = totalPages,
                 records = templateList
             )
+        )
+    }
+
+    override fun getMyTemplatesNew(
+        userId: String,
+        templateName: String?,
+        projectName: String?,
+        status: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?,
+        page: Int,
+        pageSize: Int
+    ): Page<MyTemplateItemResponse> {
+        // 根据项目名称获取到项目列表ID
+        val filterProjectCodes = takeIf { !projectName.isNullOrBlank() }?.let {
+            client.get(ServiceProjectResource::class).listProjectsByCondition(
+                projectConditionDTO = ProjectConditionDTO(
+                    projectName = projectName,
+                ),
+                offset = 0,
+                limit = PageUtil.MAX_PAGE_SIZE * 10
+            ).data?.map { it.englishName }
+        }
+
+        val records = marketTemplateDao.getMyTemplates(
+            dslContext = dslContext,
+            userId = userId,
+            templateName = templateName,
+            projectCodes = filterProjectCodes,
+            status = status,
+            modifier = modifier,
+            description = description,
+            excludeStatus = TemplateStatusEnum.INIT,
+            page = page,
+            pageSize = pageSize
+        )
+
+        if (records.isEmpty()) {
+            return Page(
+                count = 0,
+                page = 0,
+                pageSize = pageSize,
+                totalPages = 0,
+                records = emptyList()
+            )
+        }
+
+        val projectCode2ProjectName = client.get(ServiceProjectResource::class).getNameByCode(
+            projectCodes = records.joinToString(",") { it[KEY_PROJECT_CODE].toString() }
+        ).data
+
+        // 获取研发商店模板最新发布版本
+        val latestPublishedVersions = templateVersionReleasedRelDao.listLatestPublishedVersions(
+            dslContext = dslContext,
+            templateIds = records.map { it[TTemplate.T_TEMPLATE.ID] }
+        )
+
+        // 获取模板最新发布版本
+        val latestReleasedVersions = client.get(ServicePipelineTemplateV2Resource::class).listLatestReleasedVersions(
+            templateIds = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
+        ).data ?: emptyList()
+
+        val template2Pac = client.get(ServicePipelineTemplateV2Resource::class).listPacSettings(
+            templateIds = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
+        ).data ?: emptyMap()
+
+        val templateList = with(TTemplate.T_TEMPLATE) {
+            records.map {
+                val latestPublishedVersion = latestPublishedVersions.firstOrNull { latestPublishedVersion ->
+                    latestPublishedVersion.templateId == it[ID]
+                }?.version
+                val latestReleasedVersion = latestReleasedVersions.firstOrNull { latestReleasedVersion ->
+                    latestReleasedVersion.pipelineId == it[TEMPLATE_CODE]
+                }?.version?.toLong()
+                val templateStatus = TemplateStatusEnum.getTemplateStatusEnum((it[TEMPLATE_STATUS]).toInt())
+
+                MyTemplateItemResponse(
+                    templateId = it[ID] as String,
+                    templateCode = it[TEMPLATE_CODE],
+                    templateName = it[TEMPLATE_NAME].toString(),
+                    logoUrl = it[LOGO_URL]?.let { logoUrl ->
+                        StoreDecorateFactory.get(StoreDecorateFactory.Kind.HOST)?.decorate(logoUrl)?.toString()
+                    },
+                    enablePac = template2Pac[it[TEMPLATE_CODE]] ?: false,
+                    latestPublishedVersion = latestPublishedVersion,
+                    latestReleasedVersion = latestReleasedVersion,
+                    templateStatus = templateStatus,
+                    upgradeFlag = latestPublishedVersion != latestReleasedVersion,
+                    projectCode = it[KEY_PROJECT_CODE].toString(),
+                    projectName = projectCode2ProjectName?.get(it[KEY_PROJECT_CODE].toString()).toString(),
+                    creator = it[CREATOR].toString(),
+                    modifier = it[MODIFIER].toString(),
+                    createTime = (it[CREATE_TIME] as LocalDateTime).timestampmilli(),
+                    updateTime = (it[UPDATE_TIME] as LocalDateTime).timestampmilli()
+                )
+            }
+        }
+        val templateCount = marketTemplateDao.getMyTemplatesCount(
+            dslContext = dslContext,
+            userId = userId,
+            templateName = templateName,
+            projectCodes = filterProjectCodes,
+            status = status,
+            excludeStatus = TemplateStatusEnum.INIT,
+            modifier = modifier,
+            description = description,
+        )
+        val totalPages = PageUtil.calTotalPage(pageSize, templateCount)
+        return Page(
+            count = templateCount,
+            page = page,
+            pageSize = pageSize,
+            totalPages = totalPages,
+            records = templateList
         )
     }
 

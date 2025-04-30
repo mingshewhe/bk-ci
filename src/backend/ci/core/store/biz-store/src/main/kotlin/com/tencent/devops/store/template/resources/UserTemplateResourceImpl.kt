@@ -33,6 +33,7 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.store.api.template.UserTemplateResource
+import com.tencent.devops.store.common.service.StoreProjectService
 import com.tencent.devops.store.pojo.common.InstalledProjRespItem
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
@@ -40,10 +41,11 @@ import com.tencent.devops.store.pojo.template.InstallTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
+import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
-import com.tencent.devops.store.common.service.StoreProjectService
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -68,6 +70,30 @@ class UserTemplateResourceImpl @Autowired constructor(
         pageSize: Int
     ): Result<Page<MyTemplateItem>?> {
         return marketTemplateService.getMyTemplates(userId, templateName, page, pageSize)
+    }
+
+    override fun getMyTemplatesNew(
+        userId: String,
+        templateName: String?,
+        projectName: String?,
+        status: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?,
+        page: Int,
+        pageSize: Int
+    ): Result<Page<MyTemplateItemResponse>> {
+        return Result(
+            marketTemplateService.getMyTemplatesNew(
+                userId = userId,
+                templateName = templateName,
+                projectName = projectName,
+                status = status,
+                modifier = modifier,
+                description = description,
+                page = page,
+                pageSize = pageSize
+            )
+        )
     }
 
     override fun installTemplate(

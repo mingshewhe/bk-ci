@@ -32,6 +32,7 @@ import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.PTemplateOrderByType
 import com.tencent.devops.process.pojo.PTemplateSortType
 import com.tencent.devops.process.pojo.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.OptionalTemplateList
 import com.tencent.devops.process.pojo.template.TemplateListModel
@@ -43,12 +44,14 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 
 @RestResource
 class ServicePipelineTemplateV2ResourceImpl(
     private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateFacadeService: PipelineTemplateFacadeService
+    private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : ServicePipelineTemplateV2Resource {
     override fun addMarketTemplate(
         userId: String,
@@ -184,6 +187,20 @@ class ServicePipelineTemplateV2ResourceImpl(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId
+            )
+        )
+    }
+
+    override fun listLatestReleasedVersions(templateIds: List<String>): Result<List<PipelineVersionSimple>> {
+        return Result(pipelineTemplateResourceService.listLatestReleasedVersions(templateIds))
+    }
+
+    override fun listPacSettings(
+        templateIds: List<String>
+    ): Result<Map<String, Boolean>> {
+        return Result(
+            pipelineTemplateInfoService.listPacSettings(
+                templateIds = templateIds
             )
         )
     }

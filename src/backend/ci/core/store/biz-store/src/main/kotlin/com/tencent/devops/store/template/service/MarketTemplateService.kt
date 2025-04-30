@@ -36,8 +36,8 @@ import com.tencent.devops.store.pojo.template.InstallTemplateResp
 import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
+import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.MarketTemplateSimple
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
@@ -139,6 +139,17 @@ interface MarketTemplateService {
         page: Int,
         pageSize: Int
     ): Result<Page<MyTemplateItem>?>
+
+    fun getMyTemplatesNew(
+        userId: String,
+        templateName: String?,
+        projectName: String?,
+        status: TemplateStatusEnum?,
+        modifier: String?,
+        description: String?,
+        page: Int,
+        pageSize: Int
+    ): Page<MyTemplateItemResponse>
 
     /**
      * 根据模板ID和模板代码判断模板是否存在

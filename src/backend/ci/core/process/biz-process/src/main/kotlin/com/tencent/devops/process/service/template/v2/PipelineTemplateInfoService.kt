@@ -181,4 +181,13 @@ class PipelineTemplateInfoService @Autowired constructor(
             count = count
         )
     }
+
+    fun listPacSettings(
+        templateIds: List<String>
+    ): Map<String, Boolean> {
+        return pipelineTemplateInfoDao.listPacSettings(
+            dslContext = dslContext,
+            templateIds = templateIds
+        )
+    }
 }

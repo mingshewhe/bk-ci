@@ -38,6 +38,7 @@ import com.tencent.devops.common.web.constant.BkStyleEnum
 import com.tencent.devops.process.pojo.PTemplateOrderByType
 import com.tencent.devops.process.pojo.PTemplateSortType
 import com.tencent.devops.process.pojo.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.OptionalTemplateList
 import com.tencent.devops.process.pojo.template.TemplateListModel
@@ -280,4 +281,20 @@ interface ServicePipelineTemplateV2Resource {
         @PathParam("templateId")
         templateId: String
     ): Result<PipelineTemplateInfoResponse>
+
+    @Operation(summary = "获取模板最新版本")
+    @POST
+    @Path("/listLatestReleasedVersions")
+    fun listLatestReleasedVersions(
+        @Parameter(description = "模板ID列表", required = true)
+        templateIds: List<String>
+    ): Result<List<PipelineVersionSimple>>
+
+    @Operation(summary = "获取模板最新版本")
+    @POST
+    @Path("/{projectId}/listPacSettings")
+    fun listPacSettings(
+        @Parameter(description = "模板ID列表", required = true)
+        templateIds: List<String>
+    ): Result<Map<String, Boolean>>
 }

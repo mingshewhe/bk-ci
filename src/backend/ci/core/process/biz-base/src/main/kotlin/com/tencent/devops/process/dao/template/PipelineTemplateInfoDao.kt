@@ -1,6 +1,5 @@
 package com.tencent.devops.process.dao.template
 
-import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -313,6 +312,20 @@ class PipelineTemplateInfoDao {
                 if (upgradeStrategy != null) conditions.add(UPGRADE_STRATEGY.eq(upgradeStrategy!!.name))
                 conditions
             }
+        }
+    }
+
+    fun listPacSettings(
+        dslContext: DSLContext,
+        templateIds: List<String>
+    ): Map<String, Boolean> {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.select(ID, PAC)
+                .from(this)
+                .where(ID.`in`(templateIds))
+                .fetch().map {
+                    Pair(it.value1(), it.value2())
+                }.toMap()
         }
     }
 

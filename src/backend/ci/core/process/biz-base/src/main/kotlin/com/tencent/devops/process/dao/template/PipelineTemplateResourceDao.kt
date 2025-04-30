@@ -1,7 +1,6 @@
 package com.tencent.devops.process.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
@@ -315,6 +314,67 @@ class PipelineTemplateResourceDao {
                 query.orderBy(VERSION.desc())
             }
             return query.limit(1).fetchOne()?.convert()
+        }
+    }
+
+    fun listLatestReleasedVersions(
+        dslContext: DSLContext,
+        templateIds: List<String>
+    ): List<PipelineVersionSimple> {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+            // 子查询获取每个模板的最大NUMBER
+            val maxNumbers = dslContext.select(TEMPLATE_ID, DSL.max(NUMBER).`as`("max_number"))
+                .from(this)
+                .where(TEMPLATE_ID.`in`(templateIds))
+                .and(STATUS.notIn(VersionStatus.COMMITTING.name, VersionStatus.DELETE.name))
+                .groupBy(TEMPLATE_ID)
+                .asTable("m")
+            // 主查询关联获取VERSION
+            dslContext.select(
+                TEMPLATE_ID,
+                SETTING_VERSION,
+                VERSION,
+                VERSION_NAME,
+                VERSION_NUM,
+                PIPELINE_VERSION,
+                TRIGGER_VERSION,
+                BASE_VERSION,
+                BASE_VERSION_NAME,
+                SRC_TEMPLATE_VERSION,
+                STATUS,
+                DESCRIPTION,
+                CREATOR,
+                UPDATER,
+                CREATED_TIME,
+                UPDATE_TIME
+            )
+                .from(this)
+                .join(maxNumbers)
+                .on(
+                    TEMPLATE_ID.eq(maxNumbers.field(TEMPLATE_ID)),
+                    NUMBER.eq(maxNumbers.field("max_number", kotlin.Int::class.java))
+                )
+                .fetch().map {
+                    PipelineVersionSimple(
+                        pipelineId = it.value1(),
+                        settingVersion = it.value2(),
+                        version = it.value3().toInt(),
+                        versionName = it.value4() ?: "",
+                        versionNum = it.value5(),
+                        pipelineVersion = it.value6(),
+                        triggerVersion = it.value7(),
+                        baseVersion = it.value8()?.toInt(),
+                        baseVersionName = it.value9(),
+                        srcTemplateVersion = it.value10()?.toInt(),
+                        status = VersionStatus.get(it.value11()),
+                        description = it.value12(),
+                        creator = it.value13(),
+                        updater = it.value14(),
+                        createTime = it.value15().timestampmilli(),
+                        updateTime = it.value16().timestampmilli(),
+                        yamlVersion = null
+                    )
+                }
         }
     }
 

@@ -32,6 +32,7 @@ import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Suppress("ALL")
@@ -83,7 +84,7 @@ class TemplateVersionReleasedRelDao {
             dslContext.selectFrom(this)
                 .where(TEMPLATE_ID.eq(templateId))
                 .and(PUBLISHED.eq(true))
-                .orderBy(CREATE_TIME.desc())
+                .orderBy(NUMBER.desc())
                 .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionRelationInfo(
@@ -98,6 +99,43 @@ class TemplateVersionReleasedRelDao {
                         updateTime = it.updateTime.timestampmilli(),
                         creator = it.creator,
                         updater = it.updater
+                    )
+                }
+        }
+    }
+
+    fun listLatestPublishedVersions(
+        dslContext: DSLContext,
+        templateIds: List<String>
+    ): List<TemplateVersionRelationInfo> {
+        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+            // 子查询获取每个模板的最大NUMBER
+            val maxNumbers = dslContext.select(TEMPLATE_ID, DSL.max(NUMBER).`as`("max_number"))
+                .from(this)
+                .where(TEMPLATE_ID.`in`(templateIds))
+                .groupBy(TEMPLATE_ID)
+                .asTable("m")
+            // 主查询关联获取VERSION
+            dslContext.select()
+                .from(this)
+                .join(maxNumbers)
+                .on(
+                    TEMPLATE_ID.eq(maxNumbers.field(TEMPLATE_ID)),
+                    NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
+                )
+                .fetch().map {
+                    TemplateVersionRelationInfo(
+                        projectCode = it[PROJECT_CODE],
+                        templateId = it[TEMPLATE_ID],
+                        templateCode = it[TEMPLATE_CODE],
+                        version = it[VERSION],
+                        number = it[NUMBER],
+                        versionName = it[VERSION_NAME],
+                        published = it[PUBLISHED],
+                        createTime = it[CREATE_TIME].timestampmilli(),
+                        updateTime = it[UPDATE_TIME]?.timestampmilli(),
+                        creator = it[CREATOR],
+                        updater = it[UPDATER]
                     )
                 }
         }
