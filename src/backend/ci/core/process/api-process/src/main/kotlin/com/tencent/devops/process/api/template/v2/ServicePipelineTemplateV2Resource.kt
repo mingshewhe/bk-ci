@@ -292,7 +292,7 @@ interface ServicePipelineTemplateV2Resource {
 
     @Operation(summary = "获取模板最新版本")
     @POST
-    @Path("/{projectId}/listPacSettings")
+    @Path("/listPacSettings")
     fun listPacSettings(
         @Parameter(description = "模板ID列表", required = true)
         templateIds: List<String>
