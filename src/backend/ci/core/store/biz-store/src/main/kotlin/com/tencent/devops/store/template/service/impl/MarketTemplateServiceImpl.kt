@@ -1321,6 +1321,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                     logoUrl = it[LOGO_URL]?.let { logoUrl ->
                         StoreDecorateFactory.get(StoreDecorateFactory.Kind.HOST)?.decorate(logoUrl)?.toString()
                     },
+                    description = it[DESCRIPTION],
                     enablePac = template2Pac[it[TEMPLATE_CODE]] ?: false,
                     latestPublishedVersion = latestPublishedVersion,
                     latestReleasedVersion = latestReleasedVersion,

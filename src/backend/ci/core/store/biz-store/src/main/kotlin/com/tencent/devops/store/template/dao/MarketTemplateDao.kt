@@ -618,6 +618,7 @@ class MarketTemplateDao {
             tTemplate.TEMPLATE_CODE,
             tTemplate.TEMPLATE_NAME,
             tTemplate.LOGO_URL,
+            tTemplate.DESCRIPTION,
             tTemplate.VERSION,
             tTemplate.TEMPLATE_STATUS,
             tTemplate.CREATOR,
@@ -709,10 +710,10 @@ class MarketTemplateDao {
             conditions.add(tTemplate.TEMPLATE_STATUS.ne(excludeStatus.status.toByte()))
         }
         if (!modifier.isNullOrBlank()) {
-            conditions.add(tTemplate.MODIFIER.eq(modifier))
+            conditions.add(tTemplate.MODIFIER.like("%$modifier%"))
         }
         if (!description.isNullOrBlank()) {
-            conditions.add(tTemplate.DESCRIPTION.eq(description))
+            conditions.add(tTemplate.DESCRIPTION.like("%$description%"))
         }
         conditions.add(tStoreMember.STORE_TYPE.eq(StoreTypeEnum.TEMPLATE.type.toByte()))
         return conditions

@@ -40,6 +40,8 @@ data class MyTemplateItemResponse(
     val templateName: String,
     @get:Schema(title = "模板logo", required = false)
     val logoUrl: String?,
+    @get:Schema(title = "描述", required = false)
+    val description: String?,
     @get:Schema(title = "是否开启PAC", required = false)
     val enablePac: Boolean? = false,
     @get:Schema(title = "模板最新上架版本", required = true)
