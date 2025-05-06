@@ -44,6 +44,7 @@ import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
+import com.tencent.devops.store.pojo.template.PublishStrategyUpdateReq
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
@@ -146,12 +147,12 @@ class UserTemplateResourceImpl @Autowired constructor(
     override fun updatePublishStrategy(
         userId: String,
         templateCode: String,
-        strategy: UpgradeStrategyEnum
+        strategy: PublishStrategyUpdateReq
     ): Result<Boolean> {
         return client.get(ServicePipelineTemplateV2Resource::class).updatePublishStrategy(
             userId = userId,
             templateId = templateCode,
-            strategy = strategy
+            strategy = strategy.strategy
         )
     }
 
