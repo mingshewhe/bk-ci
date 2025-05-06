@@ -151,7 +151,7 @@ class UserTemplateResourceImpl @Autowired constructor(
         return client.get(ServicePipelineTemplateV2Resource::class).updatePublishStrategy(
             userId = userId,
             templateId = templateCode,
-            strategy = strategy.publishstrategy
+            strategy = strategy.publishStrategy
         )
     }
 
