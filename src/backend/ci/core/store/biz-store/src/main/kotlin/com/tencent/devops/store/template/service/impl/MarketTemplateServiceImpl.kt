@@ -1309,6 +1309,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 val latestPublishedVersion = latestPublishedVersions.firstOrNull { latestPublishedVersion ->
                     latestPublishedVersion.templateId == it[ID]
                 }?.version
+                val latestPublishedVersionName = latestPublishedVersions.firstOrNull { latestPublishedVersion ->
+                    latestPublishedVersion.templateId == it[ID]
+                }?.versionName
                 val latestReleasedVersion = latestReleasedVersions.firstOrNull { latestReleasedVersion ->
                     latestReleasedVersion.pipelineId == it[TEMPLATE_CODE]
                 }?.version?.toLong()
@@ -1324,6 +1327,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                     description = it[DESCRIPTION],
                     enablePac = template2Pac[it[TEMPLATE_CODE]] ?: false,
                     latestPublishedVersion = latestPublishedVersion,
+                    latestPublishedVersionName = latestPublishedVersionName,
                     latestReleasedVersion = latestReleasedVersion,
                     templateStatus = templateStatus,
                     upgradeFlag = latestPublishedVersion != latestReleasedVersion,

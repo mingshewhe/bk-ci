@@ -44,6 +44,8 @@ data class MyTemplateItemResponse(
     val description: String?,
     @get:Schema(title = "是否开启PAC", required = false)
     val enablePac: Boolean? = false,
+    @get:Schema(title = "模板最新上架版本名称", required = true)
+    val latestPublishedVersionName: String? = null,
     @get:Schema(title = "模板最新上架版本", required = true)
     val latestPublishedVersion: Long? = null,
     @get:Schema(title = "模板最新发布版本", required = true)
