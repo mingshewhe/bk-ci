@@ -190,7 +190,7 @@ interface UserTemplateResource {
         @PathParam("templateCode")
         templateCode: String,
         @Parameter(description = "发布策略", required = true)
-        strategy: PublishStrategyUpdateReq
+        strategy: UpgradeStrategyEnum
     ): Result<Boolean>
 
     @Operation(summary = "根据模板标识获取已安装的项目列表")
