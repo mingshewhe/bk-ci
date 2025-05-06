@@ -31,7 +31,6 @@ import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.ChannelCode
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.api.template.v2.ServicePipelineTemplateV2Resource
 import com.tencent.devops.store.api.template.UserTemplateResource
@@ -152,7 +151,7 @@ class UserTemplateResourceImpl @Autowired constructor(
         return client.get(ServicePipelineTemplateV2Resource::class).updatePublishStrategy(
             userId = userId,
             templateId = templateCode,
-            strategy = strategy.strategy
+            strategy = strategy.publishstrategy
         )
     }
 
