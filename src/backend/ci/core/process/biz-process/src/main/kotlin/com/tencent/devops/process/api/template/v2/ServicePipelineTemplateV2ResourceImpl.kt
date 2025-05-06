@@ -123,14 +123,12 @@ class ServicePipelineTemplateV2ResourceImpl(
 
     override fun updatePublishStrategy(
         userId: String,
-        projectId: String,
         templateId: String,
         strategy: UpgradeStrategyEnum
     ): Result<Boolean> {
         return Result(
             pipelineTemplateMarketTemplateFacadeService.updatePublishStrategy(
                 userId = userId,
-                projectId = projectId,
                 templateId = templateId,
                 strategy = strategy
             )

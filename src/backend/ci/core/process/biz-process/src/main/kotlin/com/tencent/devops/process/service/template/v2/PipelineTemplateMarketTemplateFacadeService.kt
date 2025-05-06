@@ -167,15 +167,13 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
 
     fun updatePublishStrategy(
         userId: String,
-        projectId: String,
         templateId: String,
         strategy: UpgradeStrategyEnum
     ): Boolean {
-        logger.info("update publish strategy :$userId|$projectId|$templateId|$strategy")
+        logger.info("update publish strategy :$userId|$templateId|$strategy")
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
             pipelineTemplateInfoService.get(
-                projectId = projectId,
                 templateId = templateId
             )
             pipelineTemplateInfoService.update(
@@ -185,7 +183,6 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                     updater = userId
                 ),
                 commonCondition = PipelineTemplateCommonCondition(
-                    projectId = projectId,
                     templateId = templateId
                 )
             )

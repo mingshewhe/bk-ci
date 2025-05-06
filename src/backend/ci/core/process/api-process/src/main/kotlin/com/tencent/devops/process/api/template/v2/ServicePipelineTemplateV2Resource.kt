@@ -163,14 +163,11 @@ interface ServicePipelineTemplateV2Resource {
 
     @Operation(summary = "更新发布策略")
     @PUT
-    @Path("/{projectId}/{templateId}/store/publishStrategy")
+    @Path("/{templateId}/store/publishStrategy")
     fun updatePublishStrategy(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
         @Parameter(description = "模版ID", required = true)
         @PathParam("templateId")
         templateId: String,

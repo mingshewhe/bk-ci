@@ -39,6 +39,7 @@ import com.tencent.devops.store.pojo.template.MarketTemplateMain
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
+import com.tencent.devops.store.pojo.template.PublishStrategyUpdateReq
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
@@ -180,19 +181,16 @@ interface UserTemplateResource {
 
     @Operation(summary = "更新发布策略")
     @PUT
-    @Path("/{projectCode}/{templateCode}/store/publishStrategy")
+    @Path("/{templateCode}/store/publishStrategy")
     fun updatePublishStrategy(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectCode")
-        projectId: String,
         @Parameter(description = "模版ID", required = true)
         @PathParam("templateCode")
         templateCode: String,
         @Parameter(description = "发布策略", required = true)
-        strategy: UpgradeStrategyEnum
+        strategy: PublishStrategyUpdateReq
     ): Result<Boolean>
 
     @Operation(summary = "根据模板标识获取已安装的项目列表")
@@ -257,14 +255,11 @@ interface UserTemplateResource {
 
     @Operation(summary = "根据用户获取原子工作台模板列表-v2")
     @GET
-    @Path("/{projectCode}/{templateCode}/template/published/history")
+    @Path("/{templateCode}/template/published/history")
     fun listPublishedHistory(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectCode")
-        projectCode: String,
         @Parameter(description = "模版ID", required = true)
         @PathParam("templateCode")
         templateCode: String,

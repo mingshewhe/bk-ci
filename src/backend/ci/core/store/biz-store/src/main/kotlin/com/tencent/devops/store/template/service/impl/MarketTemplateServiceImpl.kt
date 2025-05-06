@@ -1358,22 +1358,23 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     override fun listPublishedHistory(
         userId: String,
-        projectCode: String,
         templateCode: String,
         page: Int,
         pageSize: Int
     ): Page<TemplateVersionRelationInfo> {
+        val templateId = getTemplateDetailByCode(
+            userId = userId,
+            templateCode = templateCode
+        ).data!!.templateId
         val record = templateVersionReleasedRelDao.listPublishedHistory(
             dslContext = dslContext,
-            projectCode = projectCode,
-            templateCode = templateCode,
+            templateId = templateId,
             page = page,
             pageSize = pageSize
         )
         val count = templateVersionReleasedRelDao.countPublishedHistory(
             dslContext = dslContext,
-            projectCode = projectCode,
-            templateCode = templateCode
+            templateId = templateId
         )
         val totalPages = PageUtil.calTotalPage(pageSize, count)
         return Page(

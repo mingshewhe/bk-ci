@@ -106,16 +106,13 @@ class TemplateVersionReleasedRelDao {
 
     fun listPublishedHistory(
         dslContext: DSLContext,
-        projectCode: String,
-        templateCode: String,
+        templateId: String,
         page: Int,
         pageSize: Int
     ): List<TemplateVersionRelationInfo> {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.selectFrom(this)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .and(PROJECT_CODE.eq(projectCode))
-                .and(PUBLISHED.eq(true))
+                .where(TEMPLATE_ID.eq(templateId))
                 .orderBy(UPDATE_TIME.desc())
                 .limit((page - 1) * pageSize, pageSize)
                 .fetch().map {
@@ -138,15 +135,12 @@ class TemplateVersionReleasedRelDao {
 
     fun countPublishedHistory(
         dslContext: DSLContext,
-        projectCode: String,
-        templateCode: String
+        templateId: String,
     ): Long {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.selectCount()
                 .from(this)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .and(PROJECT_CODE.eq(projectCode))
-                .and(PUBLISHED.eq(true))
+                .where(TEMPLATE_ID.eq(templateId))
                 .orderBy(UPDATE_TIME.desc())
                 .fetchOne(0, Long::class.java)!!
         }

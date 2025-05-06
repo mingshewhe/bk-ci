@@ -153,7 +153,6 @@ interface MarketTemplateService {
 
     fun listPublishedHistory(
         userId: String,
-        projectCode: String,
         templateCode: String,
         page: Int,
         pageSize: Int
