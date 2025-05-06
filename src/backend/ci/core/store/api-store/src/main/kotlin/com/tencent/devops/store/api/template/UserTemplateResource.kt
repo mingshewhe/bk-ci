@@ -253,7 +253,7 @@ interface UserTemplateResource {
         pageSize: Int
     ): Result<Page<MyTemplateItemResponse>>
 
-    @Operation(summary = "根据用户获取原子工作台模板列表-v2")
+    @Operation(summary = "获取模板上架历史")
     @GET
     @Path("/{templateCode}/template/published/history")
     fun listPublishedHistory(
