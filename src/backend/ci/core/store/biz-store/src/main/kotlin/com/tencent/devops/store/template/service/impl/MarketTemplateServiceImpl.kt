@@ -1356,6 +1356,35 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
+    override fun listPublishedHistory(
+        userId: String,
+        projectCode: String,
+        templateCode: String,
+        page: Int,
+        pageSize: Int
+    ): Page<TemplateVersionRelationInfo> {
+        val record = templateVersionReleasedRelDao.listPublishedHistory(
+            dslContext = dslContext,
+            projectCode = projectCode,
+            templateCode = templateCode,
+            page = page,
+            pageSize = pageSize
+        )
+        val count = templateVersionReleasedRelDao.countPublishedHistory(
+            dslContext = dslContext,
+            projectCode = projectCode,
+            templateCode = templateCode
+        )
+        val totalPages = PageUtil.calTotalPage(pageSize, count)
+        return Page(
+            count = count,
+            page = page,
+            pageSize = pageSize,
+            totalPages = totalPages,
+            records = record
+        )
+    }
+
     /**
      * 根据模板ID和模板代码判断模板是否存在
      */

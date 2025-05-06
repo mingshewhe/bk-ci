@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.auth.AUTH_HEADER_PROJECT_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.annotation.BkApiPermission
 import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkApiHandleType
@@ -158,6 +159,23 @@ interface ServicePipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "是否已关联市场标识", required = true)
         storeFlag: Boolean
+    ): Result<Boolean>
+
+    @Operation(summary = "更新发布策略")
+    @PUT
+    @Path("/{projectId}/{templateId}/store/publishStrategy")
+    fun updatePublishStrategy(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "发布策略", required = true)
+        strategy: UpgradeStrategyEnum
     ): Result<Boolean>
 
     @Operation(summary = "创建流水线-获取模版列表")

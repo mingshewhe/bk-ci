@@ -28,8 +28,10 @@
 package com.tencent.devops.store.api.template
 
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
+import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.store.pojo.common.InstalledProjRespItem
 import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.InstallTemplateResp
@@ -38,6 +40,7 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -49,6 +52,7 @@ import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.POST
+import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
@@ -174,6 +178,23 @@ interface UserTemplateResource {
         installTemplateReq: InstallTemplateReq
     ): Result<InstallTemplateResp>
 
+    @Operation(summary = "更新发布策略")
+    @PUT
+    @Path("/{projectId}/{templateCode}/store/publishStrategy")
+    fun updatePublishStrategy(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateCode")
+        templateCode: String,
+        @Parameter(description = "发布策略", required = true)
+        strategy: UpgradeStrategyEnum
+    ): Result<Boolean>
+
     @Operation(summary = "根据模板标识获取已安装的项目列表")
     @GET
     @Path("/template/installedProjects/{templateCode}")
@@ -233,4 +254,25 @@ interface UserTemplateResource {
         @QueryParam("pageSize")
         pageSize: Int
     ): Result<Page<MyTemplateItemResponse>>
+
+    @Operation(summary = "根据用户获取原子工作台模板列表-v2")
+    @GET
+    @Path("/{projectCode}/{templateCode}/template/published/history")
+    fun listPublishedHistory(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectCode")
+        projectCode: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateCode")
+        templateCode: String,
+        @Parameter(description = "页码", required = true)
+        @QueryParam("page")
+        page: Int,
+        @Parameter(description = "每页数量", required = true)
+        @QueryParam("pageSize")
+        pageSize: Int
+    ): Result<Page<TemplateVersionRelationInfo>>
 }

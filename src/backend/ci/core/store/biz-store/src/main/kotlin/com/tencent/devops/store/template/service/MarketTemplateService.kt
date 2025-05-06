@@ -151,6 +151,14 @@ interface MarketTemplateService {
         pageSize: Int
     ): Page<MyTemplateItemResponse>
 
+    fun listPublishedHistory(
+        userId: String,
+        projectCode: String,
+        templateCode: String,
+        page: Int,
+        pageSize: Int
+    ): Page<TemplateVersionRelationInfo>
+
     /**
      * 根据模板ID和模板代码判断模板是否存在
      */

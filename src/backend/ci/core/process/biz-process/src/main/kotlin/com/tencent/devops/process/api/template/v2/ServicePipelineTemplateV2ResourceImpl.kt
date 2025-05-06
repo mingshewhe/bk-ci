@@ -28,6 +28,7 @@
 package com.tencent.devops.process.api.template.v2
 
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.PTemplateOrderByType
 import com.tencent.devops.process.pojo.PTemplateSortType
@@ -116,6 +117,22 @@ class ServicePipelineTemplateV2ResourceImpl(
                 projectId = projectId,
                 templateId = templateId,
                 storeFlag = storeFlag
+            )
+        )
+    }
+
+    override fun updatePublishStrategy(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        strategy: UpgradeStrategyEnum
+    ): Result<Boolean> {
+        return Result(
+            pipelineTemplateMarketTemplateFacadeService.updatePublishStrategy(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                strategy = strategy
             )
         )
     }

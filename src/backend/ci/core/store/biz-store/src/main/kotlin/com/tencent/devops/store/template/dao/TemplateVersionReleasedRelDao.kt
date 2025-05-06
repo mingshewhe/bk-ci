@@ -104,6 +104,54 @@ class TemplateVersionReleasedRelDao {
         }
     }
 
+    fun listPublishedHistory(
+        dslContext: DSLContext,
+        projectCode: String,
+        templateCode: String,
+        page: Int,
+        pageSize: Int
+    ): List<TemplateVersionRelationInfo> {
+        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+            dslContext.selectFrom(this)
+                .where(TEMPLATE_CODE.eq(templateCode))
+                .and(PROJECT_CODE.eq(projectCode))
+                .and(PUBLISHED.eq(true))
+                .orderBy(UPDATE_TIME.desc())
+                .limit((page - 1) * pageSize, pageSize)
+                .fetch().map {
+                    TemplateVersionRelationInfo(
+                        projectCode = it.projectCode,
+                        templateId = it.templateId,
+                        templateCode = it.templateCode,
+                        version = it.version,
+                        number = it.number,
+                        versionName = it.versionName,
+                        published = it.published,
+                        createTime = it.createTime.timestampmilli(),
+                        updateTime = it.updateTime.timestampmilli(),
+                        creator = it.creator,
+                        updater = it.updater
+                    )
+                }
+        }
+    }
+
+    fun countPublishedHistory(
+        dslContext: DSLContext,
+        projectCode: String,
+        templateCode: String
+    ): Long {
+        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+            dslContext.selectCount()
+                .from(this)
+                .where(TEMPLATE_CODE.eq(templateCode))
+                .and(PROJECT_CODE.eq(projectCode))
+                .and(PUBLISHED.eq(true))
+                .orderBy(UPDATE_TIME.desc())
+                .fetchOne(0, Long::class.java)!!
+        }
+    }
+
     fun listLatestPublishedVersions(
         dslContext: DSLContext,
         templateIds: List<String>

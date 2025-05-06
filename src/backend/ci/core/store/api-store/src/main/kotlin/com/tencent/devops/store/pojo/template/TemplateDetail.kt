@@ -43,7 +43,7 @@ data class TemplateDetail(
     @get:Schema(title = "所属项目名称", required = true)
     val projectName: String?,
     @get:Schema(title = "发布策略-研发商店", required = true)
-    val publishStrategy: UpgradeStrategyEnum? = null,
+    val publishStrategy: UpgradeStrategyEnum? = UpgradeStrategyEnum.AUTO,
     @get:Schema(title = "模板ID", required = true)
     val templateId: String,
     @get:Schema(title = "模板代码", required = true)

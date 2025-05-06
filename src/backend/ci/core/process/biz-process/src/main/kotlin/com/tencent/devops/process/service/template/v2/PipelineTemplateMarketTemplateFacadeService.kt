@@ -20,13 +20,13 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateReleaseCreateHandler
 import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
-import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -154,6 +154,34 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 record = PipelineTemplateInfoUpdateInfo(
                     storeFlag = storeFlag,
                     publishStrategy = UpgradeStrategyEnum.AUTO,
+                    updater = userId
+                ),
+                commonCondition = PipelineTemplateCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId
+                )
+            )
+        }
+        return true
+    }
+
+    fun updatePublishStrategy(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        strategy: UpgradeStrategyEnum
+    ): Boolean {
+        logger.info("update publish strategy :$userId|$projectId|$templateId|$strategy")
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineTemplateInfoService.get(
+                projectId = projectId,
+                templateId = templateId
+            )
+            pipelineTemplateInfoService.update(
+                transactionContext = context,
+                record = PipelineTemplateInfoUpdateInfo(
+                    publishStrategy = strategy,
                     updater = userId
                 ),
                 commonCondition = PipelineTemplateCommonCondition(
