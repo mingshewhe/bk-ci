@@ -117,6 +117,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 userId = publisher,
                 projectId = projectId,
                 templateId = templateCode,
+                publishStrategy = publishStrategy,
                 storeFlag = true
             )
             updateMarketTemplateReference(
@@ -138,7 +139,8 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         userId: String,
         projectId: String,
         templateId: String,
-        storeFlag: Boolean
+        storeFlag: Boolean,
+        publishStrategy: UpgradeStrategyEnum
     ): Boolean {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
@@ -153,7 +155,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 transactionContext = context,
                 record = PipelineTemplateInfoUpdateInfo(
                     storeFlag = storeFlag,
-                    publishStrategy = UpgradeStrategyEnum.AUTO,
+                    publishStrategy = publishStrategy,
                     updater = userId
                 ),
                 commonCondition = PipelineTemplateCommonCondition(

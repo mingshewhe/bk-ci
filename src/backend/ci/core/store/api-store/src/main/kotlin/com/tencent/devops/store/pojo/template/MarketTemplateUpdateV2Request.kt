@@ -34,8 +34,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "上架模板请求V2报文体")
 data class MarketTemplateUpdateV2Request(
-    @get:Schema(title = "研发商店模板ID，更新时必传。创建时，不需要传递", required = false)
-    val templateId: String?,
     @get:Schema(title = "项目ID", required = true)
     val projectCode: String,
     @get:Schema(title = "模板代码", required = true)

@@ -116,7 +116,8 @@ class ServicePipelineTemplateV2ResourceImpl(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
-                storeFlag = storeFlag
+                storeFlag = storeFlag,
+                publishStrategy = UpgradeStrategyEnum.AUTO
             )
         )
     }

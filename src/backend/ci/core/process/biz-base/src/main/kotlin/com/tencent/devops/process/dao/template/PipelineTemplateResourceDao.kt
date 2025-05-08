@@ -425,7 +425,7 @@ class PipelineTemplateResourceDao {
                     conditions.add(STORE_FLAG.eq(true))
                 }
                 if (storeFlag == false) {
-                    conditions.add(STORE_FLAG.isNull.or(STORE_FLAG.eq(true)))
+                    conditions.add(STORE_FLAG.isNull.or(STORE_FLAG.eq(false)))
                 }
                 return conditions
             }

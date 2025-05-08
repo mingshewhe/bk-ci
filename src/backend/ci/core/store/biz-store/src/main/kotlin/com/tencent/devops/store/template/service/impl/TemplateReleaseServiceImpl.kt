@@ -396,14 +396,23 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
         logger.info("release market template:$userId|$request")
 
         return request.run {
-            val isInitialRelease = templateId == null && marketTemplateDao.countByCode(dslContext, templateCode) == 0
+            val isInitialRelease = marketTemplateDao.countByCode(dslContext, templateCode) == 0
 
             checkWhenReleaseTemplate(
                 isInitialRelease = isInitialRelease,
                 userId = userId,
                 request = request
             )
-            val marketTemplateId = templateId ?: UUIDUtil.generate()
+            val marketTemplateId = if (isInitialRelease) {
+                UUIDUtil.generate()
+            } else {
+                marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)?.id
+                    ?: return I18nUtil.generateResponseDataObject(
+                        messageCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                        params = arrayOf(templateCode),
+                        language = I18nUtil.getLanguage(userId)
+                    )
+            }
             val classifyId = classifyDao.getClassifyByCode(
                 dslContext = dslContext,
                 classifyCode = classifyCode,

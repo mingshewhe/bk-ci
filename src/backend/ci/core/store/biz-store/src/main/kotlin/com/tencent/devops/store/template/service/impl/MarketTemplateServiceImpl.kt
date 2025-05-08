@@ -1366,19 +1366,15 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         page: Int,
         pageSize: Int
     ): Page<TemplateVersionRelationInfo> {
-        val templateId = getTemplateDetailByCode(
-            userId = userId,
-            templateCode = templateCode
-        ).data!!.templateId
         val record = templateVersionReleasedRelDao.listPublishedHistory(
             dslContext = dslContext,
-            templateId = templateId,
+            templateCode = templateCode,
             page = page,
             pageSize = pageSize
         )
         val count = templateVersionReleasedRelDao.countPublishedHistory(
             dslContext = dslContext,
-            templateId = templateId
+            templateCode = templateCode
         )
         val totalPages = PageUtil.calTotalPage(pageSize, count)
         return Page(

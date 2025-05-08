@@ -67,6 +67,7 @@ import com.tencent.devops.common.pipeline.pojo.element.trigger.CodeGithubWebHook
 import com.tencent.devops.common.pipeline.pojo.element.trigger.CodeSVNWebHookTriggerElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.RemoteTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.utils.RepositoryConfigUtils
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
@@ -2441,7 +2442,8 @@ class TemplateFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
-            storeFlag = storeFlag
+            storeFlag = storeFlag,
+            publishStrategy = UpgradeStrategyEnum.AUTO
         )
         return true
     }
