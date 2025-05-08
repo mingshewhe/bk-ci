@@ -172,9 +172,9 @@ interface MarketTemplateService {
     fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo)
 
     /**
-     * 获取模板最新发布历史
+     * 获取模板研发商店最新发布历史
      * */
-    fun getLatestTemplateReleasedVersion(templateCode: String): TemplateVersionRelationInfo?
+    fun getLatestMarketPublishedVersion(templateCode: String): TemplateVersionRelationInfo?
 
     /**
      * 记录模板版本安装历史

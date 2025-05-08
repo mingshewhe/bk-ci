@@ -1290,9 +1290,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         ).data
 
         // 获取研发商店模板最新发布版本
-        val latestPublishedVersions = templateVersionReleasedRelDao.listLatestPublishedVersions(
+        val latestMarketPublishedVersions = templateVersionReleasedRelDao.listLatestPublishedVersions(
             dslContext = dslContext,
-            templateIds = records.map { it[TTemplate.T_TEMPLATE.ID] }
+            templateCodes = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
         )
 
         // 获取模板最新发布版本
@@ -1306,11 +1306,11 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
         val templateList = with(TTemplate.T_TEMPLATE) {
             records.map {
-                val latestPublishedVersion = latestPublishedVersions.firstOrNull { latestPublishedVersion ->
-                    latestPublishedVersion.templateId == it[ID]
+                val latestMarketPublishedVersion = latestMarketPublishedVersions.firstOrNull { latestPublishedVersion ->
+                    latestPublishedVersion.templateCode == it[TEMPLATE_CODE]
                 }?.version
-                val latestPublishedVersionName = latestPublishedVersions.firstOrNull { latestPublishedVersion ->
-                    latestPublishedVersion.templateId == it[ID]
+                val latestMarketPublishedVersionName = latestMarketPublishedVersions.firstOrNull { latestPublishedVersion ->
+                    latestPublishedVersion.templateCode == it[TEMPLATE_CODE]
                 }?.versionName
                 val latestReleasedVersion = latestReleasedVersions.firstOrNull { latestReleasedVersion ->
                     latestReleasedVersion.pipelineId == it[TEMPLATE_CODE]
@@ -1326,11 +1326,11 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                     },
                     description = it[DESCRIPTION],
                     enablePac = template2Pac[it[TEMPLATE_CODE]] ?: false,
-                    latestPublishedVersion = latestPublishedVersion,
-                    latestPublishedVersionName = latestPublishedVersionName,
+                    latestPublishedVersion = latestMarketPublishedVersion,
+                    latestPublishedVersionName = latestMarketPublishedVersionName,
                     latestReleasedVersion = latestReleasedVersion,
                     templateStatus = templateStatus,
-                    upgradeFlag = latestPublishedVersion != latestReleasedVersion,
+                    upgradeFlag = latestMarketPublishedVersion != latestReleasedVersion,
                     projectCode = it[KEY_PROJECT_CODE].toString(),
                     projectName = projectCode2ProjectName?.get(it[KEY_PROJECT_CODE].toString()).toString(),
                     creator = it[CREATOR].toString(),
@@ -1405,37 +1405,24 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
     override fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo) {
         logger.info("create Template Version Rel :$templateVersionRelationInfo")
-        val templateId = marketTemplateDao.getLatestTemplateByCode(
-            dslContext = dslContext,
-            templateCode = templateVersionRelationInfo.templateCode
-        )!!.id
-
         templateVersionReleasedRelDao.createOrUpdate(
             dslContext = dslContext,
-            record = templateVersionRelationInfo.copy(templateId = templateId)
+            record = templateVersionRelationInfo
         )
     }
 
-    override fun getLatestTemplateReleasedVersion(templateCode: String): TemplateVersionRelationInfo? {
-        val srcMarketTemplateId = marketTemplateDao.getLatestTemplateByCode(
+    override fun getLatestMarketPublishedVersion(templateCode: String): TemplateVersionRelationInfo? {
+        return templateVersionReleasedRelDao.getLatestMarketPublishedVersion(
             dslContext = dslContext,
             templateCode = templateCode
-        )!!.id
-        return templateVersionReleasedRelDao.getLatestReleasedVersion(
-            dslContext = dslContext,
-            templateId = srcMarketTemplateId
         )
     }
 
     override fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo) {
         logger.info("create template version install history:$installHistoryInfo")
-        val srcMarketTemplateId = marketTemplateDao.getLatestTemplateByCode(
-            dslContext = dslContext,
-            templateCode = installHistoryInfo.srcMarketTemplateCode
-        )!!.id
         templateVersionInstallHistoryDao.create(
             dslContext = dslContext,
-            record = installHistoryInfo.copy(srcMarketTemplateId = srcMarketTemplateId)
+            record = installHistoryInfo
         )
     }
 

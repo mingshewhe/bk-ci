@@ -46,7 +46,6 @@ class TemplateVersionReleasedRelDao {
             dslContext.insertInto(
                 this,
                 PROJECT_CODE,
-                TEMPLATE_ID,
                 TEMPLATE_CODE,
                 VERSION,
                 NUMBER,
@@ -58,7 +57,6 @@ class TemplateVersionReleasedRelDao {
                 UPDATE_TIME
             ).values(
                 record.projectCode,
-                record.templateId,
                 record.templateCode,
                 record.version,
                 record.number,
@@ -76,20 +74,19 @@ class TemplateVersionReleasedRelDao {
         }
     }
 
-    fun getLatestReleasedVersion(
+    fun getLatestMarketPublishedVersion(
         dslContext: DSLContext,
-        templateId: String
+        templateCode: String
     ): TemplateVersionRelationInfo? {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.selectFrom(this)
-                .where(TEMPLATE_ID.eq(templateId))
+                .where(TEMPLATE_CODE.eq(templateCode))
                 .and(PUBLISHED.eq(true))
                 .orderBy(NUMBER.desc())
                 .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionRelationInfo(
                         projectCode = it.projectCode,
-                        templateId = it.templateId,
                         templateCode = it.templateCode,
                         version = it.version,
                         number = it.number,
@@ -118,7 +115,6 @@ class TemplateVersionReleasedRelDao {
                 .fetch().map {
                     TemplateVersionRelationInfo(
                         projectCode = it.projectCode,
-                        templateId = it.templateId,
                         templateCode = it.templateCode,
                         version = it.version,
                         number = it.number,
@@ -148,27 +144,26 @@ class TemplateVersionReleasedRelDao {
 
     fun listLatestPublishedVersions(
         dslContext: DSLContext,
-        templateIds: List<String>
+        templateCodes: List<String>
     ): List<TemplateVersionRelationInfo> {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             // 子查询获取每个模板的最大NUMBER
-            val maxNumbers = dslContext.select(TEMPLATE_ID, DSL.max(NUMBER).`as`("max_number"))
+            val maxNumbers = dslContext.select(TEMPLATE_CODE, DSL.max(NUMBER).`as`("max_number"))
                 .from(this)
-                .where(TEMPLATE_ID.`in`(templateIds))
-                .groupBy(TEMPLATE_ID)
+                .where(TEMPLATE_CODE.`in`(templateCodes))
+                .groupBy(TEMPLATE_CODE)
                 .asTable("m")
             // 主查询关联获取VERSION
             dslContext.select()
                 .from(this)
                 .join(maxNumbers)
                 .on(
-                    TEMPLATE_ID.eq(maxNumbers.field(TEMPLATE_ID)),
+                    TEMPLATE_CODE.eq(maxNumbers.field(TEMPLATE_CODE)),
                     NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
                 )
                 .fetch().map {
                     TemplateVersionRelationInfo(
                         projectCode = it[PROJECT_CODE],
-                        templateId = it[TEMPLATE_ID],
                         templateCode = it[TEMPLATE_CODE],
                         version = it[VERSION],
                         number = it[NUMBER],

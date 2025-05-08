@@ -403,16 +403,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 userId = userId,
                 request = request
             )
-            val marketTemplateId = if (isInitialRelease) {
-                UUIDUtil.generate()
-            } else {
-                marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)?.id
-                    ?: return I18nUtil.generateResponseDataObject(
-                        messageCode = CommonMessageCode.PARAMETER_IS_INVALID,
-                        params = arrayOf(templateCode),
-                        language = I18nUtil.getLanguage(userId)
-                    )
-            }
+            val marketTemplateId = UUIDUtil.generate()
             val classifyId = classifyDao.getClassifyByCode(
                 dslContext = dslContext,
                 classifyCode = classifyCode,

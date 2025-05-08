@@ -121,11 +121,11 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         return Result(true)
     }
 
-    override fun getLatestTemplateReleasedVersion(
+    override fun getLatestMarketPublishedVersion(
         templateCode: String
     ): Result<TemplateVersionRelationInfo?> {
         return Result(
-            marketTemplateService.getLatestTemplateReleasedVersion(
+            marketTemplateService.getLatestMarketPublishedVersion(
                 templateCode = templateCode
             )
         )

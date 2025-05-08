@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class TemplateVersionRelationInfo(
     @get:Schema(title = "项目ID")
     val projectCode: String,
-    @get:Schema(title = "研发商店模板ID")
-    val templateId: String = "",
     @get:Schema(title = "模板代码（对应process数据库的ID）")
     val templateCode: String,
     @get:Schema(title = "发布版本号")

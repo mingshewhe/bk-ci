@@ -509,7 +509,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 ).data ?: throw ErrorCodeException(errorCode = "")
 
             val srcTemplateLatestReleasedVersion =
-                client.get(ServiceTemplateResource::class).getLatestTemplateReleasedVersion(
+                client.get(ServiceTemplateResource::class).getLatestMarketPublishedVersion(
                     templateCode = it.srcTemplateId!!
                 ).data ?: throw ErrorCodeException(errorCode = "")
 

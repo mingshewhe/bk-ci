@@ -44,7 +44,6 @@ class TemplateVersionInstallHistoryDao {
         with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             dslContext.insertInto(
                 this,
-                SRC_MARKET_TEMPLATE_ID,
                 SRC_MARKET_TEMPLATE_PROJECT_CODE,
                 SRC_MARKET_TEMPLATE_CODE,
                 PROJECT_CODE,
@@ -54,7 +53,6 @@ class TemplateVersionInstallHistoryDao {
                 CREATOR,
                 CREATE_TIME
             ).values(
-                record.srcMarketTemplateId,
                 record.srcMarketTemplateCode,
                 record.srcMarketTemplateCode,
                 record.projectCode,
@@ -83,7 +81,6 @@ class TemplateVersionInstallHistoryDao {
                 .limit(1)
                 .fetchOne()?.let {
                     TemplateVersionInstallHistoryInfo(
-                        srcMarketTemplateId = it.srcMarketTemplateId,
                         srcMarketTemplateProjectCode = it.srcMarketTemplateCode,
                         srcMarketTemplateCode = it.srcMarketTemplateCode,
                         projectCode = it.projectCode,
