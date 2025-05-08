@@ -512,7 +512,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                     publisher = userId
                 )
             )
-            Result(marketTemplateId)
+            Result(templateCode)
         }
     }
 
