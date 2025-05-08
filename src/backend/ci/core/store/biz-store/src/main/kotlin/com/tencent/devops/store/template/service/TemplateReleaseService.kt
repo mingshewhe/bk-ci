@@ -69,9 +69,19 @@ interface TemplateReleaseService {
     fun getProcessInfo(userId: String, templateId: String): Result<StoreProcessInfo>
 
     /**
+     * 获取发布进度-根据模板CODE
+     */
+    fun getProcessInfoByCode(userId: String, templateCode: String): Result<StoreProcessInfo>
+
+    /**
      * 取消发布
      */
     fun cancelRelease(userId: String, templateId: String): Result<Boolean>
+
+    /**
+     * 取消发布-根据CODE
+     */
+    fun cancelReleaseByCode(userId: String, templateCode: String): Result<Boolean>
 
     /**
      * 下架模板

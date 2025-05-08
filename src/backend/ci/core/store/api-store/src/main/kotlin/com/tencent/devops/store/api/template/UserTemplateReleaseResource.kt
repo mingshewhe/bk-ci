@@ -101,6 +101,18 @@ interface UserTemplateReleaseResource {
         templateId: String
     ): Result<StoreProcessInfo>
 
+    @Operation(summary = "根据模板版本ID获取模板版本进度-根据模板Code")
+    @GET
+    @Path("/desk/template/release/process/templateCodes/{templateCode}")
+    fun getProcessInfoByCode(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "templateCode", required = true)
+        @PathParam("templateCode")
+        templateCode: String
+    ): Result<StoreProcessInfo>
+
     @Operation(summary = "取消发布")
     @PUT
     @Path("/desk/template/release/cancel/templateIds/{templateId}")
@@ -111,6 +123,18 @@ interface UserTemplateReleaseResource {
         @Parameter(description = "templateId", required = true)
         @PathParam("templateId")
         templateId: String
+    ): Result<Boolean>
+
+    @Operation(summary = "取消发布-根据Code")
+    @PUT
+    @Path("/desk/template/release/cancel/templateCodes/{templateCode}")
+    fun cancelReleaseByCode(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "templateCode", required = true)
+        @PathParam("templateCode")
+        templateCode: String
     ): Result<Boolean>
 
     @Operation(summary = "下架模板")

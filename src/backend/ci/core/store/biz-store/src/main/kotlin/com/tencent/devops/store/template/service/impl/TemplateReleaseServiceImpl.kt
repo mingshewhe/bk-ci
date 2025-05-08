@@ -681,10 +681,14 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
     override fun getProcessInfo(userId: String, templateId: String): Result<StoreProcessInfo> {
         logger.info("getProcessInfo templateId: $templateId")
         val record = marketTemplateDao.getTemplate(dslContext, templateId)
+        return getProcessInfo(userId, record)
+    }
+
+    private fun getProcessInfo(userId: String, record: TTemplateRecord?): Result<StoreProcessInfo> {
         return if (null == record) {
             I18nUtil.generateResponseDataObject(
                 CommonMessageCode.PARAMETER_IS_INVALID,
-                arrayOf(templateId),
+                arrayOf("template not exist"),
                 language = I18nUtil.getLanguage(userId)
             )
         } else {
@@ -710,7 +714,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             val processInfo = handleProcessInfo(isNormalUpgrade, status)
             val storeProcessInfo = storeCommonService.generateStoreProcessInfo(
                 userId = userId,
-                storeId = templateId,
+                storeId = record.id,
                 storeCode = templateCode,
                 storeType = StoreTypeEnum.TEMPLATE,
                 creator = record.creator,
@@ -719,6 +723,12 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             logger.info("getProcessInfo storeProcessInfo: $storeProcessInfo")
             Result(storeProcessInfo)
         }
+    }
+
+    override fun getProcessInfoByCode(userId: String, templateCode: String): Result<StoreProcessInfo> {
+        logger.info("getProcessInfo code: $templateCode")
+        val record = marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)
+        return getProcessInfo(userId, record)
     }
 
     private fun getNormalUpgradeFlag(templateCode: String, status: Int): Boolean {
@@ -740,7 +750,6 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
      */
     override fun cancelRelease(userId: String, templateId: String): Result<Boolean> {
         logger.info("cancelRelease userId is:$userId, templateId is:$templateId")
-        val status = TemplateStatusEnum.GROUNDING_SUSPENSION.status.toByte()
         val templateRecord = marketTemplateDao.getTemplate(dslContext, templateId)
             ?: return I18nUtil.generateResponseDataObject(
                 messageCode = CommonMessageCode.PARAMETER_IS_INVALID,
@@ -748,6 +757,23 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 data = false,
                 language = I18nUtil.getLanguage(userId)
             )
+        return cancelRelease(userId, templateRecord)
+    }
+
+    override fun cancelReleaseByCode(userId: String, templateCode: String): Result<Boolean> {
+        logger.info("cancelRelease userId is:$userId, templateCode is:$templateCode")
+        val templateRecord = marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode)
+            ?: return I18nUtil.generateResponseDataObject(
+                messageCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                params = arrayOf(templateCode),
+                data = false,
+                language = I18nUtil.getLanguage(userId)
+            )
+        return cancelRelease(userId, templateRecord)
+    }
+
+    private fun cancelRelease(userId: String, templateRecord: TTemplateRecord): Result<Boolean> {
+        val status = TemplateStatusEnum.GROUNDING_SUSPENSION.status.toByte()
         val templateCode = templateRecord.templateCode
         val creator = templateRecord.creator
         val templateStatus = templateRecord.templateStatus
@@ -769,7 +795,13 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 params = arrayOf(templateCode)
             )
         }
-        marketTemplateDao.updateTemplateStatusById(dslContext, templateId, status, userId, "cancel release")
+        marketTemplateDao.updateTemplateStatusById(
+            dslContext = dslContext,
+            templateId = templateRecord.id,
+            templateStatus = status,
+            userId = userId,
+            msg = "cancel release"
+        )
         return Result(true)
     }
 

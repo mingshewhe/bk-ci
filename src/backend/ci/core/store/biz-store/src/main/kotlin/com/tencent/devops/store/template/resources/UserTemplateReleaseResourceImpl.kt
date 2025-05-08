@@ -67,8 +67,19 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
         return templateReleaseService.getProcessInfo(userId, templateId)
     }
 
+    override fun getProcessInfoByCode(
+        userId: String,
+        templateCode: String
+    ): Result<StoreProcessInfo> {
+        return templateReleaseService.getProcessInfoByCode(userId, templateCode)
+    }
+
     override fun cancelRelease(userId: String, templateId: String): Result<Boolean> {
         return templateReleaseService.cancelRelease(userId, templateId)
+    }
+
+    override fun cancelReleaseByCode(userId: String, templateCode: String): Result<Boolean> {
+        return templateReleaseService.cancelRelease(userId, templateCode)
     }
 
     override fun offlineTemplate(
