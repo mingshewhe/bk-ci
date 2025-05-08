@@ -35,7 +35,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
@@ -755,9 +755,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         baseId: String
     ): String {
-        val taskDetail = getTemplateInstanceTaskConfig(
+        val taskDetail = getTemplateInstanceTaskDetail(
             projectId = projectId,
-            baseId = baseId
+            baseId = baseId,
+            statusList = listOf(TemplateInstanceStatus.FAILED.name)
         )
         return with(taskDetail) {
             if (instanceType == TemplateInstanceType.CREATE) {
@@ -780,10 +781,11 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         }
     }
 
-    fun getTemplateInstanceTaskConfig(
+    fun getTemplateInstanceTaskDetail(
         projectId: String,
-        baseId: String
-    ): PipelineTemplateInstancesConfig {
+        baseId: String,
+        statusList: List<String>?
+    ): PipelineTemplateInstancesDetail {
         val instanceBase = templateInstanceBaseDao.getTemplateInstanceBase(
             dslContext = dslContext,
             projectId = projectId,
@@ -796,7 +798,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             dslContext = dslContext,
             projectId = projectId,
             baseIds = listOf(baseId),
-            statusList = listOf(TemplateInstanceStatus.FAILED.name),
+            statusList = statusList,
             page = 1,
             pageSize = PageUtil.MAX_PAGE_SIZE
         )
@@ -820,7 +822,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 instanceReleaseInfos = instanceReleaseInfos,
             )
         }
-        return PipelineTemplateInstancesConfig(
+        return PipelineTemplateInstancesDetail(
             projectId = instanceBase.projectId,
             templateId = instanceBase.templateId,
             instanceType = instanceBase.type,

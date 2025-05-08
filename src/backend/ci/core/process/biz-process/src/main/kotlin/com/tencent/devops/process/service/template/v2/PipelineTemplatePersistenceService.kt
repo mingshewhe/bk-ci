@@ -248,7 +248,8 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         userId: String,
         templateResource: PipelineTemplateResource,
         templateSetting: PipelineSetting,
-        enablePac: Boolean
+        enablePac: Boolean,
+        description: String?
     ) {
         val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
             name = templateSetting.pipelineName,
@@ -272,6 +273,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             triggerVersion = templateResource.triggerVersion,
             releaseTime = LocalDateTime.now(),
             status = VersionStatus.RELEASED,
+            description = description,
             sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT,
             updater = userId
         )

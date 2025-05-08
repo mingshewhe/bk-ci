@@ -30,7 +30,7 @@ package com.tencent.devops.process.pojo.template.v2
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板实例任务详情")
-data class PipelineTemplateInstancesConfig(
+data class PipelineTemplateInstancesDetail(
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
     @get:Schema(title = "模版ID", required = true)

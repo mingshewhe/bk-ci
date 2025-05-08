@@ -36,7 +36,7 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
@@ -171,7 +171,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
-    override fun getInstanceTask(
+    override fun getTemplateInstanceTask(
         userId: String,
         projectId: String,
         baseId: String
@@ -217,15 +217,21 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
-    override fun getTemplateInstanceTaskConfig(
+    override fun getTemplateInstanceTaskDetail(
         userId: String,
         projectId: String,
-        baseId: String
-    ): Result<PipelineTemplateInstancesConfig> {
+        baseId: String,
+        status: String?
+    ): Result<PipelineTemplateInstancesDetail> {
+        val statusList = status?.split(",") ?: listOf(
+            TemplateInstanceStatus.INIT.name,
+            TemplateInstanceStatus.INSTANCING.name
+        )
         return Result(
-            instanceFacadeService.getTemplateInstanceTaskConfig(
+            instanceFacadeService.getTemplateInstanceTaskDetail(
                 projectId = projectId,
-                baseId = baseId
+                baseId = baseId,
+                statusList = statusList
             )
         )
     }

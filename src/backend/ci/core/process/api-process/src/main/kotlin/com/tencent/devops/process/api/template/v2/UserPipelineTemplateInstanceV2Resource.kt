@@ -38,7 +38,7 @@ import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesConfig
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import io.swagger.v3.oas.annotations.Operation
@@ -210,7 +210,7 @@ interface UserPipelineTemplateInstanceV2Resource {
     @Operation(summary = "获取模版实例任务")
     @GET
     @Path("/task/{baseId}")
-    fun getInstanceTask(
+    fun getTemplateInstanceTask(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
@@ -260,8 +260,8 @@ interface UserPipelineTemplateInstanceV2Resource {
 
     @Operation(summary = "获取失败的实例化任务配置")
     @GET
-    @Path("/task/{baseId}/config")
-    fun getTemplateInstanceTaskConfig(
+    @Path("/task/{baseId}/detail")
+    fun getTemplateInstanceTaskDetail(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
@@ -270,6 +270,12 @@ interface UserPipelineTemplateInstanceV2Resource {
         projectId: String,
         @Parameter(description = "任务ID", required = true)
         @PathParam("baseId")
-        baseId: String
-    ): Result<PipelineTemplateInstancesConfig>
+        baseId: String,
+        @Parameter(
+            description = "任务状态,值为INIT,INSTANCING,SUCCESS,FAILED,多个用,分割,默认值INIT,INSTANCING",
+            required = false
+        )
+        @QueryParam("status")
+        status: String?
+    ): Result<PipelineTemplateInstancesDetail>
 }

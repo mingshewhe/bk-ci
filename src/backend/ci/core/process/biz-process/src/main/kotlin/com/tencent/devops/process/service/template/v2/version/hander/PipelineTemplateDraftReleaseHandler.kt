@@ -127,7 +127,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
                 templateSetting = pipelineTemplateSetting.copy(
                     version = resourceOnlyVersion.settingVersion
                 ),
-                enablePac = enablePac
+                enablePac = enablePac,
+                description = pTemplateResourceWithoutVersion.description
             )
         } else {
             pipelineTemplatePersistenceService.releaseDraft2BranchVersion(
