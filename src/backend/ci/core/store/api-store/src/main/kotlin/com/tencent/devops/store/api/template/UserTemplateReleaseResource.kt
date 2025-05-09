@@ -33,6 +33,7 @@ import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
+import com.tencent.devops.store.pojo.template.TemplateOfflineReq
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -165,11 +166,7 @@ interface UserTemplateReleaseResource {
         @Parameter(description = "模版代码", required = true)
         @PathParam("templateCode")
         templateCode: String,
-        @Parameter(description = "模板版本号", required = false)
-        @QueryParam("templateVersion")
-        templateVersion: Long?,
-        @Parameter(description = "原因", required = false)
-        @QueryParam("reason")
-        reason: String?
+        @Parameter(description = "请求体", required = false)
+        request: TemplateOfflineReq
     ): Result<Boolean>
 }

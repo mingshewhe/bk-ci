@@ -33,6 +33,7 @@ import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
+import com.tencent.devops.store.pojo.template.TemplateOfflineReq
 import com.tencent.devops.store.template.service.TemplateReleaseService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -94,9 +95,13 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
     override fun offlineTemplateV2(
         userId: String,
         templateCode: String,
-        templateVersion: Long?,
-        reason: String?
+        request: TemplateOfflineReq
     ): Result<Boolean> {
-        return templateReleaseService.offlineTemplateV2(userId, templateCode, templateVersion, reason)
+        return templateReleaseService.offlineTemplateV2(
+            userId = userId,
+            templateCode = templateCode,
+            templateVersion = request.templateVersion,
+            reason = request.reason
+        )
     }
 }
