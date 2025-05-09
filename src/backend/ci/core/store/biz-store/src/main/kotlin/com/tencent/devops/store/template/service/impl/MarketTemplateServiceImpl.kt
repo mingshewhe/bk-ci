@@ -726,6 +726,23 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 templateId = templateCode,
                 storeFlag = false
             )
+            try {
+                client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                    userId = userId,
+                    projectId = initProjectCode,
+                    templateId = templateCode,
+                    storeFlag = false,
+                    version = null
+                )
+            } catch (ex: Exception) {
+                logger.warn("update Store Flag v2 failed | $ex")
+            }
+            templateVersionReleasedRelDao.offlineTemplate(
+                dslContext = context,
+                templateCode = templateCode,
+                projectId = initProjectCode,
+                templateVersion = null
+            )
             storeCommonService.deleteStoreInfo(context, templateCode, StoreTypeEnum.TEMPLATE.type.toByte())
             templateCategoryRelDao.deleteByTemplateCode(context, templateCode)
             templateLabelRelDao.deleteByTemplateCode(context, templateCode)

@@ -109,7 +109,8 @@ class ServicePipelineTemplateV2ResourceImpl(
         userId: String,
         projectId: String,
         templateId: String,
-        storeFlag: Boolean
+        storeFlag: Boolean,
+        version: Long?
     ): Result<Boolean> {
         return Result(
             pipelineTemplateMarketTemplateFacadeService.updateTemplateStoreFlag(
@@ -117,7 +118,7 @@ class ServicePipelineTemplateV2ResourceImpl(
                 projectId = projectId,
                 templateId = templateId,
                 storeFlag = storeFlag,
-                publishStrategy = UpgradeStrategyEnum.AUTO
+                version = version
             )
         )
     }

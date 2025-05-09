@@ -50,7 +50,10 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateCopyCreateReqConverter: PipelineTemplateCopyCreateReqConverter
 ) {
 
-    fun updateMarketTemplateReference(
+    /**
+    * 更新关联模板的基本信息
+    * */
+    fun updateMarketTemplateReferenceBasicInfo(
         userId: String,
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
@@ -64,14 +67,14 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 dslContext = dslContext,
                 templateId = srcTemplateId
             )
-            val referenceList = projectId2TemplateIdOfReference.keys.toList()
-            if (referenceList.isEmpty()) return true
+            val referenceTemplateList = projectId2TemplateIdOfReference.keys.toList()
+            if (referenceTemplateList.isEmpty()) return true
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
                 // 修改老表
                 pipelineSettingDao.updateSettingName(
                     dslContext = transactionContext,
-                    pipelineIdList = referenceList,
+                    pipelineIdList = referenceTemplateList,
                     name = templateName
                 )
                 templateDao.updateTemplateReference(
@@ -83,49 +86,71 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 )
             }
             // 同步新表，将关联的数据表，进行批量刷数据
-            updateMarketTemplateExecutorService.execute {
-                projectId2TemplateIdOfReference.forEach { (projectId, templateId) ->
-                    pipelineTemplateInfoService.update(
-                        record = PipelineTemplateInfoUpdateInfo(
-                            name = templateName,
-                            category = category,
-                            logoUrl = logoUrl
-                        ),
-                        commonCondition = PipelineTemplateCommonCondition(
-                            projectId = projectId,
-                            templateId = templateId
-                        )
+            projectId2TemplateIdOfReference.forEach { (projectId, templateId) ->
+                pipelineTemplateInfoService.update(
+                    record = PipelineTemplateInfoUpdateInfo(
+                        name = templateName,
+                        category = category,
+                        logoUrl = logoUrl
+                    ),
+                    commonCondition = PipelineTemplateCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId
                     )
-                    pipelineTemplateSettingService.update(
-                        record = PipelineTemplateSettingUpdateInfo(
-                            name = templateName
-                        ),
-                        commonCondition = PipelineTemplateSettingCommonCondition(
-                            projectId = projectId,
-                            templateId = templateId
-                        )
+                )
+                pipelineTemplateSettingService.update(
+                    record = PipelineTemplateSettingUpdateInfo(
+                        name = templateName
+                    ),
+                    commonCondition = PipelineTemplateSettingCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId
                     )
-                }
+                )
             }
         }
         return true
     }
 
+    /**
+     * 上架模板至研发商店-更新关联模板相关
+     * （1）更新模板关联标识storeFlag
+     * （2）更新发布策略
+     * （3）更新关联模板基本信息
+     * （4）记录模板版本上架记录
+     * （5）将关联并且自动升级的模板进行自动升级版本
+     * */
     fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Boolean {
         with(request) {
-            updateTemplateStoreFlag(
+            // 更新老表 研发商店关联标识
+            templateDao.updateStoreFlag(
+                dslContext = dslContext,
                 userId = publisher,
                 projectId = projectId,
                 templateId = templateCode,
-                publishStrategy = publishStrategy,
                 storeFlag = true
             )
-            updateMarketTemplateReference(
+            // 更新新表 研发商店关联标识/发布策略
+            pipelineTemplateInfoService.update(
+                transactionContext = dslContext,
+                record = PipelineTemplateInfoUpdateInfo(
+                    storeFlag = true,
+                    publishStrategy = request.publishStrategy,
+                    updater = publisher
+                ),
+                commonCondition = PipelineTemplateCommonCondition(
+                    projectId = projectId,
+                    templateId = templateCode
+                )
+            )
+            // 更新关联的模板，基本信息
+            updateMarketTemplateReferenceBasicInfo(
                 userId = publisher,
                 projectId = projectId,
                 updateMarketTemplateRequest = MarketTemplateRequest(request)
             )
-            upgradeTemplateAuto(
+            // 升级关联模板的版本。
+            upgradeTemplateVersionAuto(
                 userId = publisher,
                 projectId = projectId,
                 templateId = templateCode,
@@ -140,22 +165,45 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         projectId: String,
         templateId: String,
         storeFlag: Boolean,
-        publishStrategy: UpgradeStrategyEnum
+        version: Long?
     ): Boolean {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            templateDao.updateStoreFlag(
-                dslContext = dslContext,
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                storeFlag = storeFlag
-            )
+            when {
+                !storeFlag && version != null -> {
+                    pipelineTemplateResourceService.update(
+                        transactionContext = context,
+                        record = PipelineTemplateResourceUpdateInfo(
+                            storeFlag = false,
+                            updater = userId
+                        ),
+                        commonCondition = PipelineTemplateResourceCommonCondition(
+                            projectId = projectId,
+                            templateId = templateId,
+                            version = version
+                        )
+                    )
+                }
+
+                !storeFlag -> {
+                    pipelineTemplateResourceService.update(
+                        transactionContext = context,
+                        record = PipelineTemplateResourceUpdateInfo(
+                            storeFlag = false,
+                            updater = userId
+                        ),
+                        commonCondition = PipelineTemplateResourceCommonCondition(
+                            projectId = projectId,
+                            templateId = templateId
+                        )
+                    )
+                }
+            }
+
             pipelineTemplateInfoService.update(
                 transactionContext = context,
                 record = PipelineTemplateInfoUpdateInfo(
                     storeFlag = storeFlag,
-                    publishStrategy = publishStrategy,
                     updater = userId
                 ),
                 commonCondition = PipelineTemplateCommonCondition(
@@ -192,7 +240,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun upgradeTemplateAuto(
+    fun upgradeTemplateVersionAuto(
         userId: String,
         projectId: String,
         templateId: String,

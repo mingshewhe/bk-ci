@@ -37,18 +37,26 @@ import org.jooq.DSLContext
 
 @Suppress("ALL")
 interface TemplateReleaseService {
-
+    /**
+     * 关联研发商店模板
+     */
     fun addMarketTemplate(
         userId: String,
         templateCode: String,
         marketTemplateRelRequest: MarketTemplateRelRequest
     ): Result<Boolean>
 
+    /**
+     * 更新研发商店模板-v1
+     */
     fun updateMarketTemplate(
         userId: String,
         marketTemplateUpdateRequest: MarketTemplateUpdateRequest
     ): Result<String?>
 
+    /**
+     * 上架研发商店-v2
+     */
     fun releaseMarketTemplate(
         userId: String,
         request: MarketTemplateUpdateV2Request
@@ -86,5 +94,20 @@ interface TemplateReleaseService {
     /**
      * 下架模板
      */
-    fun offlineTemplate(userId: String, templateCode: String, version: String?, reason: String?): Result<Boolean>
+    fun offlineTemplate(
+        userId: String,
+        templateCode: String,
+        version: String?,
+        reason: String?
+    ): Result<Boolean>
+
+    /**
+     * 下架模板-v2
+     */
+    fun offlineTemplateV2(
+        userId: String,
+        templateCode: String,
+        templateVersion: Long?,
+        reason: String?
+    ): Result<Boolean>
 }

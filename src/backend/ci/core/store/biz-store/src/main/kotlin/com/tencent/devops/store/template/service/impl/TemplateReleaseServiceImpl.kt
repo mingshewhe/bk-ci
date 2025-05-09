@@ -882,6 +882,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             // 把所有已发布的版本全部下架
             dslContext.transaction { t ->
                 val context = DSL.using(t)
+
                 marketTemplateDao.updateTemplateStatusByCode(
                     dslContext = context,
                     templateCode = templateCode,
@@ -903,7 +904,86 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                         latestFlag = true
                     )
                 }
+                val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
+                    dslContext = context,
+                    storeCode = templateCode,
+                    storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+                ) ?: throw ErrorCodeException(errorCode = CommonMessageCode.SYSTEM_ERROR)
+                templateVersionReleasedRelDao.offlineTemplate(
+                    dslContext = dslContext,
+                    templateCode = templateCode,
+                    projectId = projectCode,
+                    templateVersion = null
+                )
+                try {
+                    client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                        userId = userId,
+                        projectId = projectCode,
+                        templateId = templateCode,
+                        storeFlag = false,
+                        version = null
+                    )
+                } catch (ex: Exception) {
+                    logger.info("update store flag failed! $ex")
+                }
             }
+        }
+        return Result(true)
+    }
+
+    override fun offlineTemplateV2(
+        userId: String,
+        templateCode: String,
+        templateVersion: Long?,
+        reason: String?
+    ): Result<Boolean> {
+        val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
+            dslContext = dslContext,
+            storeCode = templateCode,
+            storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+        ) ?: throw ErrorCodeException(errorCode = CommonMessageCode.SYSTEM_ERROR)
+
+        if (templateVersion == null) {
+            // 把所有已发布的版本全部下架
+            dslContext.transaction { t ->
+                val context = DSL.using(t)
+                marketTemplateDao.updateTemplateStatusByCode(
+                    dslContext = context,
+                    templateCode = templateCode,
+                    templateOldStatus = TemplateStatusEnum.RELEASED.status.toByte(),
+                    templateNewStatus = TemplateStatusEnum.UNDERCARRIAGED.status.toByte(),
+                    userId = userId,
+                    msg = "undercarriage"
+                )
+
+                templateVersionReleasedRelDao.offlineTemplate(
+                    dslContext = dslContext,
+                    templateCode = templateCode,
+                    projectId = projectCode,
+                    templateVersion = null
+                )
+                client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                    userId = userId,
+                    projectId = projectCode,
+                    templateId = templateCode,
+                    storeFlag = false,
+                    version = null
+                )
+            }
+        } else {
+            templateVersionReleasedRelDao.offlineTemplate(
+                dslContext = dslContext,
+                templateCode = templateCode,
+                projectId = projectCode,
+                templateVersion = templateVersion
+            )
+            client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                userId = userId,
+                projectId = projectCode,
+                templateId = templateCode,
+                storeFlag = false,
+                version = templateVersion
+            )
         }
         return Result(true)
     }

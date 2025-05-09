@@ -158,7 +158,11 @@ interface ServicePipelineTemplateV2Resource {
         @PathParam("templateId")
         templateId: String,
         @Parameter(description = "是否已关联市场标识", required = true)
-        storeFlag: Boolean
+        @QueryParam("storeFlag")
+        storeFlag: Boolean,
+        @Parameter(description = "下架版本", required = true)
+        @QueryParam("version")
+        version: Long?
     ): Result<Boolean>
 
     @Operation(summary = "更新发布策略")

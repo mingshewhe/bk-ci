@@ -154,4 +154,22 @@ interface UserTemplateReleaseResource {
         @QueryParam("reason")
         reason: String?
     ): Result<Boolean>
+
+    @Operation(summary = "下架模板v2")
+    @PUT
+    @Path("/desk/template/v2/offline/templateCodes/{templateCode}/versions")
+    fun offlineTemplateV2(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "模版代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String,
+        @Parameter(description = "模板版本号", required = false)
+        @QueryParam("templateVersion")
+        templateVersion: Long?,
+        @Parameter(description = "原因", required = false)
+        @QueryParam("reason")
+        reason: String?
+    ): Result<Boolean>
 }

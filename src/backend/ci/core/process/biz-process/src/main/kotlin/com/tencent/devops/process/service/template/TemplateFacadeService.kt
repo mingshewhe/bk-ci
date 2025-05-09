@@ -67,7 +67,6 @@ import com.tencent.devops.common.pipeline.pojo.element.trigger.CodeGithubWebHook
 import com.tencent.devops.common.pipeline.pojo.element.trigger.CodeSVNWebHookTriggerElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.RemoteTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.utils.RepositoryConfigUtils
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
@@ -2420,11 +2419,12 @@ class TemplateFacadeService @Autowired constructor(
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
     ): Boolean {
-        pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReference(
+        pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReferenceBasicInfo(
             userId = userId,
             projectId = projectId,
             updateMarketTemplateRequest = updateMarketTemplateRequest
         )
+        // 异步迁移数据
         pipelineTemplateMigrateService.asyncMigrateTemplate(
             projectId = projectId,
             templateId = updateMarketTemplateRequest.templateCode
@@ -2438,12 +2438,13 @@ class TemplateFacadeService @Autowired constructor(
         templateId: String,
         storeFlag: Boolean
     ): Boolean {
-        pipelineTemplateMarketTemplateFacadeService.updateTemplateStoreFlag(
+        logger.info("update v1 template store flag :$projectId|$userId|$templateId|$storeFlag")
+        templateDao.updateStoreFlag(
+            dslContext = dslContext,
             userId = userId,
             projectId = projectId,
             templateId = templateId,
-            storeFlag = storeFlag,
-            publishStrategy = UpgradeStrategyEnum.AUTO
+            storeFlag = storeFlag
         )
         return true
     }

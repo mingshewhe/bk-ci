@@ -90,4 +90,13 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
     ): Result<Boolean> {
         return templateReleaseService.offlineTemplate(userId, templateCode, version, reason)
     }
+
+    override fun offlineTemplateV2(
+        userId: String,
+        templateCode: String,
+        templateVersion: Long?,
+        reason: String?
+    ): Result<Boolean> {
+        return templateReleaseService.offlineTemplateV2(userId, templateCode, templateVersion, reason)
+    }
 }
