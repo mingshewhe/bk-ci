@@ -252,7 +252,7 @@ class TemplateInstanceItemDao {
     ) {
         with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
             dslContext.update(this)
-                .set(ERROR_MESSGAE, errorMessage)
+                .set(ERROR_MESSAGE, errorMessage)
                 .set(STATUS, TemplateInstanceStatus.FAILED.name)
                 .set(UPDATE_TIME, LocalDateTime.now())
                 .where(BASE_ID.eq(baseId))
@@ -297,7 +297,7 @@ class TemplateInstanceItemDao {
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
             filePath = filePath,
-            errorMessage = errorMessgae,
+            errorMessage = errorMessage,
             creator = creator,
             modifier = modifier,
             createTime = createTime.timestampmilli(),

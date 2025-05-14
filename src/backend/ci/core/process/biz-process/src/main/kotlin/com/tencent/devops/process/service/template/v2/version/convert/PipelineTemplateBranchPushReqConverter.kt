@@ -88,7 +88,6 @@ class PipelineTemplateBranchPushReqConverter(
                     mode = TemplateType.CUSTOMIZE,
                     type = modelTransferResult.templateType,
                     enablePac = true,
-                    storeFlag = false,
                     creator = userId,
                     updater = userId,
                     latestVersionStatus = status

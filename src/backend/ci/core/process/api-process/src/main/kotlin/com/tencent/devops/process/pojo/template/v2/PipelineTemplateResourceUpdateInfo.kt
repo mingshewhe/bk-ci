@@ -31,6 +31,7 @@ import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.template.ITemplateModel
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
@@ -72,6 +73,6 @@ data class PipelineTemplateResourceUpdateInfo(
     val releaseTime: LocalDateTime? = null,
     @get:Schema(title = "排序权重，草稿版本权重为100，其他状态的版本权重为0", required = false)
     val sortWeight: Int? = null,
-    @get:Schema(title = "是否上架至研发商店", required = true)
-    val storeFlag: Boolean? = null
+    @get:Schema(title = "研发商店状态", required = false)
+    val storeStatus: TemplateStatusEnum? = null
 )

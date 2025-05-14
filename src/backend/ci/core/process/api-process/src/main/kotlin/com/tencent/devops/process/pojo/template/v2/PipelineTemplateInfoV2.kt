@@ -4,6 +4,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模板基础信息")
@@ -41,8 +42,8 @@ data class PipelineTemplateInfoV2(
     val latestVersionStatus: VersionStatus,
     @get:Schema(title = "来源名称", required = true)
     val sourceName: String? = null,
-    @get:Schema(title = "是否上架至研发商店", required = true)
-    val storeFlag: Boolean = false,
+    @get:Schema(title = "研发商店状态", required = true)
+    val storeStatus: TemplateStatusEnum = TemplateStatusEnum.NEVER_PUBLISHED,
     @get:Schema(title = "父模板ID", required = false)
     val srcTemplateId: String? = null,
     @get:Schema(title = "父模板项目ID", required = false)

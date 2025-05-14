@@ -15,6 +15,7 @@ import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -36,7 +37,7 @@ class PipelineTemplateResourceDao {
                 PROJECT_ID,
                 TEMPLATE_ID,
                 TYPE,
-                STORE_FLAG,
+                STORE_STATUS,
                 SETTING_VERSION,
                 VERSION,
                 NUMBER,
@@ -66,7 +67,7 @@ class PipelineTemplateResourceDao {
                 record.projectId,
                 record.templateId,
                 record.type.name,
-                record.storeFlag,
+                record.storeStatus.name,
                 record.settingVersion,
                 record.version,
                 record.number,
@@ -93,7 +94,7 @@ class PipelineTemplateResourceDao {
                 record.createdTime.toLocalDateTimeOrDefault(),
                 record.updateTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
-                .set(STORE_FLAG, record.storeFlag)
+                .set(STORE_STATUS, record.storeStatus.name)
                 .set(SETTING_VERSION, record.settingVersion)
                 .set(VERSION, record.version)
                 .set(NUMBER, record.number)
@@ -143,7 +144,7 @@ class PipelineTemplateResourceDao {
                     record.releaseTime?.let { set(RELEASE_TIME, it) }
                     record.updater?.let { set(UPDATER, it) }
                     record.sortWeight?.let { set(SORT_WEIGHT, it) }
-                    record.storeFlag?.let { set(STORE_FLAG, it) }
+                    record.storeStatus?.let { set(STORE_STATUS, it.name) }
                 }
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
@@ -422,10 +423,10 @@ class PipelineTemplateResourceDao {
                 if (geNumber != null) conditions.add(NUMBER.ge(geNumber))
                 if (!srcTemplateVersions.isNullOrEmpty()) conditions.add(SRC_TEMPLATE_VERSION.`in`(srcTemplateVersions))
                 if (storeFlag == true) {
-                    conditions.add(STORE_FLAG.eq(true))
+                    conditions.add(STORE_STATUS.eq(TemplateStatusEnum.RELEASED.name))
                 }
                 if (storeFlag == false) {
-                    conditions.add(STORE_FLAG.isNull.or(STORE_FLAG.eq(false)))
+                    conditions.add(STORE_STATUS.ne(TemplateStatusEnum.RELEASED.name))
                 }
                 return conditions
             }
@@ -460,7 +461,7 @@ class PipelineTemplateResourceDao {
             updater = this.updater,
             releaseTime = this.releaseTime?.timestampmilli(),
             sortWeight = this.sortWeight,
-            storeFlag = this.storeFlag
+            storeStatus = TemplateStatusEnum.valueOf(this.storeStatus)
         )
     }
 }

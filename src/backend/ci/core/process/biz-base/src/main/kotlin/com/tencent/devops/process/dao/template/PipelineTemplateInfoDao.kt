@@ -11,6 +11,7 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -42,7 +43,7 @@ class PipelineTemplateInfoDao {
                 RELEASED_VERSION_NAME,
                 RELEASED_SETTING_VERSION,
                 LATEST_VERSION_STATUS,
-                STORE_FLAG,
+                STORE_STATUS,
                 SRC_TEMPLATE_ID,
                 SRC_TEMPLATE_PROJECT_ID,
                 DEBUG_PIPELINE_COUNT,
@@ -68,7 +69,7 @@ class PipelineTemplateInfoDao {
                 record.releasedVersionName,
                 record.releasedSettingVersion,
                 record.latestVersionStatus.name,
-                record.storeFlag,
+                record.storeStatus.name,
                 record.srcTemplateId,
                 record.srcTemplateProjectId,
                 record.debugPipelineCount,
@@ -90,7 +91,7 @@ class PipelineTemplateInfoDao {
                 .set(RELEASED_VERSION_NAME, record.releasedVersionName)
                 .set(RELEASED_SETTING_VERSION, record.releasedSettingVersion)
                 .set(LATEST_VERSION_STATUS, record.latestVersionStatus.name)
-                .set(STORE_FLAG, record.storeFlag)
+                .set(STORE_STATUS, record.storeStatus.name)
                 .set(DEBUG_PIPELINE_COUNT, record.debugPipelineCount)
                 .set(INSTANCE_PIPELINE_COUNT, record.instancePipelineCount)
                 .set(UPDATER, record.updater)
@@ -116,7 +117,7 @@ class PipelineTemplateInfoDao {
                     record.releasedVersion?.let { set(RELEASED_VERSION, it) }
                     record.releasedVersionName?.let { set(RELEASED_VERSION_NAME, it) }
                     record.releasedSettingVersion?.let { set(RELEASED_SETTING_VERSION, it) }
-                    record.storeFlag?.let { set(STORE_FLAG, it) }
+                    record.storeStatus?.let { set(STORE_STATUS, it.name) }
                     record.debugPipelineCount?.let { set(DEBUG_PIPELINE_COUNT, it) }
                     record.instancePipelineCount?.let { set(INSTANCE_PIPELINE_COUNT, it) }
                     record.latestVersionStatus?.let { set(LATEST_VERSION_STATUS, it.name) }
@@ -300,7 +301,8 @@ class PipelineTemplateInfoDao {
                 if (releasedVersion != null) conditions.add(RELEASED_VERSION.eq(releasedVersion))
                 if (releasedVersionName != null) conditions.add(RELEASED_VERSION_NAME.eq(releasedVersionName))
                 if (releasedSettingVersion != null) conditions.add(RELEASED_SETTING_VERSION.eq(releasedSettingVersion))
-                if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))
+                /*if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))*/
+                if (storeFlag == true) conditions.add(STORE_STATUS.eq(TemplateStatusEnum.RELEASED.name))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
                 if (srcTemplateProjectId != null) conditions.add(SRC_TEMPLATE_PROJECT_ID.eq(srcTemplateProjectId))
                 if (debugPipelineCount != null) conditions.add(DEBUG_PIPELINE_COUNT.eq(debugPipelineCount))
@@ -349,7 +351,7 @@ class PipelineTemplateInfoDao {
             releasedVersionName = releasedVersionName,
             releasedSettingVersion = this.releasedSettingVersion,
             latestVersionStatus = VersionStatus.get(this.latestVersionStatus),
-            storeFlag = this.storeFlag,
+            storeStatus = TemplateStatusEnum.valueOf(this.storeStatus),
             srcTemplateId = this.srcTemplateId,
             srcTemplateProjectId = this.srcTemplateProjectId,
             debugPipelineCount = this.debugPipelineCount,

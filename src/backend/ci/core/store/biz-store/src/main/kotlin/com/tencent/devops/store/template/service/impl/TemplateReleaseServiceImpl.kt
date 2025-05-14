@@ -916,11 +916,11 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                     templateVersion = null
                 )
                 try {
-                    client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                    client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
                         userId = userId,
                         projectId = projectCode,
                         templateId = templateCode,
-                        storeFlag = false,
+                        storeStatus = TemplateStatusEnum.UNDERCARRIAGED,
                         version = null
                     )
                 } catch (ex: Exception) {
@@ -962,11 +962,11 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                     projectId = projectCode,
                     templateVersion = null
                 )
-                client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
                     userId = userId,
                     projectId = projectCode,
                     templateId = templateCode,
-                    storeFlag = false,
+                    storeStatus = TemplateStatusEnum.UNDERCARRIAGED,
                     version = null
                 )
             }
@@ -977,11 +977,11 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 projectId = projectCode,
                 templateVersion = templateVersion
             )
-            client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+            client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
                 userId = userId,
                 projectId = projectCode,
                 templateId = templateCode,
-                storeFlag = false,
+                storeStatus = TemplateStatusEnum.UNDERCARRIAGED,
                 version = templateVersion
             )
         }

@@ -727,11 +727,11 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 storeFlag = false
             )
             try {
-                client.get(ServicePipelineTemplateV2Resource::class).updateStoreFlag(
+                client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
                     userId = userId,
                     projectId = initProjectCode,
                     templateId = templateCode,
-                    storeFlag = false,
+                    storeStatus = TemplateStatusEnum.NEVER_PUBLISHED,
                     version = null
                 )
             } catch (ex: Exception) {

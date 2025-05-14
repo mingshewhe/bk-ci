@@ -92,7 +92,6 @@ class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
                 mode = TemplateType.CUSTOMIZE,
                 type = PipelineTemplateType.PIPELINE,
                 enablePac = false,
-                storeFlag = storeFlag,
                 category = category,
                 logoUrl = logoUrl,
                 creator = userId,

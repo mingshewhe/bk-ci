@@ -309,8 +309,7 @@ class TemplateFacadeService @Autowired constructor(
             model = JsonUtil.to(latestTemplate.template, Model::class.java),
             setting = setting,
             category = latestTemplate.category,
-            logoUrl = latestTemplate.logoUrl,
-            storeFlag = false
+            logoUrl = latestTemplate.logoUrl
         )
         val result = pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
@@ -547,8 +546,7 @@ class TemplateFacadeService @Autowired constructor(
                 ),
                 versionName = versionName,
                 category = latestTemplate.category,
-                logoUrl = latestTemplate.logoUrl,
-                storeFlag = latestTemplate.storeFlag
+                logoUrl = latestTemplate.logoUrl
             )
             pipelineTemplateVersionManager.deployTemplate(
                 userId = userId,

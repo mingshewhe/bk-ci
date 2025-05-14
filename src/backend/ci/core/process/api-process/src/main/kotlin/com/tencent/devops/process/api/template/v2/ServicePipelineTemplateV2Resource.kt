@@ -48,6 +48,7 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -144,10 +145,10 @@ interface ServicePipelineTemplateV2Resource {
         projectIds: List<String>
     ): Result<List<PipelineTemplateInfo>>
 
-    @Operation(summary = "更新模版是否已关联市场标识")
+    @Operation(summary = "更新研发商店摸吧状态")
     @PUT
-    @Path("/{templateId}/store/storeFlag")
-    fun updateStoreFlag(
+    @Path("/{templateId}/store/updateStoreStatus")
+    fun updateStoreStatus(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,
@@ -157,9 +158,9 @@ interface ServicePipelineTemplateV2Resource {
         @Parameter(description = "模版ID", required = true)
         @PathParam("templateId")
         templateId: String,
-        @Parameter(description = "是否已关联市场标识", required = true)
-        @QueryParam("storeFlag")
-        storeFlag: Boolean,
+        @Parameter(description = "研发商店模板状态", required = true)
+        @QueryParam("storeStatus")
+        storeStatus: TemplateStatusEnum,
         @Parameter(description = "下架版本", required = true)
         @QueryParam("version")
         version: Long?

@@ -10,6 +10,5 @@ data class PipelineTemplateCompatibilityCreateReq(
     val setting: PipelineSetting,
     val versionName: String? = null,
     val category: String? = null,
-    val logoUrl: String? = null,
-    val storeFlag: Boolean = false
+    val logoUrl: String? = null
 ) : PipelineTemplateVersionReq

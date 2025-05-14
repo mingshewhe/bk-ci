@@ -110,7 +110,6 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 mode = TemplateType.CONSTRAINT,
                 type = marketTemplateInfo.type,
                 enablePac = false,
-                storeFlag = false,
                 creator = userId,
                 updater = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,

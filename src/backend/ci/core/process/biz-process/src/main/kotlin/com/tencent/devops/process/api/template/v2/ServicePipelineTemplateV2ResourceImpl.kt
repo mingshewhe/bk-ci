@@ -46,6 +46,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 
 @RestResource
 class ServicePipelineTemplateV2ResourceImpl(
@@ -105,19 +106,19 @@ class ServicePipelineTemplateV2ResourceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun updateStoreFlag(
+    override fun updateStoreStatus(
         userId: String,
         projectId: String,
         templateId: String,
-        storeFlag: Boolean,
+        storeStatus: TemplateStatusEnum,
         version: Long?
     ): Result<Boolean> {
         return Result(
-            pipelineTemplateMarketTemplateFacadeService.updateTemplateStoreFlag(
+            pipelineTemplateMarketTemplateFacadeService.updateStoreStatus(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
-                storeFlag = storeFlag,
+                storeStatus = storeStatus,
                 version = version
             )
         )

@@ -8,6 +8,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -89,7 +90,7 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
                     category = v2TemplateInfo.category,
                     logoUrl = v2TemplateInfo.logoUrl,
                     srcTemplateId = v2TemplateResource.srcTemplateId,
-                    storeFlag = v2TemplateInfo.storeFlag,
+                    storeFlag = v2TemplateInfo.storeStatus != TemplateStatusEnum.NEVER_PUBLISHED,
                     weight = 0,
                     version = version,
                     desc = v2TemplateInfo.desc

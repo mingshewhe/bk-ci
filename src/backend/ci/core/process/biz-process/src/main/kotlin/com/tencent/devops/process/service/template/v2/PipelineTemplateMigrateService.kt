@@ -413,7 +413,6 @@ class PipelineTemplateMigrateService(
                 Triple(it.projectId, it.version, it.id)
             } ?: Triple(null, null, null)
 
-        val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
         val version = if (isConstraint) {
             pipelineTemplateResourceService.getOrNull(
                 commonCondition = PipelineTemplateResourceCommonCondition(
@@ -432,7 +431,7 @@ class PipelineTemplateMigrateService(
             type = PipelineTemplateType.PIPELINE,
             settingVersion = seq,
             version = version,
-            storeFlag = storeFlag,
+            storeStatus = marketTemplateStatus,
             number = seq,
             versionName = currentTemplate.versionName,
             versionNum = seq,
@@ -493,7 +492,7 @@ class PipelineTemplateMigrateService(
             releasedVersionName = latestReleasedResource.versionName,
             releasedSettingVersion = latestReleasedResource.settingVersion,
             latestVersionStatus = VersionStatus.RELEASED,
-            storeFlag = storeFlag,
+            storeStatus = marketTemplateStatus,
             srcTemplateId = latestReleasedResource.srcTemplateId,
             srcTemplateProjectId = latestReleasedResource.srcTemplateProjectId,
             instancePipelineCount = instanceSize,

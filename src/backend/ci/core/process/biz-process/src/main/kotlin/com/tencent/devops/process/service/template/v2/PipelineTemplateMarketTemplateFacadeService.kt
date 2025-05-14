@@ -27,6 +27,7 @@ import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -134,7 +135,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             pipelineTemplateInfoService.update(
                 transactionContext = dslContext,
                 record = PipelineTemplateInfoUpdateInfo(
-                    storeFlag = true,
+                    storeStatus = TemplateStatusEnum.RELEASED,
                     publishStrategy = request.publishStrategy,
                     updater = publisher
                 ),
@@ -160,57 +161,52 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun updateTemplateStoreFlag(
+    fun updateStoreStatus(
         userId: String,
         projectId: String,
         templateId: String,
-        storeFlag: Boolean,
+        storeStatus: TemplateStatusEnum,
         version: Long?
     ): Boolean {
         dslContext.transaction { configuration ->
             val context = DSL.using(configuration)
-            when {
-                !storeFlag && version != null -> {
-                    pipelineTemplateResourceService.update(
-                        transactionContext = context,
-                        record = PipelineTemplateResourceUpdateInfo(
-                            storeFlag = false,
-                            updater = userId
-                        ),
-                        commonCondition = PipelineTemplateResourceCommonCondition(
-                            projectId = projectId,
-                            templateId = templateId,
-                            version = version
-                        )
+            if (version != null) {
+                pipelineTemplateResourceService.update(
+                    transactionContext = context,
+                    record = PipelineTemplateResourceUpdateInfo(
+                        storeStatus = storeStatus,
+                        updater = userId
+                    ),
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId,
+                        version = version
                     )
-                }
-
-                !storeFlag -> {
-                    pipelineTemplateResourceService.update(
-                        transactionContext = context,
-                        record = PipelineTemplateResourceUpdateInfo(
-                            storeFlag = false,
-                            updater = userId
-                        ),
-                        commonCondition = PipelineTemplateResourceCommonCondition(
-                            projectId = projectId,
-                            templateId = templateId
-                        )
-                    )
-                }
-            }
-
-            pipelineTemplateInfoService.update(
-                transactionContext = context,
-                record = PipelineTemplateInfoUpdateInfo(
-                    storeFlag = storeFlag,
-                    updater = userId
-                ),
-                commonCondition = PipelineTemplateCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId
                 )
-            )
+            } else {
+                pipelineTemplateResourceService.update(
+                    transactionContext = context,
+                    record = PipelineTemplateResourceUpdateInfo(
+                        storeStatus = storeStatus,
+                        updater = userId
+                    ),
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId
+                    )
+                )
+                pipelineTemplateInfoService.update(
+                    transactionContext = context,
+                    record = PipelineTemplateInfoUpdateInfo(
+                        storeStatus = storeStatus,
+                        updater = userId
+                    ),
+                    commonCondition = PipelineTemplateCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId
+                    )
+                )
+            }
         }
         return true
     }
@@ -260,7 +256,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         // 同步上传当前版本至研发商店
         pipelineTemplateResourceService.update(
             record = PipelineTemplateResourceUpdateInfo(
-                storeFlag = true
+                storeStatus = TemplateStatusEnum.RELEASED
             ),
             commonCondition = PipelineTemplateResourceCommonCondition(
                 projectId = projectId,

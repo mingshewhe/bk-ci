@@ -98,7 +98,6 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                     mode = TemplateType.CUSTOMIZE,
                     type = modelTransferResult.templateType,
                     enablePac = false,
-                    storeFlag = false,
                     creator = userId,
                     updater = userId,
                     latestVersionStatus = VersionStatus.COMMITTING

@@ -143,7 +143,6 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 type = srcTemplateInfo.type,
                 logoUrl = srcTemplateInfo.logoUrl,
                 enablePac = srcTemplateInfo.enablePac,
-                storeFlag = false,
                 creator = userId,
                 updater = userId,
                 latestVersionStatus = VersionStatus.RELEASED

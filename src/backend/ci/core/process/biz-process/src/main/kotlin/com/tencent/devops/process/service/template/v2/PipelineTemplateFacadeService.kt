@@ -47,6 +47,7 @@ import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import com.tencent.devops.store.api.template.ServiceTemplateResource
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
@@ -543,7 +544,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             type = basicInfo.type,
             logoUrl = basicInfo.logoUrl,
             enablePac = basicInfo.enablePac,
-            storeFlag = basicInfo.storeFlag,
+            storeFlag = basicInfo.storeStatus == TemplateStatusEnum.RELEASED,
             srcTemplateId = basicInfo.srcTemplateId,
             srcTemplateProjectId = basicInfo.srcTemplateProjectId,
             canDebug = draftResource != null,
@@ -773,7 +774,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             version = version
         )
         // todo 检查是否已经上架过
-        if (templateResource.storeFlag == true)
+        if (templateResource.storeStatus == TemplateStatusEnum.RELEASED)
             throw ErrorCodeException(errorCode = "该版本已经发布")
         // todo 检查模型
         return true

@@ -91,7 +91,6 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 mode = TemplateType.CUSTOMIZE,
                 type = request.type,
                 enablePac = false,
-                storeFlag = false,
                 creator = userId,
                 updater = userId,
                 latestVersionStatus = VersionStatus.COMMITTING

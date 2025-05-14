@@ -44,6 +44,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedSer
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionDeleteContext
 import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionDeletePostProcessor
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -119,9 +120,9 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             version = version
-        ).storeFlag
+        ).storeStatus == TemplateStatusEnum.RELEASED
 
-        if (storeFlag == true) {
+        if (storeFlag) {
             throw ErrorCodeException(
                 errorCode = "该版本已发布，不允许直接删除，需下架研发商店版本"
             )
@@ -165,7 +166,7 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
             )
         }
 
-        if (templateInfo.mode == TemplateType.CUSTOMIZE && templateInfo.storeFlag) {
+        if (templateInfo.mode == TemplateType.CUSTOMIZE && templateInfo.storeStatus == TemplateStatusEnum.RELEASED) {
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.TEMPLATE_CAN_NOT_DELETE_WHEN_PUBLISH
             )
