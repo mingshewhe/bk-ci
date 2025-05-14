@@ -172,7 +172,7 @@ class PipelineTemplateMigrateService(
                 projectId = projectId,
                 pipelineId = latestTemplate.id
             ) ?: throw ErrorCodeException(
-                errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+                errorCode = ProcessMessageCode.PIPELINE_SETTING_NOT_EXISTS
             )
             logger.debug("migrate template setting {}", setting)
 
