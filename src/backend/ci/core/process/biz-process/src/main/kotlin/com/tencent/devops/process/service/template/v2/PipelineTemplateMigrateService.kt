@@ -176,11 +176,15 @@ class PipelineTemplateMigrateService(
             )
             logger.debug("migrate template setting {}", setting)
 
-            val (srcTemplateProjectId, templateVersionInfos) = getTemplateVersions(latestTemplate = latestTemplate)
+            // 若是自定义模板，获取当前模板的版本历史，约束模板（安装来源于研发商店）获取其父模板的版本历史
+            val templateVersionInfos = getTemplateVersions(latestTemplate)
+            val srcTemplateProjectId = getSrcTemplateProjectId(latestTemplate)
+
             logger.info(
                 "migrate template srcTemplateProjectId {},templateVersionInfos{}",
                 srcTemplateProjectId, templateVersionInfos
             )
+            // 获取模板在研发商店的发布情况
             val marketTemplateStatus = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
                 templateCode = templateId
             ).data!!
@@ -197,8 +201,8 @@ class PipelineTemplateMigrateService(
                     createdTime = latestTemplate.createdTime.timestampmilli(),
                     updateTime = latestTemplate.updateTime.timestampmilli()
                 )
-                // 当前实际模板，可能为当前模板的版本或父模板版本
                 val currentProjectId = srcTemplateProjectId ?: projectId
+                // 当前实际模板，可能为当前模板的版本或父模板版本
                 val currentTemplate = templateDao.getTemplate(
                     dslContext = dslContext,
                     projectId = currentProjectId,
@@ -285,30 +289,33 @@ class PipelineTemplateMigrateService(
 
                 // 如果该模板是从研发商店安装的，需要记录其安装的版本历史
                 if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
+                    val srcTemplateVersion = pipelineTemplateResource.srcTemplateVersion!!
                     val srcTemplateResource = templateDao.getTemplate(
                         dslContext = dslContext,
-                        projectId = pipelineTemplateResource.srcTemplateProjectId!!,
-                        version = pipelineTemplateResource.srcTemplateVersion!!
+                        projectId = srcTemplateProjectId!!,
+                        version = srcTemplateVersion
                     ) ?: throw ErrorCodeException(
                         errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
                     )
 
                     client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
                         TemplateVersionInstallHistoryInfo(
-                            srcMarketTemplateProjectCode = srcTemplateResource.projectId,
-                            srcMarketTemplateCode = srcTemplateResource.id,
-                            projectCode = latestTemplate.projectId,
-                            templateCode = latestTemplate.id,
+                            srcMarketTemplateProjectCode = srcTemplateProjectId,
+                            srcMarketTemplateCode = pipelineTemplateResource.srcTemplateId!!,
+                            projectCode = pipelineTemplateResource.projectId,
+                            templateCode = pipelineTemplateResource.templateId,
                             version = srcTemplateResource.version,
                             versionName = srcTemplateResource.versionName,
+                            number = pipelineTemplateResource.number,
                             createTime = pipelineTemplateResource.releaseTime
                         )
                     )
                 }
 
-                // 如果该模板已经上架至研发商店，需要记录发布的版本历史
-                if (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
-                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED) {
+                // 如果该模板已经上架过研发商店，需要记录发布的版本历史
+                if (latestTemplate.type != TemplateType.CONSTRAINT.name &&
+                    (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
+                        marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)) {
                     client.get(ServiceTemplateResource::class).createTemplateVersionRel(
                         TemplateVersionRelationInfo(
                             projectCode = pipelineTemplateResource.projectId,
@@ -363,30 +370,30 @@ class PipelineTemplateMigrateService(
         }
     }
 
-    fun getTemplateVersions(
-        latestTemplate: TTemplateRecord
-    ): Pair<String?/*srcTemplateProjectId*/, List<TemplateVersion>> {
+    fun getTemplateVersions(latestTemplate: TTemplateRecord): List<TemplateVersion> {
         return if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
             val srcLatestTemplate = templateDao.getLatestTemplate(
                 dslContext = dslContext,
                 templateId = latestTemplate.srcTemplateId
             )
-            Pair(
-                first = srcLatestTemplate.projectId,
-                second = templateFacadeService.listTemplateVersions(
-                    projectId = srcLatestTemplate.projectId,
-                    templateId = srcLatestTemplate.id
-                )
+            templateFacadeService.listTemplateVersions(
+                projectId = srcLatestTemplate.projectId,
+                templateId = srcLatestTemplate.id
             )
         } else {
-            Pair(
-                first = null,
-                second = templateFacadeService.listTemplateVersions(
-                    projectId = latestTemplate.projectId,
-                    templateId = latestTemplate.id
-                )
+            templateFacadeService.listTemplateVersions(
+                projectId = latestTemplate.projectId,
+                templateId = latestTemplate.id
             )
+        }
+    }
 
+    fun getSrcTemplateProjectId(latestTemplate: TTemplateRecord): String? {
+        return takeIf { latestTemplate.type == TemplateType.CONSTRAINT.name }?.let {
+            templateDao.getLatestTemplate(
+                dslContext = dslContext,
+                templateId = latestTemplate.srcTemplateId
+            ).projectId
         }
     }
 
@@ -467,7 +474,7 @@ class PipelineTemplateMigrateService(
         )
         logger.info("template instance count {}|{}|{}", latestTemplate.projectId, latestTemplate.id, instanceSize)
         val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
-        // 新版本中，storeFlag表示为是否已经上架研发商店。关联和下架模板storeFlag都为false
+        // 新版本中，storeFlag表示为是否已经上架研发商店。
         val storeFlag = !isConstraint && marketTemplateStatus == TemplateStatusEnum.RELEASED
         // 如果模板已经上传研发商店，发布策略默认为自动
         val publishStrategy = if (storeFlag) UpgradeStrategyEnum.AUTO else null

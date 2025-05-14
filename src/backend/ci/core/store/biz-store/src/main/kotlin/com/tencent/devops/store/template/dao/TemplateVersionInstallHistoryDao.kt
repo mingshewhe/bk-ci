@@ -50,15 +50,17 @@ class TemplateVersionInstallHistoryDao {
                 TEMPLATE_CODE,
                 VERSION,
                 VERSION_NAME,
+                NUMBER,
                 CREATOR,
                 CREATE_TIME
             ).values(
-                record.srcMarketTemplateCode,
+                record.srcMarketTemplateProjectCode,
                 record.srcMarketTemplateCode,
                 record.projectCode,
                 record.templateCode,
                 record.version,
                 record.versionName,
+                record.number,
                 record.creator,
                 record.createTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
@@ -87,6 +89,7 @@ class TemplateVersionInstallHistoryDao {
                         templateCode = it.templateCode,
                         version = it.version,
                         versionName = it.versionName,
+                        number = it.number,
                         creator = it.creator,
                         createTime = it.createTime.timestampmilli()
                     )

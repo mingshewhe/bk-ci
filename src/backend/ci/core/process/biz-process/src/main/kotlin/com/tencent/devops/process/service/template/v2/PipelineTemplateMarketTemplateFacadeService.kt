@@ -51,8 +51,8 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
 ) {
 
     /**
-    * 更新关联模板的基本信息
-    * */
+     * 更新关联模板的基本信息
+     * */
     fun updateMarketTemplateReferenceBasicInfo(
         userId: String,
         projectId: String,
@@ -280,7 +280,6 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 updater = userId
             )
         )
-        // todo 最好分页
         val templatesOfAutoUpgrade = pipelineTemplateInfoService.list(
             commonCondition = PipelineTemplateCommonCondition(
                 mode = TemplateType.CONSTRAINT,
@@ -314,7 +313,8 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                     projectCode = templateInfo.projectId,
                     templateCode = templateInfo.id,
                     version = srcTemplateResource.version,
-                    versionName = srcTemplateResource.versionName!!
+                    versionName = srcTemplateResource.versionName!!,
+                    number = srcTemplateResource.number
                 )
             )
         }
