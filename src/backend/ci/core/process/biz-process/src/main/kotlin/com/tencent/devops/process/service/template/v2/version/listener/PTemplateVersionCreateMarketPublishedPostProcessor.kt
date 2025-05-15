@@ -11,10 +11,10 @@ import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.springframework.stereotype.Service
 
 /**
- * 流水线模板版本创建研发商店后置处理器
+ * 流水线模板版本创建研发商店版本上架后置处理器
  */
 @Service
-class PTemplateVersionCreateMarketPostProcessor(
+class PTemplateVersionCreateMarketPublishedPostProcessor(
     private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val client: Client
@@ -34,7 +34,7 @@ class PTemplateVersionCreateMarketPostProcessor(
             // 检查模板是否已上架到研发商店并设置发布策略为自动。
             val isTemplatePublishedToMarket = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
                 templateCode = templateId
-            ).data!! == TemplateStatusEnum.RELEASED
+            ).data == TemplateStatusEnum.RELEASED
             if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
 

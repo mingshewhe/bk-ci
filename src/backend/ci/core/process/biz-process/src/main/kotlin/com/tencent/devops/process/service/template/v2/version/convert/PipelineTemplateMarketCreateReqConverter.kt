@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
@@ -80,11 +81,16 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 projectId = marketTemplateProjectId,
                 templateId = marketTemplateId
             )
+            val finalMarketTemplateVersion = marketTemplateVersion
+                ?: pipelineTemplateResourceService.getLatestReleasedResource(
+                    projectId = marketTemplateProjectId,
+                    templateId = marketTemplateId
+                )?.version ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
+
             val marketTemplateResource = pipelineTemplateResourceService.get(
                 projectId = marketTemplateProjectId,
                 templateId = marketTemplateId,
-                version = marketTemplateVersion ?: (marketTemplateInfo.releasedVersion
-                    ?: throw ErrorCodeException(errorCode = ""))
+                version = finalMarketTemplateVersion
             )
 
             pipelineTemplateCommonService.checkTemplateBasicInfo(
@@ -116,7 +122,9 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 srcTemplateId = marketTemplateInfo.id,
                 category = marketTemplateDetails.classifyCode,
                 logoUrl = marketTemplateDetails.logoUrl,
-                latestVersionStatus = VersionStatus.RELEASED
+                latestVersionStatus = VersionStatus.RELEASED,
+                upgradeStrategy = UpgradeStrategyEnum.MANUAL,
+                settingSyncStrategy = UpgradeStrategyEnum.MANUAL
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
