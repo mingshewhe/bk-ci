@@ -1,14 +1,15 @@
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.process.pojo.template
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
-import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.PipelinePermissions
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模板基础信息")
-data class PipelineTemplateInfoV2(
+@Schema(title = "流水线模板列表")
+data class PipelineTemplateListResponse(
     @get:Schema(title = "模板ID", required = true)
     val id: String,
     @get:Schema(title = "项目ID", required = true)
@@ -65,5 +66,55 @@ data class PipelineTemplateInfoV2(
     @get:Schema(title = "创建时间", required = false)
     val createdTime: Long? = null,
     @get:Schema(title = "更新时间", required = false)
-    val updateTime: Long? = null
-)
+    val updateTime: Long? = null,
+    @get:Schema(title = "是否有模版查看权限", required = true)
+    val canView: Boolean? = null,
+    @get:Schema(title = "是否有模版编辑权限", required = true)
+    val canEdit: Boolean? = null,
+    @get:Schema(title = "是否有模版删除权限", required = true)
+    val canDelete: Boolean? = null,
+    @get:Schema(title = "是否有模版删除权限", required = true)
+    val update: Boolean? = null,
+    @get:Schema(title = "升级标识", required = false)
+    val upgradeFlag: Boolean? = false,
+    @get:Schema(title = "发布标识", required = false)
+    val publishFlag: Boolean? = false,
+) {
+    constructor(
+        pipelineTemplateInfo: PipelineTemplateInfoV2,
+        permission: PipelinePermissions,
+        upgradeFlag: Boolean? = null,
+        publishFlag: Boolean? = null
+    ) : this(
+        id = pipelineTemplateInfo.id,
+        projectId = pipelineTemplateInfo.projectId,
+        name = pipelineTemplateInfo.name,
+        desc = pipelineTemplateInfo.desc,
+        mode = pipelineTemplateInfo.mode,
+        category = pipelineTemplateInfo.category,
+        type = pipelineTemplateInfo.type,
+        logoUrl = pipelineTemplateInfo.logoUrl,
+        enablePac = pipelineTemplateInfo.enablePac,
+        releasedVersion = pipelineTemplateInfo.releasedVersion,
+        releasedVersionName = pipelineTemplateInfo.releasedVersionName,
+        releasedSettingVersion = pipelineTemplateInfo.releasedSettingVersion,
+        latestVersionStatus = pipelineTemplateInfo.latestVersionStatus,
+        sourceName = pipelineTemplateInfo.sourceName,
+        storeStatus = pipelineTemplateInfo.storeStatus,
+        srcTemplateId = pipelineTemplateInfo.srcTemplateId,
+        srcTemplateProjectId = pipelineTemplateInfo.srcTemplateProjectId,
+        debugPipelineCount = pipelineTemplateInfo.debugPipelineCount,
+        instancePipelineCount = pipelineTemplateInfo.instancePipelineCount,
+        upgradeStrategy = pipelineTemplateInfo.upgradeStrategy,
+        settingSyncStrategy = pipelineTemplateInfo.settingSyncStrategy,
+        publishStrategy = pipelineTemplateInfo.publishStrategy,
+        creator = pipelineTemplateInfo.creator,
+        updater = pipelineTemplateInfo.updater,
+        createdTime = pipelineTemplateInfo.createdTime,
+        canView = permission.canView,
+        canDelete = permission.canDelete,
+        canEdit = permission.canEdit,
+        upgradeFlag = upgradeFlag,
+        publishFlag = publishFlag
+    )
+}

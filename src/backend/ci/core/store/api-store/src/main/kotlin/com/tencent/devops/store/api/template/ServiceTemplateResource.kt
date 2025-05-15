@@ -152,10 +152,10 @@ interface ServiceTemplateResource {
         installHistoryInfo: TemplateVersionInstallHistoryInfo
     ): Result<Boolean>
 
-    @Operation(summary = "获取模板最新安装历史")
+    @Operation(summary = "获取模板最近安装历史")
     @GET
-    @Path("/{projectCode}/{templateCode}/latest/install")
-    fun getLatestTemplateVersionInstallHistory(
+    @Path("/{projectCode}/{templateCode}/recently/install")
+    fun getRecentlyInstalledVersion(
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectCode")
         projectCode: String,
@@ -163,4 +163,20 @@ interface ServiceTemplateResource {
         @PathParam("templateCode")
         templateCode: String
     ): Result<TemplateVersionInstallHistoryInfo?>
+
+    @Operation(summary = "批量获取模板最新发布版本")
+    @POST
+    @Path("/listLatestPublishedVersions")
+    fun listLatestPublishedVersions(
+        @Parameter(description = "模板Code列表", required = true)
+        templateCodes: List<String>
+    ): Result<List<TemplateVersionRelationInfo>>
+
+    @Operation(summary = "批量获取模板最新安装版本")
+    @POST
+    @Path("/listLatestInstalledVersions")
+    fun listLatestInstalledVersions(
+        @Parameter(description = "模板Code列表", required = true)
+        templateCodes: List<String>
+    ): Result<List<TemplateVersionInstallHistoryInfo>>
 }

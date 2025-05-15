@@ -30,8 +30,11 @@ package com.tencent.devops.store.template.dao
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionInstallHistory
+import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
+import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
 @Suppress("ALL")
@@ -70,7 +73,7 @@ class TemplateVersionInstallHistoryDao {
         }
     }
 
-    fun getLatestRecord(
+    fun getRecentlyInstalledVersion(
         dslContext: DSLContext,
         projectCode: String,
         templateCode: String
@@ -92,6 +95,41 @@ class TemplateVersionInstallHistoryDao {
                         number = it.number,
                         creator = it.creator,
                         createTime = it.createTime.timestampmilli()
+                    )
+                }
+        }
+    }
+
+    fun listLatestInstalledVersions(
+        dslContext: DSLContext,
+        templateCodes: List<String>
+    ): List<TemplateVersionInstallHistoryInfo> {
+        return with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
+            // 子查询获取每个模板的最大NUMBER
+            val maxNumbers = dslContext.select(TEMPLATE_CODE, DSL.max(NUMBER).`as`("max_number"))
+                .from(this)
+                .where(TEMPLATE_CODE.`in`(templateCodes))
+                .groupBy(TEMPLATE_CODE)
+                .asTable("m")
+            // 主查询关联获取VERSION
+            dslContext.select()
+                .from(this)
+                .join(maxNumbers)
+                .on(
+                    TEMPLATE_CODE.eq(maxNumbers.field(TEMPLATE_CODE)),
+                    NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
+                )
+                .fetch().map {
+                    TemplateVersionInstallHistoryInfo(
+                        srcMarketTemplateProjectCode = it[SRC_MARKET_TEMPLATE_PROJECT_CODE],
+                        srcMarketTemplateCode = it[SRC_MARKET_TEMPLATE_CODE],
+                        projectCode = it[PROJECT_CODE],
+                        templateCode = it[TEMPLATE_CODE],
+                        version = it[VERSION],
+                        versionName = it[VERSION_NAME],
+                        number = it[NUMBER],
+                        creator = it[CREATOR],
+                        createTime = it[CREATE_TIME].timestampmilli()
                     )
                 }
         }

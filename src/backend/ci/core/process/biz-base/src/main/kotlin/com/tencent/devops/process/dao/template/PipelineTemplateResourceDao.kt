@@ -327,7 +327,7 @@ class PipelineTemplateResourceDao {
             val maxNumbers = dslContext.select(TEMPLATE_ID, DSL.max(NUMBER).`as`("max_number"))
                 .from(this)
                 .where(TEMPLATE_ID.`in`(templateIds))
-                .and(STATUS.notIn(VersionStatus.COMMITTING.name, VersionStatus.DELETE.name))
+                .and(STATUS.eq(VersionStatus.RELEASED.name))
                 .groupBy(TEMPLATE_ID)
                 .asTable("m")
             // 主查询关联获取VERSION
@@ -353,7 +353,7 @@ class PipelineTemplateResourceDao {
                 .join(maxNumbers)
                 .on(
                     TEMPLATE_ID.eq(maxNumbers.field(TEMPLATE_ID)),
-                    NUMBER.eq(maxNumbers.field("max_number", kotlin.Int::class.java))
+                    NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
                 )
                 .fetch().map {
                     PipelineVersionSimple(

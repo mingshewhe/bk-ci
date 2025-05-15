@@ -167,25 +167,35 @@ interface MarketTemplateService {
     ): Result<Boolean>
 
     /**
-     * 创建模板版本发布关联实体
+     *  创建模板发布历史
      * */
     fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo)
 
     /**
-     * 获取模板研发商店最新发布历史
+     * 获取单个模板最新发布版本
      * */
     fun getLatestMarketPublishedVersion(templateCode: String): TemplateVersionRelationInfo?
 
     /**
-     * 记录模板版本安装历史
+     * 批量获取模板最新发布版本
+     * */
+    fun listLatestPublishedVersions(templateCodes: List<String>): List<TemplateVersionRelationInfo>
+
+    /**
+     * 创建模板安装历史
      * */
     fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo)
 
     /**
-     * 获取最新模板版本安装历史
+     * 获取单个模板最近安装版本
      * */
-    fun getLatestTemplateVersionInstallHistory(
+    fun getRecentlyInstalledVersion(
         projectCode: String,
         templateCode: String
     ): TemplateVersionInstallHistoryInfo?
+
+    /**
+     * 批量获取模板最新安装版本
+     * */
+    fun listLatestInstalledVersions(templateCodes: List<String>): List<TemplateVersionInstallHistoryInfo>
 }

@@ -19,9 +19,11 @@ import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
+import com.tencent.devops.process.pojo.PipelinePermissions
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
+import com.tencent.devops.process.pojo.template.PipelineTemplateListResponse
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
@@ -311,59 +313,131 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun listTemplateInfos(
         userId: String,
         commonCondition: PipelineTemplateCommonCondition
-    ): SQLPage<PipelineTemplateInfoV2> {
+    ): SQLPage<PipelineTemplateListResponse> {
         logger.info("list template infos {}|{}", userId, commonCondition)
         val projectId = commonCondition.projectId!!
         val enableTemplatePermissionManage = pipelineTemplatePermissionService.enableTemplatePermissionManage(projectId)
-
         val (count, templateInfos) = if (enableTemplatePermissionManage) {
-            val permission2TemplatesMap = pipelineTemplatePermissionService.getResourcesByPermission(
-                userId = userId,
-                projectId = projectId,
-                permissions = setOf(
-                    AuthPermission.VIEW,
-                    AuthPermission.LIST,
-                    AuthPermission.DELETE,
-                    AuthPermission.EDIT
-                )
-            )
-            val templatesWithListPermIds = permission2TemplatesMap[AuthPermission.LIST] ?: return SQLPage(
-                count = 0L,
-                records = emptyList()
-            )
-
-            val queryCondition = commonCondition.copy(filterTemplateIds = templatesWithListPermIds)
-            val templateInfoList = pipelineTemplateInfoService.list(queryCondition)
-            val count = pipelineTemplateInfoService.count(queryCondition)
-
-            val templateInfoWithPermission = templateInfoList.map { templateInfo ->
-                templateInfo.copy(
-                    canView = permission2TemplatesMap[AuthPermission.VIEW]?.contains(templateInfo.id) ?: false,
-                    canEdit = permission2TemplatesMap[AuthPermission.EDIT]?.contains(templateInfo.id) ?: false,
-                    canDelete = permission2TemplatesMap[AuthPermission.DELETE]?.contains(templateInfo.id) ?: false
-                )
-            }
-            Pair(count.toLong(), templateInfoWithPermission)
+            processWithPermissions(userId, projectId, commonCondition)
         } else {
-            val templateInfoList = pipelineTemplateInfoService.list(commonCondition)
-            val count = pipelineTemplateInfoService.count(commonCondition)
-            val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
-
-            val templateInfoWithPermission = templateInfoList.map { templateInfo ->
-                templateInfo.copy(
-                    canView = isProjectManager,
-                    canEdit = isProjectManager,
-                    canDelete = isProjectManager
-                )
-            }
-            Pair(count.toLong(), templateInfoWithPermission)
+            processWithoutPermissions(userId, projectId, commonCondition)
         }
 
-        return SQLPage(
-            count = count,
-            records = templateInfos
+        return SQLPage(count, templateInfos)
+    }
+
+    private fun processWithPermissions(
+        userId: String,
+        projectId: String,
+        condition: PipelineTemplateCommonCondition
+    ): Pair<Long, List<PipelineTemplateListResponse>> {
+        val permissionMap = pipelineTemplatePermissionService.getResourcesByPermission(
+            userId = userId,
+            projectId = projectId,
+            permissions = setOf(AuthPermission.VIEW, AuthPermission.LIST, AuthPermission.DELETE, AuthPermission.EDIT)
+        )
+        val accessibleTemplateIds = permissionMap[AuthPermission.LIST] ?: return Pair(0L, emptyList())
+
+        val queryCondition = condition.copy(filterTemplateIds = accessibleTemplateIds)
+        val allTemplates = pipelineTemplateInfoService.list(queryCondition)
+
+        return processTemplateList(
+            allTemplates = allTemplates,
+            totalCount = pipelineTemplateInfoService.count(queryCondition),
+            getPermission = { templateId ->
+                PipelinePermissions(
+                    canView = permissionMap[AuthPermission.VIEW]?.contains(templateId) ?: false,
+                    canEdit = permissionMap[AuthPermission.EDIT]?.contains(templateId) ?: false,
+                    canDelete = permissionMap[AuthPermission.DELETE]?.contains(templateId) ?: false,
+                    canManage = false
+                )
+            }
         )
     }
+
+    private fun processWithoutPermissions(
+        userId: String,
+        projectId: String,
+        condition: PipelineTemplateCommonCondition
+    ): Pair<Long, List<PipelineTemplateListResponse>> {
+        val allTemplates = pipelineTemplateInfoService.list(condition)
+        val isProjectManager = pipelinePermissionService.checkProjectManager(userId, projectId)
+
+        return processTemplateList(
+            allTemplates = allTemplates,
+            totalCount = pipelineTemplateInfoService.count(condition),
+            getPermission = { _ ->
+                PipelinePermissions(
+                    canView = isProjectManager,
+                    canEdit = isProjectManager,
+                    canDelete = isProjectManager,
+                    canManage = isProjectManager
+                )
+            }
+        )
+    }
+
+    private fun processTemplateList(
+        allTemplates: List<PipelineTemplateInfoV2>,
+        totalCount: Int,
+        getPermission: (String) -> PipelinePermissions
+    ): Pair<Long, List<PipelineTemplateListResponse>> {
+        val publishedTemplates = allTemplates.filter { it.storeStatus == TemplateStatusEnum.RELEASED }
+        val marketTemplates = allTemplates.filter { it.mode == TemplateType.CONSTRAINT }
+        // 已上架模板的最新发布版本
+        val latestReleasedVersions = publishedTemplates.fetchVersions { ids ->
+            pipelineTemplateResourceService.listLatestReleasedVersions(ids)
+        }
+        // 已上架模板的最新上架商店版本
+        val latestMarketVersions = publishedTemplates.fetchVersions { ids ->
+            client.get(ServiceTemplateResource::class).listLatestPublishedVersions(ids).data ?: emptyList()
+        }
+
+        // 模板最新安装的研发商店版本
+        val latestInstalledVersions = marketTemplates.fetchVersions { ids ->
+            client.get(ServiceTemplateResource::class).listLatestInstalledVersions(ids).data ?: emptyList()
+        }
+        // 父模板最新发布版本
+        val latestParentVersions = marketTemplates.takeIf { it.isNotEmpty() }?.let {
+            client.get(ServiceTemplateResource::class).listLatestPublishedVersions(
+                it.mapNotNull { t -> t.srcTemplateId }
+            ).data
+        } ?: emptyList()
+
+        // 处理每个模板
+        val processedTemplates = allTemplates.map { template ->
+            val upgradeFlag = if (template.mode == TemplateType.CONSTRAINT) {
+                val installedVersion = latestInstalledVersions.firstOrNull { it.templateCode == template.id }
+                val parentVersion = latestParentVersions.firstOrNull { it.templateCode == template.srcTemplateId }
+                installedVersion != null && parentVersion != null && installedVersion.version != parentVersion.version
+            } else {
+                false
+            }
+
+            // 发布检查逻辑
+            val publishFlag = if (template.storeStatus == TemplateStatusEnum.RELEASED) {
+                val releasedVersion = latestReleasedVersions.firstOrNull { it.pipelineId == template.id }
+                val marketVersion = latestMarketVersions.firstOrNull { it.templateCode == template.id }
+                releasedVersion != null && marketVersion != null &&
+                    releasedVersion.version.toLong() != marketVersion.version
+            } else {
+                false
+            }
+
+            PipelineTemplateListResponse(
+                pipelineTemplateInfo = template,
+                permission = getPermission(template.id),
+                upgradeFlag = upgradeFlag,
+                publishFlag = publishFlag
+            )
+        }
+
+        return Pair(totalCount.toLong(), processedTemplates)
+    }
+
+    // 获取各类最新版本
+    fun <T> List<PipelineTemplateInfoV2>.fetchVersions(fetch: (List<String>) -> List<T>) =
+        takeIf { it.isNotEmpty() }?.let { fetch(it.map { t -> t.id }) } ?: emptyList()
 
     // 查看模板详情
     fun getTemplateDetails(
@@ -503,11 +577,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
             if (it.srcTemplateProjectId == null || it.srcTemplateId == null) {
                 throw IllegalArgumentException("srcTemplateProjectId or srcTemplateId is null")
             }
-            val latestInstalledTemplateVersion =
-                client.get(ServiceTemplateResource::class).getLatestTemplateVersionInstallHistory(
-                    projectCode = projectId,
-                    templateCode = templateId
-                ).data ?: throw ErrorCodeException(errorCode = "")
+            val recentlyInstalledVersion = client.get(ServiceTemplateResource::class).getRecentlyInstalledVersion(
+                projectCode = projectId,
+                templateCode = templateId
+            ).data ?: throw ErrorCodeException(errorCode = "")
 
             val srcTemplateLatestReleasedVersion =
                 client.get(ServiceTemplateResource::class).getLatestMarketPublishedVersion(
@@ -525,12 +598,12 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 srcMarketTemplateName = srcMarketTemplateInfo.name,
                 srcMarketTemplateLatestVersion = srcTemplateLatestReleasedVersion.version,
                 srcMarketTemplateLatestVersionName = srcTemplateLatestReleasedVersion.versionName,
-                latestInstalledVersion = latestInstalledTemplateVersion.version,
-                latestInstalledVersionName = latestInstalledTemplateVersion.versionName,
+                latestInstalledVersion = recentlyInstalledVersion.version,
+                latestInstalledVersionName = recentlyInstalledVersion.versionName,
                 upgradeStrategy = it.upgradeStrategy!!,
                 settingSyncStrategy = it.settingSyncStrategy!!,
-                latestInstaller = latestInstalledTemplateVersion.creator,
-                latestInstalledTime = latestInstalledTemplateVersion.createTime!!
+                latestInstaller = recentlyInstalledVersion.creator,
+                latestInstalledTime = recentlyInstalledVersion.createTime!!
             )
         }
         return PipelineTemplateInfoResponse(
