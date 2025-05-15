@@ -8,6 +8,7 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
@@ -49,6 +50,7 @@ import com.tencent.devops.process.service.PipelineVersionFacadeService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
 import com.tencent.devops.process.yaml.PipelineYamlService
+import com.tencent.devops.repository.api.ServiceRepositoryResource
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -78,7 +80,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val pipelineVersionFacadeService: PipelineVersionFacadeService,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineYamlService: PipelineYamlService,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val client: Client
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -423,15 +426,19 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 count = successPipelines.size
             )
         }
-        templateInstanceBaseDao.updateStatus(
+        val baseStatus = when {
+            successPipelines.size == itemCount.toInt() -> TemplateInstanceStatus.SUCCESS
+            failurePipelines.size == itemCount.toInt() -> TemplateInstanceStatus.FAILED
+            else -> TemplateInstanceStatus.PARTIAL_SUCCESS
+        }
+        templateInstanceBaseDao.updateTemplateInstanceBase(
             dslContext = dslContext,
             projectId = projectId,
             baseId = baseId,
-            status = if (failurePipelines.isNotEmpty()) {
-                TemplateInstanceStatus.FAILED
-            } else {
-                TemplateInstanceStatus.SUCCESS
-            }
+            status = baseStatus.name,
+            successItemNum = successPipelines.size,
+            failItemNum = failurePipelines.size,
+            userId = "system"
         )
     }
 
@@ -642,38 +649,45 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             )
         ).associateBy{ it.version }
         // 获取流水线yaml信息
-        val yamlPipelineMap = pipelineYamlService.listByPipelineIds(
+        val pipelineYamlInfoList = pipelineYamlService.listByPipelineIds(
             projectId = projectId,
             pipelineIds = pipelineIds
-        ).associateBy { it.pipelineId }
+        )
+        val yamlPipelineMap = pipelineYamlInfoList.associateBy { it.pipelineId }
+        // 获取代码库别名
+        val repoHashIds = pipelineYamlInfoList.map { it.repoHashId }.toSet()
+        val repoAliasNameMap = repoHashIds.takeIf { it.isNotEmpty() }?.let {
+            client.get(ServiceRepositoryResource::class)
+                .listRepoByIds(repoHashIds).data?.associateBy({ it.repoHashId!! }, { it.aliasName })
+        } ?: emptyMap()
 
-        val results = templatePipelineRecords.map {
-            val templateInstanceItem = templateInstanceItemMap[it.pipelineId]
-            val yamlPipelineInfo = yamlPipelineMap[it.pipelineId]
-            val templateVersionSimple = templateVersionStatusMap[it.version.toInt()]
+        val results = templatePipelineRecords.map { record ->
+            val templateInstanceItem = templateInstanceItemMap[record.pipelineId]
+            val yamlPipelineInfo = yamlPipelineMap[record.pipelineId]
+            val templateVersionSimple = templateVersionStatusMap[record.version.toInt()]
             val status = generateTemplatePipelineStatus(
                 templateInstanceItem = templateInstanceItem,
-                fromTemplateVersion = it.version,
+                fromTemplateVersion = record.version,
                 templateReleasedVersion = templateInfo.releasedVersion,
                 fromTemplateVersionStatus = templateVersionSimple?.status,
             )
             PipelineTemplateRelatedResp(
-                templateId = it.templateId,
-                pipelineId = it.pipelineId,
-                pipelineName = it.pipelineName,
-                pipelineVersion = it.pipelineVersion,
-                pipelineVersionName = pipelineVersionNameMap[it.pipelineId] ?: "init",
-                fromTemplateVersion = it.version,
-                fromTemplateVersionName = it.versionName,
-                canEdit = canEditMap.contains(it.pipelineId),
+                templateId = record.templateId,
+                pipelineId = record.pipelineId,
+                pipelineName = record.pipelineName,
+                pipelineVersion = record.pipelineVersion,
+                pipelineVersionName = pipelineVersionNameMap[record.pipelineId] ?: "init",
+                fromTemplateVersion = record.version,
+                fromTemplateVersionName = record.versionName,
+                canEdit = canEditMap.contains(record.pipelineId),
                 status = status,
                 enabledPac = yamlPipelineInfo != null,
                 repoHashId = yamlPipelineInfo?.repoHashId,
-                repoAliasName = yamlPipelineInfo?.repoHashId,
+                repoAliasName = yamlPipelineInfo?.repoHashId?.let { repoAliasNameMap[it] },
                 pullRequestUrl = templateInstanceItem?.pullRequestUrl,
-                instanceErrorInfo = it.instanceErrorInfo,
-                updater = it.updater,
-                updateTime = it.updatedTime
+                instanceErrorInfo = record.instanceErrorInfo,
+                updater = record.updater,
+                updateTime = record.updatedTime
             )
         }
         return SQLPage(
