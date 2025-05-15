@@ -124,7 +124,8 @@ class PTemplateYamlResourceService(
         pipelineId: String,
         branchName: String,
         branchVersionAction: BranchVersionAction,
-        releaseBranch: Boolean?
+        releaseBranch: Boolean?,
+        pullRequestId: Long?
     ) {
         pipelineTemplateFacadeService.inactiveBranch(
             userId = userId,

@@ -30,11 +30,12 @@ package com.tencent.devops.process.yaml
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.pojo.pipeline.DeletePipelineResult
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.service.PipelineInfoFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -44,7 +45,8 @@ import java.util.LinkedList
 @Service
 class PipelineYamlResourceService @Autowired constructor(
     @Lazy private val pipelineInfoFacadeService: PipelineInfoFacadeService,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineTemplateInstanceFacadeService: PipelineTemplateInstanceFacadeService
 ) : IPipelineYamlResourceService {
     override fun createYamlPipeline(
         userId: String,
@@ -112,7 +114,8 @@ class PipelineYamlResourceService @Autowired constructor(
         pipelineId: String,
         branchName: String,
         branchVersionAction: BranchVersionAction,
-        releaseBranch: Boolean?
+        releaseBranch: Boolean?,
+        pullRequestId: Long?
     ) {
         pipelineInfoFacadeService.updateBranchVersion(
             userId = userId,
@@ -122,6 +125,15 @@ class PipelineYamlResourceService @Autowired constructor(
             releaseBranch = releaseBranch,
             branchVersionAction = branchVersionAction
         )
+        // 删除分支版本,需要对模板实例进行状态更新
+        pullRequestId?.let {
+            pipelineTemplateInstanceFacadeService.updatePullRequestStatus(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                pullRequestId = it,
+                status = TemplateInstanceStatus.SUCCESS
+            )
+        }
     }
 
     override fun deletePipeline(userId: String, projectId: String, pipelineId: String) {

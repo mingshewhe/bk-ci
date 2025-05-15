@@ -9,17 +9,38 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(title = "流水线模板实例具体类")
 data class PipelineTemplateInstanceItem(
     val id: String,
+    @get:Schema(title = "实例化任务ID", required = true)
     val baseId: String,
+    @get:Schema(title = "项目ID", required = true)
     val projectId: String,
+    @get:Schema(title = "流水线ID", required = true)
     val pipelineId: String,
+    @get:Schema(title = "流水线名称", required = true)
     val pipelineName: String,
+    @get:Schema(title = "流水线版本", required = true)
+    val pipelineVersion: Int?,
+    @get:Schema(title = "流水线版本名称", required = true)
+    val pipelineVersionName: String?,
+    @get:Schema(title = "流水线构建号", required = true)
     val buildNo: BuildNo?,
+    @get:Schema(title = "实例化状态", required = true)
     val status: TemplateInstanceStatus,
+    @get:Schema(title = "实例化参数", required = true)
     val params: List<BuildFormProperty>?,
+    @get:Schema(title = "yaml文件路径", required = true)
     val filePath: String?,
+    @get:Schema(title = "实例化错误信息", required = true)
     val errorMessage: String?,
+    @get:Schema(title = "实例化发布合并请求ID", required = true)
+    val pullRequestId: Long?,
+    @get:Schema(title = "实例化发布合并请求连接", required = true)
+    val pullRequestUrl: String?,
+    @get:Schema(title = "创建者", required = true)
     val creator: String,
+    @get:Schema(title = "修改者", required = true)
     val modifier: String,
+    @get:Schema(title = "创建时间", required = true)
     val createTime: Long,
-    val updateTime: Long,
+    @get:Schema(title = "修改时间", required = true)
+    val updateTime: Long
 )

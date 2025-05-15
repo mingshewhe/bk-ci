@@ -11,19 +11,21 @@ import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
-import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceBaseDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceItemDao
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.PipelinePermissionService
+import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
@@ -34,15 +36,19 @@ import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
 import com.tencent.devops.process.service.ParamFacadeService
 import com.tencent.devops.process.service.PipelineVersionFacadeService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
+import com.tencent.devops.process.yaml.PipelineYamlService
 import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -60,7 +66,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val templateInstanceItemDao: TemplateInstanceItemDao,
     private val templateInstanceBaseDao: TemplateInstanceBaseDao,
-    private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineSettingDao: PipelineSettingDao,
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
@@ -71,7 +76,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val paramService: ParamFacadeService,
     private val pipelineVersionFacadeService: PipelineVersionFacadeService,
-    private val pipelineVersionGenerator: PipelineVersionGenerator
+    private val pipelineVersionGenerator: PipelineVersionGenerator,
+    private val pipelineYamlService: PipelineYamlService,
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -298,22 +305,33 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         return baseId
     }
 
+    /**
+     * 获取模版实例化状态
+     *
+     * @param fromTemplateVersionStatus 来源模版版本状态
+     * @param fromTemplateVersion 来源模版版本
+     * @param templateReleasedVersion 模板最新发布版本
+     *
+     */
     fun generateTemplatePipelineStatus(
         templateInstanceItem: PipelineTemplateInstanceItem?,
-        templatePipelineId: String,
-        templatePipelineVersion: Long,
-        // 模板最新发布版本
-        templateReleasedVersion: Long
+        fromTemplateVersion: Long,
+        templateReleasedVersion: Long,
+        fromTemplateVersionStatus: VersionStatus?
     ): TemplatePipelineStatus {
 
         return when {
             templateInstanceItem?.status == TemplateInstanceStatus.INSTANCING ||
-                templateInstanceItem?.status == TemplateInstanceStatus.INIT -> TemplatePipelineStatus.UPDATING
+                    templateInstanceItem?.status == TemplateInstanceStatus.INIT ||
+                    templateInstanceItem?.status == TemplateInstanceStatus.WAIT_MERGE
+                -> TemplatePipelineStatus.UPDATING
 
             templateInstanceItem?.status == TemplateInstanceStatus.FAILED ->
                 TemplatePipelineStatus.FAILED
 
-            templatePipelineVersion != templateReleasedVersion ->
+            // 流水线来源于模版分支版本,不需要升级
+            fromTemplateVersionStatus == VersionStatus.RELEASED &&
+                    fromTemplateVersion != templateReleasedVersion ->
                 TemplatePipelineStatus.PENDING_UPDATE
 
             else ->
@@ -346,7 +364,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 dslContext = dslContext,
                 projectId = projectId,
                 baseId = baseId,
-                excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name)
+                excludeStatusList = listOf(
+                    TemplateInstanceStatus.SUCCESS.name,
+                    TemplateInstanceStatus.WAIT_MERGE.name
+                )
             )
 
             checkTemplateInstanceEvent(
@@ -380,7 +401,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 dslContext = dslContext,
                 projectId = projectId,
                 baseIds = listOf(baseId),
-                excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name),
+                excludeStatusList = listOf(
+                    TemplateInstanceStatus.SUCCESS.name,
+                    TemplateInstanceStatus.WAIT_MERGE.name
+                ),
                 page = page,
                 pageSize = PageUtil.MAX_PAGE_SIZE
             )
@@ -417,8 +441,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         failurePipelines: MutableList<String>
     ) {
         logger.info("${instanceBase.type} template instance item|$id|$projectId|$pipelineId")
-        if (status == TemplateInstanceStatus.SUCCESS) {
-            logger.info("${instanceBase.type} template instance item success|$id|$projectId|$pipelineId")
+        if (status == TemplateInstanceStatus.SUCCESS || status == TemplateInstanceStatus.WAIT_MERGE) {
+            logger.info("${instanceBase.type} template instance item $status|$id|$projectId|$pipelineId")
             return
         }
         templateInstanceItemDao.updateStatus(
@@ -444,18 +468,14 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         )
 
         try {
-            pipelineVersionManager.deployPipeline(
+            val deployPipelineResult = pipelineVersionManager.deployPipeline(
                 userId = creator,
                 projectId = projectId,
                 pipelineId = pipelineId,
                 request = instanceCreateReq
             )
-            templateInstanceItemDao.updateStatus(
-                dslContext = dslContext,
-                projectId = projectId,
-                baseId = baseId,
-                pipelineIds = listOf(pipelineId),
-                status = TemplateInstanceStatus.SUCCESS
+            handleTemplateInstanceEventSuccess(
+                deployPipelineResult = deployPipelineResult
             )
             successPipelines.add(pipelineId)
         } catch (ignored: Throwable) {
@@ -492,6 +512,33 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             )
             logger.warn("The template instance task has been completed.${projectId}|${baseId}")
         }
+    }
+
+    private fun PipelineTemplateInstanceItem.handleTemplateInstanceEventSuccess(
+        deployPipelineResult: DeployPipelineResult
+    ) {
+        val status = if (deployPipelineResult.pullRequestId != null) {
+            TemplateInstanceStatus.SUCCESS
+        } else {
+            TemplateInstanceStatus.WAIT_MERGE
+        }
+        val record = PipelineTemplateInstanceItemUpdate(
+            status = status,
+            pullRequestId = deployPipelineResult.pullRequestId,
+            pullRequestUrl = deployPipelineResult.targetUrl,
+            pipelineVersion = deployPipelineResult.version,
+            pipelineVersionName = deployPipelineResult.versionName
+        )
+        val condition = PipelineTemplateInstanceItemCondition(
+            projectId = projectId,
+            baseId = baseId,
+            pipelineId = pipelineId,
+        )
+        templateInstanceItemDao.update(
+            dslContext = dslContext,
+            record = record,
+            condition = condition
+        )
     }
 
     private fun handleTemplateInstanceEventError(
@@ -547,7 +594,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         val (offset, limit) = PageUtil.convertPageSizeToSQLLimit(page, pageSize)
         val templateInfo = pipelineTemplateInfoService.get(projectId, templateId)
 
-        val hasPermissionList = pipelinePermissionService.getResourceByPermission(
+        val canEditMap = pipelinePermissionService.getResourceByPermission(
             userId = userId,
             projectId = projectId,
             permission = AuthPermission.EDIT
@@ -569,45 +616,64 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             instanceTypeEnum = PipelineInstanceTypeEnum.CONSTRAINT
         )
 
-        val instanceBaseIds = templateInstanceBaseDao.list(
+        val pipelineIds = templatePipelineRecords.map { it.pipelineId }
+        // 获取流水线版本名称
+        val pipelineVersionNameMap = pipelineRepositoryService.getLatestVersionNames(
+            projectId = projectId,
+            pipelineIds = pipelineIds
+        )
+        // 获取流水线最新的实例化任务
+        val instanceItemIds = templateInstanceItemDao.getLatestIdByPipelines(
             dslContext = dslContext,
             projectId = projectId,
-            excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name),
-            type = TemplateInstanceType.UPDATE
-        ).map { it.baseId }
+            pipelineIds = pipelineIds
+        )
+        val templateInstanceItemMap = templateInstanceItemDao.listTemplateInstanceItem(
+            dslContext = dslContext,
+            projectId = projectId,
+            ids = instanceItemIds
+        ).associateBy { it.pipelineId }
+        // 获取模版版本状态
+        val templateVersionStatusMap = pipelineTemplateResourceService.getTemplateVersions(
+            commonCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                versions = templatePipelineRecords.map { it.version }.distinct()
+            )
+        ).associateBy{ it.version }
+        // 获取流水线yaml信息
+        val yamlPipelineMap = pipelineYamlService.listByPipelineIds(
+            projectId = projectId,
+            pipelineIds = pipelineIds
+        ).associateBy { it.pipelineId }
 
-        val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
-            dslContext = dslContext,
-            projectId = projectId,
-            baseIds = instanceBaseIds,
-            excludeStatusList = listOf(TemplateInstanceStatus.SUCCESS.name)
-        )
-        val pipeline2PacSettings = pipelineSettingVersionDao.listPacSettings(
-            dslContext = dslContext,
-            projectId = projectId,
-            pipelineIds = templatePipelineRecords.map { it.pipelineId }
-        )
         val results = templatePipelineRecords.map {
-            val templateInstanceItem = templateInstanceItems.firstOrNull { item -> item.pipelineId == it.pipelineId }
+            val templateInstanceItem = templateInstanceItemMap[it.pipelineId]
+            val yamlPipelineInfo = yamlPipelineMap[it.pipelineId]
+            val templateVersionSimple = templateVersionStatusMap[it.version.toInt()]
             val status = generateTemplatePipelineStatus(
                 templateInstanceItem = templateInstanceItem,
-                templatePipelineId = it.pipelineId,
-                templatePipelineVersion = it.version,
+                fromTemplateVersion = it.version,
                 templateReleasedVersion = templateInfo.releasedVersion,
+                fromTemplateVersionStatus = templateVersionSimple?.status,
             )
-            val enabledPac = pipeline2PacSettings[it.pipelineId]?.enable ?: false
             PipelineTemplateRelatedResp(
                 templateId = it.templateId,
-                versionName = it.versionName,
-                version = it.version,
                 pipelineId = it.pipelineId,
                 pipelineName = it.pipelineName,
-                updateTime = it.updatedTime,
-                hasPermission = hasPermissionList.contains(it.pipelineId),
+                pipelineVersion = it.pipelineVersion,
+                pipelineVersionName = pipelineVersionNameMap[it.pipelineId] ?: "init",
+                fromTemplateVersion = it.version,
+                fromTemplateVersionName = it.versionName,
+                canEdit = canEditMap.contains(it.pipelineId),
                 status = status,
-                enabledPac = enabledPac,
+                enabledPac = yamlPipelineInfo != null,
+                repoHashId = yamlPipelineInfo?.repoHashId,
+                repoAliasName = yamlPipelineInfo?.repoHashId,
+                pullRequestUrl = templateInstanceItem?.pullRequestUrl,
                 instanceErrorInfo = it.instanceErrorInfo,
-                updater = it.updater
+                updater = it.updater,
+                updateTime = it.updatedTime
             )
         }
         return SQLPage(
@@ -828,6 +894,30 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             instanceType = instanceBase.type,
             version = instanceBase.templateVersion,
             request = request
+        )
+    }
+
+    /**
+     * 更新合并请求状态
+     */
+    fun updatePullRequestStatus(
+        projectId: String,
+        pipelineId: String,
+        pullRequestId: Long,
+        status: TemplateInstanceStatus
+    ) {
+        val record = PipelineTemplateInstanceItemUpdate(
+            status = status
+        )
+        val condition = PipelineTemplateInstanceItemCondition(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            pullRequestId = pullRequestId
+        )
+        templateInstanceItemDao.update(
+            dslContext = dslContext,
+            record = record,
+            condition = condition
         )
     }
 

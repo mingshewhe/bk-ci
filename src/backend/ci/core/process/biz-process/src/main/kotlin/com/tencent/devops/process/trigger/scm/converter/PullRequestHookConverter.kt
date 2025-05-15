@@ -156,6 +156,7 @@ class PullRequestHookConverter @Autowired constructor(
                 ),
                 blobId = sourceTree.blobId,
                 fork = fork,
+                pullRequestId = pullRequest.id,
                 sourceBranch = sourceBranch,
                 targetBranch = targetBranch,
                 sourceUrl = sourceRepo.httpUrl,
@@ -210,6 +211,7 @@ class PullRequestHookConverter @Autowired constructor(
                         filePath = targetPath,
                         actionType = YamlFileActionType.DELETE,
                         fork = fork,
+                        pullRequestId = pullRequest.id,
                         sourceBranch = pullRequest.sourceRef.name,
                         targetBranch = pullRequest.targetRef.name,
                         sourceUrl = sourceRepo.httpUrl,
@@ -234,7 +236,8 @@ class PullRequestHookConverter @Autowired constructor(
                         filePath = targetPath,
                         actionType = YamlFileActionType.TRIGGER,
                         blobId = targetTree.blobId,
-                        fork = false
+                        fork = false,
+                        pullRequestId = pullRequest.id,
                     )
                     yamlFileEvents.add(yamlFileEvent)
                 }
@@ -251,7 +254,8 @@ class PullRequestHookConverter @Autowired constructor(
                         filePath = targetPath,
                         actionType = YamlFileActionType.TRIGGER,
                         blobId = targetTree.blobId,
-                        fork = false
+                        fork = false,
+                        pullRequestId = pullRequest.id,
                     )
                     yamlFileEvents.add(yamlFileEvent)
                 }
@@ -327,6 +331,7 @@ class PullRequestHookConverter @Autowired constructor(
                     committer = hook.commit.committer.name
                 ),
                 fork = fork,
+                pullRequestId = pullRequest.id,
                 merged = true,
                 sourceBranch = sourceBranch,
                 targetBranch = targetBranch,
@@ -369,6 +374,7 @@ class PullRequestHookConverter @Autowired constructor(
                 filePath = filePath,
                 actionType = YamlFileActionType.DELETE,
                 fork = fork,
+                pullRequestId = pullRequest.id,
                 merged = true,
                 sourceBranch = sourceBranch,
                 targetBranch = targetBranch,

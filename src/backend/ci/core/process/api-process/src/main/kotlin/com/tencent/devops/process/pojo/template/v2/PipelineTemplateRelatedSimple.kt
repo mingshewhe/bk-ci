@@ -17,6 +17,8 @@ data class PipelineTemplateRelatedSimple(
     val pipelineId: String,
     @get:Schema(title = "流水线Id", required = true)
     val pipelineName: String,
+    @get:Schema(title = "流水线版本", required = true)
+    val pipelineVersion: Int,
     @get:Schema(title = "实例化类型", required = false)
     val instanceType: PipelineInstanceTypeEnum,
     @get:Schema(title = "实例化错误信息", required = true)

@@ -126,6 +126,7 @@ import com.tencent.devops.process.utils.PIPELINE_SETTING_WAIT_QUEUE_TIME_MINUTE_
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.process.yaml.utils.NotifyTemplateUtils
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
+import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -133,7 +134,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
-import jakarta.ws.rs.core.Response
 
 @Suppress(
     "LongParameterList",
@@ -1360,6 +1360,14 @@ class PipelineRepositoryService constructor(
             projectId = projectId,
             pipelineIds = pipelineIds
         ).map { it.key to str2model(it.value, it.key) }.toMap()
+    }
+
+    fun getLatestVersionNames(projectId: String, pipelineIds: List<String>): Map<String, String> {
+        return pipelineResourceDao.getLatestVersionNames(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineIds = pipelineIds
+        )
     }
 
     /**

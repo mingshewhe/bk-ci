@@ -100,6 +100,7 @@ class PipelineYamlResourceManager @Autowired constructor(
         branchName: String,
         branchVersionAction: BranchVersionAction,
         releaseBranch: Boolean? = false,
+        pullRequestId: Long?,
         isTemplate: Boolean
     ) {
         return getService(isTemplate).updateBranchVersion(
@@ -108,7 +109,8 @@ class PipelineYamlResourceManager @Autowired constructor(
             pipelineId = pipelineId,
             branchName = branchName,
             releaseBranch = releaseBranch,
-            branchVersionAction = branchVersionAction
+            branchVersionAction = branchVersionAction,
+            pullRequestId = pullRequestId
         )
     }
 

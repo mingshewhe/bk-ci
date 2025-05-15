@@ -79,6 +79,8 @@ data class PipelineYamlFileEvent(
 
     @get:Schema(title = "文件来源于fork仓库", required = true)
     val fork: Boolean = false,
+    @get:Schema(title = "合并请求ID", required = true)
+    val pullRequestId: Long? = null,
     @get:Schema(title = "mr是否已合并", required = true)
     val merged: Boolean = false,
     @get:Schema(title = "源分支", required = true)

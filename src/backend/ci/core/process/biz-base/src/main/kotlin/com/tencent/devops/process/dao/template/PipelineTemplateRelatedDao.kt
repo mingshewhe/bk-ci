@@ -103,7 +103,8 @@ class PipelineTemplateRelatedDao {
             templatePipelineTable.CREATOR,
             templatePipelineTable.UPDATOR,
             templatePipelineTable.CREATED_TIME,
-            templatePipelineTable.UPDATED_TIME
+            templatePipelineTable.UPDATED_TIME,
+            pipelineInfoTable.VERSION
         )
             .from(templatePipelineTable)
             .join(pipelineInfoTable)
@@ -134,7 +135,8 @@ class PipelineTemplateRelatedDao {
                     creator = it.value9(),
                     updater = it.value10(),
                     createdTime = it.value11().timestampmilli(),
-                    updatedTime = it.value12().timestampmilli()
+                    updatedTime = it.value12().timestampmilli(),
+                    pipelineVersion = it.value13()
                 )
             }
     }

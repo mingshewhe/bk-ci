@@ -25,15 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template
+package com.tencent.devops.process.pojo.template.v2
 
-enum class TemplateInstanceStatus {
-    INIT,
-    INSTANCING,
-    // 等待合并
-    WAIT_MERGE,
-    SUCCESS,
-    FAILED,
-    // 部分成功
-    PARTIAL_SUCCESS,
-}
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
+import io.swagger.v3.oas.annotations.media.Schema
+
+@Schema(title = "流水线模板实例具体更新信息")
+data class PipelineTemplateInstanceItemUpdate(
+    @get:Schema(title = "实例化状态", required = true)
+    val status: TemplateInstanceStatus? = null,
+    @get:Schema(title = "实例化发布合并请求ID", required = true)
+    val pullRequestId: Long? = null,
+    @get:Schema(title = "实例化发布合并请求连接", required = true)
+    val pullRequestUrl: String? = null,
+    @get:Schema(title = "流水线版本", required = true)
+    val pipelineVersion: Int? = null,
+    @get:Schema(title = "流水线版本名称", required = true)
+    val pipelineVersionName: String? = null,
+    @get:Schema(title = "实例化错误信息", required = true)
+    val errorMessage: String? = null
+)

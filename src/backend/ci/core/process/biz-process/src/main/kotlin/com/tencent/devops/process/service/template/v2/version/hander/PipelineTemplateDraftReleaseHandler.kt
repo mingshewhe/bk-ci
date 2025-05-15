@@ -153,7 +153,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
             versionName = resourceOnlyVersion.versionName,
-            targetUrl = yamlFileReleaseResult?.mrUrl,
+            targetUrl = yamlFileReleaseResult?.pullRequestUrl,
             versionAction = versionAction,
             operationLogType = OperationLogType.RELEASE_MASTER_VERSION
         )

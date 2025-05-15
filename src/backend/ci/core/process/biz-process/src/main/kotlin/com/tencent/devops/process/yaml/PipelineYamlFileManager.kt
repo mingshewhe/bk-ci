@@ -366,7 +366,8 @@ class PipelineYamlFileManager @Autowired constructor(
                     repoHashId = repoHashId,
                     filePath = filePath,
                     branch = ref,
-                    mrUrl = pullRequest?.link
+                    pullRequestId = pullRequest?.id,
+                    pullRequestUrl = pullRequest?.link
                 )
             } catch (ignored: Exception) {
                 logger.error(
@@ -948,6 +949,7 @@ class PipelineYamlFileManager @Autowired constructor(
             branchName = ref,
             releaseBranch = true,
             branchVersionAction = BranchVersionAction.INACTIVE,
+            pullRequestId = pullRequestId,
             isTemplate = isTemplate
         )
         pipelineYamlService.refreshPipelineYamlStatus(

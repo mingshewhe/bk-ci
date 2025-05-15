@@ -531,7 +531,7 @@ class PipelineVersionFacadeService @Autowired constructor(
                         targetBranch = request.targetBranch
                     )
                 )
-                targetUrl = pushResult.mrUrl
+                targetUrl = pushResult.pullRequestUrl
             }
             val yamlInfo = pipelineYamlFacadeService.getPipelineYamlInfo(projectId, pipelineId, version)
             return DeployPipelineResult(

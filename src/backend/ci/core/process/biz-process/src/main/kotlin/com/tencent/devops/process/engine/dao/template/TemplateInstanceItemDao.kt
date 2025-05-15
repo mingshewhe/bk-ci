@@ -35,13 +35,16 @@ import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.model.process.tables.TTemplateInstanceItem
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceItemRecord
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemCondition
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
+import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Result
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -235,6 +238,33 @@ class TemplateInstanceItemDao {
         }
     }
 
+    fun getLatestIdByPipelines(
+        dslContext: DSLContext,
+        projectId: String,
+        pipelineIds: List<String>
+    ): List<String> {
+        return with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
+            dslContext.select(DSL.max(ID))
+                .from(this)
+                .where(PROJECT_ID.eq(projectId)).and(PIPELINE_ID.`in`(pipelineIds))
+                .groupBy(PROJECT_ID, PIPELINE_ID)
+                .fetch(0, String::class.java)
+        }
+    }
+
+    fun listTemplateInstanceItem(
+        dslContext: DSLContext,
+        projectId: String,
+        ids: List<String>
+    ): List<PipelineTemplateInstanceItem> {
+        with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
+            return dslContext.selectFrom(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(ID.`in`(ids))
+                .fetch().map { it.convert() }
+        }
+    }
+
     fun deleteByBaseId(dslContext: DSLContext, projectId: String, baseId: String) {
         with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
             dslContext.deleteFrom(this)
@@ -280,6 +310,50 @@ class TemplateInstanceItemDao {
         }
     }
 
+    fun update(
+        dslContext: DSLContext,
+        record: PipelineTemplateInstanceItemUpdate,
+        condition: PipelineTemplateInstanceItemCondition
+    ) {
+        val now = LocalDateTime.now()
+        with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
+            dslContext.update(this)
+                .apply {
+                    record.status?.let { set(STATUS, it.name) }
+                    record.pullRequestId?.let { set(PULL_REQUEST_ID, it) }
+                    record.pullRequestUrl?.let {  set(PULL_REQUEST_URL, it) }
+                    record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
+                    record.pipelineVersionName?.let { set(PIPELINE_VERSION_NAME, it) }
+                    record.errorMessage?.let { set(ERROR_MESSAGE, it) }
+                }
+                .set(UPDATE_TIME, now)
+                .where(buildQueryCondition(condition))
+                .execute()
+        }
+    }
+
+    private fun buildQueryCondition(
+        condition: PipelineTemplateInstanceItemCondition
+    ): MutableList<Condition> {
+        val conditions = mutableListOf<Condition>()
+        with(TTemplateInstanceItem.T_TEMPLATE_INSTANCE_ITEM) {
+            with(condition) {
+                conditions.add(PROJECT_ID.eq(projectId))
+                conditions.add(PIPELINE_ID.eq(pipelineId))
+                if (!baseId.isNullOrEmpty()) {
+                    conditions.add(BASE_ID.eq(baseId))
+                }
+                if (status != null) {
+                    conditions.add(STATUS.eq(status!!.name))
+                }
+                if (pullRequestId != null) {
+                    conditions.add(PULL_REQUEST_ID.eq(pullRequestId))
+                }
+            }
+        }
+        return conditions
+    }
+
     fun TTemplateInstanceItemRecord.convert(): PipelineTemplateInstanceItem {
         val params = param?.let {
             JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {})
@@ -293,11 +367,15 @@ class TemplateInstanceItemDao {
             projectId = projectId,
             pipelineId = pipelineId,
             pipelineName = pipelineName,
+            pipelineVersion = pipelineVersion,
+            pipelineVersionName = pipelineVersionName,
             buildNo = buildNo,
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
             filePath = filePath,
             errorMessage = errorMessage,
+            pullRequestId = pullRequestId,
+            pullRequestUrl = pullRequestUrl,
             creator = creator,
             modifier = modifier,
             createTime = createTime.timestampmilli(),

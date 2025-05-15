@@ -68,7 +68,8 @@ interface IPipelineYamlResourceService {
         pipelineId: String,
         branchName: String,
         branchVersionAction: BranchVersionAction,
-        releaseBranch: Boolean? = false
+        releaseBranch: Boolean? = false,
+        pullRequestId: Long?
     )
 
     fun deletePipeline(

@@ -427,7 +427,8 @@ class PipelineYamlFacadeService @Autowired constructor(
                     repoHashId = repoHashId,
                     filePath = gitPushResult.filePath,
                     branch = gitPushResult.branch,
-                    mrUrl = gitPushResult.mrUrl
+                    pullRequestId = null,
+                    pullRequestUrl = gitPushResult.mrUrl
                 )
             } catch (exception: Exception) {
                 logger.error("Failed to push yaml file|$userId|$projectId|$pipelineId|$repoHashId")
