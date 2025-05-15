@@ -111,8 +111,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
             val pipelineTemplateInfo = PipelineTemplateInfoV2(
                 id = newTemplateId,
                 projectId = projectId,
-                name = marketTemplateInfo.name,
-                desc = marketTemplateInfo.desc,
+                name = marketTemplateDetails.templateName,
+                desc = marketTemplateDetails.description,
                 mode = TemplateType.CONSTRAINT,
                 type = marketTemplateInfo.type,
                 enablePac = false,
