@@ -46,7 +46,7 @@ import java.util.LinkedList
 class PipelineYamlResourceService @Autowired constructor(
     @Lazy private val pipelineInfoFacadeService: PipelineInfoFacadeService,
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val pipelineTemplateInstanceFacadeService: PipelineTemplateInstanceFacadeService
+    @Lazy private val pipelineTemplateInstanceFacadeService: PipelineTemplateInstanceFacadeService
 ) : IPipelineYamlResourceService {
     override fun createYamlPipeline(
         userId: String,
