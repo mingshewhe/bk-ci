@@ -388,27 +388,33 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val latestReleasedVersions = publishedTemplates.fetchVersions { ids ->
             pipelineTemplateResourceService.listLatestReleasedVersions(ids)
         }
+        logger.debug("latestReleasedVersions :$latestReleasedVersions")
         // 已上架模板的最新上架商店版本
         val latestMarketVersions = publishedTemplates.fetchVersions { ids ->
             client.get(ServiceTemplateResource::class).listLatestPublishedVersions(ids).data ?: emptyList()
         }
+        logger.debug("latestMarketVersions :$latestMarketVersions")
 
         // 模板最新安装的研发商店版本
         val latestInstalledVersions = marketTemplates.fetchVersions { ids ->
             client.get(ServiceTemplateResource::class).listLatestInstalledVersions(ids).data ?: emptyList()
         }
+        logger.debug("latestInstalledVersions :$latestInstalledVersions")
+
         // 父模板最新发布版本
         val latestParentVersions = marketTemplates.takeIf { it.isNotEmpty() }?.let {
             client.get(ServiceTemplateResource::class).listLatestPublishedVersions(
                 it.mapNotNull { t -> t.srcTemplateId }
             ).data
         } ?: emptyList()
+        logger.debug("latestParentVersions :$latestParentVersions")
 
         // 处理每个模板
         val processedTemplates = allTemplates.map { template ->
             val upgradeFlag = if (template.mode == TemplateType.CONSTRAINT) {
                 val installedVersion = latestInstalledVersions.firstOrNull { it.templateCode == template.id }
                 val parentVersion = latestParentVersions.firstOrNull { it.templateCode == template.srcTemplateId }
+                logger.debug("${template.id} installedVersion($installedVersion)|parentVersion($parentVersion)")
                 installedVersion != null && parentVersion != null && installedVersion.version != parentVersion.version
             } else {
                 false
@@ -418,6 +424,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             val publishFlag = if (template.storeStatus == TemplateStatusEnum.RELEASED) {
                 val releasedVersion = latestReleasedVersions.firstOrNull { it.pipelineId == template.id }
                 val marketVersion = latestMarketVersions.firstOrNull { it.templateCode == template.id }
+                logger.debug("${template.id} releasedVersion($releasedVersion)|marketVersion($marketVersion)")
                 releasedVersion != null && marketVersion != null &&
                     releasedVersion.version.toLong() != marketVersion.version
             } else {
