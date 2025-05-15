@@ -79,12 +79,15 @@ data class PipelineTemplateListResponse(
     val upgradeFlag: Boolean? = false,
     @get:Schema(title = "发布标识", required = false)
     val publishFlag: Boolean? = false,
+    @get:Schema(title = "是否上架到研发商店", required = true)
+    val storeFlag: Boolean
 ) {
     constructor(
         pipelineTemplateInfo: PipelineTemplateInfoV2,
         permission: PipelinePermissions,
         upgradeFlag: Boolean? = null,
-        publishFlag: Boolean? = null
+        publishFlag: Boolean? = null,
+        storeFlag: Boolean
     ) : this(
         id = pipelineTemplateInfo.id,
         projectId = pipelineTemplateInfo.projectId,
@@ -115,6 +118,7 @@ data class PipelineTemplateListResponse(
         canDelete = permission.canDelete,
         canEdit = permission.canEdit,
         upgradeFlag = upgradeFlag,
-        publishFlag = publishFlag
+        publishFlag = publishFlag,
+        storeFlag = storeFlag
     )
 }

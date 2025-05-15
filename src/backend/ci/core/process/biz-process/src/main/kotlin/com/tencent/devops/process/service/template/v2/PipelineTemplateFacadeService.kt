@@ -435,7 +435,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 pipelineTemplateInfo = template,
                 permission = getPermission(template.id),
                 upgradeFlag = upgradeFlag,
-                publishFlag = publishFlag
+                publishFlag = publishFlag,
+                storeFlag = template.storeStatus == TemplateStatusEnum.RELEASED
             )
         }
 
