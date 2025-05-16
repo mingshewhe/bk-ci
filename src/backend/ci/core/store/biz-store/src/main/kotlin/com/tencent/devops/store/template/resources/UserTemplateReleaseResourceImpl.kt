@@ -110,7 +110,7 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
         return templateReleaseService.offlineTemplateV2(
             userId = userId,
             templateCode = templateCode,
-            templateVersion = request.templateVersion,
+            templateVersion = request.version,
             reason = request.reason
         )
     }
