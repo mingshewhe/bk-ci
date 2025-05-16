@@ -38,7 +38,7 @@ class PTemplateVersionCreateMarketPublishedPostProcessor(
             if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
 
-            pipelineTemplateMarketTemplateFacadeService.upgradeTemplateVersionAuto(
+            pipelineTemplateMarketTemplateFacadeService.releaseTemplateVersionPostProcess(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,

@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateReleaseReq
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import com.tencent.devops.store.pojo.template.TemplateOfflineReq
@@ -79,7 +80,7 @@ interface UserTemplateReleaseResource {
         marketTemplateUpdateRequest: MarketTemplateUpdateRequest
     ): Result<String?>
 
-    @Operation(summary = "上架模板-v2版本")
+    @Operation(summary = "上架模板-v2")
     @PUT
     @Path("/desk/template/v2/release")
     fun releaseMarketTemplate(
@@ -88,7 +89,18 @@ interface UserTemplateReleaseResource {
         userId: String,
         @Parameter(description = "上架模板请求报文体", required = true)
         request: MarketTemplateUpdateV2Request
-    ): Result<String?>
+    ): Result<String>
+
+    @Operation(summary = "上架模板版本-v2")
+    @PUT
+    @Path("/desk/template/v2/release/versions")
+    fun releaseMarketTemplateVersions(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "上架模板版本请求报文体", required = true)
+        request: MarketTemplateReleaseReq
+    ): Result<Boolean>
 
     @Operation(summary = "根据模板版本ID获取模板版本进度")
     @GET

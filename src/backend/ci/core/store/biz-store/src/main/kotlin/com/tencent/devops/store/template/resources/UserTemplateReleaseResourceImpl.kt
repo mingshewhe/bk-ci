@@ -31,6 +31,7 @@ import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.store.api.template.UserTemplateReleaseResource
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateReleaseReq
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import com.tencent.devops.store.pojo.template.TemplateOfflineReq
@@ -60,8 +61,17 @@ class UserTemplateReleaseResourceImpl @Autowired constructor(
     override fun releaseMarketTemplate(
         userId: String,
         request: MarketTemplateUpdateV2Request
-    ): Result<String?> {
+    ): Result<String> {
         return templateReleaseService.releaseMarketTemplate(userId, request)
+    }
+
+    override fun releaseMarketTemplateVersions(
+        userId: String,
+        request: MarketTemplateReleaseReq
+    ): Result<Boolean> {
+        return Result(
+            templateReleaseService.releaseMarketTemplateVersions(userId, request)
+        )
     }
 
     override fun getProcessInfo(userId: String, templateId: String): Result<StoreProcessInfo> {

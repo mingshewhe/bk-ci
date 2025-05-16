@@ -63,6 +63,7 @@ import com.tencent.devops.store.pojo.common.publication.StoreReleaseCreateReques
 import com.tencent.devops.store.pojo.common.visible.DeptInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateReleaseReq
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -546,27 +547,29 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 )
             }
             // 校验模板是否合法
-            val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkTemplate(
-                userId = userId,
-                projectId = projectCode,
-                templateId = templateCode,
-                version = templateVersion
-            )
-            if (checkResult.isNotOk()) {
-                return checkResult
-            }
-            val releaseResult = client.get(ServicePipelineTemplateV2Resource::class).checkImageReleaseStatus(
-                userId = userId,
-                templateId = templateCode,
-                projectId = projectCode,
-                version = templateVersion
-            )
-            val imageCode = releaseResult.data
-            if (!imageCode.isNullOrBlank()) {
-                throw ErrorCodeException(
-                    errorCode = USER_TEMPLATE_IMAGE_IS_INVALID,
-                    params = arrayOf(imageCode)
+            if (templateVersion != null) {
+                val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkTemplate(
+                    userId = userId,
+                    projectId = projectCode,
+                    templateId = templateCode,
+                    version = templateVersion!!
                 )
+                if (checkResult.isNotOk()) {
+                    return checkResult
+                }
+                val releaseResult = client.get(ServicePipelineTemplateV2Resource::class).checkImageReleaseStatus(
+                    userId = userId,
+                    templateId = templateCode,
+                    projectId = projectCode,
+                    version = templateVersion!!
+                )
+                val imageCode = releaseResult.data
+                if (!imageCode.isNullOrBlank()) {
+                    throw ErrorCodeException(
+                        errorCode = USER_TEMPLATE_IMAGE_IS_INVALID,
+                        params = arrayOf(imageCode)
+                    )
+                }
             }
             validateTemplateVisibleDept(
                 templateCode = templateCode,
@@ -575,6 +578,26 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             )
         }
         return Result(true)
+    }
+
+    override fun releaseMarketTemplateVersions(
+        userId: String,
+        request: MarketTemplateReleaseReq
+    ): Boolean {
+        with(request) {
+            val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
+                dslContext = dslContext,
+                storeCode = templateCode,
+                storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+            ) ?: throw ErrorCodeException(errorCode = CommonMessageCode.SYSTEM_ERROR)
+            client.get(ServicePipelineTemplateV2Resource::class).releaseTemplateVersionPostProcess(
+                userId = userId,
+                projectId = projectCode,
+                templateId = templateCode,
+                version = version
+            )
+        }
+        return true
     }
 
     override fun handleTemplateRelease(

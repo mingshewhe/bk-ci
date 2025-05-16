@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.store.pojo.common.publication.StoreProcessInfo
 import com.tencent.devops.store.pojo.template.MarketTemplateRelRequest
+import com.tencent.devops.store.pojo.template.MarketTemplateReleaseReq
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateRequest
 import com.tencent.devops.store.pojo.template.MarketTemplateUpdateV2Request
 import org.jooq.DSLContext
@@ -61,6 +62,11 @@ interface TemplateReleaseService {
         userId: String,
         request: MarketTemplateUpdateV2Request
     ): Result<String>
+
+    fun releaseMarketTemplateVersions(
+        userId: String,
+        request: MarketTemplateReleaseReq
+    ): Boolean
 
     fun handleTemplateRelease(
         context: DSLContext,

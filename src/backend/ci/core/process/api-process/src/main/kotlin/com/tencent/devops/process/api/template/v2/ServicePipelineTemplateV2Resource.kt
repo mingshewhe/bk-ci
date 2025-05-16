@@ -180,6 +180,24 @@ interface ServicePipelineTemplateV2Resource {
         strategy: UpgradeStrategyEnum
     ): Result<Boolean>
 
+    @Operation(summary = "发布版本后置处理")
+    @PUT
+    @Path("/{templateId}/{version}/store/release/template/version/post/process")
+    fun releaseTemplateVersionPostProcess(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @HeaderParam(AUTH_HEADER_PROJECT_ID)
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "上架版本", required = true)
+        @PathParam("version")
+        version: Long
+    ): Result<Boolean>
+
     @Operation(summary = "创建流水线-获取模版列表")
     @GET
     @Path("/projects/{projectId}/allTemplates")

@@ -152,7 +152,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             )
             // 升级关联模板的版本。
             if (templateVersion != null) {
-                upgradeTemplateVersionAuto(
+                releaseTemplateVersionPostProcess(
                     userId = publisher,
                     projectId = projectId,
                     templateId = templateCode,
@@ -238,7 +238,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         return true
     }
 
-    fun upgradeTemplateVersionAuto(
+    fun releaseTemplateVersionPostProcess(
         userId: String,
         projectId: String,
         templateId: String,
@@ -288,6 +288,18 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         )
 
         templatesOfAutoUpgrade.forEach { templateInfo ->
+            // 查询父模板上架的版本是否已经安装过
+            val isInstalled = pipelineTemplateResourceService.getOrNull(
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = templateInfo.projectId,
+                    templateId = templateInfo.id,
+                    srcTemplateProjectId = projectId,
+                    srcTemplateId = templateId,
+                    srcTemplateVersion = version
+                )
+            ) != null
+            if (isInstalled)
+                return@forEach
             val isSyncSetting = templateInfo.settingSyncStrategy == UpgradeStrategyEnum.AUTO
             val pipelineTemplateCopyCreateReq = PipelineTemplateCopyCreateReq(
                 srcTemplateId = templateId,
