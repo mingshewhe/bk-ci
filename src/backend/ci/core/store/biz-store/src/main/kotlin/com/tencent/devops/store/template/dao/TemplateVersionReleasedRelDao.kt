@@ -167,6 +167,7 @@ class TemplateVersionReleasedRelDao {
             val maxNumbers = dslContext.select(TEMPLATE_CODE, DSL.max(NUMBER).`as`("max_number"))
                 .from(this)
                 .where(TEMPLATE_CODE.`in`(templateCodes))
+                .and(PUBLISHED.eq(true))
                 .groupBy(TEMPLATE_CODE)
                 .asTable("m")
             // 主查询关联获取VERSION
