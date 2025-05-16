@@ -27,37 +27,14 @@
 
 package com.tencent.devops.process.pojo.pipeline
 
-import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线yaml文件发布请求")
-data class PipelineYamlFileReleaseReq(
-    @get:Schema(title = "用户ID", required = true)
-    val userId: String,
-    @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "流水线ID", required = true)
-    val pipelineId: String,
-    @get:Schema(title = "流水线名称", required = true)
-    val pipelineName: String,
-    @get:Schema(title = "流水线版本", required = true)
-    val version: Int,
-    @get:Schema(title = "流水线版本名称", required = true)
-    val versionName: String?,
-    @get:Schema(title = "代码库hashId", required = true)
-    val repoHashId: String,
-    @get:Schema(title = "文件路径", required = true)
-    val filePath: String,
-    @get:Schema(title = "文件内容", required = true)
-    val content: String,
-    @get:Schema(title = "提交信息", required = true)
-    val commitMessage: String,
-    @get:Schema(title = "提交类型", required = true)
-    val targetAction: CodeTargetAction,
-    @get:Schema(title = "目标分支", required = true)
-    val targetBranch: String? = null,
-    @get:Schema(title = "请求来源", required = true)
-    val source: PipelineYamlFileReleaseReqSource = PipelineYamlFileReleaseReqSource.PIPELINE,
-    @get:Schema(title = "模版名称", required = true)
-    val templateName: String? = null
-)
+@Schema(title = "流水线yaml文件发布请求来源")
+enum class PipelineYamlFileReleaseReqSource {
+    @Schema(title = "流水线发布")
+    PIPELINE,
+    @Schema(title = "模版发布")
+    TEMPLATE,
+    @Schema(title = "模版实例化发布")
+    TEMPLATE_INSTANCE
+}

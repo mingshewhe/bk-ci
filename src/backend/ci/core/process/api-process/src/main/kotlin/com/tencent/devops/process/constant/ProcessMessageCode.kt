@@ -559,8 +559,11 @@ object ProcessMessageCode {
 
     const val BK_AGENT_REUSE_MUTEX = "bkAgentReuseMutex"
     const val BK_AGENT_REUSE_MUTEX_AGENT_ID_NULL = "bkAgentReuseMutexAgentIdNull"
-    const val BK_MERGE_YAML_CREATE_FILE_TITLE = "bkMergeYamlCreateFileTitle" // 新增流水线发布mr标题
-    const val BK_MERGE_YAML_UPDATE_FILE_TITLE = "bkMergeYamlUpdateFileTitle" // 修改流水线发布mr标题
+    const val BK_MERGE_PIPELINE_YAML_CREATE_TITLE = "bkMergePipelineYamlCreateTitle" // 新增流水线发布mr标题
+    const val BK_MERGE_PIPELINE_YAML_UPDATE_TITLE = "bkMergePipelineYamlUpdateTitle" // 修改流水线发布mr标题
+    const val BK_MERGE_TEMPLATE_YAML_CREATE_TITLE = "bkMergeTemplateYamlCreateTitle" // 新增模版发布mr标题
+    const val BK_MERGE_TEMPLATE_YAML_UPDATE_TITLE = "bkMergeTemplateYamlUpdateTitle" // 修改模版发布mr标题
+    const val BK_MERGE_TEMPLATE_INSTANCE_YAML_TITLE = "bkMergeTemplateInstanceYamlTitle"  // 模版实例化标题
     const val BK_BUILD_QUEUE_WAIT_FOR_CONCURRENCY = "bkBuildQueueWaitingForConcurrency" // 并发组配置的排队
     const val BK_BUILD_QUEUE_WAIT = "bkBuildQueueWaiting" // 并发配置的排队
     const val BK_BUILD_CANCEL_BY_CONCURRENCY = "bkBuildCancelByConcurrency" // 并发组配置的取消

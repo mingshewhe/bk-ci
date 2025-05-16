@@ -71,6 +71,7 @@ import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.service.builds.PipelineBuildFacadeService
@@ -528,7 +529,8 @@ class PipelineVersionFacadeService @Autowired constructor(
                         repoHashId = yamlInfo.repoHashId,
                         filePath = yamlInfo.filePath,
                         targetAction = targetAction,
-                        targetBranch = request.targetBranch
+                        targetBranch = request.targetBranch,
+                        source = PipelineYamlFileReleaseReqSource.PIPELINE
                     )
                 )
                 targetUrl = pushResult.pullRequestUrl

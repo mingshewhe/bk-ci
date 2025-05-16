@@ -35,6 +35,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT
 import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
@@ -204,7 +205,8 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
             commitMessage = pTemplateResourceWithoutVersion.description
                 ?: "update template ${pipelineTemplateInfo.name}",
             targetAction = targetAction!!,
-            targetBranch = branchName
+            targetBranch = branchName,
+            source = PipelineYamlFileReleaseReqSource.TEMPLATE
         )
         pipelineYamlFacadeService.validateReleaseYamlFile(
             yamlFileReleaseReq = yamlFileReleaseReq

@@ -30,6 +30,7 @@ package com.tencent.devops.process.service.pipeline.version.handler
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
@@ -99,7 +100,9 @@ class PipelineVersionCreateCommonService @Autowired constructor(
                 commitMessage = pipelineResourceWithoutVersion.description
                     ?: "update template ${pipelineBasicInfo.pipelineName}",
                 targetAction = targetAction!!,
-                targetBranch = branchName
+                targetBranch = branchName,
+                source = PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE,
+                templateName = templateInstanceBasicInfo?.templateVersionName
             )
             return pipelineYamlFacadeService.releaseYamlFile(
                 yamlFileReleaseReq = yamlFileReleaseReq

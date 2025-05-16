@@ -45,6 +45,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_NOT
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileSyncReq
 import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
@@ -347,7 +348,6 @@ class PipelineYamlFileManager @Autowired constructor(
                         ref = ref,
                         defaultBranch = defaultBranch,
                         commitMessage = commitMessage,
-                        pipelineName = pipelineName,
                         newFile = filePushResult.newFile,
                         authRepository = authRepository
                     )
@@ -386,24 +386,11 @@ class PipelineYamlFileManager @Autowired constructor(
         ref: String,
         defaultBranch: String,
         commitMessage: String,
-        pipelineName: String,
         newFile: Boolean,
         authRepository: AuthRepository
     ): PullRequest? {
-        val dateStr = DateTimeUtil.toDateTime(LocalDateTime.now())
-        val title = if (newFile) {
-            I18nUtil.getCodeLanMessage(
-                messageCode = ProcessMessageCode.BK_MERGE_YAML_UPDATE_FILE_TITLE,
-                params = arrayOf(dateStr, pipelineName),
-                language = I18nUtil.getDefaultLocaleLanguage()
-            )
-        } else {
-            I18nUtil.getCodeLanMessage(
-                messageCode = ProcessMessageCode.BK_MERGE_YAML_CREATE_FILE_TITLE,
-                params = arrayOf(dateStr, pipelineName),
-                language = I18nUtil.getDefaultLocaleLanguage()
-            )
-        }
+
+        val title = getPullRequestTitle(newFile = newFile)
         return client.get(ServiceScmPullRequestApiResource::class).createPullRequestIfAbsent(
             projectId = projectId,
             pullRequestCreateReq = ScmPullRequestCreateReq(
@@ -981,5 +968,65 @@ class PipelineYamlFileManager @Autowired constructor(
             pipelineId = pipelineId,
             isTemplate = isTemplate
         )
+    }
+
+    private fun PipelineYamlFileReleaseReq.getPullRequestTitle(
+        newFile: Boolean
+    ): String {
+        val dateStr = DateTimeUtil.toDateTime(LocalDateTime.now())
+        val title = if (newFile) {
+            when (source) {
+                PipelineYamlFileReleaseReqSource.PIPELINE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_PIPELINE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_YAML_CREATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_INSTANCE_YAML_TITLE,
+                        params = arrayOf(dateStr, templateName ?: ""),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+            }
+        } else {
+            when (source) {
+                PipelineYamlFileReleaseReqSource.PIPELINE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_PIPELINE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_INSTANCE_YAML_TITLE,
+                        params = arrayOf(dateStr, templateName ?: ""),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+            }
+        }
+        return title
     }
 }
