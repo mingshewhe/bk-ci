@@ -1334,6 +1334,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 }?.version?.toLong()
                 val templateStatus = TemplateStatusEnum.getTemplateStatusEnum((it[TEMPLATE_STATUS]).toInt())
 
+                val upgradeFlag = latestMarketPublishedVersion != null && latestReleasedVersion != null
+                    && latestMarketPublishedVersion != latestReleasedVersion
+
                 MyTemplateItemResponse(
                     templateId = it[ID] as String,
                     templateCode = it[TEMPLATE_CODE],
@@ -1347,7 +1350,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                     latestPublishedVersionName = latestMarketPublishedVersionName,
                     latestReleasedVersion = latestReleasedVersion,
                     templateStatus = templateStatus,
-                    upgradeFlag = latestMarketPublishedVersion != latestReleasedVersion,
+                    upgradeFlag = upgradeFlag,
                     projectCode = it[KEY_PROJECT_CODE].toString(),
                     projectName = projectCode2ProjectName?.get(it[KEY_PROJECT_CODE].toString()).toString(),
                     creator = it[CREATOR].toString(),
