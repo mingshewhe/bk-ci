@@ -525,10 +525,15 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         deployPipelineResult: DeployPipelineResult
     ) {
         val status = if (deployPipelineResult.pullRequestId != null) {
-            TemplateInstanceStatus.SUCCESS
-        } else {
             TemplateInstanceStatus.WAIT_MERGE
+        } else {
+            TemplateInstanceStatus.SUCCESS
         }
+        logger.info(
+            "success to template instance item|$baseId|$projectId|$pipelineId|" +
+                    "${deployPipelineResult.version}|${deployPipelineResult.versionName}|" +
+                    "${deployPipelineResult.pullRequestId}"
+        )
         val record = PipelineTemplateInstanceItemUpdate(
             status = status,
             pullRequestId = deployPipelineResult.pullRequestId,

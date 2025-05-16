@@ -197,7 +197,8 @@ class PipelineTemplateInstanceReqConverter(
                 status = versionStatus,
                 branchAction = BranchVersionAction.ACTIVE.takeIf {
                     versionStatus == VersionStatus.BRANCH
-                }
+                },
+                description = description,
             )
 
             val templateInstanceBasicInfo = PipelineTemplateInstanceBasicInfo(

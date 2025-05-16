@@ -58,4 +58,6 @@ data class PipelineTemplateInstanceReq(
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时指定的分支或者代码库推送的分支", required = false)
     val targetBranch: String? = null,
+    @get:Schema(title = "版本发布描述", required = false)
+    val description: String? = null
 ) : PipelineVersionCreateReq
