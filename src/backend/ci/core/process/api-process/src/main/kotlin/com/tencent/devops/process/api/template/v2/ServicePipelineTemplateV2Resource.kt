@@ -320,7 +320,7 @@ interface ServicePipelineTemplateV2Resource {
         templateId: String
     ): Result<PipelineTemplateInfoResponse>
 
-    @Operation(summary = "获取模板最新版本")
+    @Operation(summary = "获取模板最新正式版本")
     @POST
     @Path("/listLatestReleasedVersions")
     fun listLatestReleasedVersions(

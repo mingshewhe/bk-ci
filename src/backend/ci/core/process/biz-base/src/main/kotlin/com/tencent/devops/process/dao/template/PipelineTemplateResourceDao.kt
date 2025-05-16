@@ -428,6 +428,9 @@ class PipelineTemplateResourceDao {
                 if (storeFlag == false) {
                     conditions.add(STORE_STATUS.ne(TemplateStatusEnum.RELEASED.name))
                 }
+                if (storeStatus != null) {
+                    conditions.add(STORE_STATUS.eq(storeStatus!!.name))
+                }
                 return conditions
             }
         }

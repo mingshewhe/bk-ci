@@ -3,6 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
@@ -62,6 +63,8 @@ data class PipelineTemplateResourceCommonCondition(
     val description: String? = null,
     @get:Schema(title = "是否包含草稿版本", required = false)
     val includeDraft: Boolean? = null,
+    @get:Schema(title = "研发商店状态", required = false)
+    val storeStatus: TemplateStatusEnum? = null,
     @get:Schema(title = "page", required = true)
     val page: Int? = null,
     @get:Schema(title = "pageSize", required = true)

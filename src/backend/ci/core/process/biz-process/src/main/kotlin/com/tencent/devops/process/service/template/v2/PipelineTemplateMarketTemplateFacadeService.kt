@@ -194,7 +194,12 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                     ),
                     commonCondition = PipelineTemplateResourceCommonCondition(
                         projectId = projectId,
-                        templateId = templateId
+                        templateId = templateId,
+                        storeStatus = if (storeStatus == TemplateStatusEnum.UNDERCARRIAGED) {
+                            TemplateStatusEnum.RELEASED
+                        } else {
+                            TemplateStatusEnum.UNDERCARRIAGED
+                        }
                     )
                 )
                 pipelineTemplateInfoService.update(
