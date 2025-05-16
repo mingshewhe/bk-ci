@@ -34,6 +34,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class PipelineTemplateInstanceBasicInfo(
     @get:Schema(title = "模版ID")
     val templateId: String,
+    @get:Schema(title = "模版名称")
+    val templateName: String,
     @get:Schema(title = "模版版本")
     val templateVersion: Long,
     @get:Schema(title = "模版版本名称")

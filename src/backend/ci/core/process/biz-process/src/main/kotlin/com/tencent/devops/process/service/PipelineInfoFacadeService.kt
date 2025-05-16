@@ -654,6 +654,7 @@ class PipelineInfoFacadeService @Autowired constructor(
             pipelineId = pipelineId,
             model = newResource.model.copy(name = pipelineName),
             channelCode = ChannelCode.BS,
+            checkTemplate = false,
             yaml = yamlWithVersion,
             savedSetting = savedSetting,
             versionStatus = versionStatus,

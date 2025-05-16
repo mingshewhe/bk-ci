@@ -102,7 +102,7 @@ class PipelineVersionCreateCommonService @Autowired constructor(
                 targetAction = targetAction!!,
                 targetBranch = branchName,
                 source = PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE,
-                templateName = templateInstanceBasicInfo?.templateVersionName
+                templateName = templateInstanceBasicInfo?.templateName
             )
             return pipelineYamlFacadeService.releaseYamlFile(
                 yamlFileReleaseReq = yamlFileReleaseReq
