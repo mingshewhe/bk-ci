@@ -34,7 +34,7 @@ import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -127,22 +127,22 @@ interface ServiceTemplateResource {
         templateCode: String
     ): Result<TemplateStatusEnum>
 
-    @Operation(summary = "创建模板版本关联关系")
+    @Operation(summary = "创建模板上架研发商店记录")
     @POST
-    @Path("/createTemplateVersionRel")
-    fun createTemplateVersionRel(
+    @Path("/createMarketTemplatePublishedVersion")
+    fun createMarketTemplatePublishedVersion(
         @Parameter(description = "模板版本发布关联实体", required = true)
-        templateVersionRelationInfo: TemplateVersionRelationInfo
+        templatePublishedVersionInfo: TemplatePublishedVersionInfo
     ): Result<Boolean>
 
-    @Operation(summary = "获取模板最新发布历史")
+    @Operation(summary = "获取模板最新上架版本")
     @GET
     @Path("{templateCode}/latest/released")
     fun getLatestMarketPublishedVersion(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
-    ): Result<TemplateVersionRelationInfo?>
+    ): Result<TemplatePublishedVersionInfo?>
 
     @Operation(summary = "记录模板版本安装历史")
     @POST
@@ -170,7 +170,7 @@ interface ServiceTemplateResource {
     fun listLatestPublishedVersions(
         @Parameter(description = "模板Code列表", required = true)
         templateCodes: List<String>
-    ): Result<List<TemplateVersionRelationInfo>>
+    ): Result<List<TemplatePublishedVersionInfo>>
 
     @Operation(summary = "批量获取模板最新安装版本")
     @POST

@@ -30,17 +30,16 @@ package com.tencent.devops.store.template.dao
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
-@Suppress("ALL")
 @Repository
 class TemplateVersionReleasedRelDao {
     fun createOrUpdate(
         dslContext: DSLContext,
-        record: TemplateVersionRelationInfo
+        record: TemplatePublishedVersionInfo
     ) {
         with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.insertInto(
@@ -93,7 +92,7 @@ class TemplateVersionReleasedRelDao {
     fun getLatestMarketPublishedVersion(
         dslContext: DSLContext,
         templateCode: String
-    ): TemplateVersionRelationInfo? {
+    ): TemplatePublishedVersionInfo? {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.selectFrom(this)
                 .where(TEMPLATE_CODE.eq(templateCode))
@@ -101,7 +100,7 @@ class TemplateVersionReleasedRelDao {
                 .orderBy(NUMBER.desc())
                 .limit(1)
                 .fetchOne()?.let {
-                    TemplateVersionRelationInfo(
+                    TemplatePublishedVersionInfo(
                         projectCode = it.projectCode,
                         templateCode = it.templateCode,
                         version = it.version,
@@ -122,14 +121,14 @@ class TemplateVersionReleasedRelDao {
         templateCode: String,
         page: Int,
         pageSize: Int
-    ): List<TemplateVersionRelationInfo> {
+    ): List<TemplatePublishedVersionInfo> {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.selectFrom(this)
                 .where(TEMPLATE_CODE.eq(templateCode))
                 .orderBy(UPDATE_TIME.desc())
                 .limit((page - 1) * pageSize, pageSize)
                 .fetch().map {
-                    TemplateVersionRelationInfo(
+                    TemplatePublishedVersionInfo(
                         projectCode = it.projectCode,
                         templateCode = it.templateCode,
                         version = it.version,
@@ -161,7 +160,7 @@ class TemplateVersionReleasedRelDao {
     fun listLatestPublishedVersions(
         dslContext: DSLContext,
         templateCodes: List<String>
-    ): List<TemplateVersionRelationInfo> {
+    ): List<TemplatePublishedVersionInfo> {
         return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             // 子查询获取每个模板的最大NUMBER
             val maxNumbers = dslContext.select(TEMPLATE_CODE, DSL.max(NUMBER).`as`("max_number"))
@@ -179,7 +178,7 @@ class TemplateVersionReleasedRelDao {
                     NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
                 )
                 .fetch().map {
-                    TemplateVersionRelationInfo(
+                    TemplatePublishedVersionInfo(
                         projectCode = it[PROJECT_CODE],
                         templateCode = it[TEMPLATE_CODE],
                         version = it[VERSION],

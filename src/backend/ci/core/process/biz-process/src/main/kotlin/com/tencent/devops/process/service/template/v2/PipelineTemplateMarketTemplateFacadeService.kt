@@ -26,7 +26,7 @@ import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -151,12 +151,14 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 updateMarketTemplateRequest = MarketTemplateRequest(request)
             )
             // 升级关联模板的版本。
-            upgradeTemplateVersionAuto(
-                userId = publisher,
-                projectId = projectId,
-                templateId = templateCode,
-                version = templateVersion
-            )
+            if (templateVersion != null) {
+                upgradeTemplateVersionAuto(
+                    userId = publisher,
+                    projectId = projectId,
+                    templateId = templateCode,
+                    version = templateVersion!!
+                )
+            }
         }
         return true
     }
@@ -264,8 +266,8 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 version = version
             )
         )
-        client.get(ServiceTemplateResource::class).createTemplateVersionRel(
-            TemplateVersionRelationInfo(
+        client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
+            TemplatePublishedVersionInfo(
                 projectCode = projectId,
                 templateCode = templateId,
                 version = version,

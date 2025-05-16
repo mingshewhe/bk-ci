@@ -104,8 +104,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 projectId = projectId,
                 templateId = newTemplateId,
                 creator = userId,
-                templateName = marketTemplateInfo.name,
-                desc = marketTemplateInfo.desc
+                templateName = marketTemplateDetails.templateName,
+                desc = marketTemplateDetails.description
             )
 
             val pipelineTemplateInfo = PipelineTemplateInfoV2(

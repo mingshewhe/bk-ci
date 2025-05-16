@@ -57,7 +57,7 @@ import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
@@ -316,8 +316,8 @@ class PipelineTemplateMigrateService(
                 if (latestTemplate.type != TemplateType.CONSTRAINT.name &&
                     (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
                         marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)) {
-                    client.get(ServiceTemplateResource::class).createTemplateVersionRel(
-                        TemplateVersionRelationInfo(
+                    client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
+                        TemplatePublishedVersionInfo(
                             projectCode = pipelineTemplateResource.projectId,
                             templateCode = templateId,
                             version = pipelineTemplateResource.version,

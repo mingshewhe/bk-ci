@@ -39,7 +39,7 @@ import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -151,13 +151,6 @@ interface MarketTemplateService {
         pageSize: Int
     ): Page<MyTemplateItemResponse>
 
-    fun listPublishedHistory(
-        userId: String,
-        templateCode: String,
-        page: Int,
-        pageSize: Int
-    ): Page<TemplateVersionRelationInfo>
-
     /**
      * 根据模板ID和模板代码判断模板是否存在
      */
@@ -169,17 +162,24 @@ interface MarketTemplateService {
     /**
      *  创建模板发布历史
      * */
-    fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo)
+    fun createMarketTemplatePublishedVersion(templatePublishedVersionInfo: TemplatePublishedVersionInfo)
 
     /**
      * 获取单个模板最新发布版本
      * */
-    fun getLatestMarketPublishedVersion(templateCode: String): TemplateVersionRelationInfo?
+    fun getLatestMarketTemplatePublishedVersion(templateCode: String): TemplatePublishedVersionInfo?
+
+    fun listMarketTemplatePublishedHistory(
+        userId: String,
+        templateCode: String,
+        page: Int,
+        pageSize: Int
+    ): Page<TemplatePublishedVersionInfo>
 
     /**
      * 批量获取模板最新发布版本
      * */
-    fun listLatestPublishedVersions(templateCodes: List<String>): List<TemplateVersionRelationInfo>
+    fun listLatestMarketTemplatePublishedVersions(templateCodes: List<String>): List<TemplatePublishedVersionInfo>
 
     /**
      * 创建模板安装历史

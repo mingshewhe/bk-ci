@@ -2,8 +2,8 @@ package com.tencent.devops.store.pojo.template
 
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "模板版本发布关联实体")
-data class TemplateVersionRelationInfo(
+@Schema(title = "模板版本发布记录实体")
+data class TemplatePublishedVersionInfo(
     @get:Schema(title = "项目ID")
     val projectCode: String,
     @get:Schema(title = "模板代码（对应process数据库的ID）")

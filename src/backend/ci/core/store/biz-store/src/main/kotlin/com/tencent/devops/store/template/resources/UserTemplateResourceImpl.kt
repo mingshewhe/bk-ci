@@ -45,7 +45,7 @@ import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.PublishStrategyUpdateReq
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -104,9 +104,9 @@ class UserTemplateResourceImpl @Autowired constructor(
         templateCode: String,
         page: Int,
         pageSize: Int
-    ): Result<Page<TemplateVersionRelationInfo>> {
+    ): Result<Page<TemplatePublishedVersionInfo>> {
         return Result(
-            marketTemplateService.listPublishedHistory(
+            marketTemplateService.listMarketTemplatePublishedHistory(
                 userId = userId,
                 templateCode = templateCode,
                 page = page,

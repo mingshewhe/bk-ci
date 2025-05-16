@@ -41,7 +41,7 @@ data class MarketTemplateUpdateV2Request(
     @get:Schema(title = "模板名称", required = true)
     val templateName: String,
     @get:Schema(title = "模板版本", required = true)
-    val templateVersion: Long,
+    val templateVersion: Long?,
     @get:Schema(title = "模板类型", required = true)
     val templateType: PipelineTemplateType = PipelineTemplateType.PIPELINE,
     @get:Schema(title = "发布策略", required = true)

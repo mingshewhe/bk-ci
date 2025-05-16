@@ -104,7 +104,7 @@ import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -1377,12 +1377,12 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
-    override fun listPublishedHistory(
+    override fun listMarketTemplatePublishedHistory(
         userId: String,
         templateCode: String,
         page: Int,
         pageSize: Int
-    ): Page<TemplateVersionRelationInfo> {
+    ): Page<TemplatePublishedVersionInfo> {
         val record = templateVersionReleasedRelDao.listPublishedHistory(
             dslContext = dslContext,
             templateCode = templateCode,
@@ -1420,22 +1420,22 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         return Result(true)
     }
 
-    override fun createTemplateVersionRel(templateVersionRelationInfo: TemplateVersionRelationInfo) {
-        logger.info("create Template Version Rel :$templateVersionRelationInfo")
+    override fun createMarketTemplatePublishedVersion(templatePublishedVersionInfo: TemplatePublishedVersionInfo) {
+        logger.info("create Template Version Rel :$templatePublishedVersionInfo")
         templateVersionReleasedRelDao.createOrUpdate(
             dslContext = dslContext,
-            record = templateVersionRelationInfo
+            record = templatePublishedVersionInfo
         )
     }
 
-    override fun getLatestMarketPublishedVersion(templateCode: String): TemplateVersionRelationInfo? {
+    override fun getLatestMarketTemplatePublishedVersion(templateCode: String): TemplatePublishedVersionInfo? {
         return templateVersionReleasedRelDao.getLatestMarketPublishedVersion(
             dslContext = dslContext,
             templateCode = templateCode
         )
     }
 
-    override fun listLatestPublishedVersions(templateCodes: List<String>): List<TemplateVersionRelationInfo> {
+    override fun listLatestMarketTemplatePublishedVersions(templateCodes: List<String>): List<TemplatePublishedVersionInfo> {
         return templateVersionReleasedRelDao.listLatestPublishedVersions(
             dslContext = dslContext,
             templateCodes = templateCodes

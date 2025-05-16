@@ -30,9 +30,7 @@ package com.tencent.devops.store.template.dao
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
 import com.tencent.devops.model.store.tables.TTemplateVersionInstallHistory
-import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository

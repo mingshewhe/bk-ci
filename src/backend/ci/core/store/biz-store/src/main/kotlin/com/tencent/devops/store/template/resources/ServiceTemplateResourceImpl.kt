@@ -36,7 +36,7 @@ import com.tencent.devops.store.pojo.template.InstallTemplateReq
 import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.TemplateDetail
 import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionRelationInfo
+import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
@@ -114,18 +114,18 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         return Result(marketTemplateService.getMarketTemplateStatus(templateCode))
     }
 
-    override fun createTemplateVersionRel(
-        templateVersionRelationInfo: TemplateVersionRelationInfo
+    override fun createMarketTemplatePublishedVersion(
+        templatePublishedVersionInfo: TemplatePublishedVersionInfo
     ): Result<Boolean> {
-        marketTemplateService.createTemplateVersionRel(templateVersionRelationInfo)
+        marketTemplateService.createMarketTemplatePublishedVersion(templatePublishedVersionInfo)
         return Result(true)
     }
 
     override fun getLatestMarketPublishedVersion(
         templateCode: String
-    ): Result<TemplateVersionRelationInfo?> {
+    ): Result<TemplatePublishedVersionInfo?> {
         return Result(
-            marketTemplateService.getLatestMarketPublishedVersion(
+            marketTemplateService.getLatestMarketTemplatePublishedVersion(
                 templateCode = templateCode
             )
         )
@@ -150,8 +150,8 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         )
     }
 
-    override fun listLatestPublishedVersions(templateCodes: List<String>): Result<List<TemplateVersionRelationInfo>> {
-        return Result(marketTemplateService.listLatestPublishedVersions(templateCodes = templateCodes))
+    override fun listLatestPublishedVersions(templateCodes: List<String>): Result<List<TemplatePublishedVersionInfo>> {
+        return Result(marketTemplateService.listLatestMarketTemplatePublishedVersions(templateCodes = templateCodes))
     }
 
     override fun listLatestInstalledVersions(
