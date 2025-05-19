@@ -61,8 +61,6 @@ data class Model(
     var pipelineCreator: String? = null,
     @get:Schema(title = "当前模板对应的被复制的模板或安装的研发商店的模板对应的ID", required = false)
     var srcTemplateId: String? = null,
-    @get:Schema(title = "当前模板的ID", required = false)
-    var templateId: String? = null,
     @get:Schema(title = "提示", required = false)
     var tips: String? = null,
     @get:Schema(title = "流水线事件回调", required = false)
@@ -72,8 +70,20 @@ data class Model(
     @get:Schema(title = "各项耗时", required = true)
     var timeCost: BuildRecordTimeCost? = null,
     @get:Schema(title = "模板资源", required = true)
-    val resources: Resources? = null
-) : ITemplateModel {
+    val resources: Resources? = null,
+    @get:Schema(title = "来源于模版", required = false)
+    override var fromTemplate: Boolean? = null,
+    @get:Schema(title = "模板路径", required = false)
+    override var template: String? = null,
+    @get:Schema(title = "模板ID", required = false)
+    override var templateId: String? = null,
+    @get:Schema(title = "模板名称", required = false)
+    override var templateName: String? = null,
+    @get:Schema(title = "版本", required = false)
+    override var templateVersion: String? = null,
+    @get:Schema(title = "模板参数构建", required = false)
+    override var templateVariables: Map<String, Any>? = null
+) : ITemplateModel, ITemplateFunction {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0
 

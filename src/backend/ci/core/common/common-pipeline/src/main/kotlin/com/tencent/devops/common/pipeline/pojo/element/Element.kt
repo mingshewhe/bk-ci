@@ -150,7 +150,7 @@ abstract class Element(
     open var progressRate: Double? = null,
     var asyncStatus: String? = null,
     @get:Schema(title = "来源于模版", required = false)
-    override var fromTemplate: Boolean? = false,
+    override var fromTemplate: Boolean? = null,
     @get:Schema(title = "模板路径", required = false)
     override var template: String? = null,
     @get:Schema(title = "模板ID", required = false)

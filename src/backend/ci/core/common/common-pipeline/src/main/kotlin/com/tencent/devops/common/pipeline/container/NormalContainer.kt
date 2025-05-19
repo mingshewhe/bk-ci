@@ -104,7 +104,7 @@ data class NormalContainer(
     @get:Schema(title = "分裂后的容器集合（分裂后的父容器特有字段）", required = false)
     var groupContainers: MutableList<NormalContainer>? = null,
     @get:Schema(title = "来源于模版", required = false)
-    override var fromTemplate: Boolean? = false,
+    override var fromTemplate: Boolean? = null,
     @get:Schema(title = "模板路径", required = false)
     override var template: String? = null,
     @get:Schema(title = "模板ID", required = false)

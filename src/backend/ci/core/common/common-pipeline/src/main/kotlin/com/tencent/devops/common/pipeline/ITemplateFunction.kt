@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版函数")
 interface ITemplateFunction {
-    @get:Schema(title = "来源于模版", required = false)
+    @get:Schema(title = "是否来源于模版", required = false)
     var fromTemplate: Boolean?
 
     @get:Schema(title = "模板路径", required = false)
