@@ -628,9 +628,9 @@ class PipelineRepositoryService constructor(
         if ((option.maxConcurrency ?: 0) > PIPELINE_MATRIX_CON_RUNNING_SIZE_MAX) {
             throw InvalidParamException(
                 "matrix maxConcurrency number(${option.maxConcurrency}) " +
-                        "exceed $PIPELINE_MATRIX_CON_RUNNING_SIZE_MAX /" +
-                        "matrix maxConcurrency(${option.maxConcurrency}) " +
-                        "is larger than $PIPELINE_MATRIX_CON_RUNNING_SIZE_MAX"
+                    "exceed $PIPELINE_MATRIX_CON_RUNNING_SIZE_MAX /" +
+                    "matrix maxConcurrency(${option.maxConcurrency}) " +
+                    "is larger than $PIPELINE_MATRIX_CON_RUNNING_SIZE_MAX"
             )
         }
         MatrixYamlCheckUtils.checkYaml(
@@ -904,7 +904,7 @@ class PipelineRepositoryService constructor(
         useConcurrencyGroup: Boolean? = false
     ): Boolean {
         return templateId != null &&
-                (useSubscriptionSettings == true || useConcurrencyGroup == true)
+            (useSubscriptionSettings == true || useConcurrencyGroup == true)
     }
 
     private fun update(
@@ -1419,6 +1419,7 @@ class PipelineRepositoryService constructor(
                     VersionStatus.COMMITTING -> {
                         Triple(pipelineInfo, targetResource, true)
                     }
+
                     else -> {
                         Triple(pipelineInfo, targetResource, false)
                     }
@@ -1682,16 +1683,8 @@ class PipelineRepositoryService constructor(
                     pipelineResourceDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineSettingDao.delete(transactionContext, projectId, pipelineId)
                     pipelineViewGroupDao.delete(transactionContext, projectId, pipelineId)
-                    if (templatePipeline != null) {
-                        templatePipelineDao.delete(transactionContext, projectId, pipelineId)
-                        pipelineTemplateInfoDao.updateInstancePipelineCount(
-                            dslContext = transactionContext,
-                            projectId = projectId,
-                            templateId = templatePipeline.templateId,
-                            count = 1,
-                            deleted = true
-                        )
-                    }
+                    templatePipelineDao.delete(transactionContext, projectId, pipelineId)
+
                 } else {
                     // 删除前改名，防止名称占用
                     val deleteTime = org.joda.time.LocalDateTime.now().toString("yyMMddHHmmSS")
@@ -1700,23 +1693,14 @@ class PipelineRepositoryService constructor(
                         deleteName = deleteName.substring(0, MAX_LEN_FOR_NAME)
                     }
                     pipelineResourceVersionDao.clearActiveBranchVersion(transactionContext, projectId, pipelineId)
-                    if (templatePipeline != null) {
-                        pipelineTemplateInfoDao.updateInstancePipelineCount(
-                            dslContext = transactionContext,
-                            projectId = projectId,
-                            templateId = templatePipeline.templateId,
-                            count = 1,
-                            deleted = true
-                        )
-                        pipelineInfoDao.softDelete(
-                            dslContext = transactionContext,
-                            projectId = projectId,
-                            pipelineId = pipelineId,
-                            changePipelineName = deleteName,
-                            userId = userId,
-                            channelCode = channelCode
-                        )
-                    }
+                    pipelineInfoDao.softDelete(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        changePipelineName = deleteName,
+                        userId = userId,
+                        channelCode = channelCode
+                    )
 
                     // 同时要对Setting中的name做设置
                     pipelineSettingDao.updateSetting(
@@ -1731,6 +1715,15 @@ class PipelineRepositoryService constructor(
                         dslContext = transactionContext,
                         projectId = projectId,
                         pipelineId = pipelineId
+                    )
+                }
+                if (templatePipeline != null) {
+                    pipelineTemplateInfoDao.updateInstancePipelineCount(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        templateId = templatePipeline.templateId,
+                        count = 1,
+                        deleted = true
                     )
                 }
 
@@ -2178,7 +2171,7 @@ class PipelineRepositoryService constructor(
                 ) ?: ""
                 logger.info(
                     "PROCESS|updateSettingVersion|version=$version|" +
-                            "versionNum=$versionNum|versionName=$versionName"
+                        "versionNum=$versionNum|versionName=$versionName"
                 )
                 val newModel = releaseResource.model.copy(
                     name = savedSetting.pipelineName, desc = savedSetting.desc
