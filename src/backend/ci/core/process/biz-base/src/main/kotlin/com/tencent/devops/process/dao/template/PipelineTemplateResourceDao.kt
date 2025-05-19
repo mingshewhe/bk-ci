@@ -421,6 +421,7 @@ class PipelineTemplateResourceDao {
                 if (includeDraft == false) conditions.add(STATUS.notEqual(VersionStatus.COMMITTING.name))
                 if (ltNumber != null) conditions.add(NUMBER.lt(ltNumber))
                 if (geNumber != null) conditions.add(NUMBER.ge(geNumber))
+                if (gtNumber != null) conditions.add(NUMBER.gt(gtNumber))
                 if (!srcTemplateVersions.isNullOrEmpty()) conditions.add(SRC_TEMPLATE_VERSION.`in`(srcTemplateVersions))
                 if (storeFlag == true) {
                     conditions.add(STORE_STATUS.eq(TemplateStatusEnum.RELEASED.name))

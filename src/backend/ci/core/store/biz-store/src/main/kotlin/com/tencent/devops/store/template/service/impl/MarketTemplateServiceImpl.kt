@@ -1464,6 +1464,13 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
+    override fun getLatestInstalledVersion(
+        projectCode: String,
+        templateCode: String
+    ): TemplateVersionInstallHistoryInfo? {
+        return listLatestInstalledVersions(listOf(templateCode)).firstOrNull { it.templateCode == templateCode }
+    }
+
     override fun listLatestInstalledVersions(templateCodes: List<String>): List<TemplateVersionInstallHistoryInfo> {
         return templateVersionInstallHistoryDao.listLatestInstalledVersions(
             dslContext = dslContext,

@@ -187,9 +187,17 @@ interface MarketTemplateService {
     fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo)
 
     /**
-     * 获取单个模板最近安装版本
+     * 获取模板最近安装版本
      * */
     fun getRecentlyInstalledVersion(
+        projectCode: String,
+        templateCode: String
+    ): TemplateVersionInstallHistoryInfo?
+
+    /**
+     * 获取模板最新安装版本
+     * */
+    fun getLatestInstalledVersion(
         projectCode: String,
         templateCode: String
     ): TemplateVersionInstallHistoryInfo?

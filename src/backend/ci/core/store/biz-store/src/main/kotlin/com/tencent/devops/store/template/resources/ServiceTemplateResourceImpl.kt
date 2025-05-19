@@ -150,6 +150,18 @@ class ServiceTemplateResourceImpl @Autowired constructor(
         )
     }
 
+    override fun getLatestInstalledVersion(
+        projectCode: String,
+        templateCode: String
+    ): Result<TemplateVersionInstallHistoryInfo?> {
+        return Result(
+            marketTemplateService.getLatestInstalledVersion(
+                projectCode = projectCode,
+                templateCode = templateCode
+            )
+        )
+    }
+
     override fun listLatestPublishedVersions(templateCodes: List<String>): Result<List<TemplatePublishedVersionInfo>> {
         return Result(marketTemplateService.listLatestMarketTemplatePublishedVersions(templateCodes = templateCodes))
     }

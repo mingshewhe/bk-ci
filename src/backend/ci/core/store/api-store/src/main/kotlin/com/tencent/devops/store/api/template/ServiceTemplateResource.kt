@@ -164,6 +164,18 @@ interface ServiceTemplateResource {
         templateCode: String
     ): Result<TemplateVersionInstallHistoryInfo?>
 
+    @Operation(summary = "获取最新安装版本")
+    @GET
+    @Path("/{projectCode}/{templateCode}/latest/install")
+    fun getLatestInstalledVersion(
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectCode")
+        projectCode: String,
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String
+    ): Result<TemplateVersionInstallHistoryInfo?>
+
     @Operation(summary = "批量获取模板最新发布版本")
     @POST
     @Path("/listLatestPublishedVersions")

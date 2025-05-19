@@ -17,6 +17,8 @@ data class PipelineTemplateResourceCommonCondition(
     val number: Int? = null,
     @get:Schema(title = "大于等于排序号", required = true)
     val geNumber: Int? = null,
+    @get:Schema(title = "大于排序号", required = true)
+    val gtNumber: Int? = null,
     @get:Schema(title = "小于排序号", required = true)
     val ltNumber: Int? = null,
     @get:Schema(title = "模板ID", required = true)
@@ -65,6 +67,8 @@ data class PipelineTemplateResourceCommonCondition(
     val includeDraft: Boolean? = null,
     @get:Schema(title = "研发商店状态", required = false)
     val storeStatus: TemplateStatusEnum? = null,
+    @get:Schema(title = "可升级的版本查询（用于研发商店安装的模板）", required = false)
+    val upgradableVersionsQuery: Boolean? = null,
     @get:Schema(title = "page", required = true)
     val page: Int? = null,
     @get:Schema(title = "pageSize", required = true)

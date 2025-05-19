@@ -659,14 +659,32 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun getTemplateVersions(
         commonCondition: PipelineTemplateResourceCommonCondition
     ): Page<PipelineVersionSimple> {
-        val records = pipelineTemplateResourceService.getTemplateVersions(commonCondition)
-        val count = pipelineTemplateResourceService.count(commonCondition)
-        return Page(
-            page = commonCondition.page ?: -1,
-            pageSize = commonCondition.pageSize ?: -1,
-            records = records,
-            count = count.toLong()
-        )
+        with(commonCondition) {
+            val finCondition = upgradableVersionsQuery?.takeIf { it }?.let {
+                if (templateId == null) {
+                    throw IllegalArgumentException("templateId is null")
+                }
+                client.get(ServiceTemplateResource::class).getLatestInstalledVersion(
+                    projectCode = projectId,
+                    templateCode = templateId!!
+                ).data?.let { latestInstalled ->
+                    PipelineTemplateResourceCommonCondition(
+                        projectId = latestInstalled.srcMarketTemplateProjectCode,
+                        templateId = latestInstalled.srcMarketTemplateCode,
+                        gtNumber = latestInstalled.number,
+                        status = VersionStatus.RELEASED
+                    )
+                } ?: return Page(page = -1, pageSize = -1, records = emptyList(), count = 0)
+            } ?: commonCondition  // 默认使用原始条件
+            val records = pipelineTemplateResourceService.getTemplateVersions(finCondition)
+            val count = pipelineTemplateResourceService.count(finCondition)
+            return Page(
+                page = commonCondition.page ?: -1,
+                pageSize = commonCondition.pageSize ?: -1,
+                records = records,
+                count = count.toLong()
+            )
+        }
     }
 
     // 模板版本对比
