@@ -83,10 +83,13 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 throw ErrorCodeException(errorCode = "")
             }
             val newTemplateId = templateId ?: pipelineTemplateGenerator.generateTemplateId()
-            pipelineTemplateCommonService.checkTemplateBasicInfo(
-                projectId = projectId,
-                name = name
-            )
+            if (srcTemplateVersion == null) {
+                // 首次复制整个模板时，需要检查名称是否重复
+                pipelineTemplateCommonService.checkTemplateBasicInfo(
+                    projectId = projectId,
+                    name = name
+                )
+            }
             val srcTemplateResource = pipelineTemplateResourceService.get(
                 projectId = projectId,
                 templateId = srcTemplateId,

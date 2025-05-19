@@ -310,7 +310,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
                 srcTemplateId = templateId,
                 srcTemplateVersion = version,
                 copySetting = isSyncSetting,
-                name = if (isSyncSetting) srcTemplateSetting.pipelineName else templateInfo.name
+                name = templateInfo.name
             )
             pipelineTemplateReleaseCreateHandler.handle(
                 pipelineTemplateCopyCreateReqConverter.convert(
