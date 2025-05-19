@@ -72,6 +72,9 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "项目ID", required = true)
         @PathParam("projectId")
         projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @QueryParam("templateId")
+        templateId: String?,
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateMarketCreateReq
     ): Result<DeployTemplateResult>

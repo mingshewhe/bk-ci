@@ -33,7 +33,6 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
-import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
@@ -51,7 +50,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsRespon
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftReleaseReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftSaveReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
@@ -85,6 +83,7 @@ class UserPipelineTemplateV2ResourceImpl(
     override fun createByMarket(
         userId: String,
         projectId: String,
+        templateId: String?,
         request: PipelineTemplateMarketCreateReq
     ): Result<DeployTemplateResult> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
@@ -93,7 +92,12 @@ class UserPipelineTemplateV2ResourceImpl(
             permission = AuthPermission.CREATE
         )
         return Result(
-            templateFacadeService.createByMarket(userId = userId, projectId = projectId, request = request)
+            templateFacadeService.createByMarket(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                request = request
+            )
         )
     }
 

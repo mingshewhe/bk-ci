@@ -90,12 +90,14 @@ class PipelineTemplateFacadeService @Autowired constructor(
     fun createByMarket(
         userId: String,
         projectId: String,
+        templateId: String?,
         request: PipelineTemplateMarketCreateReq
     ): DeployTemplateResult {
         logger.info("$userId create template in project $projectId by market ,body is $request")
         return pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
             projectId = projectId,
+            templateId = templateId,
             request = request
         )
     }
