@@ -133,7 +133,8 @@ class PipelineTemplateRelatedService @Autowired constructor(
             condition = PipelineTemplateRelatedCommonCondition(
                 projectId = projectId,
                 templateId = templateId,
-                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT,
+                deleted = false
             )
         ) > 0
     }
