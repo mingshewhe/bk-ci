@@ -14,13 +14,13 @@ import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
-import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateCopyCreateReqConverter
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateMarketCreateReqConverter
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateReleaseCreateHandler
 import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
@@ -48,7 +48,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
     private val pipelineTemplateReleaseCreateHandler: PipelineTemplateReleaseCreateHandler,
-    private val pipelineTemplateCopyCreateReqConverter: PipelineTemplateCopyCreateReqConverter
+    private val pipelineTemplateMarketCreateReqConverter: PipelineTemplateMarketCreateReqConverter
 ) {
 
     /**
@@ -306,19 +306,20 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             if (isInstalled)
                 return@forEach
             val isSyncSetting = templateInfo.settingSyncStrategy == UpgradeStrategyEnum.AUTO
-            val pipelineTemplateCopyCreateReq = PipelineTemplateCopyCreateReq(
-                srcTemplateId = templateId,
-                srcTemplateVersion = version,
+            val pipelineTemplateMarketCreateReq = PipelineTemplateMarketCreateReq(
+                marketTemplateProjectId = projectId,
+                marketTemplateId = templateId,
+                marketTemplateVersion = version,
                 copySetting = isSyncSetting,
                 name = templateInfo.name
             )
             pipelineTemplateReleaseCreateHandler.handle(
-                pipelineTemplateCopyCreateReqConverter.convert(
-                    userId = userId,
-                    projectId = projectId,
+                pipelineTemplateMarketCreateReqConverter.convert(
+                    userId = templateInfo.creator,
+                    projectId = templateInfo.projectId,
                     templateId = templateInfo.id,
                     version = null,
-                    request = pipelineTemplateCopyCreateReq
+                    request = pipelineTemplateMarketCreateReq
                 )
             )
             client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(

@@ -42,6 +42,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonServ
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import com.tencent.devops.store.api.template.ServiceTemplateResource
@@ -57,7 +58,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val client: Client,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
@@ -92,30 +94,51 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 templateId = marketTemplateId,
                 version = finalMarketTemplateVersion
             )
+            val templateName = name ?: marketTemplateDetails.templateName
+            if (templateId == null) {
+                pipelineTemplateCommonService.checkTemplateBasicInfo(
+                    projectId = projectId,
+                    name = templateName
+                )
+            }
 
-            pipelineTemplateCommonService.checkTemplateBasicInfo(
-                projectId = projectId,
-                name = marketTemplateDetails.templateName
-            )
+            val newTemplateId = templateId ?: pipelineTemplateGenerator.generateTemplateId()
+            val setting = if (copySetting) {
+                val srcTemplateSetting = pipelineTemplateSettingService.get(
+                    projectId = marketTemplateProjectId,
+                    templateId = marketTemplateId,
+                    settingVersion = marketTemplateResource.settingVersion
+                )
+                srcTemplateSetting.copy(
+                    pipelineId = newTemplateId,
+                    projectId = projectId,
+                    pipelineName = templateName,
+                    creator = userId
+                )
+            } else {
+                pipelineTemplateGenerator.getDefaultSetting(
+                    type = marketTemplateResource.type,
+                    projectId = projectId,
+                    templateId = newTemplateId,
+                    creator = userId,
+                    templateName = marketTemplateDetails.templateName,
+                    desc = marketTemplateDetails.description
+                )
+            }
 
-            val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
-            val setting = pipelineTemplateGenerator.getDefaultSetting(
-                type = marketTemplateResource.type,
+            val templateInfo = pipelineTemplateInfoService.getOrNull(
                 projectId = projectId,
-                templateId = newTemplateId,
-                creator = userId,
-                templateName = marketTemplateDetails.templateName,
-                desc = marketTemplateDetails.description
+                templateId = newTemplateId
             )
 
             val pipelineTemplateInfo = PipelineTemplateInfoV2(
                 id = newTemplateId,
                 projectId = projectId,
-                name = marketTemplateDetails.templateName,
+                name = templateName,
                 desc = marketTemplateDetails.description,
                 mode = TemplateType.CONSTRAINT,
                 type = marketTemplateInfo.type,
-                enablePac = false,
+                enablePac = templateInfo?.enablePac ?: false,
                 creator = userId,
                 updater = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,
@@ -123,8 +146,8 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 category = marketTemplateDetails.classifyCode,
                 logoUrl = marketTemplateDetails.logoUrl,
                 latestVersionStatus = VersionStatus.RELEASED,
-                upgradeStrategy = UpgradeStrategyEnum.MANUAL,
-                settingSyncStrategy = UpgradeStrategyEnum.MANUAL
+                upgradeStrategy = templateInfo?.upgradeStrategy ?: UpgradeStrategyEnum.MANUAL,
+                settingSyncStrategy = templateInfo?.upgradeStrategy ?: UpgradeStrategyEnum.MANUAL
             )
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
