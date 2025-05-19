@@ -58,8 +58,6 @@ data class MarketTemplateUpdateV2Request(
     val description: String,
     @get:Schema(title = "logo地址", required = false)
     val logoUrl: String,
-    @get:Schema(title = "发布者", required = true)
-    val publisher: String,
     @get:Schema(title = "是否全部可见", required = true)
     val fullScopeVisible: Boolean?,
     @get:Schema(title = "部分可见范围", required = false)
