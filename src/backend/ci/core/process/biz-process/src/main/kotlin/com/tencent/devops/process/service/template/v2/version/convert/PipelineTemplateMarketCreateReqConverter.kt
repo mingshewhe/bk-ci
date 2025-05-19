@@ -95,7 +95,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
 
             pipelineTemplateCommonService.checkTemplateBasicInfo(
                 projectId = projectId,
-                name = marketTemplateInfo.name
+                name = marketTemplateDetails.templateName
             )
 
             val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
