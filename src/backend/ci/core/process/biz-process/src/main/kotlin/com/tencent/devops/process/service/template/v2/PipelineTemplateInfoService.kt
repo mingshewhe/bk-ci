@@ -172,13 +172,15 @@ class PipelineTemplateInfoService @Autowired constructor(
         transactionContext: DSLContext? = null,
         projectId: String,
         templateId: String,
-        count: Int
+        count: Int,
+        deleted: Boolean = false
     ) {
         pipelineTemplateInfoDao.updateInstancePipelineCount(
             dslContext = transactionContext ?: dslContext,
             projectId = projectId,
             templateId = templateId,
-            count = count
+            count = count,
+            deleted = deleted
         )
     }
 

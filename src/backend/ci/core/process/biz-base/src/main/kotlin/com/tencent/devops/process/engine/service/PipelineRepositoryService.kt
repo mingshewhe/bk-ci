@@ -79,6 +79,7 @@ import com.tencent.devops.process.dao.PipelineCallbackDao
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.dao.label.PipelineViewGroupDao
+import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.engine.cfg.ModelContainerIdGenerator
 import com.tencent.devops.process.engine.cfg.ModelTaskIdGenerator
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
@@ -174,7 +175,8 @@ class PipelineRepositoryService constructor(
     private val pipelineGroupService: PipelineGroupService,
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineCallbackDao: PipelineCallbackDao,
-    private val subPipelineTaskService: SubPipelineTaskService
+    private val subPipelineTaskService: SubPipelineTaskService,
+    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao
 ) {
 
     companion object {
@@ -1661,6 +1663,12 @@ class PipelineRepositoryService constructor(
             )
 
         val pipelineResult = DeletePipelineResult(pipelineId, record.pipelineName, record.version)
+        val templatePipeline = templatePipelineDao.get(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        )
+
         val lock = PipelineModelLock(redisOperation, pipelineId)
         try {
             lock.lock()
@@ -1673,8 +1681,17 @@ class PipelineRepositoryService constructor(
                     pipelineSettingVersionDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineResourceDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineSettingDao.delete(transactionContext, projectId, pipelineId)
-                    templatePipelineDao.delete(transactionContext, projectId, pipelineId)
                     pipelineViewGroupDao.delete(transactionContext, projectId, pipelineId)
+                    if (templatePipeline != null) {
+                        templatePipelineDao.delete(transactionContext, projectId, pipelineId)
+                        pipelineTemplateInfoDao.updateInstancePipelineCount(
+                            dslContext = transactionContext,
+                            projectId = projectId,
+                            templateId = templatePipeline.templateId,
+                            count = 1,
+                            deleted = true
+                        )
+                    }
                 } else {
                     // 删除前改名，防止名称占用
                     val deleteTime = org.joda.time.LocalDateTime.now().toString("yyMMddHHmmSS")
@@ -1683,14 +1700,24 @@ class PipelineRepositoryService constructor(
                         deleteName = deleteName.substring(0, MAX_LEN_FOR_NAME)
                     }
                     pipelineResourceVersionDao.clearActiveBranchVersion(transactionContext, projectId, pipelineId)
-                    pipelineInfoDao.softDelete(
-                        dslContext = transactionContext,
-                        projectId = projectId,
-                        pipelineId = pipelineId,
-                        changePipelineName = deleteName,
-                        userId = userId,
-                        channelCode = channelCode
-                    )
+                    if (templatePipeline != null) {
+                        pipelineTemplateInfoDao.updateInstancePipelineCount(
+                            dslContext = transactionContext,
+                            projectId = projectId,
+                            templateId = templatePipeline.templateId,
+                            count = 1,
+                            deleted = true
+                        )
+                        pipelineInfoDao.softDelete(
+                            dslContext = transactionContext,
+                            projectId = projectId,
+                            pipelineId = pipelineId,
+                            changePipelineName = deleteName,
+                            userId = userId,
+                            channelCode = channelCode
+                        )
+                    }
+
                     // 同时要对Setting中的name做设置
                     pipelineSettingDao.updateSetting(
                         dslContext = transactionContext,
