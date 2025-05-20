@@ -5,6 +5,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.media.Schema
 import kotlin.reflect.full.memberProperties
 
@@ -50,6 +51,8 @@ data class PipelineTemplateCommonCondition(
     val debugPipelineCount: Int? = null,
     @get:Schema(title = "实例流水线数", required = false)
     val instancePipelineCount: Int? = null,
+    @get:Schema(title = "研发商店状态", required = false)
+    val storeStatus: TemplateStatusEnum? = null,
     @get:Schema(title = "创建人", required = false)
     val creator: String? = null,
     @get:Schema(title = "更新人", required = false)

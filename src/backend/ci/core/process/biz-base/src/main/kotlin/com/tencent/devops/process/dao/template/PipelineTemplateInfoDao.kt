@@ -308,7 +308,7 @@ class PipelineTemplateInfoDao {
                 if (releasedVersion != null) conditions.add(RELEASED_VERSION.eq(releasedVersion))
                 if (releasedVersionName != null) conditions.add(RELEASED_VERSION_NAME.eq(releasedVersionName))
                 if (releasedSettingVersion != null) conditions.add(RELEASED_SETTING_VERSION.eq(releasedSettingVersion))
-                /*if (storeFlag != null) conditions.add(STORE_FLAG.eq(storeFlag))*/
+                if (storeStatus != null) conditions.add(STORE_STATUS.eq(storeStatus!!.name))
                 if (storeFlag == true) conditions.add(STORE_STATUS.eq(TemplateStatusEnum.RELEASED.name))
                 if (srcTemplateId != null) conditions.add(SRC_TEMPLATE_ID.eq(srcTemplateId))
                 if (srcTemplateProjectId != null) conditions.add(SRC_TEMPLATE_PROJECT_ID.eq(srcTemplateProjectId))
