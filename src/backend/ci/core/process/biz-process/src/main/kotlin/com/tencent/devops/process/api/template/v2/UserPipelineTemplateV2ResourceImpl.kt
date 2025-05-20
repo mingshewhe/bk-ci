@@ -263,12 +263,6 @@ class UserPipelineTemplateV2ResourceImpl(
         request: PipelineTemplateResourceCommonCondition
     ): Result<Page<PipelineVersionSimple>> {
         logger.info("get template versions {}|{}|{}|{}", userId, projectId, templateId, request)
-        permissionService.checkPipelineTemplatePermissionWithMessage(
-            userId = userId,
-            projectId = projectId,
-            permission = AuthPermission.VIEW,
-            templateId = templateId
-        )
         return Result(templateFacadeService.getTemplateVersions(request))
     }
 
