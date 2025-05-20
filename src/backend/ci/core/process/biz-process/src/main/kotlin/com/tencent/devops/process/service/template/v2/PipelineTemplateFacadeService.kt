@@ -24,6 +24,7 @@ import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.PipelineTemplateListResponse
+import com.tencent.devops.process.pojo.template.PipelineTemplateListSimpleResponse
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
@@ -326,6 +327,26 @@ class PipelineTemplateFacadeService @Autowired constructor(
         }
 
         return SQLPage(count, templateInfos)
+    }
+
+    fun listTemplateSimpleInfos(
+        userId: String,
+        commonCondition: PipelineTemplateCommonCondition
+    ): SQLPage<PipelineTemplateListSimpleResponse> {
+        val result = listTemplateInfos(
+            userId = userId,
+            commonCondition = commonCondition
+        )
+        return SQLPage(
+            count = result.count,
+            records = result.records.map {
+                PipelineTemplateListSimpleResponse(
+                    id = it.id,
+                    name = it.name,
+                    type = it.type
+                )
+            }
+        )
     }
 
     private fun processWithPermissions(

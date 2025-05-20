@@ -12,6 +12,7 @@ import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.PipelineTemplateListResponse
+import com.tencent.devops.process.pojo.template.PipelineTemplateListSimpleResponse
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
@@ -138,6 +139,20 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "请求体", required = true)
         request: PipelineTemplateCommonCondition
     ): Result<SQLPage<PipelineTemplateListResponse>>
+
+    @Operation(summary = "获取模板列表-简化")
+    @POST
+    @Path("/list/simple/")
+    fun listTemplateSimpleInfos(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "请求体", required = true)
+        request: PipelineTemplateCommonCondition
+    ): Result<SQLPage<PipelineTemplateListSimpleResponse>>
 
     @Operation(summary = "查看模板详情")
     @GET

@@ -39,6 +39,7 @@ import com.tencent.devops.process.pojo.PipelineOperationDetail
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.PipelineTemplateListResponse
+import com.tencent.devops.process.pojo.template.PipelineTemplateListSimpleResponse
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateSource2Count
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
@@ -175,6 +176,14 @@ class UserPipelineTemplateV2ResourceImpl(
         request: PipelineTemplateCommonCondition
     ): Result<SQLPage<PipelineTemplateListResponse>> {
         return Result(templateFacadeService.listTemplateInfos(userId, request))
+    }
+
+    override fun listTemplateSimpleInfos(
+        userId: String,
+        projectId: String,
+        request: PipelineTemplateCommonCondition
+    ): Result<SQLPage<PipelineTemplateListSimpleResponse>> {
+        return Result(templateFacadeService.listTemplateSimpleInfos(userId, request))
     }
 
     override fun getTemplateDetails(
