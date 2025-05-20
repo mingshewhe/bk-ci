@@ -695,7 +695,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
                         projectId = latestInstalled.srcMarketTemplateProjectCode,
                         templateId = latestInstalled.srcMarketTemplateCode,
                         gtNumber = latestInstalled.number,
-                        status = VersionStatus.RELEASED
+                        status = VersionStatus.RELEASED,
+                        storeStatus = TemplateStatusEnum.RELEASED
                     )
                 } ?: return Page(page = -1, pageSize = -1, records = emptyList(), count = 0)
             } ?: commonCondition  // 默认使用原始条件
