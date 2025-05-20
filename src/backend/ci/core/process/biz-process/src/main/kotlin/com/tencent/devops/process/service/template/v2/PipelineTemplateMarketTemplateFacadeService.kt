@@ -15,6 +15,7 @@ import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
@@ -293,47 +294,65 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
         )
 
         templatesOfAutoUpgrade.forEach { templateInfo ->
-            // 查询父模板上架的版本是否已经安装过
-            val isInstalled = pipelineTemplateResourceService.getOrNull(
-                commonCondition = PipelineTemplateResourceCommonCondition(
-                    projectId = templateInfo.projectId,
-                    templateId = templateInfo.id,
-                    srcTemplateProjectId = projectId,
-                    srcTemplateId = templateId,
-                    srcTemplateVersion = version
-                )
-            ) != null
-            if (isInstalled)
-                return@forEach
-            val isSyncSetting = templateInfo.settingSyncStrategy == UpgradeStrategyEnum.AUTO
-            val pipelineTemplateMarketCreateReq = PipelineTemplateMarketCreateReq(
-                marketTemplateProjectId = projectId,
-                marketTemplateId = templateId,
-                marketTemplateVersion = version,
-                copySetting = isSyncSetting,
-                name = templateInfo.name
-            )
-            pipelineTemplateReleaseCreateHandler.handle(
-                pipelineTemplateMarketCreateReqConverter.convert(
-                    userId = templateInfo.creator,
-                    projectId = templateInfo.projectId,
-                    templateId = templateInfo.id,
-                    version = null,
-                    request = pipelineTemplateMarketCreateReq
-                )
-            )
-            client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
-                TemplateVersionInstallHistoryInfo(
-                    srcMarketTemplateProjectCode = srcTemplateResource.projectId,
-                    srcMarketTemplateCode = srcTemplateResource.templateId,
-                    projectCode = templateInfo.projectId,
-                    templateCode = templateInfo.id,
-                    version = srcTemplateResource.version,
-                    versionName = srcTemplateResource.versionName!!,
-                    number = srcTemplateResource.number
-                )
+            installNewVersion(
+                templateInfo = templateInfo,
+                srcTemplateProjectId = srcTemplateResource.projectId,
+                srcTemplateId = srcTemplateResource.templateId,
+                srcTemplateVersion = srcTemplateResource.version,
+                srcTemplateNumber = srcTemplateResource.number,
+                srcTemplateVersionName = srcTemplateResource.versionName!!
             )
         }
+    }
+
+    fun installNewVersion(
+        templateInfo: PipelineTemplateInfoV2,
+        srcTemplateProjectId: String,
+        srcTemplateId: String,
+        srcTemplateVersion: Long,
+        srcTemplateNumber: Int,
+        srcTemplateVersionName: String
+    ) {
+        // 查询父模板上架的版本是否已经安装过
+        val isInstalled = pipelineTemplateResourceService.getOrNull(
+            commonCondition = PipelineTemplateResourceCommonCondition(
+                projectId = templateInfo.projectId,
+                templateId = templateInfo.id,
+                srcTemplateProjectId = srcTemplateProjectId,
+                srcTemplateId = srcTemplateId,
+                srcTemplateVersion = srcTemplateVersion
+            )
+        ) != null
+        if (isInstalled)
+            return
+        val isSyncSetting = templateInfo.settingSyncStrategy == UpgradeStrategyEnum.AUTO
+        val pipelineTemplateMarketCreateReq = PipelineTemplateMarketCreateReq(
+            marketTemplateProjectId = srcTemplateProjectId,
+            marketTemplateId = srcTemplateId,
+            marketTemplateVersion = srcTemplateVersion,
+            copySetting = isSyncSetting,
+            name = templateInfo.name
+        )
+        pipelineTemplateReleaseCreateHandler.handle(
+            pipelineTemplateMarketCreateReqConverter.convert(
+                userId = templateInfo.creator,
+                projectId = templateInfo.projectId,
+                templateId = templateInfo.id,
+                version = null,
+                request = pipelineTemplateMarketCreateReq
+            )
+        )
+        client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+            TemplateVersionInstallHistoryInfo(
+                srcMarketTemplateProjectCode = srcTemplateProjectId,
+                srcMarketTemplateCode = srcTemplateId,
+                projectCode = templateInfo.projectId,
+                templateCode = templateInfo.id,
+                version = srcTemplateVersion,
+                versionName = srcTemplateVersionName,
+                number = srcTemplateNumber
+            )
+        )
     }
 
     fun checkImageReleaseStatus(

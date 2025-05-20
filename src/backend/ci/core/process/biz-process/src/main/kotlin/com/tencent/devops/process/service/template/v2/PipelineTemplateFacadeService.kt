@@ -13,6 +13,7 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
@@ -73,7 +74,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
-    private val client: Client
+    private val client: Client,
+    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService
 ) {
     fun create(
         userId: String,
@@ -909,7 +911,10 @@ class PipelineTemplateFacadeService @Autowired constructor(
         templateId: String,
         request: PipelineTemplateStrategyUpdateInfo
     ): Boolean {
-        // todo 当策略是自动升级时，将安装最新版本
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId,
+            templateId = templateId
+        )
         pipelineTemplateInfoService.update(
             record = PipelineTemplateInfoUpdateInfo(
                 upgradeStrategy = request.upgradeStrategy,
@@ -921,6 +926,21 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 templateId = templateId
             )
         )
+        if (templateInfo.upgradeStrategy == UpgradeStrategyEnum.MANUAL &&
+            request.upgradeStrategy == UpgradeStrategyEnum.AUTO) {
+            val srcTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
+                projectId = templateInfo.srcTemplateProjectId!!,
+                templateId = templateInfo.srcTemplateId!!
+            )!!
+            pipelineTemplateMarketTemplateFacadeService.installNewVersion(
+                templateInfo = templateInfo,
+                srcTemplateProjectId = srcTemplateResource.projectId,
+                srcTemplateId = srcTemplateResource.templateId,
+                srcTemplateVersion = srcTemplateResource.version,
+                srcTemplateNumber = srcTemplateResource.number,
+                srcTemplateVersionName = srcTemplateResource.versionName!!
+            )
+        }
         return true
     }
 
