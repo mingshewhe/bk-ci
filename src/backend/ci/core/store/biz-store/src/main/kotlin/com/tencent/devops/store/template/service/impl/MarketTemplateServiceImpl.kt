@@ -1453,6 +1453,15 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
+    override fun deleteTemplateVersionInstallHistory(projectCode: String, templateCode: String) {
+        logger.info("delete template version install history:$projectCode|$templateCode")
+        templateVersionInstallHistoryDao.delete(
+            dslContext = dslContext,
+            projectCode = projectCode,
+            templateCode = templateCode
+        )
+    }
+
     override fun getRecentlyInstalledVersion(
         projectCode: String,
         templateCode: String

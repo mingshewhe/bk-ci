@@ -46,6 +46,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdat
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
 import com.tencent.devops.store.api.common.ServiceStoreResource
+import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -438,6 +439,10 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     storeCode = templateInfo.srcTemplateId!!,
                     storeType = StoreTypeEnum.TEMPLATE,
                     projectCode = templateInfo.projectId
+                )
+                client.get(ServiceTemplateResource::class).deleteTemplateVersionInstallHistory(
+                    projectCode = projectId,
+                    templateCode = templateId
                 )
             }
             pipelineTemplatePermissionService.deleteResource(

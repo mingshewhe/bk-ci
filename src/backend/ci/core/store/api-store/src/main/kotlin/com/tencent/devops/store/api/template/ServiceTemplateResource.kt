@@ -41,6 +41,7 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.DELETE
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.POST
@@ -150,6 +151,18 @@ interface ServiceTemplateResource {
     fun createTemplateVersionInstallHistory(
         @Parameter(description = "模板版本安装历史实体", required = true)
         installHistoryInfo: TemplateVersionInstallHistoryInfo
+    ): Result<Boolean>
+
+    @Operation(summary = "山粗模板版本安装历史")
+    @DELETE
+    @Path("/{projectCode}/{templateCode}/deleteTemplateVersionInstallHistory")
+    fun deleteTemplateVersionInstallHistory(
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectCode")
+        projectCode: String,
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String
     ): Result<Boolean>
 
     @Operation(summary = "获取模板最近安装历史")

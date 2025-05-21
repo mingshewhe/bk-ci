@@ -8,6 +8,7 @@ import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
+import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -61,6 +62,20 @@ class PipelineTemplateResourceService @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             status = VersionStatus.RELEASED
+        )
+    }
+
+    // 获取最新上架版本
+    fun getLatestPublishedResource(
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateResource? {
+        return pipelineTemplateResourceDao.getLatestRecord(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            status = VersionStatus.RELEASED,
+            storeStatus = TemplateStatusEnum.RELEASED
         )
     }
 

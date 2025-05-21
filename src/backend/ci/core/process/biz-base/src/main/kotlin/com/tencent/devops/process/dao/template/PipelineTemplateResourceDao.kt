@@ -279,6 +279,7 @@ class PipelineTemplateResourceDao {
         projectId: String? = null,
         templateId: String,
         status: VersionStatus? = null,
+        storeStatus: TemplateStatusEnum? = null,
         version: Long? = null,
         versionName: String? = null,
         includeDelete: Boolean = false
@@ -304,6 +305,9 @@ class PipelineTemplateResourceDao {
             }
             if (versionName != null) {
                 conditions.add(VERSION_NAME.eq(versionName))
+            }
+            if (storeStatus != null) {
+                conditions.add(STORE_STATUS.eq(storeStatus.name))
             }
             val query = dslContext.selectFrom(this).where(conditions)
             // 正式版本,应该按照versionNum排序,
