@@ -50,6 +50,8 @@ data class TemplateDetail(
     val templateCode: String,
     @get:Schema(title = "模板名称", required = true)
     val templateName: String,
+    @get:Schema(title = "源模板名称", required = true)
+    val sourceTemplateName: String = "",
     @get:Schema(title = "模板logo", required = false)
     val logoUrl: String?,
     @get:Schema(title = "所属模板分类代码", required = false)

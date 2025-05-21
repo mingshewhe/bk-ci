@@ -600,13 +600,13 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
         val projectName = projectCode?.let { client.get(ServiceProjectResource::class).get(it).data?.projectName }
 
-        val publishStrategy = projectCode?.let {
+        val sourceTemplateInfo = projectCode?.let {
             try {
                 client.get(ServicePipelineTemplateV2Resource::class).getTemplateInfo(
                     userId = userId,
                     projectId = it,
                     templateId = templateCode
-                ).data?.publishStrategy
+                ).data
             } catch (ex: Exception) {
                 logger.warn("get Template Info failed $templateCode|$it$ex")
                 null
@@ -646,10 +646,11 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             TemplateDetail(
                 projectCode = projectCode,
                 projectName = projectName,
-                publishStrategy = publishStrategy,
+                publishStrategy = sourceTemplateInfo?.publishStrategy,
                 templateId = templateRecord.id,
                 templateCode = templateCode,
                 templateName = templateRecord.templateName,
+                sourceTemplateName = sourceTemplateInfo?.name ?: "",
                 logoUrl = templateRecord.logoUrl?.let {
                     StoreDecorateFactory.get(StoreDecorateFactory.Kind.HOST)?.decorate(it) as? String
                 },
