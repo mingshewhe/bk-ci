@@ -37,9 +37,9 @@ import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Extends(
-    override val template: String,
+    override val template: String?,
     override val templateId: String?,
     override val templateName: String?,
     override val ref: String?,
-    override val variables: Map<String, String>?
+    override val variables: Map<String, Any>?
 ) : CodeTemplate

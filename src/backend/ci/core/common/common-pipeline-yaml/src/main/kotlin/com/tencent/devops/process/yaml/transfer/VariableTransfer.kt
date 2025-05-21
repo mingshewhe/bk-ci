@@ -58,9 +58,9 @@ class VariableTransfer {
             listOf(MAJORVERSION, "MajorVersion", MINORVERSION, "MinorVersion", FIXVERSION, "FixVersion")
     }
 
-    fun makeVariableFromModel(triggerContainer: TriggerContainer): Map<String, Variable>? {
+    fun makeVariableFromModel(triggerContainer: TriggerContainer?): Map<String, Variable>? {
         val result = mutableMapOf<String, Variable>()
-        triggerContainer.params.forEach {
+        triggerContainer?.params?.forEach {
             if (it.id in ignoredVariable) return@forEach
             val props = when {
                 // 不带
@@ -173,8 +173,8 @@ class VariableTransfer {
         }
     }
 
-    fun makeRecommendedVersion(triggerContainer: TriggerContainer): RecommendedVersion? {
-        val res = triggerContainer.buildNo?.let {
+    fun makeRecommendedVersion(triggerContainer: TriggerContainer?): RecommendedVersion? {
+        val res = triggerContainer?.buildNo?.let {
             RecommendedVersion(
                 enabled = true,
                 allowModifyAtStartup = it.required,

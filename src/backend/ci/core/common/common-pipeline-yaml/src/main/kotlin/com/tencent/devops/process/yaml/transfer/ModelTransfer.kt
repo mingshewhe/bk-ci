@@ -30,6 +30,7 @@ package com.tencent.devops.process.yaml.transfer
 import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.pipeline.ITemplateFunction
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
@@ -46,6 +47,7 @@ import com.tencent.devops.process.yaml.transfer.pojo.ModelTransferInput
 import com.tencent.devops.process.yaml.transfer.pojo.YamlTransferInput
 import com.tencent.devops.process.yaml.v3.enums.SyntaxDialectType
 import com.tencent.devops.process.yaml.v3.models.Concurrency
+import com.tencent.devops.process.yaml.v3.models.Extends
 import com.tencent.devops.process.yaml.v3.models.IPreTemplateScriptBuildYamlParser
 import com.tencent.devops.process.yaml.v3.models.Notices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
@@ -54,6 +56,7 @@ import com.tencent.devops.process.yaml.v3.models.on.IPreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOnV3
 import com.tencent.devops.process.yaml.v3.models.stage.PreStage
+import java.util.concurrent.atomic.AtomicInteger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -166,10 +169,23 @@ class ModelTransfer @Autowired constructor(
         model.latestVersion = yamlInput.pipelineInfo?.version ?: 0
 
         // 蓝盾引擎会将stageId从1开始顺序强制重写，因此在生成model时保持一致
-        var stageIndex = 1
-        stageList.add(modelStage.yaml2TriggerStage(yamlInput, stageIndex++))
+        val stageIndex = AtomicInteger(0)
+        // trigger stage
+        stageList.add(modelStage.yaml2TriggerStage(yamlInput, stageIndex.incrementAndGet()))
 
         // 其他的stage
+        formatStage(yamlInput, stageList, stageIndex)
+        // 添加finally
+        formatFinally(yamlInput, stageList, stageIndex.incrementAndGet())
+        yamlInput.aspectWrapper.setModel4Model(model, PipelineTransferAspectWrapper.AspectType.AFTER)
+        return model
+    }
+
+    private fun formatStage(
+        yamlInput: YamlTransferInput,
+        stageList: MutableList<Stage>,
+        stageIndex: AtomicInteger
+    ) {
         yamlInput.yaml.formatStages().forEach { stage ->
             yamlInput.aspectWrapper.setYamlStage4Yaml(
                 yamlStage = stage,
@@ -179,14 +195,20 @@ class ModelTransfer @Autowired constructor(
                 modelStage.yaml2Stage(
                     stage = stage,
                     // stream的stage标号从1开始，后续都加1
-                    stageIndex = stageIndex++,
+                    stageIndex = stageIndex.incrementAndGet(),
                     yamlInput = yamlInput
                 ).also {
                     yamlInput.aspectWrapper.setModelStage4Model(it, PipelineTransferAspectWrapper.AspectType.AFTER)
                 }
             )
         }
-        // 添加finally
+    }
+
+    private fun formatFinally(
+        yamlInput: YamlTransferInput,
+        stageList: MutableList<Stage>,
+        stageIndex: Int
+    ) {
         val finallyJobs = yamlInput.yaml.formatFinallyStage()
         if (finallyJobs.isNotEmpty()) {
             yamlInput.aspectWrapper.setYamlStage4Yaml(
@@ -202,8 +224,6 @@ class ModelTransfer @Autowired constructor(
                 }
             )
         }
-        yamlInput.aspectWrapper.setModel4Model(model, PipelineTransferAspectWrapper.AspectType.AFTER)
-        return model
     }
 
     fun model2yaml(modelInput: ModelTransferInput): IPreTemplateScriptBuildYamlParser {
@@ -229,10 +249,23 @@ class ModelTransfer @Autowired constructor(
             }
 
             YamlVersion.V3_0 -> {
-                (yaml as PreTemplateScriptBuildYamlV3Parser).triggerOn =
-                    triggerOn.ifEmpty { null }?.let { if (it.size == 1) it.first() else it }
+                yaml.triggerOn = triggerOn.ifEmpty { null }?.let { if (it.size == 1) it.first() else it }
             }
         }
+        yaml.stages = TransferMapper.anyTo(makeStages(modelInput))
+        yaml.variables = variableTransfer.makeVariableFromModel(modelInput.model.getTriggerContainer())
+        yaml.extends = makeExtend(modelInput.model)
+        yaml.finally = makeFinally(modelInput)
+        yaml.concurrency = makeConcurrency(modelInput.setting)
+        yaml.customBuildNum = modelInput.setting.buildNumRule
+        yaml.recommendedVersion = variableTransfer.makeRecommendedVersion(modelInput.model.getTriggerContainer())
+        yaml.disablePipeline = (modelInput.setting.runLockType == PipelineRunLockType.LOCK ||
+            modelInput.pipelineInfo?.locked == true).nullIfDefault(false)
+        modelInput.aspectWrapper.setYaml4Yaml(yaml, PipelineTransferAspectWrapper.AspectType.AFTER)
+        return yaml
+    }
+
+    private fun makeStages(modelInput: ModelTransferInput): MutableList<PreStage> {
         val stages = mutableListOf<PreStage>()
         modelInput.model.stages.forEachIndexed { index, stage ->
             if (index == 0 || stage.finally) return@forEachIndexed
@@ -249,8 +282,10 @@ class ModelTransfer @Autowired constructor(
             )
             stages.add(ymlStage)
         }
-        yaml.stages = TransferMapper.anyTo(stages)
-        yaml.variables = variableTransfer.makeVariableFromModel(modelInput.model.getTriggerContainer())
+        return stages
+    }
+
+    private fun makeFinally(modelInput: ModelTransferInput): LinkedHashMap<String, Any>? {
         val lastStage = modelInput.model.stages.last()
         val finally = if (lastStage.finally) {
             modelInput.aspectWrapper.setModelStage4Model(lastStage, PipelineTransferAspectWrapper.AspectType.BEFORE)
@@ -261,14 +296,20 @@ class ModelTransfer @Autowired constructor(
                 aspectWrapper = modelInput.aspectWrapper
             ).jobs
         } else null
-        yaml.finally = finally as LinkedHashMap<String, Any>?
-        yaml.concurrency = makeConcurrency(modelInput.setting)
-        yaml.customBuildNum = modelInput.setting.buildNumRule
-        yaml.recommendedVersion = variableTransfer.makeRecommendedVersion(modelInput.model.getTriggerContainer())
-        yaml.disablePipeline = (modelInput.setting.runLockType == PipelineRunLockType.LOCK ||
-            modelInput.pipelineInfo?.locked == true).nullIfDefault(false)
-        modelInput.aspectWrapper.setYaml4Yaml(yaml, PipelineTransferAspectWrapper.AspectType.AFTER)
-        return yaml
+        return finally as LinkedHashMap<String, Any>?
+    }
+
+    private fun makeExtend(templateInfo: ITemplateFunction): Extends? {
+        if (templateInfo.fromTemplate != true) return null
+        with(templateInfo) {
+            return Extends(
+                template = template,
+                templateId = templateId,
+                templateName = templateName,
+                ref = templateVersion,
+                variables = templateVariables
+            )
+        }
     }
 
     fun makeNoticesV3(setting: PipelineSetting): List<PacNotices>? {
@@ -324,7 +365,7 @@ class ModelTransfer @Autowired constructor(
             modelInput.model.stages[0].containers[0],
             PipelineTransferAspectWrapper.AspectType.BEFORE
         )
-        val triggers = (modelInput.model.getTriggerContainer()).elements
+        val triggers = (modelInput.model.getTriggerContainer())?.elements ?: return emptyList()
         val baseTrigger = elementTransfer.baseTriggers2yaml(triggers, modelInput.aspectWrapper)
             ?.toPre(modelInput.version)
         val scmTrigger = elementTransfer.scmTriggers2Yaml(
