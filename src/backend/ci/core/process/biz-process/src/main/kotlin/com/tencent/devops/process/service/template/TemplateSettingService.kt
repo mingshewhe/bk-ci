@@ -37,9 +37,6 @@ class TemplateSettingService @Autowired constructor(
     private val pipelineSettingVersionService: PipelineSettingVersionService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelineAsCodeService: PipelineAsCodeService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplateMigrateService: PipelineTemplateMigrateService
 ) {
     fun updateTemplateSetting(
@@ -72,44 +69,6 @@ class TemplateSettingService @Autowired constructor(
                 userId = userId,
                 setting = setting
             )
-        }
-        val v2LatestTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
-            projectId = projectId,
-            templateId = templateId
-        )
-        val v1LatestTemplateResource = templateDao.getLatestTemplate(
-            dslContext = dslContext,
-            projectId = projectId,
-            templateId = templateId
-        )
-        // 若还未迁移或新表和旧表的最新版本不一致时，进行重复迁移
-        if (v2LatestTemplateResource == null || v2LatestTemplateResource.version != v1LatestTemplateResource.version) {
-            pipelineTemplateMigrateService.asyncMigrateTemplate(
-                projectId = projectId,
-                templateId = templateId
-            )
-        } else {
-            dslContext.transaction { configuration ->
-                val context = DSL.using(configuration)
-                pipelineTemplateInfoService.update(
-                    transactionContext = context,
-                    record = PipelineTemplateInfoUpdateInfo(
-                        name = setting.pipelineName,
-                        desc = setting.desc
-                    ),
-                    commonCondition = PipelineTemplateCommonCondition(
-                        projectId = projectId,
-                        templateId = templateId
-                    )
-                )
-                pipelineTemplateSettingService.createOrUpdate(
-                    transactionContext = context,
-                    pipelineTemplateSetting = setting.copy(
-                        version = v2LatestTemplateResource.settingVersion,
-                        updater = userId
-                    )
-                )
-            }
         }
         return true
     }
@@ -151,6 +110,11 @@ class TemplateSettingService @Autowired constructor(
             projectId = setting.projectId,
             pipelineId = setting.pipelineId,
             labelIds = setting.labels
+        )
+        // 同步数据
+        pipelineTemplateMigrateService.asyncMigrateTemplate(
+            projectId = projectId,
+            templateId = setting.pipelineId
         )
         return setting.copy(version = settingVersion)
     }

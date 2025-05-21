@@ -29,7 +29,6 @@ class PipelineTemplateRelatedService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateRelatedDao: PipelineTemplateRelatedDao,
     private val templateDao: TemplateDao,
-    private val templatePipelineDao: TemplatePipelineDao,
     private val pipelineTemplateResourceDao: PipelineTemplateResourceDao
 ) {
     fun create(

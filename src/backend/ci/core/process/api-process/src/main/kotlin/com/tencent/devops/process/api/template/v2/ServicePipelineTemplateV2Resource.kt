@@ -68,21 +68,6 @@ import jakarta.ws.rs.core.MediaType
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 interface ServicePipelineTemplateV2Resource {
-
-    @Operation(summary = "添加模板市场模板")
-    @POST
-    @Path("/store/add")
-    fun addMarketTemplate(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @HeaderParam(AUTH_HEADER_PROJECT_ID)
-        projectId: String,
-        @Parameter(description = "安装模板请求报文体", required = true)
-        addMarketTemplateRequest: MarketTemplateRequest
-    ): Result<Map<String, String>>
-
     @Operation(summary = "更新研发商店模板")
     @POST
     @Path("/store/update")
@@ -132,18 +117,6 @@ interface ServicePipelineTemplateV2Resource {
         @PathParam("projectId")
         projectId: String
     ): Result<List<String>>
-
-    @Operation(summary = "查询源模板ID绑定的模板")
-    @GET
-    @Path("/store/srcTemplates/{srcTemplateId}")
-    fun getTemplateIdBySrcCode(
-        @Parameter(description = "源模板Id", required = true)
-        @PathParam("srcTemplateId")
-        srcTemplateId: String,
-        @Parameter(description = "项目列表", required = true)
-        @QueryParam("projectIds")
-        projectIds: List<String>
-    ): Result<List<PipelineTemplateInfo>>
 
     @Operation(summary = "更新研发商店摸吧状态")
     @PUT
@@ -197,95 +170,6 @@ interface ServicePipelineTemplateV2Resource {
         @PathParam("version")
         version: Long
     ): Result<Boolean>
-
-    @Operation(summary = "创建流水线-获取模版列表")
-    @GET
-    @Path("/projects/{projectId}/allTemplates")
-    fun listAllTemplate(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
-        @Parameter(description = "模版类型", required = false)
-        @QueryParam("templateType")
-        templateType: TemplateType?,
-        @Parameter(description = "页码", required = false)
-        @QueryParam("page")
-        page: Int?,
-        @Parameter(description = "每页数量", required = false)
-        @QueryParam("pageSize")
-        @BkField(patternStyle = BkStyleEnum.PAGE_SIZE_STYLE, required = false)
-        pageSize: Int?
-    ): Result<OptionalTemplateList>
-
-    @Operation(summary = "获取列表流水线模板")
-    @GET
-    @Path("/projects/{projectId}/templates/{templateId}")
-    fun getTemplate(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
-        @Parameter(description = "模板ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
-        @Parameter(description = "模板版本", required = false)
-        @QueryParam("version")
-        version: Long?,
-        @Parameter(description = "模板版本名称", required = false)
-        @QueryParam("versionName")
-        versionName: String?
-    ): Result<TemplateModelDetail>
-
-    @Operation(summary = "模版管理-获取模版列表")
-    @GET
-    @Path("/projects/{projectId}/templates")
-    fun listTemplate(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectId")
-        projectId: String,
-        @Parameter(description = "模版类型", required = false)
-        @QueryParam("templateType")
-        templateType: TemplateType?,
-        @Parameter(description = "是否已关联到store", required = false)
-        @QueryParam("storeFlag")
-        storeFlag: Boolean?,
-        @Parameter(description = "模版排序字段", required = false, example = "CREATE_TIME")
-        @QueryParam("orderBy")
-        orderBy: PTemplateOrderByType? = null,
-        @Parameter(description = "orderBy排序顺序", required = false)
-        @QueryParam("sort")
-        sort: PTemplateSortType? = null,
-        @Parameter(description = "页码", required = false)
-        @QueryParam("page")
-        page: Int?,
-        @Parameter(description = "每页数量", required = false)
-        @QueryParam("pageSize")
-        @BkField(patternStyle = BkStyleEnum.PAGE_SIZE_STYLE, required = false)
-        pageSize: Int?
-    ): Result<TemplateListModel>
-
-    @Operation(summary = "根据id获取模版列表")
-    @POST
-    @Path("/listTemplateById")
-    @BkApiPermission([BkApiHandleType.API_NO_AUTH_CHECK])
-    fun listTemplateById(
-        @Parameter(description = "模板ID", required = true)
-        templateIds: Collection<String>,
-        @Parameter(description = "项目ID", required = false)
-        @QueryParam("projectId")
-        projectId: String?,
-        @Parameter(description = "模版类型", required = false)
-        @QueryParam("templateType")
-        templateType: TemplateType?
-    ): Result<OptionalTemplateList>
 
     @Operation(summary = "检查模板是否合法")
     @GET

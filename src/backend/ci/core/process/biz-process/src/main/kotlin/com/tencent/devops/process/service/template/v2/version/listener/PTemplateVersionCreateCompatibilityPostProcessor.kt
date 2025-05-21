@@ -34,7 +34,7 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
         deployTemplateResult: DeployTemplateResult
     ) {
         with(deployTemplateResult) {
-            logger.info("post process after creation :$deployTemplateResult")
+            logger.info("post process after creation :$context|$deployTemplateResult")
             if (!versionAction.isCreateReleaseVersion()) {
                 return
             }

@@ -162,13 +162,20 @@ interface MarketTemplateService {
     /**
      *  创建模板发布历史
      * */
-    fun createMarketTemplatePublishedVersion(templatePublishedVersionInfo: TemplatePublishedVersionInfo)
+    fun createMarketTemplatePublishedVersion(
+        templatePublishedVersionInfo: TemplatePublishedVersionInfo
+    )
 
     /**
-     * 获取单个模板最新发布版本
+     * 获取模板最新上架版本
      * */
-    fun getLatestMarketTemplatePublishedVersion(templateCode: String): TemplatePublishedVersionInfo?
+    fun getLatestMarketTemplatePublishedVersion(
+        templateCode: String
+    ): TemplatePublishedVersionInfo?
 
+    /**
+     * 获取模板最新上架版本历史
+     * */
     fun listMarketTemplatePublishedHistory(
         userId: String,
         templateCode: String,
@@ -177,14 +184,18 @@ interface MarketTemplateService {
     ): Page<TemplatePublishedVersionInfo>
 
     /**
-     * 批量获取模板最新发布版本
+     * 批量获取模板最新上架版本
      * */
-    fun listLatestMarketTemplatePublishedVersions(templateCodes: List<String>): List<TemplatePublishedVersionInfo>
+    fun listLatestMarketTemplatePublishedVersions(
+        templateCodes: List<String>
+    ): List<TemplatePublishedVersionInfo>
 
     /**
      * 创建模板安装历史
      * */
-    fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo)
+    fun createTemplateVersionInstallHistory(
+        installHistoryInfo: TemplateVersionInstallHistoryInfo
+    )
 
     /**
      * 删除模板安装历史
@@ -213,5 +224,7 @@ interface MarketTemplateService {
     /**
      * 批量获取模板最新安装版本
      * */
-    fun listLatestInstalledVersions(templateCodes: List<String>): List<TemplateVersionInstallHistoryInfo>
+    fun listLatestInstalledVersions(
+        templateCodes: List<String>
+    ): List<TemplateVersionInstallHistoryInfo>
 }

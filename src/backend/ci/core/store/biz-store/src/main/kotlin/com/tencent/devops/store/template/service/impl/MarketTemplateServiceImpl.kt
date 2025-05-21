@@ -1203,13 +1203,13 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
         // 获取项目代码对应的名称
         val projectCodeList = mutableListOf<String>()
-        records?.forEach {
+        records.forEach {
             projectCodeList.add(it[KEY_PROJECT_CODE] as String)
         }
         val projectMap = client.get(ServiceProjectResource::class).getNameByCode(projectCodeList.joinToString(",")).data
         val templateList = mutableListOf<MyTemplateItem>()
         val tTemplate = TTemplate.T_TEMPLATE
-        records?.forEach {
+        records.forEach {
             val templateCode = it[tTemplate.TEMPLATE_CODE] as String
             var releaseFlag = false // 是否有处于上架状态的模板版本
             val count = marketTemplateDao.countReleaseTemplateByCode(dslContext, templateCode)
@@ -1307,13 +1307,13 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             projectCodes = records.joinToString(",") { it[KEY_PROJECT_CODE].toString() }
         ).data
 
-        // 获取研发商店模板最新发布版本
+        // 获取研发商店模板最新上架的版本
         val latestMarketPublishedVersions = templateVersionReleasedRelDao.listLatestPublishedVersions(
             dslContext = dslContext,
             templateCodes = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
         )
 
-        // 获取模板最新发布版本
+        // 获取源模板最新发布版本
         val latestReleasedVersions = client.get(ServicePipelineTemplateV2Resource::class).listLatestReleasedVersions(
             templateIds = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
         ).data ?: emptyList()

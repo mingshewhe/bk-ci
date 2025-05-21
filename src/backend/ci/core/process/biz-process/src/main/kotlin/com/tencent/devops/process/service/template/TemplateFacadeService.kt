@@ -530,31 +530,30 @@ class TemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        // 若还未迁移或新表和旧表的最新版本不一致时，进行重复迁移
+        // 当在老版本界面更新时，若还未同步完时，需进行迁移，再进行更新。。
         if (v2TemplateResource == null || v2TemplateResource.version != latestTemplate.version) {
-            pipelineTemplateMigrateService.asyncMigrateTemplate(
+            pipelineTemplateMigrateService.migrateTemplate(
                 projectId = projectId,
                 templateId = templateId
             )
-        } else {
-            val request = PipelineTemplateCompatibilityCreateReq(
-                model = template,
-                setting = PipelineSetting(
-                    pipelineName = template.name,
-                    desc = template.desc ?: "",
-                    pipelineAsCodeSettings = null
-                ),
-                versionName = versionName,
-                category = latestTemplate.category,
-                logoUrl = latestTemplate.logoUrl
-            )
-            pipelineTemplateVersionManager.deployTemplate(
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                request = request
-            )
         }
+        val request = PipelineTemplateCompatibilityCreateReq(
+            model = template,
+            setting = PipelineSetting(
+                pipelineName = template.name,
+                desc = template.desc ?: "",
+                pipelineAsCodeSettings = null
+            ),
+            versionName = versionName,
+            category = latestTemplate.category,
+            logoUrl = latestTemplate.logoUrl
+        )
+        pipelineTemplateVersionManager.deployTemplate(
+            userId = userId,
+            projectId = projectId,
+            templateId = templateId,
+            request = request
+        )
         val latestVersion = pipelineTemplateResourceService.getLatestReleasedResource(
             projectId = projectId,
             templateId = templateId
@@ -2405,6 +2404,7 @@ class TemplateFacadeService @Autowired constructor(
             )
             projectTemplateMap[projectId] = templateId
         }
+        // 安装研发商店的模板，需后台进行迁移数据。
         pipelineTemplateMigrateService.asyncMigrateTemplate(
             projectId = projectId,
             templateId = templateId
@@ -2515,8 +2515,6 @@ class TemplateFacadeService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(TemplateFacadeService::class.java)
-        private const val INIT_TEMPLATE_NAME = "init"
         private const val TEMPLATE_BIZ_TAG_NAME = "TEMPLATE"
-        private val migrateTemplateExecutorService = Executors.newFixedThreadPool(5)
     }
 }

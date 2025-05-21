@@ -313,7 +313,7 @@ class PipelineTemplateMigrateService(
                 }
 
                 // 如果该模板已经上架过研发商店，需要记录发布的版本历史
-                if (latestTemplate.type != TemplateType.CONSTRAINT.name &&
+                if (latestTemplate.type == TemplateType.CUSTOMIZE.name &&
                     (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
                         marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)) {
                     client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(

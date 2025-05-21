@@ -30,15 +30,7 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
-import com.tencent.devops.process.pojo.PTemplateOrderByType
-import com.tencent.devops.process.pojo.PTemplateSortType
-import com.tencent.devops.process.pojo.PipelineTemplateInfo
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
-import com.tencent.devops.process.pojo.template.MarketTemplateRequest
-import com.tencent.devops.process.pojo.template.OptionalTemplateList
-import com.tencent.devops.process.pojo.template.TemplateListModel
-import com.tencent.devops.process.pojo.template.TemplateModelDetail
-import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
@@ -55,14 +47,6 @@ class ServicePipelineTemplateV2ResourceImpl(
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : ServicePipelineTemplateV2Resource {
-    override fun addMarketTemplate(
-        userId: String,
-        projectId: String,
-        addMarketTemplateRequest: MarketTemplateRequest
-    ): Result<Map<String, String>> {
-        TODO("Not yet implemented")
-    }
-
     override fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Result<Boolean> {
         return Result(pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReferenceV2(request))
     }
@@ -97,13 +81,6 @@ class ServicePipelineTemplateV2ResourceImpl(
 
     override fun getSrcTemplateCodes(projectId: String): Result<List<String>> {
         return Result(pipelineTemplateInfoService.listSrcTemplateIds(projectId))
-    }
-
-    override fun getTemplateIdBySrcCode(
-        srcTemplateId: String,
-        projectIds: List<String>
-    ): Result<List<PipelineTemplateInfo>> {
-        TODO("Not yet implemented")
     }
 
     override fun updateStoreStatus(
@@ -151,47 +128,6 @@ class ServicePipelineTemplateV2ResourceImpl(
             version = version
         )
         return Result(true)
-    }
-
-    override fun listAllTemplate(
-        userId: String,
-        projectId: String,
-        templateType: TemplateType?,
-        page: Int?,
-        pageSize: Int?
-    ): Result<OptionalTemplateList> {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTemplate(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        version: Long?,
-        versionName: String?
-    ): Result<TemplateModelDetail> {
-        TODO("Not yet implemented")
-    }
-
-    override fun listTemplate(
-        userId: String,
-        projectId: String,
-        templateType: TemplateType?,
-        storeFlag: Boolean?,
-        orderBy: PTemplateOrderByType?,
-        sort: PTemplateSortType?,
-        page: Int?,
-        pageSize: Int?
-    ): Result<TemplateListModel> {
-        TODO("Not yet implemented")
-    }
-
-    override fun listTemplateById(
-        templateIds: Collection<String>,
-        projectId: String?,
-        templateType: TemplateType?
-    ): Result<OptionalTemplateList> {
-        TODO("Not yet implemented")
     }
 
     override fun checkTemplate(

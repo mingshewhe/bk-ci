@@ -15,6 +15,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.utils.I18nUtil
+import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -624,11 +625,14 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 projectId = it.srcTemplateProjectId!!,
                 templateId = it.srcTemplateId!!
             )
-
+            val marketTemplateDetails = client.get(ServiceTemplateResource::class).getTemplateDetailByCode(
+                userId = userId,
+                templateCode = it.srcTemplateId!!
+            ).data ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_SOURCE_TEMPLATE_NOT_EXISTS)
             PipelineTemplateMarketRelatedInfo(
                 srcMarketProjectId = srcMarketTemplateInfo.projectId,
                 srcMarketTemplateId = srcMarketTemplateInfo.id,
-                srcMarketTemplateName = srcMarketTemplateInfo.name,
+                srcMarketTemplateName = marketTemplateDetails.templateName,
                 srcMarketTemplateLatestVersion = srcTemplateLatestReleasedVersion.version,
                 srcMarketTemplateLatestVersionName = srcTemplateLatestReleasedVersion.versionName,
                 latestInstalledVersion = recentlyInstalledVersion.version,
