@@ -441,7 +441,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 val installedVersion = latestInstalledVersions.firstOrNull { it.templateCode == template.id }
                 val parentVersion = latestParentVersions.firstOrNull { it.templateCode == template.srcTemplateId }
                 logger.debug("{} installedVersion({})|parentVersion({})", template.id, installedVersion, parentVersion)
-                installedVersion != null && parentVersion != null && installedVersion.version != parentVersion.version
+                installedVersion != null && parentVersion != null && installedVersion.version < parentVersion.version
             } else {
                 false
             }
@@ -452,7 +452,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 val marketVersion = latestMarketVersions.firstOrNull { it.templateCode == template.id }
                 logger.debug("{} releasedVersion({})|marketVersion({})", template.id, releasedVersion, marketVersion)
                 releasedVersion != null && marketVersion != null &&
-                    releasedVersion.version.toLong() != marketVersion.version
+                    releasedVersion.version.toLong() > marketVersion.version
             } else {
                 false
             }
