@@ -27,18 +27,31 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板实例任务详情")
-data class PipelineTemplateInstancesDetail(
+data class PipelineTemplateInstancesTaskResult(
+    @get:Schema(title = "任务ID", required = true)
+    val baseId: String,
     @get:Schema(title = "项目ID", required = true)
     val projectId: String,
     @get:Schema(title = "模版ID", required = true)
     val templateId: String,
     @get:Schema(title = "模版版本", required = true)
-    val version: Long,
-    @get:Schema(title = "模版实例化类型", required = true)
-    val instanceType: TemplateInstanceType,
-    @get:Schema(title = "模板实例发布请求", required = true)
-    val request: PipelineTemplateInstancesRequest,
+    val templateVersion: Long,
+    @get:Schema(title = "实例化状态", required = true)
+    val status: TemplateInstanceStatus,
+    @get:Schema(title = "实例化总数", required = true)
+    val totalItemNum: Int,
+    @get:Schema(title = "成功实例化数", required = true)
+    val successItemNum: Int,
+    @get:Schema(title = "失败实例化数", required = true)
+    val failItemNum: Int,
+    @get:Schema(title = "失败原因", required = true)
+    val errorMessages: Map<String, String>? = null,
+    @get:Schema(title = "合并请求Id")
+    val pullRequestId: Long? = null,
+    @get:Schema(title = "合并请求链接")
+    val pullRequestUrl: String? = null
 )

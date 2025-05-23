@@ -34,10 +34,12 @@ import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.TemplateOperationRet
+import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskDetail
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
 
@@ -103,6 +105,9 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        status: TemplatePipelineStatus?,
+        templateVersion: Long?,
+        repoHashId: String?,
         page: Int,
         pageSize: Int
     ): Result<SQLPage<PipelineTemplateRelatedResp>> {
@@ -113,6 +118,9 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
                 templateId = templateId,
                 pipelineName = pipelineName,
                 updater = updater,
+                status = status,
+                templateVersion = templateVersion,
+                repoHashId = repoHashId,
                 page = page,
                 pageSize = pageSize
             )
@@ -171,13 +179,13 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
-    override fun getTemplateInstanceTask(
+    override fun getTemplateInstanceTaskResult(
         userId: String,
         projectId: String,
         baseId: String
-    ): Result<PipelineTemplateInstanceBase> {
+    ): Result<PipelineTemplateInstancesTaskResult> {
         return Result(
-            instanceFacadeService.getTemplateInstanceTask(
+            instanceFacadeService.getTemplateInstanceTaskResult(
                 projectId = projectId,
                 baseId = baseId
             )
@@ -222,7 +230,7 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         projectId: String,
         baseId: String,
         status: String?
-    ): Result<PipelineTemplateInstancesDetail> {
+    ): Result<PipelineTemplateInstancesTaskDetail> {
         val statusList = status?.split(",") ?: listOf(
             TemplateInstanceStatus.INIT.name,
             TemplateInstanceStatus.INSTANCING.name

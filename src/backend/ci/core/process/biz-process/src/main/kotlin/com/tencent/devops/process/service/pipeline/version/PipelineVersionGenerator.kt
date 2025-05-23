@@ -33,6 +33,10 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
+import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
@@ -44,12 +48,16 @@ import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.service.StageTagService
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.utils.PipelineVersionUtils
+import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
 import org.jooq.DSLContext
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.util.LinkedList
 
 /**
  * 流水线版本生成器
@@ -62,7 +70,8 @@ class PipelineVersionGenerator constructor(
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val client: Client,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val stageTagService: StageTagService
+    private val stageTagService: StageTagService,
+    private val transferService: PipelineTransferYamlService,
 ) {
 
     /**
@@ -523,8 +532,43 @@ class PipelineVersionGenerator constructor(
         return serverRepository.defaultBranch
     }
 
+    fun transfer(
+        userId: String,
+        projectId: String,
+        yaml: String,
+        yamlFileName: String,
+        isDefaultBranch: Boolean,
+        branchName: String,
+        aspects: LinkedList<IPipelineTransferAspect>? = null
+    ): Pair<PipelineModelAndSetting, YamlWithVersion>  {
+        return try {
+            val result = transferService.transfer(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = null,
+                actionType = TransferActionType.FULL_YAML2MODEL,
+                data = TransferBody(oldYaml = yaml, yamlFileName = yamlFileName),
+                aspects = aspects ?: LinkedList()
+            )
+            if (result.modelAndSetting == null) {
+                logger.warn("TRANSFER_YAML|$projectId|$userId|$isDefaultBranch|yml=\n$yaml")
+                throw ErrorCodeException(
+                    errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
+                )
+            }
+            Pair(result.modelAndSetting!!, result.yamlWithVersion!!)
+        } catch (ignore: Throwable) {
+            if (ignore is ErrorCodeException) throw ignore
+            logger.warn("TRANSFER_YAML|$projectId|$userId|$branchName|$isDefaultBranch|yml=\n$yaml", ignore)
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
+            )
+        }
+    }
+
     companion object {
         const val INIT_VERSION = 1
         private const val PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX = "bk-ci-template-instance-"
+        private val logger = LoggerFactory.getLogger(PipelineVersionGenerator::class.java)
     }
 }

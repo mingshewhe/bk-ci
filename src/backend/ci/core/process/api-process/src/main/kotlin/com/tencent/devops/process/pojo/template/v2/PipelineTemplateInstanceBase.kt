@@ -1,6 +1,5 @@
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema

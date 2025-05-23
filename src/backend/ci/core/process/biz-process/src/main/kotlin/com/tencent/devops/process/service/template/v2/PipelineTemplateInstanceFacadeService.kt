@@ -17,7 +17,6 @@ import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
-import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
@@ -40,8 +39,9 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskDetail
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
@@ -68,7 +68,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val dslContext: DSLContext,
     private val templateInstanceItemDao: TemplateInstanceItemDao,
     private val templateInstanceBaseDao: TemplateInstanceBaseDao,
-    private val pipelineSettingDao: PipelineSettingDao,
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
     private val redisOperation: RedisOperation,
@@ -471,7 +470,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             repoHashId = instanceBase.repoHashId,
             filePath = filePath,
             targetAction = instanceBase.targetAction,
-            targetBranch = instanceBase.targetBranch
+            targetBranch = instanceBase.targetBranch,
+            description = instanceBase.description
         )
 
         try {
@@ -600,11 +600,18 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        status: TemplatePipelineStatus?,
+        templateVersion: Long?,
+        repoHashId: String?,
         page: Int,
         pageSize: Int
     ): SQLPage<PipelineTemplateRelatedResp> {
         val (offset, limit) = PageUtil.convertPageSizeToSQLLimit(page, pageSize)
         val templateInfo = pipelineTemplateInfoService.get(projectId, templateId)
+
+        val pipelineIdsFilterByRepo = repoHashId?.let {
+            pipelineYamlService.getAllYamlPipeline(projectId, repoHashId).map { it.pipelineId }
+        } ?: emptyList()
 
         val canEditMap = pipelinePermissionService.getResourceByPermission(
             userId = userId,
@@ -616,6 +623,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             templateId = templateId,
             pipelineName = pipelineName,
             updater = updater,
+            templateVersion = templateVersion,
+            pipelineIds = pipelineIdsFilterByRepo,
             instanceTypeEnum = PipelineInstanceTypeEnum.CONSTRAINT,
             limit = limit,
             offset = offset
@@ -625,6 +634,8 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             templateId = templateId,
             pipelineName = pipelineName,
             updater = updater,
+            templateVersion = templateVersion,
+            pipelineIds = pipelineIdsFilterByRepo,
             instanceTypeEnum = PipelineInstanceTypeEnum.CONSTRAINT
         )
 
@@ -711,11 +722,10 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        val pipelineId2Name = pipelineSettingDao.getSettings(
-            dslContext = dslContext,
+        val pipelineId2Name = pipelineRepositoryService.listPipelineNameByIds(
             projectId = projectId,
-            pipelineIds = pipelineIds,
-        ).associate { it.pipelineId to it.pipelineName }
+            pipelineIds = pipelineIds
+        )
         val pipelineId2Model = pipelineResourceDao.listLatestModelResource(
             dslContext = dslContext,
             pipelineIds = pipelineIds,
@@ -729,6 +739,12 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             projectId = projectId,
             pipelineIds = pipelineIds
         ).associate { it.pipelineId to it.buildNo }
+        // 获取流水线yaml信息
+        val pipelineYamlInfoList = pipelineYamlService.listByPipelineIds(
+            projectId = projectId,
+            pipelineIds = pipelineIds.toList()
+        )
+        val yamlPipelineMap = pipelineYamlInfoList.associateBy { it.pipelineId }
 
         return try {
             pipelineId2Model.map {
@@ -748,7 +764,9 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                     pipelineId = pipelineId,
                     pipelineName = pipelineId2Name[pipelineId] ?: "",
                     buildNo = instanceBuildNoObj,
-                    param = instanceParams
+                    param = instanceParams,
+                    repoHashId = yamlPipelineMap[pipelineId]?.repoHashId,
+                    filePath = yamlPipelineMap[pipelineId]?.filePath,
                 )
             }.toMap()
         } catch (ignored: Throwable) {
@@ -808,17 +826,44 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         )
     }
 
-    fun getTemplateInstanceTask(
+    fun getTemplateInstanceTaskResult(
         projectId: String,
         baseId: String
-    ): PipelineTemplateInstanceBase {
-        return templateInstanceBaseDao.getTemplateInstanceBase(
+    ): PipelineTemplateInstancesTaskResult {
+        val instanceBase = templateInstanceBaseDao.getTemplateInstanceBase(
             dslContext = dslContext,
             projectId = projectId,
             baseId = baseId
         ) ?: throw ErrorCodeException(
             errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NOT_EXISTS,
             params = arrayOf(baseId)
+        )
+        val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
+            dslContext = dslContext,
+            projectId = projectId,
+            baseIds = listOf(baseId),
+            statusList = listOf(TemplateInstanceStatus.FAILED.name),
+            page = 1,
+            pageSize = PageUtil.MAX_PAGE_SIZE
+        )
+        val pipelineId2Name = pipelineRepositoryService.listPipelineNameByIds(
+            projectId = projectId,
+            pipelineIds = templateInstanceItems.map { it.pipelineId }.toSet()
+        )
+        val errorMessages = templateInstanceItems.associateBy(
+            { pipelineId2Name[it.pipelineId] ?: "" },
+            { it.errorMessage ?: "" }
+        )
+        return PipelineTemplateInstancesTaskResult(
+            baseId = baseId,
+            projectId = projectId,
+            templateId = instanceBase.templateId,
+            templateVersion = instanceBase.templateVersion,
+            status = instanceBase.status,
+            totalItemNum = instanceBase.totalItemNum,
+            successItemNum = instanceBase.successItemNum,
+            failItemNum = instanceBase.failItemNum,
+            errorMessages = errorMessages
         )
     }
 
@@ -870,7 +915,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
         projectId: String,
         baseId: String,
         statusList: List<String>?
-    ): PipelineTemplateInstancesDetail {
+    ): PipelineTemplateInstancesTaskDetail {
         val instanceBase = templateInstanceBaseDao.getTemplateInstanceBase(
             dslContext = dslContext,
             projectId = projectId,
@@ -907,7 +952,7 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 instanceReleaseInfos = instanceReleaseInfos,
             )
         }
-        return PipelineTemplateInstancesDetail(
+        return PipelineTemplateInstancesTaskDetail(
             projectId = instanceBase.projectId,
             templateId = instanceBase.templateId,
             instanceType = instanceBase.type,
