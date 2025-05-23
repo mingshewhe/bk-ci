@@ -378,12 +378,14 @@ class PipelineTemplateMigrateService(
             )
             templateFacadeService.listTemplateVersions(
                 projectId = srcLatestTemplate.projectId,
-                templateId = srcLatestTemplate.id
+                templateId = srcLatestTemplate.id,
+                ascSort = true
             )
         } else {
             templateFacadeService.listTemplateVersions(
                 projectId = latestTemplate.projectId,
-                templateId = latestTemplate.id
+                templateId = latestTemplate.id,
+                ascSort = true
             )
         }
     }

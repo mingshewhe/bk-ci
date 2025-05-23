@@ -372,7 +372,8 @@ class TemplateDao {
     fun getTemplateVersionInfos(
         dslContext: DSLContext,
         projectId: String,
-        templateId: String
+        templateId: String,
+        ascSort: Boolean = false
     ): Result<out Record>? {
         with(TTemplate.T_TEMPLATE) {
             return dslContext.select(
@@ -385,7 +386,14 @@ class TemplateDao {
                 .from(this)
                 .where(ID.eq(templateId))
                 .and(PROJECT_ID.eq(projectId))
-                .orderBy(VERSION_NAME.desc(), UPDATE_TIME.desc(), VERSION.desc())
+                .let {
+                    if (ascSort) {
+                        it.orderBy(VERSION_NAME.asc(), UPDATE_TIME.asc(), VERSION.asc())
+                    }
+                    else {
+                        it.orderBy(VERSION_NAME.desc(), UPDATE_TIME.desc(), VERSION.desc())
+                    }
+                }
                 .fetch()
         }
     }
