@@ -1249,7 +1249,11 @@ class TemplateFacadeService @Autowired constructor(
             }
             versionNames.add(versionName)
         }
-        return versions.sortedByDescending { templateVersion -> templateVersion.updateTime }
+        return if (ascSort){
+            versions.sortedBy { templateVersion -> templateVersion.updateTime }
+        }else{
+            versions.sortedByDescending { templateVersion -> templateVersion.updateTime }
+        }
     }
 
     /**
