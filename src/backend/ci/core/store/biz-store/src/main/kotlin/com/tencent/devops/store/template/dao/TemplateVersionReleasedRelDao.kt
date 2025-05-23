@@ -67,6 +67,8 @@ class TemplateVersionReleasedRelDao {
                 record.updateTime.toLocalDateTimeOrDefault(),
             ).onDuplicateKeyUpdate()
                 .set(PUBLISHED, record.published)
+                .set(NUMBER, record.number)
+                .set(VERSION_NAME, record.versionName)
                 .set(UPDATER, record.updater)
                 .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
                 .execute()
