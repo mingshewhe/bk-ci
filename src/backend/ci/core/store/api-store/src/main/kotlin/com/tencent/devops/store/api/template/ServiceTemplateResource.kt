@@ -155,11 +155,8 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "山粗模板版本安装历史")
     @DELETE
-    @Path("/{projectCode}/{templateCode}/deleteTemplateVersionInstallHistory")
+    @Path("/{templateCode}/deleteTemplateVersionInstallHistory")
     fun deleteTemplateVersionInstallHistory(
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectCode")
-        projectCode: String,
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
@@ -167,11 +164,8 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "获取模板最近安装历史")
     @GET
-    @Path("/{projectCode}/{templateCode}/recently/install")
+    @Path("/{templateCode}/recently/install")
     fun getRecentlyInstalledVersion(
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectCode")
-        projectCode: String,
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
@@ -179,11 +173,8 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "获取最新安装版本")
     @GET
-    @Path("/{projectCode}/{templateCode}/latest/install")
+    @Path("/{templateCode}/latest/install")
     fun getLatestInstalledVersion(
-        @Parameter(description = "项目ID", required = true)
-        @PathParam("projectCode")
-        projectCode: String,
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String

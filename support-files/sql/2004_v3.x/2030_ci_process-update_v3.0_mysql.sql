@@ -38,23 +38,22 @@ BEGIN
     ALTER TABLE T_PIPELINE_INFO
         ADD COLUMN `LOCKED` bit(1) DEFAULT b'0' COMMENT '是否锁定，PAC v3.0新增锁定，取代原来setting表中的LOCK';
     END IF;
-		
+
 	IF NOT EXISTS(SELECT 1
                       FROM information_schema.COLUMNS
                       WHERE TABLE_SCHEMA = db
                         AND TABLE_NAME = 'T_PIPELINE_BUILD_TASK'
                         AND COLUMN_NAME = 'JOB_ID') THEN
-        ALTER TABLE `T_PIPELINE_BUILD_TASK` 
+        ALTER TABLE `T_PIPELINE_BUILD_TASK`
 			ADD COLUMN `JOB_ID` varchar(128) NULL COMMENT 'job id';
     END IF;
-	
-	
+
 	IF NOT EXISTS(SELECT 1
                       FROM information_schema.COLUMNS
                       WHERE TABLE_SCHEMA = db
                         AND TABLE_NAME = 'T_PIPELINE_BUILD_CONTAINER'
                         AND COLUMN_NAME = 'JOB_ID') THEN
-        ALTER TABLE `T_PIPELINE_BUILD_CONTAINER` 
+        ALTER TABLE `T_PIPELINE_BUILD_CONTAINER`
 			ADD COLUMN `JOB_ID` varchar(128) NULL COMMENT 'job id';
     END IF;
 
@@ -77,13 +76,13 @@ BEGIN
     ALTER TABLE T_PIPELINE_RESOURCE_VERSION
         ADD COLUMN RELEASE_TIME TIMESTAMP NULL COMMENT '发布时间';
     END IF;
-	
+
 	IF NOT EXISTS(SELECT 1
 	                      FROM information_schema.COLUMNS
                       WHERE TABLE_SCHEMA = db
                         AND TABLE_NAME = 'T_PIPELINE_BUILD_STAGE'
                         AND COLUMN_NAME = 'STAGE_ID_FOR_USER') THEN
-    ALTER TABLE `T_PIPELINE_BUILD_STAGE` 
+    ALTER TABLE `T_PIPELINE_BUILD_STAGE`
 			ADD COLUMN `STAGE_ID_FOR_USER` varchar(64) DEFAULT NULL COMMENT '当前stageId 阶段ID (用户可编辑)';
     END IF;
 
@@ -148,6 +147,86 @@ BEGIN
                     AND COLUMN_NAME = 'DELETED') THEN
         ALTER TABLE `T_PIPELINE_YAML_BRANCH_FILE`
             ADD COLUMN `DELETED` bit not null default b'0' comment '是否删除';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'PAC') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD COLUMN `PAC` bit(1) DEFAULT b'0' COMMENT '是否开启PAC';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'TARGET_ACTION') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD `TARGET_ACTION` varchar(64) DEFAULT NULL COMMENT '推送代码库操作';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'TYPE') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD `TYPE` varchar(32) DEFAULT "UPDATE" COMMENT '实例操作类型，创建/更新实例';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'LABELS') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD `LABELS` text DEFAULT NULL COMMENT '标签';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'STATIC_VIEWS') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD `STATIC_VIEWS` text DEFAULT NULL COMMENT '静态流水线组';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_BASE'
+                    AND COLUMN_NAME = 'DESCRIPTION') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_BASE`
+        ADD `DESCRIPTION` text COMMENT '提交描述';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_ITEM'
+                    AND COLUMN_NAME = 'YAML_INFO') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_ITEM`
+        ADD `YAML_INFO` text DEFAULT NULL COMMENT '流水线YAML信息';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                      FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_ITEM'
+                    AND COLUMN_NAME = 'ERROR_MESSAGE') THEN
+    ALTER TABLE `T_TEMPLATE_INSTANCE_ITEM`
+        ADD `ERROR_MESSAGE` text DEFAULT NULL COMMENT '错误信息';
+    END IF;
+
+    IF EXISTS(SELECT 1
+                   FROM information_schema.statistics
+                   WHERE TABLE_SCHEMA = db
+                     AND TABLE_NAME = 'T_TEMPLATE_INSTANCE_ITEM'
+                     AND INDEX_NAME = 'UNI_INX_TTI_PIPELINE_ID') THEN
+        ALTER TABLE `T_TEMPLATE_INSTANCE_ITEM` DROP INDEX `UNI_INX_TTI_PIPELINE_ID`;
     END IF;
 
 COMMIT;

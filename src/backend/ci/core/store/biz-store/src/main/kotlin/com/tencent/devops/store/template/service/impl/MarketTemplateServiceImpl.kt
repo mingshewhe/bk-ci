@@ -563,7 +563,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
     }
 
     override fun getMarketTemplateStatus(templateCode: String): TemplateStatusEnum {
-        val templateRecord = marketTemplateDao.getLatestTemplateByCode(
+        val templateRecord = marketTemplateDao.getUpToDateTemplateByCode(
             dslContext = dslContext,
             templateCode = templateCode
         )
@@ -741,7 +741,6 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             templateVersionReleasedRelDao.offlineTemplate(
                 dslContext = context,
                 templateCode = templateCode,
-                projectId = initProjectCode,
                 templateVersion = null
             )
             storeCommonService.deleteStoreInfo(context, templateCode, StoreTypeEnum.TEMPLATE.type.toByte())
@@ -1454,28 +1453,24 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
-    override fun deleteTemplateVersionInstallHistory(projectCode: String, templateCode: String) {
-        logger.info("delete template version install history:$projectCode|$templateCode")
+    override fun deleteTemplateVersionInstallHistory(templateCode: String) {
+        logger.info("delete template version install history:$templateCode")
         templateVersionInstallHistoryDao.delete(
             dslContext = dslContext,
-            projectCode = projectCode,
             templateCode = templateCode
         )
     }
 
     override fun getRecentlyInstalledVersion(
-        projectCode: String,
         templateCode: String
     ): TemplateVersionInstallHistoryInfo? {
         return templateVersionInstallHistoryDao.getRecentlyInstalledVersion(
             dslContext = dslContext,
-            projectCode = projectCode,
             templateCode = templateCode
         )
     }
 
     override fun getLatestInstalledVersion(
-        projectCode: String,
         templateCode: String
     ): TemplateVersionInstallHistoryInfo? {
         return listLatestInstalledVersions(listOf(templateCode)).firstOrNull { it.templateCode == templateCode }

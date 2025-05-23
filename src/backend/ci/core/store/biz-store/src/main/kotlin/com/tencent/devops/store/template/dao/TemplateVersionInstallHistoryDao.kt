@@ -73,26 +73,22 @@ class TemplateVersionInstallHistoryDao {
 
     fun delete(
         dslContext: DSLContext,
-        projectCode: String,
         templateCode: String
     ) {
         with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             dslContext.deleteFrom(this)
-                .where(PROJECT_CODE.eq(projectCode))
-                .and(TEMPLATE_CODE.eq(templateCode))
+                .where(TEMPLATE_CODE.eq(templateCode))
                 .execute()
         }
     }
 
     fun getRecentlyInstalledVersion(
         dslContext: DSLContext,
-        projectCode: String,
         templateCode: String
     ): TemplateVersionInstallHistoryInfo? {
         return with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             dslContext.selectFrom(this)
-                .where(PROJECT_CODE.eq(projectCode))
-                .and(TEMPLATE_CODE.eq(templateCode))
+                .where(TEMPLATE_CODE.eq(templateCode))
                 .orderBy(CREATE_TIME.desc())
                 .limit(1)
                 .fetchOne()?.let {

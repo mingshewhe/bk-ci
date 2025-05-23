@@ -75,15 +75,13 @@ class TemplateVersionReleasedRelDao {
 
     fun offlineTemplate(
         dslContext: DSLContext,
-        projectId: String,
         templateCode: String,
         templateVersion: Long?
     ) {
         with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
             dslContext.update(this)
                 .set(PUBLISHED, false)
-                .where(PROJECT_CODE.eq(projectId))
-                .and(TEMPLATE_CODE.eq(templateCode))
+                .where(TEMPLATE_CODE.eq(templateCode))
                 .let { if (templateVersion != null) it.and(VERSION.eq(templateVersion)) else it }
                 .execute()
         }

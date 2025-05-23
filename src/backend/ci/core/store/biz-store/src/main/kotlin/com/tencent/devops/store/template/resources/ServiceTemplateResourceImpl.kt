@@ -139,32 +139,27 @@ class ServiceTemplateResourceImpl @Autowired constructor(
     }
 
     override fun deleteTemplateVersionInstallHistory(
-        projectCode: String,
         templateCode: String
     ): Result<Boolean> {
-        marketTemplateService.deleteTemplateVersionInstallHistory(projectCode, templateCode)
+        marketTemplateService.deleteTemplateVersionInstallHistory(templateCode)
         return Result(true)
     }
 
     override fun getRecentlyInstalledVersion(
-        projectCode: String,
         templateCode: String
     ): Result<TemplateVersionInstallHistoryInfo?> {
         return Result(
             marketTemplateService.getRecentlyInstalledVersion(
-                projectCode = projectCode,
                 templateCode = templateCode
             )
         )
     }
 
     override fun getLatestInstalledVersion(
-        projectCode: String,
         templateCode: String
     ): Result<TemplateVersionInstallHistoryInfo?> {
         return Result(
             marketTemplateService.getLatestInstalledVersion(
-                projectCode = projectCode,
                 templateCode = templateCode
             )
         )

@@ -440,10 +440,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     storeType = StoreTypeEnum.TEMPLATE,
                     projectCode = templateInfo.projectId
                 )
-                client.get(ServiceTemplateResource::class).deleteTemplateVersionInstallHistory(
-                    projectCode = projectId,
-                    templateCode = templateId
-                )
+                client.get(ServiceTemplateResource::class).deleteTemplateVersionInstallHistory(templateId)
             }
             pipelineTemplatePermissionService.deleteResource(
                 projectId = projectId,

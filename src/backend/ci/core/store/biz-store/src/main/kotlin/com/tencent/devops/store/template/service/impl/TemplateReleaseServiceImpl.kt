@@ -527,23 +527,30 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 // 判断模板是否已经上架过研发商店
                 val isReleased = marketTemplateDao.countByCode(dslContext, templateCode) > 0
                 if (isReleased) {
-                    return I18nUtil.generateResponseDataObject(
-                        messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_EXIST,
                         params = arrayOf(templateCode),
-                        data = false,
-                        language = I18nUtil.getLanguage(userId)
+                        defaultMessage = I18nUtil.generateResponseDataObject(
+                            messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                            params = arrayOf(templateCode),
+                            data = false,
+                            language = I18nUtil.getLanguage(userId)
+                        ).message
                     )
                 }
             }
             // 检查名称是否重复
             val nameCount = marketTemplateDao.countByName(dslContext, templateName)
             if (nameCount > 0) {
-                // 抛出错误提示
-                return I18nUtil.generateResponseDataObject(
-                    messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_EXIST,
                     params = arrayOf(templateName),
-                    data = false,
-                    language = I18nUtil.getLanguage(userId)
+                    defaultMessage = I18nUtil.generateResponseDataObject(
+                        messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                        params = arrayOf(templateName),
+                        data = false,
+                        language = I18nUtil.getLanguage(userId)
+                    ).message
                 )
             }
             // 校验模板是否合法
@@ -585,6 +592,19 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
         request: MarketTemplateReleaseReq
     ): Boolean {
         with(request) {
+            marketTemplateDao.getLatestTemplateByCode(
+                dslContext = dslContext,
+                templateCode = templateCode
+            ) ?: throw ErrorCodeException(
+                errorCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                params = arrayOf(templateCode),
+                defaultMessage = I18nUtil.generateResponseDataObject(
+                    messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                    params = arrayOf(templateCode),
+                    data = false,
+                    language = I18nUtil.getLanguage(userId)
+                ).message
+            )
             val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
                 dslContext = dslContext,
                 storeCode = templateCode,
@@ -935,7 +955,6 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 templateVersionReleasedRelDao.offlineTemplate(
                     dslContext = dslContext,
                     templateCode = templateCode,
-                    projectId = projectCode,
                     templateVersion = null
                 )
                 try {
@@ -960,6 +979,20 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
         templateVersion: Long?,
         reason: String?
     ): Result<Boolean> {
+        // 判断用户是否有权限下架模板
+        if (!storeMemberDao.isStoreAdmin(dslContext, userId, templateCode, StoreTypeEnum.TEMPLATE.type.toByte())) {
+            throw ErrorCodeException(
+                errorCode = NO_COMPONENT_ADMIN_PERMISSION,
+                params = arrayOf(templateCode),
+                defaultMessage = I18nUtil.generateResponseDataObject(
+                    messageCode = NO_COMPONENT_ADMIN_PERMISSION,
+                    language = I18nUtil.getLanguage(userId),
+                    params = arrayOf(templateCode),
+                    data = false,
+                ).message
+            )
+        }
+
         val projectCode = storeProjectRelDao.getInitProjectCodeByStoreCode(
             dslContext = dslContext,
             storeCode = templateCode,
@@ -982,7 +1015,6 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 templateVersionReleasedRelDao.offlineTemplate(
                     dslContext = dslContext,
                     templateCode = templateCode,
-                    projectId = projectCode,
                     templateVersion = null
                 )
                 client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
@@ -997,7 +1029,6 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             templateVersionReleasedRelDao.offlineTemplate(
                 dslContext = dslContext,
                 templateCode = templateCode,
-                projectId = projectCode,
                 templateVersion = templateVersion
             )
             client.get(ServicePipelineTemplateV2Resource::class).updateStoreStatus(
