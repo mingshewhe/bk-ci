@@ -181,8 +181,8 @@ class PipelineTemplateMigrateService(
             val srcTemplateProjectId = getSrcTemplateProjectId(latestTemplate)
 
             logger.info(
-                "migrate template srcTemplateProjectId {},templateVersionInfos{}",
-                srcTemplateProjectId, templateVersionInfos
+                "migrate template versions templateId {} srcTemplateProjectId {},templateVersionInfos{}",
+                templateId, srcTemplateProjectId, templateVersionInfos
             )
             // 获取模板在研发商店的发布情况
             val marketTemplateStatus = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
