@@ -351,7 +351,8 @@ class PipelineTemplateResourceDao {
                 CREATOR,
                 UPDATER,
                 CREATED_TIME,
-                UPDATE_TIME
+                UPDATE_TIME,
+                NUMBER
             )
                 .from(this)
                 .join(maxNumbers)
@@ -377,7 +378,8 @@ class PipelineTemplateResourceDao {
                         updater = it.value14(),
                         createTime = it.value15().timestampmilli(),
                         updateTime = it.value16().timestampmilli(),
-                        yamlVersion = null
+                        yamlVersion = null,
+                        number = it.value17()
                     )
                 }
         }

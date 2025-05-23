@@ -1323,19 +1323,19 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
 
         val templateList = with(TTemplate.T_TEMPLATE) {
             records.map {
-                val latestMarketPublishedVersion = latestMarketPublishedVersions.firstOrNull { latestPublishedVersion ->
+                val latestMarketPublishedVersionInfo = latestMarketPublishedVersions.firstOrNull { latestPublishedVersion ->
                     latestPublishedVersion.templateCode == it[TEMPLATE_CODE]
-                }?.version
+                }
                 val latestMarketPublishedVersionName = latestMarketPublishedVersions.firstOrNull { latestPublishedVersion ->
                     latestPublishedVersion.templateCode == it[TEMPLATE_CODE]
                 }?.versionName
-                val latestReleasedVersion = latestReleasedVersions.firstOrNull { latestReleasedVersion ->
+                val latestReleasedVersionInfo = latestReleasedVersions.firstOrNull { latestReleasedVersion ->
                     latestReleasedVersion.pipelineId == it[TEMPLATE_CODE]
-                }?.version?.toLong()
+                }
                 val templateStatus = TemplateStatusEnum.getTemplateStatusEnum((it[TEMPLATE_STATUS]).toInt())
 
-                val upgradeFlag = latestMarketPublishedVersion != null && latestReleasedVersion != null
-                    && latestMarketPublishedVersion != latestReleasedVersion
+                val upgradeFlag = latestMarketPublishedVersionInfo != null && latestReleasedVersionInfo != null
+                    && latestMarketPublishedVersionInfo.number < latestReleasedVersionInfo.number
 
                 MyTemplateItemResponse(
                     templateId = it[ID] as String,
@@ -1346,9 +1346,9 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                     },
                     description = it[DESCRIPTION],
                     enablePac = template2Pac[it[TEMPLATE_CODE]] ?: false,
-                    latestPublishedVersion = latestMarketPublishedVersion,
+                    latestPublishedVersion = latestMarketPublishedVersionInfo?.version,
                     latestPublishedVersionName = latestMarketPublishedVersionName,
-                    latestReleasedVersion = latestReleasedVersion,
+                    latestReleasedVersion = latestReleasedVersionInfo?.version?.toLong(),
                     templateStatus = templateStatus,
                     upgradeFlag = upgradeFlag,
                     projectCode = it[KEY_PROJECT_CODE].toString(),
