@@ -1857,7 +1857,6 @@ class TemplateFacadeService @Autowired constructor(
                 failurePipelines = failurePipelines
             )
         } else {
-            // todo 超过100，直接抛异常吧。
             // 检查流水线是否处于更新中
             val pipelineIds = instances.map { it.pipelineId }.toSet()
             val templateInstanceItems =
