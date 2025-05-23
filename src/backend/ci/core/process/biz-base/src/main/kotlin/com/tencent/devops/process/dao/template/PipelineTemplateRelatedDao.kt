@@ -85,6 +85,8 @@ class PipelineTemplateRelatedDao {
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        templateVersion: Long?,
+        pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum,
         limit: Int,
         offset: Int
@@ -117,6 +119,8 @@ class PipelineTemplateRelatedDao {
                     templateId = templateId,
                     pipelineName = pipelineName,
                     updater = updater,
+                    templateVersion = templateVersion,
+                    pipelineIds = pipelineIds,
                     instanceTypeEnum = instanceTypeEnum
                 )
             )
@@ -147,6 +151,8 @@ class PipelineTemplateRelatedDao {
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        templateVersion: Long?,
+        pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Int {
         val templatePipelineTable = TTemplatePipeline.T_TEMPLATE_PIPELINE
@@ -163,6 +169,8 @@ class PipelineTemplateRelatedDao {
                     templateId = templateId,
                     pipelineName = pipelineName,
                     updater = updater,
+                    templateVersion = templateVersion,
+                    pipelineIds = pipelineIds,
                     instanceTypeEnum = instanceTypeEnum
                 )
             )
@@ -176,6 +184,8 @@ class PipelineTemplateRelatedDao {
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        templateVersion: Long?,
+        pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Condition {
         return templatePipelineTable.PROJECT_ID.eq(projectId)
@@ -194,6 +204,20 @@ class PipelineTemplateRelatedDao {
             .let {
                 if (!updater.isNullOrBlank()) {
                     it.and(templatePipelineTable.UPDATOR.like("%$updater%"))
+                } else {
+                    it
+                }
+            }
+            .let {
+                if (templateVersion != null) {
+                    it.and(templatePipelineTable.VERSION.eq(templateVersion))
+                } else {
+                    it
+                }
+            }
+            .let {
+                if (!pipelineIds.isNullOrEmpty()) {
+                    it.and(templatePipelineTable.PIPELINE_ID.`in`(pipelineIds))
                 } else {
                     it
                 }
