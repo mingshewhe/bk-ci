@@ -1,7 +1,6 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
@@ -10,12 +9,10 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateRelatedDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
-import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedUpdateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -79,6 +76,8 @@ class PipelineTemplateRelatedService @Autowired constructor(
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        templateVersion: Long?,
+        pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum,
         limit: Int,
         offset: Int
@@ -89,6 +88,8 @@ class PipelineTemplateRelatedService @Autowired constructor(
             templateId = templateId,
             pipelineName = pipelineName,
             updater = updater,
+            templateVersion = templateVersion,
+            pipelineIds = pipelineIds,
             instanceTypeEnum = instanceTypeEnum,
             limit = limit,
             offset = offset
@@ -100,6 +101,8 @@ class PipelineTemplateRelatedService @Autowired constructor(
         templateId: String,
         pipelineName: String?,
         updater: String?,
+        templateVersion: Long?,
+        pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Int {
         return pipelineTemplateRelatedDao.countSimple(
@@ -108,6 +111,8 @@ class PipelineTemplateRelatedService @Autowired constructor(
             templateId = templateId,
             pipelineName = pipelineName,
             updater = updater,
+            templateVersion = templateVersion,
+            pipelineIds = pipelineIds,
             instanceTypeEnum = instanceTypeEnum
         )
     }
