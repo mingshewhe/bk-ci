@@ -538,21 +538,22 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                         ).message
                     )
                 }
-            }
-            // 检查名称是否重复
-            val nameCount = marketTemplateDao.countByName(dslContext, templateName)
-            if (nameCount > 0) {
-                throw ErrorCodeException(
-                    errorCode = CommonMessageCode.PARAMETER_IS_EXIST,
-                    params = arrayOf(templateName),
-                    defaultMessage = I18nUtil.generateResponseDataObject(
-                        messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                // 检查名称是否重复
+                val nameCount = marketTemplateDao.countByName(dslContext, templateName)
+                if (nameCount > 0) {
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_EXIST,
                         params = arrayOf(templateName),
-                        data = false,
-                        language = I18nUtil.getLanguage(userId)
-                    ).message
-                )
+                        defaultMessage = I18nUtil.generateResponseDataObject(
+                            messageCode = CommonMessageCode.PARAMETER_IS_EXIST,
+                            params = arrayOf(templateName),
+                            data = false,
+                            language = I18nUtil.getLanguage(userId)
+                        ).message
+                    )
+                }
             }
+
             // 校验模板是否合法
             if (templateVersion != null) {
                 val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkTemplate(
