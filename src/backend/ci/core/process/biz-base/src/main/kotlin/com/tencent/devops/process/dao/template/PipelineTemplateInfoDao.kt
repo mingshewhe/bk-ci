@@ -136,18 +136,11 @@ class PipelineTemplateInfoDao {
         dslContext: DSLContext,
         projectId: String,
         templateId: String,
-        count: Int,
-        deleted: Boolean
+        count: Int
     ) {
         with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
             dslContext.update(this)
-                .let {
-                    if (deleted) {
-                        it.set(INSTANCE_PIPELINE_COUNT, INSTANCE_PIPELINE_COUNT - count)
-                    } else {
-                        it.set(INSTANCE_PIPELINE_COUNT, INSTANCE_PIPELINE_COUNT + count)
-                    }
-                }
+                .set(INSTANCE_PIPELINE_COUNT, count)
                 .where(PROJECT_ID.eq(projectId))
                 .and(ID.eq(templateId))
                 .execute()

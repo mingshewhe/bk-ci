@@ -320,8 +320,6 @@ class TemplateInstanceItemDao {
             dslContext.update(this)
                 .apply {
                     record.status?.let { set(STATUS, it.name) }
-                    record.pullRequestId?.let { set(PULL_REQUEST_ID, it) }
-                    record.pullRequestUrl?.let {  set(PULL_REQUEST_URL, it) }
                     record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
                     record.pipelineVersionName?.let { set(PIPELINE_VERSION_NAME, it) }
                     record.errorMessage?.let { set(ERROR_MESSAGE, it) }
@@ -345,9 +343,6 @@ class TemplateInstanceItemDao {
                 }
                 if (status != null) {
                     conditions.add(STATUS.eq(status!!.name))
-                }
-                if (pullRequestId != null) {
-                    conditions.add(PULL_REQUEST_ID.eq(pullRequestId))
                 }
             }
         }
@@ -374,8 +369,6 @@ class TemplateInstanceItemDao {
             params = params,
             filePath = filePath,
             errorMessage = errorMessage,
-            pullRequestId = pullRequestId,
-            pullRequestUrl = pullRequestUrl,
             creator = creator,
             modifier = modifier,
             createTime = createTime.timestampmilli(),

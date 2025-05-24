@@ -27,37 +27,26 @@
 
 package com.tencent.devops.process.service.pipeline.version.listener
 
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 
 /**
  * 流水线版本创建后置处理器
  */
 interface PipelineVersionCreatePostProcessor {
-
-    /**
-     * 流水线创建后执行
-     */
-    fun postProcessAfterCreation(
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-
-    }
-
-    /**
-     * 与流水线创建时事务保持一致
-     */
-    fun postProcessInTransactionCreation(
-        transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-
-    }
-
     /**
      * 流水线创建前执行
+     *
+     * @param newPipeline 是否是新建流水线
      */
-    fun postProcessBeforeVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    fun postProcessBeforeVersionCreate(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
     ) {
 
     }
@@ -65,9 +54,12 @@ interface PipelineVersionCreatePostProcessor {
     /**
      * 与流水线版本创建时事务保持一致
      */
-    fun postProcessInTransactionVersionCreation(
+    fun postProcessInTransactionVersionCreate(
         transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
     ) {
 
     }
@@ -75,8 +67,21 @@ interface PipelineVersionCreatePostProcessor {
     /**
      * 流水线版本创建后执行
      */
-    fun postProcessAfterVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    fun postProcessAfterVersionCreate(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
+    ) {
+
+    }
+
+    /**
+     * 流水线版本发布后执行
+     */
+    fun postProcessAfterVersionRelease(
+        context: PipelineVersionCreateContext,
+        yamlFileReleaseResult: PipelineYamlFileReleaseResult
     ) {
 
     }

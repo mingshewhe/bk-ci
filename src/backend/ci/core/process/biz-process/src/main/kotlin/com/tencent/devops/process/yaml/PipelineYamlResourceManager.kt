@@ -29,12 +29,10 @@ package com.tencent.devops.process.yaml
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
-import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
+import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
-import java.util.LinkedList
 
 @Service
 class PipelineYamlResourceManager @Autowired constructor(
@@ -45,24 +43,13 @@ class PipelineYamlResourceManager @Autowired constructor(
         userId: String,
         projectId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String? = null,
-        aspects: LinkedList<IPipelineTransferAspect>? = null,
-        yamlFileInfo: PipelineYamlFileInfo? = null,
-        isTemplate: Boolean
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult {
-        return getService(isTemplate).createYamlPipeline(
+        return getService(event.isTemplate).createYamlPipeline(
             userId = userId,
             projectId = projectId,
             yaml = yaml,
-            yamlFileName = yamlFileName,
-            branchName = branchName,
-            isDefaultBranch = isDefaultBranch,
-            description = description,
-            aspects = aspects,
-            yamlFileInfo = yamlFileInfo
+            event = event
         )
     }
 
@@ -71,25 +58,14 @@ class PipelineYamlResourceManager @Autowired constructor(
         projectId: String,
         pipelineId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String? = null,
-        aspects: LinkedList<IPipelineTransferAspect>? = null,
-        yamlFileInfo: PipelineYamlFileInfo? = null,
-        isTemplate: Boolean
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult {
-        return getService(isTemplate).updateYamlPipeline(
+        return getService(event.isTemplate).updateYamlPipeline(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,
             yaml = yaml,
-            yamlFileName = yamlFileName,
-            branchName = branchName,
-            isDefaultBranch = isDefaultBranch,
-            description = description,
-            aspects = aspects,
-            yamlFileInfo = yamlFileInfo
+            event = event
         )
     }
 

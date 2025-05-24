@@ -1,6 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板与流水线关联简单实体")
@@ -30,5 +31,9 @@ data class PipelineTemplateRelatedSimple(
     @get:Schema(title = "创建人", required = true)
     val creator: String,
     @get:Schema(title = "更新人", required = true)
-    val updater: String
+    val updater: String,
+    @get:Schema(title = "状态")
+    val status: TemplatePipelineStatus?,
+    @get:Schema(title = "合并请求链接")
+    val pullRequestUrl: String? = null
 )

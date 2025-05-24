@@ -40,10 +40,13 @@ import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
-import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionCreatePostProcessor
-import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionPostCreationContext
+import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -64,148 +67,153 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
     private val pipelinePermissionService: PipelinePermissionService,
+    private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val versionCreateListeners: List<PipelineVersionCreatePostProcessor>
 ) {
 
     fun initializeTemplate(
-        userId: String,
-        pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelBasicInfo: PipelineModelBasicInfo,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
-        checkPermission: Boolean = true
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
-        val postCreationContext = PipelineVersionPostCreationContext(
-            userId = userId,
-            pipelineBasicInfo = pipelineBasicInfo,
-            pipelineModelBasicInfo = pipelineModelBasicInfo,
-            pipelineResourceVersion = pipelineResourceVersion,
-            pipelineSetting = pipelineSetting,
-            templateInstanceBasicInfo = templateInstanceBasicInfo,
-            checkPermission = checkPermission
-        )
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            createPipelineInfo(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelBasicInfo = pipelineModelBasicInfo,
-                version = pipelineResourceVersion.version,
-                latestVersionStatus = pipelineResourceVersion.status,
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
             )
-            createPipelineResource(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!,
             )
-            createPipelineResourceVersion(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
-            )
-            pipelineSettingDao.saveSetting(
-                dslContext = transactionContext,
-                setting = pipelineSetting
-            )
-            createPipelineSettingVersion(
-                transactionContext = transactionContext,
-                pipelineSetting = pipelineSetting
-            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                createPipelineInfo(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineBasicInfo = pipelineBasicInfo,
+                    pipelineModelBasicInfo = pipelineModelBasicInfo,
+                    version = pipelineResourceVersion.version,
+                    latestVersionStatus = pipelineResourceVersion.status,
+                )
+                createPipelineResource(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                pipelineSettingDao.saveSetting(
+                    dslContext = transactionContext,
+                    setting = pipelineSetting
+                )
+                createPipelineSettingVersion(
+                    transactionContext = transactionContext,
+                    pipelineSetting = pipelineSetting
+                )
 
-            with(pipelineBasicInfo) {
                 pipelineBuildSummaryDao.create(
-                    dslContext = dslContext,
+                    dslContext = transactionContext,
                     projectId = projectId,
                     pipelineId = pipelineId,
                     buildNo = pipelineModelBasicInfo.buildNo
                 )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineResourceVersion = pipelineResourceVersion,
+                    pipelineSetting = pipelineSetting,
+                    newPipeline = true
+                )
             }
-            postProcessInTransactionCreation(
-                transactionContext = transactionContext,
-                postCreationContext = postCreationContext
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting,
+                newPipeline = true
             )
         }
-        postProcessAfterCreation(postCreationContext = postCreationContext)
     }
 
     fun createReleaseVersion(
-        userId: String,
-        pipelineBasicInfo: PipelineBasicInfo,
-        pipelineModelBasicInfo: PipelineModelBasicInfo,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
-        checkPermission: Boolean = true
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
-        val postCreationContext = PipelineVersionPostCreationContext(
-            userId = userId,
-            pipelineBasicInfo = pipelineBasicInfo,
-            pipelineModelBasicInfo = pipelineModelBasicInfo,
-            pipelineResourceVersion = pipelineResourceVersion,
-            pipelineSetting = pipelineSetting,
-            templateInstanceBasicInfo = templateInstanceBasicInfo,
-            checkPermission = checkPermission
-        )
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            updatePipelineInfo(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineBasicInfo = pipelineBasicInfo,
-                pipelineModelBasicInfo = pipelineModelBasicInfo,
-                version = pipelineResourceVersion.version,
-                latestVersionStatus = pipelineResourceVersion.status,
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
             )
-            updatePipelineResource(
-                transactionContext = transactionContext,
-                pipelineResourceVersion = pipelineResourceVersion
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
             )
-            createPipelineResourceVersion(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
-            )
-            pipelineSettingDao.saveSetting(
-                dslContext = transactionContext,
-                setting = pipelineSetting
-            )
-            createPipelineSettingVersion(
-                transactionContext = transactionContext,
-                pipelineSetting = pipelineSetting
-            )
-            with(pipelineBasicInfo) {
-                pipelinePermissionService.modifyResource(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    pipelineName = pipelineName
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                updatePipelineInfo(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineBasicInfo = pipelineBasicInfo,
+                    pipelineModelBasicInfo = pipelineModelBasicInfo,
+                    version = pipelineResourceVersion.version,
+                    latestVersionStatus = pipelineResourceVersion.status,
+                )
+                updatePipelineResource(
+                    transactionContext = transactionContext,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                pipelineSettingDao.saveSetting(
+                    dslContext = transactionContext,
+                    setting = pipelineSetting
+                )
+                createPipelineSettingVersion(
+                    transactionContext = transactionContext,
+                    pipelineSetting = pipelineSetting
+                )
+                with(pipelineBasicInfo) {
+                    pipelinePermissionService.modifyResource(
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        pipelineName = pipelineName
+                    )
+                }
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineResourceVersion = pipelineResourceVersion,
+                    pipelineSetting = pipelineSetting
                 )
             }
-            postProcessInTransactionVersionCreation(
-                transactionContext = transactionContext,
-                postCreationContext = postCreationContext
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
             )
         }
-        postProcessAfterVersionCreation(postCreationContext = postCreationContext)
     }
 
     fun createDraftVersion(
-        userId: String,
+        context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            createPipelineResourceVersion(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
-            )
-            createPipelineSettingVersion(
-                transactionContext = transactionContext,
-                pipelineSetting = pipelineSetting
-            )
+        with(context) {
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                createPipelineSettingVersion(
+                    transactionContext = transactionContext,
+                    pipelineSetting = pipelineSetting
+                )
+            }
         }
     }
 
@@ -232,30 +240,85 @@ class PipelineVersionPersistenceService @Autowired constructor(
     }
 
     fun createBranchVersion(
-        userId: String,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            // 分支版本需要将同分支版本置为无效
-            pipelineResourceVersionDao.updateBranchVersion(
-                dslContext = transactionContext,
-                userId = userId,
-                projectId = pipelineResourceVersion.projectId,
-                pipelineId = pipelineResourceVersion.pipelineId,
-                branchName = pipelineResourceVersion.versionName,
-                branchVersionAction = BranchVersionAction.INACTIVE
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
             )
-            createPipelineResourceVersion(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
             )
-            createPipelineSettingVersion(
-                transactionContext = transactionContext,
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                // 分支版本需要将同分支版本置为无效
+                pipelineResourceVersionDao.updateBranchVersion(
+                    dslContext = transactionContext,
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    branchName = branchName,
+                    branchVersionAction = BranchVersionAction.INACTIVE
+                )
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                createPipelineSettingVersion(
+                    transactionContext = transactionContext,
+                    pipelineSetting = pipelineSetting
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineResourceVersion = pipelineResourceVersion,
+                    pipelineSetting = pipelineSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
                 pipelineSetting = pipelineSetting
             )
+        }
+    }
+
+    /**
+     * 发布yaml文件
+     */
+    fun releaseYamlFile(
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
+    ): PipelineYamlFileReleaseResult {
+        with(context) {
+            val yamlFileReleaseReq = PipelineYamlFileReleaseReq(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                pipelineName = pipelineBasicInfo.pipelineName,
+                version = resourceOnlyVersion.version,
+                versionName = resourceOnlyVersion.versionName,
+                repoHashId = yamlFileInfo!!.repoHashId,
+                filePath = yamlFileInfo.filePath,
+                content = pipelineResourceWithoutVersion.yaml!!,
+                commitMessage = pipelineResourceWithoutVersion.description
+                    ?: "update template ${pipelineBasicInfo.pipelineName}",
+                targetAction = targetAction!!,
+                targetBranch = branchName,
+                source = PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE,
+                templateName = templateInstanceBasicInfo?.templateName
+            )
+            val yamlFileReleaseResult = pipelineYamlFacadeService.releaseYamlFile(
+                yamlFileReleaseReq = yamlFileReleaseReq
+            )
+            postProcessAfterVersionRelease(
+                context = context,
+                yamlFileReleaseResult = yamlFileReleaseResult
+            )
+            return yamlFileReleaseResult
         }
     }
 
@@ -403,49 +466,65 @@ class PipelineVersionPersistenceService @Autowired constructor(
         )
     }
 
-    private fun postProcessAfterCreation(postCreationContext: PipelineVersionPostCreationContext) {
-        versionCreateListeners.forEach {
-            it.postProcessAfterCreation(postCreationContext = postCreationContext)
-        }
-    }
-
-    private fun postProcessInTransactionCreation(
-        transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
+    private fun postProcessBeforeVersionCreate(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
     ) {
         versionCreateListeners.forEach {
-            it.postProcessInTransactionCreation(
-                transactionContext = transactionContext,
-                postCreationContext = postCreationContext
+            it.postProcessBeforeVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting,
+                newPipeline = newPipeline
             )
         }
     }
 
-    private fun postProcessBeforeVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        versionCreateListeners.forEach {
-            it.postProcessBeforeVersionCreation(postCreationContext = postCreationContext)
-        }
-    }
-
-    private fun postProcessInTransactionVersionCreation(
+    private fun postProcessInTransactionVersionCreate(
         transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
     ) {
         versionCreateListeners.forEach {
-            it.postProcessInTransactionVersionCreation(
+            it.postProcessInTransactionVersionCreate(
                 transactionContext = transactionContext,
-                postCreationContext = postCreationContext
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting,
+                newPipeline = newPipeline
             )
         }
     }
 
-    private fun postProcessAfterVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    private fun postProcessAfterVersionCreate(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean = false
     ) {
         versionCreateListeners.forEach {
-            it.postProcessAfterVersionCreation(postCreationContext = postCreationContext)
+            it.postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting,
+                newPipeline = newPipeline
+            )
+        }
+    }
+
+    private fun postProcessAfterVersionRelease(
+        context: PipelineVersionCreateContext,
+        yamlFileReleaseResult: PipelineYamlFileReleaseResult
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessAfterVersionRelease(
+                context = context,
+                yamlFileReleaseResult = yamlFileReleaseResult
+            )
         }
     }
 

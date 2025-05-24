@@ -34,10 +34,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class PipelineTemplateInstanceItemUpdate(
     @get:Schema(title = "实例化状态", required = true)
     val status: TemplateInstanceStatus? = null,
-    @get:Schema(title = "实例化发布合并请求ID", required = true)
-    val pullRequestId: Long? = null,
-    @get:Schema(title = "实例化发布合并请求连接", required = true)
-    val pullRequestUrl: String? = null,
     @get:Schema(title = "流水线版本", required = true)
     val pipelineVersion: Int? = null,
     @get:Schema(title = "流水线版本名称", required = true)

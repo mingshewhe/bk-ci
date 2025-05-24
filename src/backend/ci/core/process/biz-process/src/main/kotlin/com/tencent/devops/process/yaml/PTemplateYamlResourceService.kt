@@ -33,9 +33,9 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
-import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
+import com.tencent.devops.process.yaml.actions.GitActionCommon
+import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import org.springframework.stereotype.Service
-import java.util.LinkedList
 
 /**
  * yaml文件对应的模版操作服务类
@@ -50,34 +50,34 @@ class PTemplateYamlResourceService(
         userId: String,
         projectId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String?,
-        aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlFileInfo: PipelineYamlFileInfo?
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult {
-        val deployTemplateResult = pipelineTemplateFacadeService.createYamlTemplate(
-            userId = userId,
-            projectId = projectId,
-            yaml = yaml,
-            yamlFileName = yamlFileName,
-            branchName = branchName,
-            isDefaultBranch = isDefaultBranch,
-            description = description,
-            yamlFileInfo = yamlFileInfo
-        )
-        return with(deployTemplateResult) {
-            DeployPipelineResult(
-                pipelineId = templateId,
-                pipelineName = templateName,
-                // TODO 这里需要修改
-                version = version.toInt(),
-                versionNum = versionNum,
-                versionName = versionName,
-                targetUrl = targetUrl,
-                yamlInfo = yamlInfo
+        with(event) {
+            val isDefaultBranch = ref == defaultBranch
+            val yamlFileInfo = PipelineYamlFileInfo(repoHashId = repoHashId, filePath = filePath)
+            val yamlFileName = GitActionCommon.getCiFileName(filePath)
+            val deployTemplateResult = pipelineTemplateFacadeService.createYamlTemplate(
+                userId = userId,
+                projectId = projectId,
+                yaml = yaml,
+                yamlFileName = yamlFileName,
+                branchName = ref,
+                isDefaultBranch = isDefaultBranch,
+                description = commit!!.commitMsg,
+                yamlFileInfo = yamlFileInfo
             )
+            return with(deployTemplateResult) {
+                DeployPipelineResult(
+                    pipelineId = templateId,
+                    pipelineName = templateName,
+                    // TODO 这里需要修改
+                    version = version.toInt(),
+                    versionNum = versionNum,
+                    versionName = versionName,
+                    targetUrl = targetUrl,
+                    yamlInfo = yamlInfo
+                )
+            }
         }
     }
 
@@ -86,35 +86,35 @@ class PTemplateYamlResourceService(
         projectId: String,
         pipelineId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String?,
-        aspects: LinkedList<IPipelineTransferAspect>?,
-        yamlFileInfo: PipelineYamlFileInfo?
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult {
-        val deployTemplateResult = pipelineTemplateFacadeService.updateYamlTemplate(
-            userId = userId,
-            projectId = projectId,
-            templateId = pipelineId,
-            yaml = yaml,
-            yamlFileName = yamlFileName,
-            branchName = branchName,
-            isDefaultBranch = isDefaultBranch,
-            description = description,
-            yamlFileInfo = yamlFileInfo
-        )
-        return with(deployTemplateResult) {
-            DeployPipelineResult(
-                pipelineId = templateId,
-                pipelineName = templateName,
-                // TODO 这里需要修改
-                version = version.toInt(),
-                versionNum = versionNum,
-                versionName = versionName,
-                targetUrl = targetUrl,
-                yamlInfo = yamlInfo
+        with(event) {
+            val isDefaultBranch = ref == defaultBranch
+            val yamlFileInfo = PipelineYamlFileInfo(repoHashId = repoHashId, filePath = filePath)
+            val yamlFileName = GitActionCommon.getCiFileName(filePath)
+            val deployTemplateResult = pipelineTemplateFacadeService.updateYamlTemplate(
+                userId = userId,
+                projectId = projectId,
+                templateId = pipelineId,
+                yaml = yaml,
+                yamlFileName = yamlFileName,
+                branchName = ref,
+                isDefaultBranch = isDefaultBranch,
+                description = commit!!.commitMsg,
+                yamlFileInfo = yamlFileInfo
             )
+            return with(deployTemplateResult) {
+                DeployPipelineResult(
+                    pipelineId = templateId,
+                    pipelineName = templateName,
+                    // TODO 这里需要修改
+                    version = version.toInt(),
+                    versionNum = versionNum,
+                    versionName = versionName,
+                    targetUrl = targetUrl,
+                    yamlInfo = yamlInfo
+                )
+            }
         }
     }
 

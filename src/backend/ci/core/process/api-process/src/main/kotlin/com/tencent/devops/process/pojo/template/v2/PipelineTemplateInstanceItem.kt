@@ -31,10 +31,6 @@ data class PipelineTemplateInstanceItem(
     val filePath: String?,
     @get:Schema(title = "实例化错误信息", required = true)
     val errorMessage: String?,
-    @get:Schema(title = "实例化发布合并请求ID", required = true)
-    val pullRequestId: Long?,
-    @get:Schema(title = "实例化发布合并请求连接", required = true)
-    val pullRequestUrl: String?,
     @get:Schema(title = "创建者", required = true)
     val creator: String,
     @get:Schema(title = "修改者", required = true)

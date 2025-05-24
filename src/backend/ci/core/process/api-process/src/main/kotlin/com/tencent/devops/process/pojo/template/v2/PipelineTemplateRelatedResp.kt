@@ -22,7 +22,7 @@ data class PipelineTemplateRelatedResp(
     @get:Schema(title = "是否有编辑权限", required = false)
     val canEdit: Boolean,
     @get:Schema(title = "流水线模板状态", required = false)
-    val status: TemplatePipelineStatus,
+    val status: TemplatePipelineStatus?,
     @get:Schema(title = "是否开启PAC", required = false)
     val enabledPac: Boolean,
     @get:Schema(title = "所属代码库HashId", required = false)

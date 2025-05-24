@@ -30,7 +30,7 @@ import com.tencent.devops.process.pojo.template.PipelineTemplateListSimpleRespon
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -146,7 +146,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         description: String? = null,
         yamlFileInfo: PipelineYamlFileInfo? = null
     ): DeployTemplateResult {
-        val request = PipelineTemplateBranchPushReq(
+        val request = PipelineTemplateYamlWebhookReq(
             yaml = yaml,
             yamlFileName = yamlFileName,
             branchName = branchName,
@@ -172,7 +172,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         description: String? = null,
         yamlFileInfo: PipelineYamlFileInfo? = null
     ): DeployTemplateResult {
-        val request = PipelineTemplateBranchPushReq(
+        val request = PipelineTemplateYamlWebhookReq(
             yaml = yaml,
             yamlFileName = yamlFileName,
             branchName = branchName,

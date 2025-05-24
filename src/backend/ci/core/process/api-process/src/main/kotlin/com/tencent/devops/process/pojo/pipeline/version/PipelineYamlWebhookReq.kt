@@ -25,19 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.process.pojo.pipeline.version
 
-import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模板实例具体查询条件")
-data class PipelineTemplateInstanceItemCondition(
-    @get:Schema(title = "项目ID", required = true)
-    val projectId: String,
-    @get:Schema(title = "流水线ID", required = true)
-    val pipelineId: String,
-    @get:Schema(title = "实例化任务ID", required = true)
-    val baseId: String? = null,
-    @get:Schema(title = "实例化状态", required = true)
-    val status: TemplateInstanceStatus? = null
-)
+@Schema(title = "流水线yaml文件推送请求")
+data class PipelineYamlWebhookReq(
+    @get:Schema(title = "模板YAML", required = true)
+    val yaml: String,
+    @get:Schema(title = "yaml文件名", required = true)
+    val yamlFileName: String,
+    @get:Schema(title = "分支名", required = true)
+    val branchName: String,
+    @get:Schema(title = "是否默认分支", required = true)
+    val isDefaultBranch: Boolean,
+    @get:Schema(title = "描述", required = true)
+    val description: String? = null,
+    @get:Schema(title = "yaml文件信息", required = true)
+    val yamlFileInfo: PipelineYamlFileInfo? = null,
+    @get:Schema(title = "合并请求链接", required = true)
+    val pullRequestUrl: String? = null
+) : PipelineVersionCreateReq

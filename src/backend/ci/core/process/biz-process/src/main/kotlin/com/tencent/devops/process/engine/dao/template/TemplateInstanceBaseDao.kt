@@ -122,6 +122,7 @@ class TemplateInstanceBaseDao {
         successItemNum: Int? = null,
         failItemNum: Int? = null,
         status: String? = null,
+        pullRequestUrl: String? = null,
         userId: String
     ) {
         with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
@@ -134,6 +135,9 @@ class TemplateInstanceBaseDao {
             }
             if (status != null) {
                 baseStep.set(STATUS, status)
+            }
+            if (pullRequestUrl != null) {
+                baseStep.set(PULL_REQUEST_URL, pullRequestUrl)
             }
             baseStep.set(UPDATE_TIME, LocalDateTime.now())
                 .set(MODIFIER, userId)

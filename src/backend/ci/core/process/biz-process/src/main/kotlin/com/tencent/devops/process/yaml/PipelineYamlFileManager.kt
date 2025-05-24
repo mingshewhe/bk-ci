@@ -539,12 +539,7 @@ class PipelineYamlFileManager @Autowired constructor(
             userId = authUser,
             projectId = projectId,
             yaml = content.content,
-            yamlFileName = GitActionCommon.getCiFileName(filePath),
-            branchName = ref,
-            isDefaultBranch = isDefaultBranch,
-            description = commit.commitMsg,
-            yamlFileInfo = yamlFileInfo,
-            isTemplate = isTemplate
+            event = this,
         )
         val pipelineId = deployPipelineResult.pipelineId
         val version = deployPipelineResult.version
@@ -748,10 +743,6 @@ class PipelineYamlFileManager @Autowired constructor(
     }
 
     private fun PipelineYamlFileEvent.updateYamlPipeline(pipelineId: String): DeployPipelineResult {
-        val yamlFileInfo = PipelineYamlFileInfo(
-            repoHashId = repoHashId,
-            filePath = filePath
-        )
         val content = pipelineYamlFileService.getFileContent(
             projectId = projectId,
             path = filePath,
@@ -763,12 +754,7 @@ class PipelineYamlFileManager @Autowired constructor(
             projectId = projectId,
             pipelineId = pipelineId,
             yaml = content.content,
-            yamlFileName = GitActionCommon.getCiFileName(filePath),
-            branchName = ref,
-            isDefaultBranch = ref == defaultBranch,
-            description = commit.commitMsg,
-            yamlFileInfo = yamlFileInfo,
-            isTemplate = isTemplate
+            event = this
         )
         pipelineYamlService.update(
             projectId = projectId,

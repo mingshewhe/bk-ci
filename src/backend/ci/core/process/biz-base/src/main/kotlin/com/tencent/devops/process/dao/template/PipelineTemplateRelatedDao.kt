@@ -9,6 +9,7 @@ import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.model.process.tables.TPipelineInfo
 import com.tencent.devops.model.process.tables.TTemplatePipeline
 import com.tencent.devops.model.process.tables.records.TTemplatePipelineRecord
+import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
@@ -86,6 +87,7 @@ class PipelineTemplateRelatedDao {
         pipelineName: String?,
         updater: String?,
         templateVersion: Long?,
+        status: TemplatePipelineStatus?,
         pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum,
         limit: Int,
@@ -106,7 +108,9 @@ class PipelineTemplateRelatedDao {
             templatePipelineTable.UPDATOR,
             templatePipelineTable.CREATED_TIME,
             templatePipelineTable.UPDATED_TIME,
-            pipelineInfoTable.VERSION
+            pipelineInfoTable.VERSION,
+            templatePipelineTable.STATUS,
+            templatePipelineTable.PULL_REQUEST_URL
         )
             .from(templatePipelineTable)
             .join(pipelineInfoTable)
@@ -120,6 +124,7 @@ class PipelineTemplateRelatedDao {
                     pipelineName = pipelineName,
                     updater = updater,
                     templateVersion = templateVersion,
+                    status = status,
                     pipelineIds = pipelineIds,
                     instanceTypeEnum = instanceTypeEnum
                 )
@@ -140,7 +145,9 @@ class PipelineTemplateRelatedDao {
                     updater = it.value10(),
                     createdTime = it.value11().timestampmilli(),
                     updatedTime = it.value12().timestampmilli(),
-                    pipelineVersion = it.value13()
+                    pipelineVersion = it.value13(),
+                    status = it.value14()?.let { status -> TemplatePipelineStatus.valueOf(status) },
+                    pullRequestUrl = it.value15()
                 )
             }
     }
@@ -152,6 +159,7 @@ class PipelineTemplateRelatedDao {
         pipelineName: String?,
         updater: String?,
         templateVersion: Long?,
+        status: TemplatePipelineStatus?,
         pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Int {
@@ -170,6 +178,7 @@ class PipelineTemplateRelatedDao {
                     pipelineName = pipelineName,
                     updater = updater,
                     templateVersion = templateVersion,
+                    status = status,
                     pipelineIds = pipelineIds,
                     instanceTypeEnum = instanceTypeEnum
                 )
@@ -185,6 +194,7 @@ class PipelineTemplateRelatedDao {
         pipelineName: String?,
         updater: String?,
         templateVersion: Long?,
+        status: TemplatePipelineStatus?,
         pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Condition {
@@ -211,6 +221,13 @@ class PipelineTemplateRelatedDao {
             .let {
                 if (templateVersion != null) {
                     it.and(templatePipelineTable.VERSION.eq(templateVersion))
+                } else {
+                    it
+                }
+            }
+            .let {
+                if (status != null) {
+                    it.and(templatePipelineTable.STATUS.eq(status.name))
                 } else {
                     it
                 }

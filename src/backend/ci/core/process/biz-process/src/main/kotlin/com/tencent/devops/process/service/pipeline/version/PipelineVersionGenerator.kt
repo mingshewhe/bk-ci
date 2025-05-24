@@ -120,18 +120,34 @@ class PipelineVersionGenerator constructor(
      * 生成草稿版本
      */
     fun generateDraftVersion(
-        latestResource: PipelineResourceVersion,
-        latestSetting: PipelineSettingVersion
-    ) = PipelineResourceOnlyVersion(
-        version = latestResource.version + 1,
-        settingVersion = latestSetting.version + 1,
-        baseVersion = latestResource.version
-    )
+        projectId: String,
+        pipelineId: String
+    ): PipelineResourceOnlyVersion {
+        val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
+        )
+        val latestSetting = pipelineSettingVersionDao.getLatestSettingVersion(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
+        )
+        return PipelineResourceOnlyVersion(
+            version = latestResource.version + 1,
+            settingVersion = latestSetting.version + 1,
+            baseVersion = latestResource.version
+        )
+    }
 
     /**
      * 生成分支版本
      */
-    fun generateBranchVersion(
+    private fun generateBranchVersion(
         latestResource: PipelineResourceVersion,
         latestSetting: PipelineSettingVersion,
         branchName: String

@@ -9,6 +9,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateRelatedDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
+import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedSimple
@@ -35,6 +36,20 @@ class PipelineTemplateRelatedService @Autowired constructor(
         pipelineTemplateRelatedDao.create(
             dslContext = transactionContext ?: dslContext,
             record = pipelineTemplateRelated
+        )
+    }
+
+    fun getByPipelineId(
+        projectId: String,
+        pipelineId: String
+    ): PipelineTemplateRelated? {
+        val condition = PipelineTemplateRelatedCommonCondition(
+            projectId = projectId,
+            pipelineId = pipelineId
+        )
+        return pipelineTemplateRelatedDao.get(
+            dslContext = dslContext,
+            condition = condition
         )
     }
 
@@ -77,6 +92,7 @@ class PipelineTemplateRelatedService @Autowired constructor(
         pipelineName: String?,
         updater: String?,
         templateVersion: Long?,
+        status: TemplatePipelineStatus?,
         pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum,
         limit: Int,
@@ -89,6 +105,7 @@ class PipelineTemplateRelatedService @Autowired constructor(
             pipelineName = pipelineName,
             updater = updater,
             templateVersion = templateVersion,
+            status = status,
             pipelineIds = pipelineIds,
             instanceTypeEnum = instanceTypeEnum,
             limit = limit,
@@ -102,6 +119,7 @@ class PipelineTemplateRelatedService @Autowired constructor(
         pipelineName: String?,
         updater: String?,
         templateVersion: Long?,
+        status: TemplatePipelineStatus?,
         pipelineIds: List<String>?,
         instanceTypeEnum: PipelineInstanceTypeEnum
     ): Int {
@@ -112,6 +130,7 @@ class PipelineTemplateRelatedService @Autowired constructor(
             pipelineName = pipelineName,
             updater = updater,
             templateVersion = templateVersion,
+            status = status,
             pipelineIds = pipelineIds,
             instanceTypeEnum = instanceTypeEnum
         )

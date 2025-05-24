@@ -29,9 +29,7 @@ package com.tencent.devops.process.yaml
 
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
-import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
-import java.util.LinkedList
+import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 
 /**
  * yaml文件对应的资源操作服务类
@@ -41,12 +39,7 @@ interface IPipelineYamlResourceService {
         userId: String,
         projectId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String? = null,
-        aspects: LinkedList<IPipelineTransferAspect>? = null,
-        yamlFileInfo: PipelineYamlFileInfo? = null
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult
 
     fun updateYamlPipeline(
@@ -54,12 +47,7 @@ interface IPipelineYamlResourceService {
         projectId: String,
         pipelineId: String,
         yaml: String,
-        yamlFileName: String,
-        branchName: String,
-        isDefaultBranch: Boolean,
-        description: String? = null,
-        aspects: LinkedList<IPipelineTransferAspect>? = null,
-        yamlFileInfo: PipelineYamlFileInfo? = null
+        event: PipelineYamlFileEvent
     ): DeployPipelineResult
 
     fun updateBranchVersion(

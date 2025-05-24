@@ -41,5 +41,7 @@ data class PipelineTemplateInstanceBasicInfo(
     @get:Schema(title = "模版版本名称")
     val templateVersionName: String?,
     @get:Schema(title = "实例化类型")
-    val instanceType: PipelineInstanceTypeEnum = PipelineInstanceTypeEnum.FREEDOM
+    val instanceType: PipelineInstanceTypeEnum = PipelineInstanceTypeEnum.FREEDOM,
+    @get:Schema(title = "是否使用模版设置", required = false)
+    val useTemplateSetting: Boolean = false,
 )

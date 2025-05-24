@@ -32,7 +32,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateBranchPushReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
@@ -45,12 +45,12 @@ import org.springframework.stereotype.Service
  * 流水线模板分支推送请求转换
  */
 @Service
-class PipelineTemplateBranchPushReqConverter(
+class PipelineTemplateYamlWebhookReqConverter(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService
 ) : PipelineTemplateVersionReqConverter {
     override fun support(request: PipelineTemplateVersionReq): Boolean {
-        return request is PipelineTemplateBranchPushReq
+        return request is PipelineTemplateYamlWebhookReq
     }
 
     override fun convert(
@@ -60,7 +60,7 @@ class PipelineTemplateBranchPushReqConverter(
         version: Long?,
         request: PipelineTemplateVersionReq
     ): PipelineTemplateVersionCreateContext {
-        request as PipelineTemplateBranchPushReq
+        request as PipelineTemplateYamlWebhookReq
         with(request) {
             val modelTransferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,

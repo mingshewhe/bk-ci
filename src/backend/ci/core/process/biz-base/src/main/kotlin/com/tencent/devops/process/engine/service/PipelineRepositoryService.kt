@@ -87,6 +87,7 @@ import com.tencent.devops.process.engine.cfg.VersionConfigure
 import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
 import com.tencent.devops.process.engine.control.lock.PipelineReleaseLock
+import com.tencent.devops.process.engine.control.lock.PipelineTemplateInstanceCountLock
 import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
@@ -1664,11 +1665,6 @@ class PipelineRepositoryService constructor(
             )
 
         val pipelineResult = DeletePipelineResult(pipelineId, record.pipelineName, record.version)
-        val templatePipeline = templatePipelineDao.get(
-            dslContext = dslContext,
-            projectId = projectId,
-            pipelineId = pipelineId
-        )
 
         val lock = PipelineModelLock(redisOperation, pipelineId)
         try {
@@ -1717,15 +1713,6 @@ class PipelineRepositoryService constructor(
                         pipelineId = pipelineId
                     )
                 }
-                if (templatePipeline != null) {
-                    pipelineTemplateInfoDao.updateInstancePipelineCount(
-                        dslContext = transactionContext,
-                        projectId = projectId,
-                        templateId = templatePipeline.templateId,
-                        count = 1,
-                        deleted = true
-                    )
-                }
 
                 pipelineModelTaskDao.deletePipelineTasks(transactionContext, projectId, pipelineId)
                 pipelineYamlInfoDao.deleteByPipelineId(transactionContext, projectId, pipelineId)
@@ -1746,6 +1733,16 @@ class PipelineRepositoryService constructor(
                         model = "",
                         channelCode = record.channel
                     )
+                )
+            }
+            templatePipelineDao.get(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = pipelineId
+            )?.let {
+                updateInstancePipelineCount(
+                    projectId = it.projectId,
+                    templateId = it.templateId
                 )
             }
         } finally {
@@ -2339,5 +2336,26 @@ class PipelineRepositoryService constructor(
             projectId = projectId,
             pipelineId = pipelineId
         )
+    }
+
+    fun updateInstancePipelineCount(
+        projectId: String,
+        templateId: String
+    ) {
+        PipelineTemplateInstanceCountLock(redisOperation = redisOperation, templateId = templateId).use {
+            it.lock()
+            val instanceCount = templatePipelineDao.countByTemplates(
+                dslContext = dslContext,
+                projectId = projectId,
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT.name,
+                templateIds = listOf(templateId)
+            )
+            pipelineTemplateInfoDao.updateInstancePipelineCount(
+                dslContext = dslContext,
+                projectId = projectId,
+                templateId = templateId,
+                count = instanceCount
+            )
+        }
     }
 }

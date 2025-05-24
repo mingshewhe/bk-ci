@@ -28,9 +28,11 @@
 package com.tencent.devops.process.service.pipeline.version.listener
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
-import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -39,45 +41,29 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineModelTaskVersionPostProcessor @Autowired constructor(
-    private val dslContext: DSLContext,
     private val pipelineModelTaskDao: PipelineModelTaskDao
 ) : PipelineVersionCreatePostProcessor {
 
-    override fun postProcessAfterCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    override fun postProcessInTransactionVersionCreate(
+        transactionContext: DSLContext,
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
+        with(context) {
+            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
+                return
+            }
+            pipelineModelTaskDao.deletePipelineTasks(
+                dslContext = transactionContext,
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
             pipelineModelTaskDao.batchSave(
                 dslContext = transactionContext,
                 modelTasks = pipelineModelBasicInfo.modelTasks
             )
-        }
-    }
-
-    override fun postProcessBeforeVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-        with(pipelineBasicInfo) {
-            if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
-                return
-            }
-            dslContext.transaction { configuration ->
-                val transactionContext = DSL.using(configuration)
-                pipelineModelTaskDao.deletePipelineTasks(
-                    dslContext = transactionContext,
-                    projectId = projectId,
-                    pipelineId = pipelineId
-                )
-                pipelineModelTaskDao.batchSave(
-                    dslContext = transactionContext,
-                    modelTasks = pipelineModelBasicInfo.modelTasks
-                )
-            }
         }
     }
 }

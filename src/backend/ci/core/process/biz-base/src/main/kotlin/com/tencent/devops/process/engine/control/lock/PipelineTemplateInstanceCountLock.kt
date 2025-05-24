@@ -25,23 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.process.engine.control.lock
 
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
-import io.swagger.v3.oas.annotations.media.Schema
+import com.tencent.devops.common.redis.RedisLock
+import com.tencent.devops.common.redis.RedisOperation
 
-@Schema(title = "模版yaml文件推送请求")
-data class PipelineTemplateBranchPushReq(
-    @get:Schema(title = "模板YAML", required = true)
-    val yaml: String,
-    @get:Schema(title = "yaml文件名", required = true)
-    val yamlFileName: String,
-    @get:Schema(title = "分支名", required = true)
-    val branchName: String,
-    @get:Schema(title = "是否默认分支", required = true)
-    val isDefaultBranch: Boolean,
-    @get:Schema(title = "描述", required = true)
-    val description: String? = null,
-    @get:Schema(title = "yaml文件信息", required = true)
-    val yamlFileInfo: PipelineYamlFileInfo? = null
-) : PipelineTemplateVersionReq
+class PipelineTemplateInstanceCountLock(redisOperation: RedisOperation, templateId: String) :
+    RedisLock(
+        redisOperation = redisOperation,
+        lockKey = "pipeline.template.instance.count.lock.$templateId",
+        // 10分钟，防止服务重启，锁未释放
+        expiredTimeInSeconds = 600000
+    ) {
+    override fun decorateKey(key: String): String {
+        return key
+    }
+}

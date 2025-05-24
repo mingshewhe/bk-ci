@@ -38,12 +38,11 @@ import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
-import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
@@ -58,7 +57,6 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
-import org.jooq.DSLContext
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -76,9 +74,7 @@ class PipelineTemplateInstanceReqConverter(
     private val transferService: PipelineTransferYamlService,
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineRepositoryService: PipelineRepositoryService,
-    private val dslContext: DSLContext,
-    private val pipelineInfoDao: PipelineInfoDao
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
@@ -122,12 +118,6 @@ class PipelineTemplateInstanceReqConverter(
 
             // 生成流水线ID
             val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
-
-            val pipelineInfo = pipelineInfoDao.getPipelineInfo(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = newPipelineId
-            )
 
             // 根据模版model生成流水线model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
@@ -180,7 +170,7 @@ class PipelineTemplateInstanceReqConverter(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 userId = userId,
-                create = pipelineInfo == null,
+                create = pipelineId == null,
                 versionStatus = versionStatus,
                 channelCode = ChannelCode.BS
             )
@@ -206,7 +196,8 @@ class PipelineTemplateInstanceReqConverter(
                 templateName = templateInfo.name,
                 templateVersion = templateVersion,
                 templateVersionName = templateResource.versionName,
-                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT,
+                useTemplateSetting = useTemplateSetting
             )
 
             return PipelineVersionCreateContext(
@@ -217,7 +208,7 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-                pipelineSetting = pipelineSetting,
+                pipelineSettingWithoutVersion = pipelineSetting,
                 enablePac = enablePac,
                 yamlFileInfo = enablePac.takeIf { it }?.let {
                     PipelineYamlFileInfo(

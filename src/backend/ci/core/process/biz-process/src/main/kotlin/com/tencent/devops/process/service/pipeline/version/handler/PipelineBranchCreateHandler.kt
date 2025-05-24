@@ -27,9 +27,11 @@
 
 package com.tencent.devops.process.service.pipeline.version.handler
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
@@ -40,32 +42,41 @@ import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
+/**
+ * 分支版本创建
+ */
 @Service
-class PipelineTemplateInstanceHandler @Autowired constructor(
+class PipelineBranchCreateHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val dslContext: DSLContext,
     private val pipelineInfoDao: PipelineInfoDao,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
 ) : PipelineVersionCreateHandler {
-    override fun support(context: PipelineVersionCreateContext) =
-        context.versionAction == PipelineVersionAction.TEMPLATE_INSTANCE
+    override fun support(context: PipelineVersionCreateContext): Boolean {
+        return context.versionAction == PipelineVersionAction.CREATE_BRANCH
+    }
 
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
-            if (templateInstanceBasicInfo == null) {
-                throw IllegalArgumentException("templateInstanceBasicInfo is null")
+            if (!enablePac) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
             }
-            if (enablePac) {
-                if (targetAction == null) {
-                    throw IllegalArgumentException("targetAction is null")
-                }
-                if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
-                }
-                if (pipelineResourceWithoutVersion.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
-                }
+            if (yamlFileInfo == null) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
+            }
+            if (branchName == null) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
+            }
+            if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
+                // TEMPLATE_NOT_RELEASED
+                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {
@@ -91,36 +102,15 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             )
             resourceOnlyVersion
         } else {
-            val resourceOnlyVersion = pipelineVersionGenerator.generateInstanceVersion(
+            val resourceOnlyVersion = pipelineVersionGenerator.generateBranchVersion(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newModel = pipelineResourceWithoutVersion.model,
-                enablePac = enablePac,
-                repoHashId = yamlFileInfo?.repoHashId,
-                targetAction = targetAction,
-                targetBranch = branchName,
-                templateId = templateInstanceBasicInfo!!.templateId,
-                templateVersion = templateInstanceBasicInfo.templateVersion,
-                useTemplateSetting = templateInstanceBasicInfo.useTemplateSetting
+                branchName = branchName!!,
             )
-            if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
-                pipelineVersionPersistenceService.createReleaseVersion(
-                    context = this, resourceOnlyVersion = resourceOnlyVersion
-                )
-            } else {
-                pipelineVersionPersistenceService.createBranchVersion(
-                    context = this, resourceOnlyVersion = resourceOnlyVersion
-                )
-            }
+            pipelineVersionPersistenceService.createBranchVersion(
+                context = this, resourceOnlyVersion = resourceOnlyVersion
+            )
             resourceOnlyVersion
-        }
-
-        // 推送文件
-        val yamlFileReleaseResult = enablePac.takeIf { it }?.let {
-            pipelineVersionPersistenceService.releaseYamlFile(
-                context = this,
-                resourceOnlyVersion = resourceOnlyVersion
-            )
         }
 
         return DeployPipelineResult(
@@ -128,9 +118,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             pipelineName = pipelineSettingWithoutVersion.pipelineName,
             version = resourceOnlyVersion.version,
             versionNum = resourceOnlyVersion.versionNum,
-            versionName = resourceOnlyVersion.versionName,
-            pullRequestId = yamlFileReleaseResult?.pullRequestId,
-            targetUrl = yamlFileReleaseResult?.pullRequestUrl
+            versionName = resourceOnlyVersion.versionName
         )
     }
 }

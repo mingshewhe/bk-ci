@@ -28,8 +28,11 @@
 package com.tencent.devops.process.service.pipeline.version.listener
 
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,50 +44,50 @@ class PipelineTemplateVersionPostProcessor @Autowired constructor(
     private val templatePipelineDao: TemplatePipelineDao
 ) : PipelineVersionCreatePostProcessor {
 
-    override fun postProcessInTransactionCreation(
+    override fun postProcessInTransactionVersionCreate(
         transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        val templateInstanceBasicInfo = postCreationContext.templateInstanceBasicInfo ?: return
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-
-        pipelineTemplateRelatedService.createRelation(
-            userId = postCreationContext.userId,
-            projectId = pipelineBasicInfo.projectId,
-            pipelineId = pipelineBasicInfo.pipelineId,
-            templateId = templateInstanceBasicInfo.templateId,
-            instanceType = templateInstanceBasicInfo.instanceType.type,
-            buildNo = pipelineModelBasicInfo.buildNo,
-            param = pipelineModelBasicInfo.param,
-            fixTemplateVersion = templateInstanceBasicInfo.templateVersion
-        )
-    }
-
-    override fun postProcessInTransactionVersionCreation(
-        transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        val templateInstanceBasicInfo = postCreationContext.templateInstanceBasicInfo ?: return
-        // 制约模式下才需要更新
-        if (templateInstanceBasicInfo.instanceType != PipelineInstanceTypeEnum.CONSTRAINT) {
-            return
-        }
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-
-        templatePipelineDao.update(
-            dslContext = transactionContext,
-            projectId = pipelineBasicInfo.projectId,
-            templateVersion = templateInstanceBasicInfo.templateVersion,
-            versionName = templateInstanceBasicInfo.templateVersionName ?: "",
-            userId = postCreationContext.userId,
-            instance = TemplateInstanceUpdate(
-                pipelineId = pipelineBasicInfo.pipelineId,
-                pipelineName = pipelineBasicInfo.pipelineName,
-                buildNo = pipelineModelBasicInfo.buildNo,
-                param = pipelineModelBasicInfo.param
+        with(context) {
+            val pipelineTemplateRelated = pipelineTemplateRelatedService.getByPipelineId(
+                projectId = projectId, pipelineId = pipelineId
             )
-        )
+            if (templateInstanceBasicInfo != null) {
+                if (pipelineTemplateRelated == null) {
+                    pipelineTemplateRelatedService.createRelation(
+                        userId = userId,
+                        projectId = pipelineBasicInfo.projectId,
+                        pipelineId = pipelineBasicInfo.pipelineId,
+                        templateId = templateInstanceBasicInfo.templateId,
+                        instanceType = templateInstanceBasicInfo.instanceType.type,
+                        buildNo = pipelineModelBasicInfo.buildNo,
+                        param = pipelineModelBasicInfo.param,
+                        fixTemplateVersion = templateInstanceBasicInfo.templateVersion
+                    )
+                } else {
+                    // 制约模式下才需要更新
+                    if (templateInstanceBasicInfo.instanceType != PipelineInstanceTypeEnum.CONSTRAINT) {
+                        return
+                    }
+
+                    templatePipelineDao.update(
+                        dslContext = transactionContext,
+                        projectId = pipelineBasicInfo.projectId,
+                        templateVersion = templateInstanceBasicInfo.templateVersion,
+                        versionName = templateInstanceBasicInfo.templateVersionName ?: "",
+                        userId = userId,
+                        instance = TemplateInstanceUpdate(
+                            pipelineId = pipelineBasicInfo.pipelineId,
+                            pipelineName = pipelineBasicInfo.pipelineName,
+                            buildNo = pipelineModelBasicInfo.buildNo,
+                            param = pipelineModelBasicInfo.param
+                        )
+                    )
+                }
+            }
+        }
     }
 }

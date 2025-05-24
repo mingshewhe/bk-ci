@@ -30,7 +30,10 @@ package com.tencent.devops.process.service.pipeline.version.listener
 import com.tencent.devops.common.api.util.AESUtil
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.dao.PipelineCallbackDao
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -41,48 +44,32 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineCallbackEventVersionPostProcessor @Autowired constructor(
-    private val dslContext: DSLContext,
     private val pipelineCallbackDao: PipelineCallbackDao,
 ) : PipelineVersionCreatePostProcessor {
 
     @Value("\${project.callback.secretParam.aes-key:project_callback_aes_key}")
     private val aesKey = ""
 
-    override fun postProcessAfterCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    override fun postProcessInTransactionVersionCreate(
+        transactionContext: DSLContext,
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        with(pipelineBasicInfo) {
+        with(context) {
+            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
+                return
+            }
             // 初始化流水线单体回调
             savePipelineCallback(
-                dslContext = dslContext,
-                userId = postCreationContext.userId,
-                projectId = projectId,
-                pipelineId = pipelineId,
+                dslContext = transactionContext,
+                userId = userId,
+                projectId = pipelineBasicInfo.projectId,
+                pipelineId = pipelineBasicInfo.pipelineId,
                 events = pipelineModelBasicInfo.events,
             )
         }
-    }
-
-    override fun postProcessAfterVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-
-        if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
-            return
-        }
-        // 初始化流水线单体回调
-        savePipelineCallback(
-            dslContext = dslContext,
-            userId = postCreationContext.userId,
-            projectId = pipelineBasicInfo.projectId,
-            pipelineId = pipelineBasicInfo.pipelineId,
-            events = pipelineModelBasicInfo.events,
-        )
     }
 
     /**

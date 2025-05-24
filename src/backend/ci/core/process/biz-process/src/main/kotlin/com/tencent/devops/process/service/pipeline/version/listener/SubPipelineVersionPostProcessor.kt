@@ -28,7 +28,10 @@
 package com.tencent.devops.process.service.pipeline.version.listener
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.service.SubPipelineTaskService
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -42,32 +45,14 @@ class SubPipelineVersionPostProcessor @Autowired constructor(
     private val subPipelineTaskService: SubPipelineTaskService
 ) : PipelineVersionCreatePostProcessor {
 
-    override fun postProcessAfterCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    override fun postProcessInTransactionVersionCreate(
+        transactionContext: DSLContext,
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-        with(pipelineBasicInfo) {
-            // 初始化子流水线关联关系
-            subPipelineTaskService.batchAdd(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = pipelineId,
-                model = pipelineResourceVersion.model,
-                channel = channelCode.name,
-                modelTasks = pipelineModelBasicInfo.modelTasks
-            )
-        }
-    }
-
-    override fun postProcessBeforeVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-        with(pipelineBasicInfo) {
+        with(context) {
             if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
                 return
             }
@@ -76,7 +61,7 @@ class SubPipelineVersionPostProcessor @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 model = pipelineResourceVersion.model,
-                channel = channelCode.name,
+                channel = pipelineBasicInfo.channelCode.name,
                 modelTasks = pipelineModelBasicInfo.modelTasks
             )
         }

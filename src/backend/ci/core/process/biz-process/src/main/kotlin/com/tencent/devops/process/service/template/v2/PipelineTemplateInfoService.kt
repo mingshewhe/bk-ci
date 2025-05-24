@@ -168,22 +168,6 @@ class PipelineTemplateInfoService @Autowired constructor(
         )
     }
 
-    fun updateInstancePipelineCount(
-        transactionContext: DSLContext? = null,
-        projectId: String,
-        templateId: String,
-        count: Int,
-        deleted: Boolean = false
-    ) {
-        pipelineTemplateInfoDao.updateInstancePipelineCount(
-            dslContext = transactionContext ?: dslContext,
-            projectId = projectId,
-            templateId = templateId,
-            count = count,
-            deleted = deleted
-        )
-    }
-
     fun listPacSettings(
         templateIds: List<String>
     ): Map<String, Boolean> {

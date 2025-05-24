@@ -31,8 +31,11 @@ import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.auth.api.AuthResourceType
 import com.tencent.devops.common.auth.api.pojo.ResourceAuthorizationDTO
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.permission.PipelineAuthorizationService
 import com.tencent.devops.process.permission.PipelinePermissionService
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -44,16 +47,23 @@ class PipelinePermissionVersionPostProcessor @Autowired constructor(
     private val pipelineAuthorizationService: PipelineAuthorizationService,
 ) : PipelineVersionCreatePostProcessor {
 
-    override fun postProcessInTransactionCreation(
+    override fun postProcessInTransactionVersionCreate(
         transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        if (!postCreationContext.checkPermission) {
-            return
+        if (newPipeline) {
+            createResource(context = context)
+        } else {
+            modifyResource(context = context)
         }
-        val userId = postCreationContext.userId
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        with(pipelineBasicInfo) {
+    }
+
+    private fun createResource(context: PipelineVersionCreateContext) {
+        with(context) {
+            val pipelineName = pipelineBasicInfo.pipelineName
             pipelinePermissionService.createResource(
                 userId = userId,
                 projectId = projectId,
@@ -76,19 +86,15 @@ class PipelinePermissionVersionPostProcessor @Autowired constructor(
         }
     }
 
-    override fun postProcessInTransactionVersionCreation(
-        transactionContext: DSLContext,
-        postCreationContext: PipelineVersionPostCreationContext
-    ) {
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-        if (!postCreationContext.checkPermission || pipelineResourceVersion.status != VersionStatus.RELEASED) {
-            return
-        }
-        with(postCreationContext.pipelineBasicInfo) {
+    private fun modifyResource(context: PipelineVersionCreateContext) {
+        with(context) {
+            if (pipelineResourceWithoutVersion.status != VersionStatus.RELEASED) {
+                return
+            }
             pipelinePermissionService.modifyResource(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                pipelineName = pipelineName
+                pipelineName = pipelineBasicInfo.pipelineName
             )
         }
     }

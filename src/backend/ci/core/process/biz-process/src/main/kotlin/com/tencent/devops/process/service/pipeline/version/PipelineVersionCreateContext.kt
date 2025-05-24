@@ -49,14 +49,18 @@ data class PipelineVersionCreateContext(
     val version: Int? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
+
     @get:Schema(title = "流水线信息", required = true)
     val pipelineBasicInfo: PipelineBasicInfo,
     @get:Schema(title = "流水线模型解析后数据", required = true)
     var pipelineModelBasicInfo: PipelineModelBasicInfo,
-    @get:Schema(title = "流水线编排信息", required = true)
+    @get:Schema(title = "流水线编排信息,没有版本信息", required = true)
     val pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,
-    @get:Schema(title = "流水线设置", required = true)
-    val pipelineSetting: PipelineSetting,
+    @get:Schema(title = "流水线设置,没有版本信息", required = true)
+    val pipelineSettingWithoutVersion: PipelineSetting,
+    @get:Schema(title = "模版实例化信息", required = false)
+    val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
+
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean = false,
     @get:Schema(title = "yaml文件分支信息", required = true)
@@ -65,10 +69,6 @@ data class PipelineVersionCreateContext(
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时的分支或者代码库推送的分支", required = false)
     val branchName: String? = null,
-    @get:Schema(title = "是否从模版实例化", required = false)
-    val instanceFromTemplate: Boolean = false,
-    @get:Schema(title = "是否使用模版设置", required = false)
-    val useTemplateSettings: Boolean = false,
-    @get:Schema(title = "模版实例化信息", required = false)
-    val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null
+    @get:Schema(title = "合并请求连接", required = false)
+    val pullRequestUrl: String? = null
 )

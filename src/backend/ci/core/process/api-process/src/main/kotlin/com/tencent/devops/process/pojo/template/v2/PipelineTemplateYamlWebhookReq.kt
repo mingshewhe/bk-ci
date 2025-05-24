@@ -25,29 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
-import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线版本创建后置处理上下文")
-data class PipelineVersionPostCreationContext(
-    @get:Schema(title = "用户ID", required = true)
-    val userId: String,
-    @get:Schema(title = "流水线基础信息", required = true)
-    val pipelineBasicInfo: PipelineBasicInfo,
-    @get:Schema(title = "流水线模型基础信息", required = true)
-    val pipelineModelBasicInfo: PipelineModelBasicInfo,
-    @get:Schema(title = "流水线模型", required = true)
-    val pipelineResourceVersion: PipelineResourceVersion,
-    @get:Schema(title = "流水线设置", required = true)
-    val pipelineSetting: PipelineSetting,
-    @get:Schema(title = "流水线实例化信息", required = true)
-    val templateInstanceBasicInfo: PipelineTemplateInstanceBasicInfo? = null,
-    @get:Schema(title = "是否需要校验权限", required = true)
-    val checkPermission: Boolean = true
-)
+@Schema(title = "模版yaml文件推送请求")
+data class PipelineTemplateYamlWebhookReq(
+    @get:Schema(title = "模板YAML", required = true)
+    val yaml: String,
+    @get:Schema(title = "yaml文件名", required = true)
+    val yamlFileName: String,
+    @get:Schema(title = "分支名", required = true)
+    val branchName: String,
+    @get:Schema(title = "是否默认分支", required = true)
+    val isDefaultBranch: Boolean,
+    @get:Schema(title = "描述", required = true)
+    val description: String? = null,
+    @get:Schema(title = "yaml文件信息", required = true)
+    val yamlFileInfo: PipelineYamlFileInfo? = null
+) : PipelineTemplateVersionReq

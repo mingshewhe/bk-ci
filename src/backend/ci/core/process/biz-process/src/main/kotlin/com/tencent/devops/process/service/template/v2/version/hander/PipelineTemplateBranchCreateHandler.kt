@@ -36,6 +36,25 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
 
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
+            if (!enablePac) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
+            }
+            if (yamlFileInfo == null) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
+            }
+            if (branchName == null) {
+                throw ErrorCodeException(
+                    errorCode = ""
+                )
+            }
+            if (pTemplateResourceWithoutVersion.status != VersionStatus.BRANCH) {
+                // TEMPLATE_NOT_RELEASED
+                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+            }
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
                 lock.lock()
@@ -47,25 +66,6 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
     }
 
     private fun PipelineTemplateVersionCreateContext.doHandle(): DeployTemplateResult {
-        if (!enablePac) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (yamlFileInfo == null) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (branchName == null) {
-            throw ErrorCodeException(
-                errorCode = ""
-            )
-        }
-        if (pTemplateResourceWithoutVersion.status != VersionStatus.BRANCH) {
-            // TEMPLATE_NOT_RELEASED
-            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
-        }
         val templateInfo = pipelineTemplateInfoService.getOrNull(
             projectId = projectId,
             templateId = templateId

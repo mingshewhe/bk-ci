@@ -28,8 +28,11 @@
 package com.tencent.devops.process.service.pipeline.version.listener
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.classify.PipelineViewBulkAdd
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.service.label.PipelineGroupService
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.view.PipelineViewGroupService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -43,14 +46,25 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
     private val pipelineGroupService: PipelineGroupService
 ) : PipelineVersionCreatePostProcessor {
 
-    override fun postProcessAfterCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    override fun postProcessAfterVersionCreate(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting,
+        newPipeline: Boolean
     ) {
-        val userId = postCreationContext.userId
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
+        if (newPipeline) {
+            createViewGroup(context = context)
+        } else {
+            updateViewGroup(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
+            )
+        }
+    }
 
-        with(pipelineBasicInfo) {
+    private fun createViewGroup(context: PipelineVersionCreateContext) {
+        with(context) {
             // 添加到静态分组
             val bulkAdd = PipelineViewBulkAdd(
                 pipelineIds = listOf(pipelineId),
@@ -67,19 +81,15 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
         }
     }
 
-    override fun postProcessAfterVersionCreation(
-        postCreationContext: PipelineVersionPostCreationContext
+    private fun updateViewGroup(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
     ) {
-        val userId = postCreationContext.userId
-        val pipelineBasicInfo = postCreationContext.pipelineBasicInfo
-        val pipelineModelBasicInfo = postCreationContext.pipelineModelBasicInfo
-        val pipelineResourceVersion = postCreationContext.pipelineResourceVersion
-        val pipelineSetting = postCreationContext.pipelineSetting
-
-        if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
-            return
-        }
-        with(pipelineBasicInfo) {
+        with(context) {
+            if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
+                return
+            }
             // 添加标签
             pipelineGroupService.addPipelineLabel(
                 userId = userId,
@@ -93,7 +103,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
                 pipelineId = pipelineId,
                 userId = userId,
                 creator = userId,
-                pipelineName = pipelineName
+                pipelineName = pipelineBasicInfo.pipelineName
             )
             // 添加到静态流水线组
             pipelineViewGroupService.bulkAddStatic(
