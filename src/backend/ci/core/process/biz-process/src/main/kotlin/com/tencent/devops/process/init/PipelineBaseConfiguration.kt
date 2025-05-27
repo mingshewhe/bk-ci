@@ -32,7 +32,7 @@ import com.tencent.devops.common.stream.ScsConsumerBuilder
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineCreateListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineDeleteListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineRestoreListener
-import com.tencent.devops.process.engine.listener.pipeline.MQPipelineTemplateInstanceListener
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineUpdateListener
 import com.tencent.devops.process.engine.pojo.event.PipelineCreateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineDeleteEvent
@@ -85,6 +85,6 @@ class PipelineBaseConfiguration {
      */
     @EventConsumer
     fun pipelineTemplateInstanceConsumer(
-        @Autowired listener: MQPipelineTemplateInstanceListener
-    ) = ScsConsumerBuilder.build<PipelineTemplateInstanceEvent> { listener.run(it) }
+        @Autowired listener: PipelineTemplateInstanceListener
+    ) = ScsConsumerBuilder.build<PipelineTemplateInstanceEvent> { listener.handle(it) }
 }

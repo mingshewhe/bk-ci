@@ -39,26 +39,10 @@ class PipelineTemplateRelatedService @Autowired constructor(
         )
     }
 
-    fun getByPipelineId(
-        projectId: String,
-        pipelineId: String
-    ): PipelineTemplateRelated? {
-        val condition = PipelineTemplateRelatedCommonCondition(
-            projectId = projectId,
-            pipelineId = pipelineId
-        )
+    fun get(condition: PipelineTemplateRelatedCommonCondition): PipelineTemplateRelated? {
         return pipelineTemplateRelatedDao.get(
             dslContext = dslContext,
             condition = condition
-        )
-    }
-
-    fun get(condition: PipelineTemplateRelatedCommonCondition): PipelineTemplateRelated {
-        return pipelineTemplateRelatedDao.get(
-            dslContext = dslContext,
-            condition = condition
-        ) ?: throw ErrorCodeException(
-            errorCode = ""
         )
     }
 
@@ -148,6 +132,26 @@ class PipelineTemplateRelatedService @Autowired constructor(
         )
     }
 
+    fun updateStatus(
+        transactionContext: DSLContext? = null,
+        projectId: String,
+        pipelineIds: List<String>,
+        status: TemplatePipelineStatus,
+        instanceErrorInfo: String? = null
+    ) {
+        pipelineTemplateRelatedDao.update(
+            dslContext = transactionContext ?: dslContext,
+            updateInfo = PipelineTemplateRelatedUpdateInfo(
+                status = status,
+                instanceErrorInfo = instanceErrorInfo
+            ),
+            condition = PipelineTemplateRelatedCommonCondition(
+                projectId = projectId,
+                pipelineIds = pipelineIds
+            )
+        )
+    }
+
     fun isTemplateExistInstances(
         projectId: String,
         templateId: String
@@ -171,7 +175,9 @@ class PipelineTemplateRelatedService @Autowired constructor(
         instanceType: String,
         buildNo: BuildNo? = null,
         param: List<BuildFormProperty>? = null,
-        fixTemplateVersion: Long? = null
+        fixTemplateVersion: Long? = null,
+        status: TemplatePipelineStatus? = TemplatePipelineStatus.UPDATED,
+        pullRequestUrl: String? = null
     ): Boolean {
         logger.info(
             "Start creating relation between template and pipeline: userId=$userId, " +
@@ -225,7 +231,9 @@ class PipelineTemplateRelatedService @Autowired constructor(
                 buildNo = buildNo,
                 params = param,
                 instanceErrorInfo = null,
-                deleted = false
+                deleted = false,
+                status = status,
+                pullRequestUrl = pullRequestUrl
             )
         )
         logger.info(

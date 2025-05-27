@@ -2,6 +2,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板与流水线关联实体")
@@ -15,5 +16,7 @@ data class PipelineTemplateRelatedUpdateInfo(
     @get:Schema(title = "实例化错误信息", required = true)
     val instanceErrorInfo: String? = null,
     @get:Schema(title = "更新人", required = true)
-    val updater: String? = null
+    val updater: String? = null,
+    @get:Schema(title = "状态", required = true)
+    val status: TemplatePipelineStatus? = null
 )

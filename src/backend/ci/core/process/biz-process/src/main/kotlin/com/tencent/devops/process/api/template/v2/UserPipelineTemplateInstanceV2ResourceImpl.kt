@@ -41,11 +41,11 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequ
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskDetail
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
-import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceService
 
 @RestResource
 class UserPipelineTemplateInstanceV2ResourceImpl(
-    private val instanceFacadeService: PipelineTemplateInstanceFacadeService
+    private val instanceFacadeService: PipelineTemplateInstanceService
 ) : UserPipelineTemplateInstanceV2Resource {
     override fun createTemplateInstances(
         userId: String,

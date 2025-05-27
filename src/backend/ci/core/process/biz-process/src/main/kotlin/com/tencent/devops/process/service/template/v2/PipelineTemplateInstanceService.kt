@@ -12,8 +12,6 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
-import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
@@ -25,7 +23,6 @@ import com.tencent.devops.process.engine.dao.template.TemplateInstanceItemDao
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.PipelinePermissionService
-import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceParams
@@ -35,9 +32,6 @@ import com.tencent.devops.process.pojo.template.TemplateOperationRet
 import com.tencent.devops.process.pojo.template.TemplatePipelineStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceCompareResponse
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItem
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemCondition
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceItemUpdate
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceReleaseInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesTaskDetail
@@ -59,7 +53,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 
 @Service
-class PipelineTemplateInstanceFacadeService @Autowired constructor(
+class PipelineTemplateInstanceService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelinePermissionService: PipelinePermissionService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
@@ -69,7 +63,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     private val templateInstanceBaseDao: TemplateInstanceBaseDao,
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineEventDispatcher: PipelineEventDispatcher,
-    private val redisOperation: RedisOperation,
     private val pipelineVersionManager: PipelineVersionManager,
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
     private val pipelineResourceDao: PipelineResourceDao,
@@ -120,14 +113,14 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 successPipelines.add(instance.pipelineName)
                 successPipelineIds.add(deployPipeline.pipelineId)
             } catch (ignored: Throwable) {
-                handleSyncCreateInstanceErrorMessage(
-                    projectId = projectId,
+                val errorMessage = translateInstanceException(
                     userId = userId,
-                    instance = instance,
-                    error = ignored,
-                    failurePipelines = failurePipelines,
-                    failureMessages = failureMessages
+                    projectId = projectId,
+                    pipelineId = instance.pipelineId,
+                    exception = ignored,
                 )
+                failurePipelines.add(instance.pipelineName)
+                failureMessages[instance.pipelineName] = errorMessage
             }
         }
         return TemplateOperationRet(
@@ -140,40 +133,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
             ),
             ""
         )
-    }
-
-    private fun handleSyncCreateInstanceErrorMessage(
-        projectId: String,
-        instance: PipelineTemplateInstanceReleaseInfo,
-        userId: String,
-        error: Throwable,
-        failurePipelines: MutableList<String>,
-        failureMessages: MutableMap<String, String>
-    ) {
-        when (error) {
-            is DuplicateKeyException -> {
-                logger.warn("TemplateCreateInstanceDuplicate|$projectId|$instance|$userId|${error.message}")
-                failurePipelines.add(instance.pipelineName)
-                failureMessages[instance.pipelineName] = "duplicate!"
-            }
-
-            is ErrorCodeException -> {
-                logger.warn("TemplateCreateInstanceErrorCode|$projectId|$instance|$userId|${error.message}")
-                failureMessages[instance.pipelineName] = I18nUtil.generateResponseDataObject(
-                    messageCode = error.errorCode,
-                    params = error.params,
-                    data = null,
-                    defaultMessage = error.defaultMessage
-                ).message ?: error.defaultMessage ?: "unknown!"
-                failurePipelines.add(instance.pipelineName)
-            }
-
-            else -> {
-                logger.warn("TemplateCreateInstanceThrowable|$projectId|$instance|$userId|${error.message}")
-                failurePipelines.add(instance.pipelineName)
-                failureMessages[instance.pipelineName] = error.message ?: "create instance fail"
-            }
-        }
     }
 
     /*异步创建流水线模板实例*/
@@ -233,18 +192,18 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 status = TemplateInstanceStatus.INIT.name,
                 userId = userId
             )
-            pipelineEventDispatcher.dispatch(
-                PipelineTemplateInstanceEvent(
-                    projectId = projectId,
-                    source = "PIPELINE_TEMPLATE_INSTANCE_CREATE",
-                    pipelineId = "",
-                    userId = userId,
-                    templateId = templateId,
-                    baseId = baseId,
-                    templateInstanceType = TemplateInstanceType.CREATE
-                )
-            )
         }
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateInstanceEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_INSTANCE_CREATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+                baseId = baseId,
+                templateInstanceType = TemplateInstanceType.CREATE
+            )
+        )
         return baseId
     }
 
@@ -291,308 +250,52 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
                 status = TemplateInstanceStatus.INIT.name,
                 userId = userId
             )
-            pipelineEventDispatcher.dispatch(
-                PipelineTemplateInstanceEvent(
-                    projectId = projectId,
-                    source = "PIPELINE_TEMPLATE_INSTANCE_UPDATE",
-                    pipelineId = "",
-                    userId = userId,
-                    templateId = templateId,
-                    baseId = baseId,
-                    templateInstanceType = TemplateInstanceType.UPDATE
-                )
+            pipelineTemplateRelatedService.updateStatus(
+                transactionContext = context,
+                projectId = projectId,
+                pipelineIds = instances.map { it.pipelineId },
+                status = TemplatePipelineStatus.UPDATING
             )
         }
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateInstanceEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_INSTANCE_UPDATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+                baseId = baseId,
+                templateInstanceType = TemplateInstanceType.UPDATE
+            )
+        )
         return baseId
     }
 
-    /**
-     * 获取模版实例化状态
-     *
-     * @param fromTemplateVersionStatus 来源模版版本状态
-     * @param fromTemplateVersion 来源模版版本
-     * @param templateReleasedVersion 模板最新发布版本
-     *
-     */
-    fun generateTemplatePipelineStatus(
-        templateInstanceItem: PipelineTemplateInstanceItem?,
-        fromTemplateVersion: Long,
-        templateReleasedVersion: Long,
-        fromTemplateVersionStatus: VersionStatus?
-    ): TemplatePipelineStatus {
-
-        return when {
-            templateInstanceItem?.status == TemplateInstanceStatus.INSTANCING ||
-                    templateInstanceItem?.status == TemplateInstanceStatus.INIT ||
-                    templateInstanceItem?.status == TemplateInstanceStatus.WAIT_MERGE
-                -> TemplatePipelineStatus.UPDATING
-
-            templateInstanceItem?.status == TemplateInstanceStatus.FAILED ->
-                TemplatePipelineStatus.FAILED
-
-            // 流水线来源于模版分支版本,不需要升级
-            fromTemplateVersionStatus == VersionStatus.RELEASED &&
-                    fromTemplateVersion != templateReleasedVersion ->
-                TemplatePipelineStatus.PENDING_UPDATE
-
-            else ->
-                TemplatePipelineStatus.UPDATED
-        }
-    }
-
-    fun handleTemplateInstanceEvent(event: PipelineTemplateInstanceEvent) {
-        val baseId = event.baseId
-        val projectId = event.projectId
-        val type = event.templateInstanceType
-        PipelineTemplateInstanceLock(redisOperation, baseId).use { lock ->
-            logger.info("start to handle template event {}|,{}", type, event)
-            if (!lock.tryLock()) {
-                logger.warn("handle template instance event running ${event.projectId}|${event.baseId}")
-                return@use
-            }
-            val instanceBase = templateInstanceBaseDao.getTemplateInstanceBase(
-                dslContext = dslContext,
-                projectId = event.projectId,
-                baseId = event.baseId
-            ) ?: run {
-                logger.info(
-                    "handle template instance event failed, baseId not found ${event.projectId}|${event.baseId}"
-                )
-                return
-            }
-
-            val itemCount = templateInstanceItemDao.getTemplateInstanceItemCountByBaseId(
-                dslContext = dslContext,
-                projectId = projectId,
-                baseId = baseId,
-                excludeStatusList = listOf(
-                    TemplateInstanceStatus.SUCCESS.name,
-                    TemplateInstanceStatus.WAIT_MERGE.name
-                )
-            )
-
-            checkTemplateInstanceEvent(
-                instanceBase = instanceBase,
-                projectId = projectId,
-                baseId = baseId,
-                templateInstanceItemCount = itemCount
-            )
-
-            instanceBase.handleTemplateInstanceBase(
-                projectId = projectId,
-                itemCount = itemCount
-            )
-        }
-    }
-
-    private fun PipelineTemplateInstanceBase.handleTemplateInstanceBase(projectId: String, itemCount: Long) {
-        // 开始执行任务
-        templateInstanceBaseDao.updateTemplateInstanceBase(
-            dslContext = dslContext,
-            projectId = projectId,
-            baseId = baseId,
-            status = TemplateInstanceStatus.INSTANCING.name,
-            userId = "system"
-        )
-        val successPipelines = mutableListOf<String>()
-        val failurePipelines = mutableListOf<String>()
-        val totalPages = PageUtil.calTotalPage(PageUtil.MAX_PAGE_SIZE, itemCount)
-        var pullRequestUrl: String? = null
-        for (page in 1..totalPages) {
-            val templateInstanceItems = templateInstanceItemDao.listTemplateInstanceItemByBaseIds(
-                dslContext = dslContext,
-                projectId = projectId,
-                baseIds = listOf(baseId),
-                excludeStatusList = listOf(
-                    TemplateInstanceStatus.SUCCESS.name,
-                    TemplateInstanceStatus.WAIT_MERGE.name
-                ),
-                page = page,
-                pageSize = PageUtil.MAX_PAGE_SIZE
-            )
-            templateInstanceItems.forEach { item ->
-                val deployPipelineResult = item.handleTemplateInstanceItem(
-                    instanceBase = this,
-                    successPipelines = successPipelines,
-                    failurePipelines = failurePipelines
-                )
-                pullRequestUrl = deployPipelineResult?.targetUrl
-            }
-        }
-        val baseStatus = when {
-            successPipelines.size == itemCount.toInt() -> TemplateInstanceStatus.SUCCESS
-            failurePipelines.size == itemCount.toInt() -> TemplateInstanceStatus.FAILED
-            else -> TemplateInstanceStatus.PARTIAL_SUCCESS
-        }
-        templateInstanceBaseDao.updateTemplateInstanceBase(
-            dslContext = dslContext,
-            projectId = projectId,
-            baseId = baseId,
-            status = baseStatus.name,
-            successItemNum = successPipelines.size,
-            failItemNum = failurePipelines.size,
-            pullRequestUrl = pullRequestUrl,
-            userId = "system"
-        )
-        if (successPipelines.isNotEmpty()) {
-            pipelineRepositoryService.updateInstancePipelineCount(
-                projectId = projectId,
-                templateId = templateId
-            )
-        }
-    }
-
-    private fun PipelineTemplateInstanceItem.handleTemplateInstanceItem(
-        instanceBase: PipelineTemplateInstanceBase,
-        successPipelines: MutableList<String>,
-        failurePipelines: MutableList<String>
-    ): DeployPipelineResult? {
-        logger.info("${instanceBase.type} template instance item|$id|$projectId|$pipelineId")
-        if (status == TemplateInstanceStatus.SUCCESS || status == TemplateInstanceStatus.WAIT_MERGE) {
-            logger.info("${instanceBase.type} template instance item $status|$id|$projectId|$pipelineId")
-            return null
-        }
-        templateInstanceItemDao.updateStatus(
-            dslContext = dslContext,
-            projectId = projectId,
-            baseId = baseId,
-            pipelineIds = listOf(pipelineId),
-            status = TemplateInstanceStatus.INSTANCING
-        )
-        val instanceCreateReq = PipelineTemplateInstanceReq(
-            projectId = projectId,
-            templateId = instanceBase.templateId,
-            templateVersion = instanceBase.templateVersion,
-            pipelineName = pipelineName,
-            buildNo = buildNo,
-            params = params,
-            useTemplateSetting = instanceBase.useTemplateSetting,
-            enablePac = instanceBase.pac,
-            repoHashId = instanceBase.repoHashId,
-            filePath = filePath,
-            targetAction = instanceBase.targetAction,
-            targetBranch = instanceBase.targetBranch,
-            description = instanceBase.description
-        )
-
-        return try {
-            val deployPipelineResult = pipelineVersionManager.deployPipeline(
-                userId = creator,
-                projectId = projectId,
-                pipelineId = pipelineId,
-                request = instanceCreateReq
-            )
-            handleTemplateInstanceEventSuccess(
-                deployPipelineResult = deployPipelineResult
-            )
-            successPipelines.add(pipelineId)
-            deployPipelineResult
-        } catch (ignored: Throwable) {
-            handleTemplateInstanceEventError(
-                projectId = projectId,
-                userId = creator,
-                instance = this,
-                error = ignored,
-                failurePipelines = failurePipelines,
-                type = instanceBase.type
-            )
-            null
-        }
-    }
-
-    fun checkTemplateInstanceEvent(
-        projectId: String,
-        baseId: String,
-        templateInstanceItemCount: Long,
-        instanceBase: PipelineTemplateInstanceBase
-    ) {
-        if (instanceBase.status == TemplateInstanceStatus.SUCCESS) {
-            logger.warn(
-                "The template instance task has been completed." +
-                    "${instanceBase.projectId}|${instanceBase.baseId}|${instanceBase.type}"
-            )
-        }
-        if (templateInstanceItemCount < 1) {
-            templateInstanceBaseDao.updateTemplateInstanceBase(
-                dslContext = dslContext,
-                projectId = projectId,
-                baseId = baseId,
-                status = TemplateInstanceStatus.SUCCESS.name,
-                userId = "system"
-            )
-            logger.warn("The template instance task has been completed.${projectId}|${baseId}")
-        }
-    }
-
-    private fun PipelineTemplateInstanceItem.handleTemplateInstanceEventSuccess(
-        deployPipelineResult: DeployPipelineResult
-    ) {
-        val status = if (deployPipelineResult.pullRequestId != null) {
-            TemplateInstanceStatus.WAIT_MERGE
-        } else {
-            TemplateInstanceStatus.SUCCESS
-        }
-        logger.info(
-            "success to template instance item|$baseId|$projectId|$pipelineId|" +
-                    "${deployPipelineResult.version}|${deployPipelineResult.versionName}|" +
-                    "${deployPipelineResult.pullRequestId}"
-        )
-        val record = PipelineTemplateInstanceItemUpdate(
-            status = status,
-            pipelineVersion = deployPipelineResult.version,
-            pipelineVersionName = deployPipelineResult.versionName
-        )
-        val condition = PipelineTemplateInstanceItemCondition(
-            projectId = projectId,
-            baseId = baseId,
-            pipelineId = pipelineId,
-        )
-        templateInstanceItemDao.update(
-            dslContext = dslContext,
-            record = record,
-            condition = condition
-        )
-    }
-
-    private fun handleTemplateInstanceEventError(
-        projectId: String,
+    fun translateInstanceException(
         userId: String,
-        instance: PipelineTemplateInstanceItem,
-        type: TemplateInstanceType,
-        error: Throwable,
-        failurePipelines: MutableList<String>
-    ) {
-        var errorMessage = ""
-        when (error) {
+        projectId: String,
+        pipelineId: String,
+        exception: Throwable
+    ): String {
+        logger.warn("Failed to instance template|$userId|$projectId|$pipelineId|${exception.message}")
+        return when (exception) {
             is DuplicateKeyException -> {
-                logger.warn("TemplateCreateInstanceDuplicate|$projectId|$instance|$userId|${error.message}")
-                errorMessage = "【${instance.pipelineName}】reason：duplicate！"
+                "duplicate!"
             }
 
             is ErrorCodeException -> {
-                logger.warn("TemplateCreateInstanceErrorCode|$projectId|$instance|$userId|${error.message}")
-                val reason = I18nUtil.generateResponseDataObject(
-                    messageCode = error.errorCode,
-                    params = error.params,
+                I18nUtil.generateResponseDataObject(
+                    messageCode = exception.errorCode,
+                    params = exception.params,
                     data = null,
-                    defaultMessage = error.defaultMessage
-                ).message ?: error.defaultMessage ?: "unknown!"
-                errorMessage = "【${instance.pipelineName}】reason：$reason！"
+                    defaultMessage = exception.defaultMessage
+                ).message ?: exception.defaultMessage ?: "unknown!"
             }
 
             else -> {
-                logger.warn("TemplateCreateInstanceThrowable|$projectId|$instance|$userId|${error.message}")
-                errorMessage = "【${instance.pipelineName}】reason：${error.message ?: "instance fail"}！"
+                exception.message ?: "template instance fail"
             }
         }
-        templateInstanceItemDao.updateErrorMessage(
-            dslContext = dslContext,
-            projectId = projectId,
-            baseId = instance.baseId,
-            pipelineId = instance.pipelineId,
-            errorMessage = errorMessage
-        )
-        failurePipelines.add(errorMessage)
     }
 
     fun list(
@@ -936,6 +639,6 @@ class PipelineTemplateInstanceFacadeService @Autowired constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PipelineTemplateInstanceFacadeService::class.java)
+        private val logger = LoggerFactory.getLogger(PipelineTemplateInstanceService::class.java)
     }
 }

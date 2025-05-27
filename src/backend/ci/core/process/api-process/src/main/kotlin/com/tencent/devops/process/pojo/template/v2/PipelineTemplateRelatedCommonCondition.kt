@@ -11,6 +11,8 @@ data class PipelineTemplateRelatedCommonCondition(
     val templateId: String? = null,
     @get:Schema(title = "流水线Id", required = false)
     val pipelineId: String? = null,
+    @get:Schema(title = "流水线Id", required = false)
+    val pipelineIds: List<String>? = null,
     @get:Schema(title = "模板版本号", required = false)
     val version: Long? = null,
     @get:Schema(title = "模板版本名称", required = false)
