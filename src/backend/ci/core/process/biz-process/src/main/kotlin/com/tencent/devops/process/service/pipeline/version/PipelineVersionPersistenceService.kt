@@ -51,6 +51,7 @@ import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 /**
@@ -67,6 +68,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
     private val pipelinePermissionService: PipelinePermissionService,
+    @Lazy
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val versionCreateListeners: List<PipelineVersionCreatePostProcessor>
 ) {
