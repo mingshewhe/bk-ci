@@ -143,6 +143,17 @@ class UserTemplateResourceImpl @Autowired constructor(
         )
     }
 
+    override fun installTemplateV2(
+        userId: String,
+        installTemplateReq: InstallTemplateReq
+    ): Result<InstallTemplateResp> {
+        return marketTemplateService.installTemplateV2(
+            userId = userId,
+            channelCode = ChannelCode.BS,
+            installTemplateReq = installTemplateReq
+        )
+    }
+
     override fun updatePublishStrategy(
         userId: String,
         templateCode: String,

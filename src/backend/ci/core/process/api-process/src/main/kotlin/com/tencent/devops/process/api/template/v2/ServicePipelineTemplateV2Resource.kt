@@ -32,22 +32,12 @@ import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
-import com.tencent.devops.common.web.annotation.BkApiPermission
-import com.tencent.devops.common.web.annotation.BkField
-import com.tencent.devops.common.web.constant.BkApiHandleType
-import com.tencent.devops.common.web.constant.BkStyleEnum
-import com.tencent.devops.process.pojo.PTemplateOrderByType
-import com.tencent.devops.process.pojo.PTemplateSortType
-import com.tencent.devops.process.pojo.PipelineTemplateInfo
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
-import com.tencent.devops.process.pojo.template.MarketTemplateRequest
-import com.tencent.devops.process.pojo.template.OptionalTemplateList
-import com.tencent.devops.process.pojo.template.TemplateListModel
-import com.tencent.devops.process.pojo.template.TemplateModelDetail
-import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -219,4 +209,21 @@ interface ServicePipelineTemplateV2Resource {
         @Parameter(description = "模板ID列表", required = true)
         templateIds: List<String>
     ): Result<Map<String, Boolean>>
+
+    @Operation(summary = "研发商店导入模板")
+    @POST
+    @Path("/{projectId}/create/market")
+    fun createByMarket(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @QueryParam("templateId")
+        templateId: String?,
+        @Parameter(description = "请求体", required = true)
+        request: PipelineTemplateMarketCreateReq
+    ): Result<DeployTemplateResult>
 }

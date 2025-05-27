@@ -56,6 +56,7 @@ import com.tencent.devops.model.store.tables.records.TTemplateRecord
 import com.tencent.devops.process.api.template.ServicePTemplateResource
 import com.tencent.devops.process.api.template.v2.ServicePipelineTemplateV2Resource
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.project.api.service.ServiceUserResource
 import com.tencent.devops.quality.api.v2.ServiceQualityRuleResource
@@ -103,8 +104,8 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -899,6 +900,110 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
                 installProjectTemplateDTO = installProjectTemplateDTO
             )
         )
+    }
+
+    override fun installTemplateV2(
+        userId: String,
+        channelCode: ChannelCode,
+        installTemplateReq: InstallTemplateReq
+    ): Result<InstallTemplateResp> {
+        with(installTemplateReq) {
+            logger.info("install Template v2 userId={}, channel={}, req={}", userId, channelCode, this)
+            // 获取模板并校验存在性
+            val template = marketTemplateDao.getLatestTemplateByCode(dslContext, templateCode) ?: run {
+                val language = I18nUtil.getLanguage(userId)
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                    defaultMessage = I18nUtil.generateResponseDataObject(
+                        messageCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                        params = arrayOf(templateCode),
+                        data = false,
+                        language = language
+                    ).message,
+                    params = arrayOf(templateCode)
+                )
+            }
+            // 获取市场模板项目ID
+            val marketTemplateProjectId = storeProjectRelDao.getInitProjectCodeByStoreCode(
+                dslContext = dslContext,
+                storeCode = templateCode,
+                storeType = StoreTypeEnum.TEMPLATE.type.toByte()
+            ).orEmpty()
+            // 双重校验（可见性+权限）
+            validateUserTemplateComponentVisibleDept(userId, templateCode, projectCodeList)
+                .takeIf { it.isNotOk() }
+                ?.let { return Result(it.status, it.message.orEmpty()) }
+            storeProjectService.validateInstallPermission(
+                publicFlag = template.publicFlag,
+                userId = userId,
+                storeCode = template.templateCode,
+                storeType = StoreTypeEnum.TEMPLATE,
+                projectCodeList = projectCodeList,
+                channelCode = channelCode
+            ).takeIf { it.isNotOk() }?.let {
+                return Result(InstallTemplateResp(result = false, installProjectTemplateDTO = emptyList()))
+            }
+
+            val successProjects = mutableSetOf<String>()
+            val projectTemplateMap = mutableMapOf<String, String>()
+            projectCodeList.forEach { projectCode ->
+                client.get(ServicePipelineTemplateV2Resource::class)
+                    .createByMarket(
+                        userId = userId,
+                        projectId = projectCode,
+                        templateId = null,
+                        request = PipelineTemplateMarketCreateReq(
+                            marketTemplateProjectId = marketTemplateProjectId,
+                            marketTemplateId = templateCode,
+                            copySetting = true
+                        )
+                    ).data?.run {
+                        successProjects += projectId
+                        projectTemplateMap[projectId] = templateId
+                    }
+            }
+
+            // 结果处理
+            val templateInfos = client.get(ServicePTemplateResource::class)
+                .getTemplateIdBySrcCode(
+                    srcTemplateId = installTemplateReq.templateCode,
+                    projectIds = projectCodeList
+                ).data.orEmpty().map { info ->
+                    InstallProjectTemplateDTO(
+                        name = info.name,
+                        templateId = info.templateId,
+                        projectId = info.projectId,
+                        version = info.srcTemplateVersion,
+                        versionName = info.versionName,
+                        templateType = info.templateType,
+                        templateTypeDesc = info.templateTypeDesc,
+                        category = info.category,
+                        logoUrl = info.logoUrl,
+                        stages = info.stages,
+                        srcTemplateId = info.srcTemplateId
+                    )
+                }
+
+            // 质量规则复制
+            copyQualityRule(userId, templateCode, successProjects, projectTemplateMap)
+
+            // 构建最终响应
+            return if (successProjects.size == projectCodeList.size) {
+                Result(
+                    status = 0,
+                    data = InstallTemplateResp(true, templateInfos)
+                )
+            } else {
+                val failedProjects = projectCodeList - successProjects
+                val msg = I18nUtil.generateResponseDataObject(
+                    messageCode = StoreMessageCode.USER_INSTALL_TEMPLATE_CODE_IS_INVALID,
+                    params = arrayOf(template.templateName, failedProjects.joinToString()),
+                    data = false,
+                    language = I18nUtil.getLanguage(userId)
+                )
+                Result(msg.status, msg.message, InstallTemplateResp(false, templateInfos))
+            }
+        }
     }
 
     override fun validateUserTemplateComponentVisibleDept(

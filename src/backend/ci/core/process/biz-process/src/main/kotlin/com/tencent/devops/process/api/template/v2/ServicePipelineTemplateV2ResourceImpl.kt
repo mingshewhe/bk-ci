@@ -30,10 +30,12 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDetailsResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
@@ -170,6 +172,22 @@ class ServicePipelineTemplateV2ResourceImpl(
         return Result(
             pipelineTemplateInfoService.listPacSettings(
                 templateIds = templateIds
+            )
+        )
+    }
+
+    override fun createByMarket(
+        userId: String,
+        projectId: String,
+        templateId: String?,
+        request: PipelineTemplateMarketCreateReq
+    ): Result<DeployTemplateResult> {
+        return Result(
+            pipelineTemplateFacadeService.createByMarket(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                request = request
             )
         )
     }

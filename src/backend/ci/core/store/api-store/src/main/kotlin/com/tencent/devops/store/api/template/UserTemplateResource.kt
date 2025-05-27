@@ -178,6 +178,17 @@ interface UserTemplateResource {
         installTemplateReq: InstallTemplateReq
     ): Result<InstallTemplateResp>
 
+    @Operation(summary = "安装模板到项目--v2版本")
+    @POST
+    @Path("/template/install/v2")
+    fun installTemplateV2(
+        @Parameter(description = "userId", required = true)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "安装模板到项目请求报文体", required = true)
+        installTemplateReq: InstallTemplateReq
+    ): Result<InstallTemplateResp>
+
     @Operation(summary = "更新发布策略")
     @PUT
     @Path("/{templateCode}/store/publishStrategy")

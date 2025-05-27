@@ -112,6 +112,15 @@ interface MarketTemplateService {
     ): Result<InstallTemplateResp>
 
     /**
+     * 安装模板到项目-v2版本
+     */
+    fun installTemplateV2(
+        userId: String,
+        channelCode: ChannelCode,
+        installTemplateReq: InstallTemplateReq
+    ): Result<InstallTemplateResp>
+
+    /**
      * 校验用户、模板和插件的可见范围
      */
     fun validateUserTemplateComponentVisibleDept(
