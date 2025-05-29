@@ -144,7 +144,9 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 updater = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,
                 srcTemplateId = marketTemplateInfo.id,
-                category = marketTemplateDetails.categoryList.takeIf { it != null }?.let { JsonUtil.toJson(it) },
+                category = marketTemplateDetails.categoryList.takeIf { it != null }?.let { categoryList ->
+                    JsonUtil.toJson(categoryList.map { it.categoryCode })
+                },
                 logoUrl = marketTemplateDetails.logoUrl,
                 latestVersionStatus = VersionStatus.RELEASED,
                 upgradeStrategy = templateInfo?.upgradeStrategy ?: UpgradeStrategyEnum.MANUAL,
