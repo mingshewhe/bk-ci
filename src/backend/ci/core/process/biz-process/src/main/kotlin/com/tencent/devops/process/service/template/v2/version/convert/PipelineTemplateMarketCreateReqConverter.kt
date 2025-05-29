@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -143,7 +144,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 updater = userId,
                 srcTemplateProjectId = marketTemplateInfo.projectId,
                 srcTemplateId = marketTemplateInfo.id,
-                category = marketTemplateDetails.classifyCode,
+                category = marketTemplateDetails.categoryList.takeIf { it != null }?.let { JsonUtil.toJson(it) },
                 logoUrl = marketTemplateDetails.logoUrl,
                 latestVersionStatus = VersionStatus.RELEASED,
                 upgradeStrategy = templateInfo?.upgradeStrategy ?: UpgradeStrategyEnum.MANUAL,
