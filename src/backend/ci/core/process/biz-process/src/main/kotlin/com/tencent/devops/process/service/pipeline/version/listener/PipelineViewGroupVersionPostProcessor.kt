@@ -49,22 +49,34 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
     override fun postProcessAfterVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
-        if (newPipeline) {
-            createViewGroup(context = context)
+        if (context.newPipeline) {
+            createViewGroup(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+            )
         } else {
             updateViewGroup(
                 context = context,
-                pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting
+                pipelineResourceVersion = pipelineResourceVersion
             )
         }
     }
 
-    private fun createViewGroup(context: PipelineVersionCreateContext) {
+    private fun createViewGroup(
+        context: PipelineVersionCreateContext,
+        pipelineResourceVersion: PipelineResourceVersion,
+    ) {
         with(context) {
+            if (pipelineResourceVersion.status == VersionStatus.RELEASED) {
+                pipelineGroupService.addPipelineLabel(
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    labelIds = pipelineResourceVersion.model.labels
+                )
+            }
             // 添加到静态分组
             val bulkAdd = PipelineViewBulkAdd(
                 pipelineIds = listOf(pipelineId),
@@ -83,8 +95,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
 
     private fun updateViewGroup(
         context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
+        pipelineResourceVersion: PipelineResourceVersion
     ) {
         with(context) {
             if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
@@ -95,7 +106,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
-                labelIds = pipelineSetting.labels
+                labelIds = pipelineResourceVersion.model.labels
             )
             // 添加到动态分组
             pipelineViewGroupService.updateGroupAfterPipelineUpdate(

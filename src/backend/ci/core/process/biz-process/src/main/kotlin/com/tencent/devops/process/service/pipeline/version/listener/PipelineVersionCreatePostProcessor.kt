@@ -39,14 +39,11 @@ import org.jooq.DSLContext
 interface PipelineVersionCreatePostProcessor {
     /**
      * 流水线创建前执行
-     *
-     * @param newPipeline 是否是新建流水线
      */
     fun postProcessBeforeVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
 
     }
@@ -58,8 +55,7 @@ interface PipelineVersionCreatePostProcessor {
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
 
     }
@@ -70,8 +66,7 @@ interface PipelineVersionCreatePostProcessor {
     fun postProcessAfterVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
 
     }

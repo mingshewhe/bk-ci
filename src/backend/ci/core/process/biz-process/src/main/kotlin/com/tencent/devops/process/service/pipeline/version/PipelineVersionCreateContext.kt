@@ -49,6 +49,11 @@ data class PipelineVersionCreateContext(
     val version: Int? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
+    @get:Schema(title = "是否是新建流水线", required = true)
+    val newPipeline: Boolean = false,
+
+    @get:Schema(title = "是否校验权限", required = true)
+    val checkPermission: Boolean = true,
 
     @get:Schema(title = "流水线信息", required = true)
     val pipelineBasicInfo: PipelineBasicInfo,

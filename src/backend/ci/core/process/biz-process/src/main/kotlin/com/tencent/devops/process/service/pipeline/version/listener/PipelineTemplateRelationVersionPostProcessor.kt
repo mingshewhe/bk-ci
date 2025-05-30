@@ -52,8 +52,7 @@ class PipelineTemplateRelationVersionPostProcessor @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
             val pipelineTemplateRelated = pipelineTemplateRelatedService.get(

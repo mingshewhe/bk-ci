@@ -39,7 +39,7 @@ data class PipelineBasicInfo(
     @get:Schema(title = "流水线名称")
     val pipelineName: String,
     @get:Schema(title = "流水线描述")
-    val pipelineDesc: String,
+    val pipelineDesc: String?,
     @get:Schema(title = "渠道")
     val channelCode: ChannelCode,
     @get:Schema(title = "ID")

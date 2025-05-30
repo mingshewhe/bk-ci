@@ -49,11 +49,10 @@ class SubPipelineVersionPostProcessor @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
-            if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
+            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
                 return
             }
             subPipelineTaskService.batchAdd(

@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version
 
+import com.tencent.devops.common.api.check.Preconditions
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
@@ -548,7 +549,7 @@ class PipelineVersionGenerator constructor(
         return serverRepository.defaultBranch
     }
 
-    fun transfer(
+    fun yaml2model(
         userId: String,
         projectId: String,
         yaml: String,
@@ -556,7 +557,7 @@ class PipelineVersionGenerator constructor(
         isDefaultBranch: Boolean,
         branchName: String,
         aspects: LinkedList<IPipelineTransferAspect>? = null
-    ): Pair<PipelineModelAndSetting, YamlWithVersion>  {
+    ): Pair<PipelineModelAndSetting, YamlWithVersion?>  {
         return try {
             val result = transferService.transfer(
                 userId = userId,
@@ -572,13 +573,48 @@ class PipelineVersionGenerator constructor(
                     errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
                 )
             }
-            Pair(result.modelAndSetting!!, result.yamlWithVersion!!)
+            Pair(result.modelAndSetting!!, result.yamlWithVersion)
         } catch (ignore: Throwable) {
             if (ignore is ErrorCodeException) throw ignore
             logger.warn("TRANSFER_YAML|$projectId|$userId|$branchName|$isDefaultBranch|yml=\n$yaml", ignore)
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
             )
+        }
+    }
+
+    fun model2yaml(
+        userId: String,
+        projectId: String,
+        pipelineId: String?,
+        modelAndSetting: PipelineModelAndSetting,
+        oldYaml: String?,
+        aspects: LinkedList<IPipelineTransferAspect> = LinkedList()
+    ): YamlWithVersion? {
+        // MODEL形式的保存需要兼容旧数据
+        Preconditions.checkNotNull(
+            modelAndSetting.model, "model must not be null"
+        )
+        Preconditions.checkNotNull(
+            modelAndSetting.setting, "setting must not be null"
+        )
+        return try {
+            val result = transferService.transfer(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                actionType = TransferActionType.FULL_MODEL2YAML,
+                data = TransferBody(
+                    modelAndSetting = modelAndSetting,
+                    oldYaml = oldYaml ?: "",
+                ),
+                aspects = aspects
+            )
+            result.yamlWithVersion
+        } catch (ignore: Throwable) {
+            // 旧流水线可能无法转换，用空YAML代替
+            logger.warn("TRANSFER_YAML|$projectId|$userId|${ignore.message}")
+            null
         }
     }
 

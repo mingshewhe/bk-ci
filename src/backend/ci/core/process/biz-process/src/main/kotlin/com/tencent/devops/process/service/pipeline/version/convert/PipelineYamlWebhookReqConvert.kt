@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
@@ -35,6 +36,7 @@ import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineYamlWebhookReq
+import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
@@ -46,7 +48,8 @@ import java.time.LocalDateTime
 class PipelineYamlWebhookReqConvert @Autowired constructor(
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineResourceFactory: PipelineResourceFactory,
-    private val pipelineVersionGenerator: PipelineVersionGenerator
+    private val pipelineVersionGenerator: PipelineVersionGenerator,
+    private val pipelineAsCodeService: PipelineAsCodeService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
         return request is PipelineYamlWebhookReq
@@ -61,7 +64,10 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
     ): PipelineVersionCreateContext {
         request as PipelineYamlWebhookReq
         with(request) {
-            val (newResource, yamlWithVersion) = pipelineVersionGenerator.transfer(
+            // 生成流水线ID
+            val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
+
+            val (newResource, yamlWithVersion) = pipelineVersionGenerator.yaml2model(
                 userId = userId,
                 projectId = projectId,
                 yaml = yaml,
@@ -69,38 +75,36 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
                 isDefaultBranch = isDefaultBranch,
                 branchName = branchName
             )
-            val model = newResource.model
+            // 流水线名称实际取值优先级：setting > model > fileName
+            val pipelineName = newResource.setting.pipelineName.takeIf {
+                it.isNotBlank()
+            } ?: newResource.model.name.ifBlank {
+                yamlFileName
+            }
+
+            val model = newResource.model.copy(
+                name = pipelineName
+            )
+            val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
+                projectId = projectId,
+                pipelineId = newPipelineId,
+                channelCode = ChannelCode.BS,
+                pipelineName = pipelineName,
+                pipelineDesc = model.desc,
+            )
+
             val (versionStatus, versionAction) = if (isDefaultBranch) {
                 Pair(VersionStatus.RELEASED, PipelineVersionAction.CREATE_RELEASE)
             } else {
                 Pair(VersionStatus.BRANCH, PipelineVersionAction.CREATE_BRANCH)
             }
-            // 生成流水线ID
-            val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
-
-            val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
-                projectId = projectId,
-                pipelineId = newPipelineId,
-                channelCode = ChannelCode.BS,
-                model = model
-            )
-
-            val pipelineModelBasicInfo = pipelineResourceFactory.createPipelineModelBasicInfo(
-                model = model,
-                projectId = projectId,
-                pipelineId = newPipelineId,
-                userId = userId,
-                create = pipelineId == null,
-                versionStatus = versionStatus,
-                channelCode = ChannelCode.BS
-            )
 
             val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 model = model,
-                yaml = yamlWithVersion.yamlStr,
-                yamlVersion = yamlWithVersion.versionTag,
+                yaml = yamlWithVersion?.yamlStr,
+                yamlVersion = yamlWithVersion?.versionTag,
                 creator = userId,
                 createTime = LocalDateTime.now(),
                 updater = userId,
@@ -112,15 +116,40 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
                 description = description,
             )
 
+            val pipelineAsCodeSettings = newResource.setting.pipelineAsCodeSettings?.copy(
+                enable = true
+            ) ?: PipelineAsCodeSettings(enable = true)
+            val pipelineSettingWithoutVersion = newResource.setting.copy(
+                projectId = projectId,
+                pipelineId = newPipelineId,
+                pipelineName = pipelineName,
+                pipelineAsCodeSettings = pipelineAsCodeSettings
+            )
+            val pipelineDialect = pipelineAsCodeService.getPipelineDialect(
+                projectId = projectId,
+                asCodeSettings = pipelineSettingWithoutVersion.pipelineAsCodeSettings
+            )
+            val pipelineModelBasicInfo = pipelineResourceFactory.createPipelineModelBasicInfo(
+                model = model,
+                projectId = projectId,
+                pipelineId = newPipelineId,
+                userId = userId,
+                create = pipelineId == null,
+                versionStatus = versionStatus,
+                channelCode = ChannelCode.BS,
+                pipelineDialect = pipelineDialect
+            )
+
             return PipelineVersionCreateContext(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 versionAction = versionAction,
+                newPipeline = pipelineId == null,
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-                pipelineSettingWithoutVersion = newResource.setting,
+                pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 enablePac = true,
                 yamlFileInfo = yamlFileInfo,
                 branchName = branchName

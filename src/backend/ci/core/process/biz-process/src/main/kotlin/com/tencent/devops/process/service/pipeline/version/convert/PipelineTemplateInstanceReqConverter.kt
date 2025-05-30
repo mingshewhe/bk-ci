@@ -36,8 +36,6 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
-import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
@@ -49,7 +47,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.service.StageTagService
-import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
@@ -71,7 +68,6 @@ class PipelineTemplateInstanceReqConverter(
     private val stageTagService: StageTagService,
     private val pipelineTemplateInstanceSettingService: PipelineTemplateInstanceSettingService,
     private val pipelineIdGenerator: PipelineIdGenerator,
-    private val transferService: PipelineTransferYamlService,
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineRepositoryService: PipelineRepositoryService
@@ -132,29 +128,29 @@ class PipelineTemplateInstanceReqConverter(
             )
 
             // 生成流水线配置
-            val pipelineSetting = getPipelineSetting(
+            val pipelineSettingWithoutVersion = getPipelineSetting(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 templateSettingVersion = templateResource.settingVersion
             )
 
-            val transferResult = transferService.transfer(
+            val newYaml = pipelineVersionGenerator.model2yaml(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
-                actionType = TransferActionType.FULL_MODEL2YAML,
-                data = TransferBody(
-                    modelAndSetting = PipelineModelAndSetting(
-                        model = instanceModel,
-                        setting = pipelineSetting
-                    )
-                )
+                modelAndSetting = PipelineModelAndSetting(
+                    model = instanceModel,
+                    setting = pipelineSettingWithoutVersion
+                ),
+                oldYaml = null
             )
+
             val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 channelCode = ChannelCode.BS,
-                model = instanceModel
+                pipelineName = pipelineName,
+                pipelineDesc = null
             )
             val (versionStatus, branchName) = pipelineVersionGenerator.getVersionStatusAndBranchName(
                 projectId = projectId,
@@ -178,8 +174,8 @@ class PipelineTemplateInstanceReqConverter(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 model = instanceModel,
-                yaml = transferResult.yamlWithVersion?.yamlStr,
-                yamlVersion = transferResult.yamlWithVersion?.versionTag,
+                yaml = newYaml?.yamlStr,
+                yamlVersion = newYaml?.versionTag,
                 creator = userId,
                 createTime = LocalDateTime.now(),
                 updater = userId,
@@ -208,7 +204,7 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-                pipelineSettingWithoutVersion = pipelineSetting,
+                pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 enablePac = enablePac,
                 yamlFileInfo = enablePac.takeIf { it }?.let {
                     PipelineYamlFileInfo(

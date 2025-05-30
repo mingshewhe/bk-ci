@@ -51,10 +51,10 @@ class PipelinePermissionVersionPostProcessor @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
-        if (newPipeline) {
+        if (!context.checkPermission) return
+        if (context.newPipeline) {
             createResource(context = context)
         } else {
             modifyResource(context = context)

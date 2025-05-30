@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class PipelineVersionManager @Autowired constructor(
+    private val versionValidator: PipelineVersionValidator,
     private val versionCreateReqConverters: List<PipelineVersionCreateReqConverter>,
     private val versionCreateHandlers: List<PipelineVersionCreateHandler>
 ) {
@@ -54,6 +55,7 @@ class PipelineVersionManager @Autowired constructor(
             version = version,
             request = request
         )
+        versionValidator.validate(context = context)
         return getHandler(context).handle(context = context)
     }
 

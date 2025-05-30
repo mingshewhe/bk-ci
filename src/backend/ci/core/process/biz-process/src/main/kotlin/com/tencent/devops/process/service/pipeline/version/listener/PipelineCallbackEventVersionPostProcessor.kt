@@ -54,8 +54,7 @@ class PipelineCallbackEventVersionPostProcessor @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
             if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {

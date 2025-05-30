@@ -48,18 +48,19 @@ class PipelineModelTaskVersionPostProcessor @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
             if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
                 return
             }
-            pipelineModelTaskDao.deletePipelineTasks(
-                dslContext = transactionContext,
-                projectId = projectId,
-                pipelineId = pipelineId
-            )
+            if (!newPipeline) {
+                pipelineModelTaskDao.deletePipelineTasks(
+                    dslContext = transactionContext,
+                    projectId = projectId,
+                    pipelineId = pipelineId
+                )
+            }
             pipelineModelTaskDao.batchSave(
                 dslContext = transactionContext,
                 modelTasks = pipelineModelBasicInfo.modelTasks

@@ -51,15 +51,16 @@ class PipelineResourceFactory @Autowired constructor(
         projectId: String,
         pipelineId: String,
         channelCode: ChannelCode,
-        model: Model,
+        pipelineName: String,
+        pipelineDesc: String?,
         pipelineDisable: Boolean? = false
     ): PipelineBasicInfo {
         val id = client.get(ServiceAllocIdResource::class).generateSegmentId("PIPELINE_INFO").data
         return PipelineBasicInfo(
             projectId = projectId,
             pipelineId = pipelineId,
-            pipelineName = model.name,
-            pipelineDesc = model.desc ?: model.name,
+            pipelineName = pipelineName,
+            pipelineDesc = pipelineDesc,
             channelCode = channelCode,
             id = id,
             pipelineDisable = pipelineDisable
