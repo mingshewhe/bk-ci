@@ -124,15 +124,13 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     transactionContext = transactionContext,
                     context = context,
                     pipelineResourceVersion = pipelineResourceVersion,
-                    pipelineSetting = pipelineSetting,
-                    newPipeline = true
+                    pipelineSetting = pipelineSetting
                 )
             }
             postProcessAfterVersionCreate(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting,
-                newPipeline = true
+                pipelineSetting = pipelineSetting
             )
         }
     }
@@ -339,7 +337,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 projectId = projectId,
                 version = version,
                 pipelineName = pipelineName,
-                pipelineDesc = pipelineDesc,
+                pipelineDesc = pipelineDesc ?: pipelineName,
                 userId = userId,
                 channelCode = channelCode,
                 manualStartup = pipelineModelBasicInfo.canManualStartup,
@@ -471,15 +469,13 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private fun postProcessBeforeVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
         versionCreateListeners.forEach {
             it.postProcessBeforeVersionCreate(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting,
-                newPipeline = newPipeline
+                pipelineSetting = pipelineSetting
             )
         }
     }
@@ -488,16 +484,14 @@ class PipelineVersionPersistenceService @Autowired constructor(
         transactionContext: DSLContext,
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
         versionCreateListeners.forEach {
             it.postProcessInTransactionVersionCreate(
                 transactionContext = transactionContext,
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting,
-                newPipeline = newPipeline
+                pipelineSetting = pipelineSetting
             )
         }
     }
@@ -505,15 +499,13 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private fun postProcessAfterVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        newPipeline: Boolean = false
+        pipelineSetting: PipelineSetting
     ) {
         versionCreateListeners.forEach {
             it.postProcessAfterVersionCreate(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
-                pipelineSetting = pipelineSetting,
-                newPipeline = newPipeline
+                pipelineSetting = pipelineSetting
             )
         }
     }
