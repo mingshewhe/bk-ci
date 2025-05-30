@@ -69,9 +69,9 @@ data class PreStep(
 ) : YamlMetaData, IPreStep
 
 data class PreStepTemplate(
-    override val template: String?,
+    override val templatePath: String?,
+    override val templateRef: String?,
     override val templateId: String?,
-    override val templateName: String?,
-    override val ref: String?,
+    override val templateVersion: Long?,
     override val variables: Map<String, Any>?
 ) : IPreStep, CodeTemplate

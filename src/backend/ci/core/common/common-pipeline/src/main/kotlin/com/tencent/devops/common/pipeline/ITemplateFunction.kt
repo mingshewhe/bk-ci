@@ -35,16 +35,16 @@ interface ITemplateFunction {
     var fromTemplate: Boolean?
 
     @get:Schema(title = "模板路径", required = false)
-    var template: String?
+    var templatePath: String?
+
+    @get:Schema(title = "模板版本引用,分支/tag/commit", required = false)
+    var templateRef: String?
 
     @get:Schema(title = "模板ID", required = false)
     var templateId: String?
 
-    @get:Schema(title = "模板名称", required = false)
-    var templateName: String?
-
     @get:Schema(title = "版本", required = false)
-    var templateVersion: String?
+    var templateVersion: Long?
 
     @get:Schema(title = "模板参数构建", required = false)
     var templateVariables: Map<String, Any>?

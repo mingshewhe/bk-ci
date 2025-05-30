@@ -247,10 +247,10 @@ object YamlObjects {
 
     fun getStepTemplate(fromPath: TemplatePath, step: Map<String, Any>, repo: TemplateInfo?): PreStepTemplate {
         return PreStepTemplate(
-            template = step["template"]?.toString(),
+            templatePath = step["template"]?.toString(),
+            templateRef = step["ref"]?.toString(),
             templateId = step["template-id"]?.toString(),
-            templateName = step["template-name"]?.toString(),
-            ref = step["ref"]?.toString(),
+            templateVersion = step["version"] as Long?,
             variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, step["variables"])
         )
     }
@@ -501,10 +501,10 @@ fun <T> YamlTemplate<T>.getStageTemplate(
     deepTree: TemplateDeepTreeNode
 ): PreStageTemplate {
     return PreStageTemplate(
-        template = stage["template"]?.toString(),
+        templatePath = stage["template"]?.toString(),
+        templateRef = stage["ref"]?.toString(),
         templateId = stage["template-id"]?.toString(),
-        templateName = stage["template-name"]?.toString(),
-        ref = stage["ref"]?.toString(),
+        templateVersion = stage["version"] as Long?,
         variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, stage["variables"])
     )
 }
@@ -566,10 +566,10 @@ fun <T> YamlTemplate<T>.getJobTemplate(
     deepTree: TemplateDeepTreeNode
 ): PreJobTemplate {
     return PreJobTemplate(
-        template = job["template"]?.toString(),
+        templatePath = job["template"]?.toString(),
+        templateRef = job["ref"]?.toString(),
         templateId = job["template-id"]?.toString(),
-        templateName = job["template-name"]?.toString(),
-        ref = job["ref"]?.toString(),
+        templateVersion = job["version"] as Long?,
         variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, job["variables"])
     )
 }

@@ -106,13 +106,13 @@ data class NormalContainer(
     @get:Schema(title = "来源于模版", required = false)
     override var fromTemplate: Boolean? = null,
     @get:Schema(title = "模板路径", required = false)
-    override var template: String? = null,
+    override var templatePath: String? = null,
+    @get:Schema(title = "模板版本引用,分支/tag/commit", required = false)
+    override  var templateRef: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
-    @get:Schema(title = "模板名称", required = false)
-    override var templateName: String? = null,
     @get:Schema(title = "版本", required = false)
-    override var templateVersion: String? = null,
+    override var templateVersion: Long? = null,
     @get:Schema(title = "模板参数构建", required = false)
     override var templateVariables: Map<String, Any>? = null
 ) : Container {

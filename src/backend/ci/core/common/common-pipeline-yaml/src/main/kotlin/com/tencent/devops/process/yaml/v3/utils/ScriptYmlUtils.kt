@@ -415,10 +415,10 @@ object ScriptYmlUtils {
                     preJob.template.forEach { templateJob ->
                         jobs.add(
                             JobTemplate(
-                                template = templateJob.template,
+                                templatePath = templateJob.templatePath,
+                                templateRef = templateJob.templateRef,
                                 templateId = templateJob.templateId,
-                                templateName = templateJob.templateName,
-                                ref = templateJob.ref,
+                                templateVersion = templateJob.templateVersion,
                                 variables = templateJob.variables,
                             )
                         )
@@ -511,10 +511,10 @@ object ScriptYmlUtils {
                 is PreStepTemplate -> {
                     stepList.add(
                         StepTemplate(
-                            template = preStep.template,
+                            templatePath = preStep.templatePath,
+                            templateRef = preStep.templateRef,
                             templateId = preStep.templateId,
-                            templateName = preStep.templateName,
-                            ref = preStep.ref,
+                            templateVersion = preStep.templateVersion,
                             variables = preStep.variables,
                         )
                     )
@@ -592,10 +592,10 @@ object ScriptYmlUtils {
 
                 is PreStageTemplate -> stageList.add(
                     StageTemplate(
-                        template = preStage.template,
+                        templatePath = preStage.templatePath,
+                        templateRef = preStage.templateRef,
                         templateId = preStage.templateId,
-                        templateName = preStage.templateName,
-                        ref = preStage.ref,
+                        templateVersion = preStage.templateVersion,
                         variables = preStage.variables,
                     )
                 )

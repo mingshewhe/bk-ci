@@ -255,10 +255,10 @@ class StageTransfer @Autowired(required = false) constructor(
                     containerList.add(
                         JobTemplateContainer(
                             fromTemplate = true,
-                            template = job.template,
+                            templatePath = job.templatePath,
+                            templateRef = job.templateRef,
                             templateId = job.templateId,
-                            templateName = job.templateName,
-                            templateVersion = job.ref,
+                            templateVersion = job.templateVersion,
                             templateVariables = job.variables
                         )
                     )
@@ -332,10 +332,10 @@ class StageTransfer @Autowired(required = false) constructor(
         return Stage(
             id = stageId,
             fromTemplate = true,
-            template = stage.template,
+            templatePath = stage.templatePath,
+            templateRef = stage.templateRef,
             templateId = stage.templateId,
-            templateName = stage.templateName,
-            templateVersion = stage.ref,
+            templateVersion = stage.templateVersion,
             templateVariables = stage.variables
         )
     }

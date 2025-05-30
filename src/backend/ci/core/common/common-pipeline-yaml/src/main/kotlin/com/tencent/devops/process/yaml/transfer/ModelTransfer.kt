@@ -303,10 +303,10 @@ class ModelTransfer @Autowired constructor(
         if (templateInfo.fromTemplate != true) return null
         with(templateInfo) {
             return Extends(
-                template = template,
+                templatePath = templatePath,
+                templateRef = templateRef,
                 templateId = templateId,
-                templateName = templateName,
-                ref = templateVersion,
+                templateVersion = templateVersion,
                 variables = templateVariables
             )
         }

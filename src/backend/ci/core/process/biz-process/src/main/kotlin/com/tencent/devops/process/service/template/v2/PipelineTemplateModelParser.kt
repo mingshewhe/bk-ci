@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.ITemplateFunction
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.JobTemplateContainer
@@ -38,6 +39,7 @@ import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -144,16 +146,10 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         stage: Stage
     ): List<Stage> {
-        val templateId = stage.templateId!!
-        val templateVersion = stage.template!!
-        val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+        val templateModel = getTemplateModelResource(
             projectId = projectId,
-            templateId = templateId,
-            version = TODO()
-        )?.model ?: throw ErrorCodeException(
-            errorCode = "",
-            params = arrayOf(templateId, templateVersion.toString())
-        )
+            function = stage
+        ).model
         if (templateModel !is StageTemplateModel) {
             // 模型不匹配
             throw ErrorCodeException(
@@ -167,16 +163,10 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         container: JobTemplateContainer
     ): List<Container> {
-        val templateId = container.templateId!!
-        val templateVersion = container.template!!
-        val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+        val templateModel = getTemplateModelResource(
             projectId = projectId,
-            templateId = templateId,
-            version = TODO()
-        )?.model ?: throw ErrorCodeException(
-            errorCode = "",
-            params = arrayOf(templateId, templateVersion)
-        )
+            function = container
+        ).model
         if (templateModel !is JobTemplateModel) {
             // 模型不匹配
             throw ErrorCodeException(
@@ -190,16 +180,10 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         element: StepTemplateElement
     ): List<Element> {
-        val templateId = element.templateId!!
-        val templateVersion = element.template!!
-        val templateModel = pipelineTemplateResourceService.getTemplateResourceVersion(
+        val templateModel = getTemplateModelResource(
             projectId = projectId,
-            templateId = templateId,
-            version = TODO()
-        )?.model ?: throw ErrorCodeException(
-            errorCode = "",
-            params = arrayOf(templateId, templateVersion)
-        )
+            function = element
+        ).model
         if (templateModel !is StepTemplateModel) {
             // 模型不匹配
             throw ErrorCodeException(
@@ -207,5 +191,33 @@ class PipelineTemplateModelParser @Autowired constructor(
             )
         }
         return templateModel.container.elements
+    }
+
+    private fun getTemplateModelResource(
+        projectId: String,
+        function: ITemplateFunction
+    ): PipelineTemplateResource {
+        with(function) {
+            val (templateId, templateVersion) = when {
+                templateId != null && templateVersion != null -> {
+                    Pair(templateId!!, templateVersion!!)
+                }
+
+                templatePath != null -> {
+                    Pair("", 1L)
+                }
+
+                else -> {
+                    throw IllegalArgumentException("template version not found")
+                }
+            }
+            return pipelineTemplateResourceService.getTemplateResourceVersion(
+                projectId = projectId,
+                templateId = templateId,
+                version = templateVersion
+            ) ?: throw ErrorCodeException(
+                errorCode = ""
+            )
+        }
     }
 }

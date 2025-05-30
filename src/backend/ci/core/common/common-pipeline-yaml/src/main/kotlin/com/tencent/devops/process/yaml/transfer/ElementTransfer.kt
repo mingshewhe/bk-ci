@@ -336,10 +336,10 @@ class ElementTransfer @Autowired(required = false) constructor(
                     elementList.add(
                         StepTemplateElement(
                             fromTemplate = true,
-                            template = step.template,
+                            templatePath = step.templatePath,
+                            templateRef = step.templateRef,
                             templateId = step.templateId,
-                            templateName = step.templateName,
-                            templateVersion = step.ref,
+                            templateVersion = step.templateVersion,
                             templateVariables = step.variables
                         )
                     )

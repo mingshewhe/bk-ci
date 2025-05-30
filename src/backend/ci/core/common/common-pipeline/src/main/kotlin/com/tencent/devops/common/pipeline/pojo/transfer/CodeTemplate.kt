@@ -36,9 +36,9 @@ import com.fasterxml.jackson.annotation.JsonInclude
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 interface CodeTemplate {
-    val template: String?
+    val templatePath: String?
+    val templateRef: String?
     val templateId: String?
-    val templateName: String?
-    val ref: String?
+    val templateVersion: Long?
     val variables: Map<String, Any>?
 }
