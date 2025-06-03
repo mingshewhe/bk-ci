@@ -50,7 +50,7 @@ interface PreScriptBuildYamlIParser : YamlVersionParser {
     var stages: List<IPreStage>?
     var jobs: LinkedHashMap<String, IPreJob>?
     var steps: List<IPreStep>?
-    var extends: Extends?
+    var extends: PreExtends?
     var resources: Resources?
     var finally: LinkedHashMap<String, IPreJob>?
     val concurrency: Concurrency?
@@ -77,7 +77,7 @@ data class PreScriptBuildYamlParser(
     override var stages: List<IPreStage>? = null,
     override var jobs: LinkedHashMap<String, IPreJob>? = null,
     override var steps: List<IPreStep>? = null,
-    override var extends: Extends? = null,
+    override var extends: PreExtends? = null,
     override var resources: Resources?,
     var notices: List<GitNotices>?,
     override var finally: LinkedHashMap<String, IPreJob>? = null,

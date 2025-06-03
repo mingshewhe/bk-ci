@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
+import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.process.yaml.v3.models.IfField
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -85,5 +86,5 @@ data class StepTemplate(
     override val templateRef: String?,
     override val templateId: String?,
     override val templateVersionName: String?,
-    override val variables: Map<String, BuildFormProperty>?
+    override val variables: Map<String, TemplateVariable>?
 ) : IStep, CodeTemplate

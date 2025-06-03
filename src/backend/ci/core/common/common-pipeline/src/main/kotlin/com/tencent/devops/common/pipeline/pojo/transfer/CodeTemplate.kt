@@ -41,5 +41,5 @@ interface CodeTemplate {
     val templateRef: String?
     val templateId: String?
     val templateVersionName: String?
-    val variables: Map<String, BuildFormProperty>?
+    val variables: Map<String, TemplateVariable>?
 }

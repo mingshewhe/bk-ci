@@ -30,14 +30,17 @@ package com.tencent.devops.process.yaml.transfer
 import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
+import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.pipeline.pojo.transfer.IfType
+import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_MAX_CON_QUEUE_SIZE_MAX
 import com.tencent.devops.process.yaml.pojo.YamlVersion
@@ -48,9 +51,11 @@ import com.tencent.devops.process.yaml.transfer.pojo.YamlTransferInput
 import com.tencent.devops.process.yaml.v3.enums.SyntaxDialectType
 import com.tencent.devops.process.yaml.v3.models.Concurrency
 import com.tencent.devops.process.yaml.v3.models.Extends
+import com.tencent.devops.process.yaml.v3.models.ExtendsTemplate
 import com.tencent.devops.process.yaml.v3.models.IPreTemplateScriptBuildYamlParser
 import com.tencent.devops.process.yaml.v3.models.Notices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
+import com.tencent.devops.process.yaml.v3.models.PreExtends
 import com.tencent.devops.process.yaml.v3.models.PreTemplateScriptBuildYamlV3Parser
 import com.tencent.devops.process.yaml.v3.models.on.IPreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOn
@@ -177,8 +182,39 @@ class ModelTransfer @Autowired constructor(
         formatStage(yamlInput, stageList, stageIndex)
         // 添加finally
         formatFinally(yamlInput, stageList, stageIndex.incrementAndGet())
+        formatTemplate(yamlInput.yaml.formatExtends(), model)
         yamlInput.aspectWrapper.setModel4Model(model, PipelineTransferAspectWrapper.AspectType.AFTER)
         return model
+    }
+
+    private fun formatTemplate(
+        extends: Extends?,
+        model: Model
+    ) {
+        val template = extends?.template
+        if (template != null) {
+            model.fromTemplate = true
+            model.templatePath = template.templatePath
+            model.templateRef = template.templateRef
+            model.templateId = template.templateId
+            model.templateVersionName = template.templateVersionName
+            model.templateVariables = template.variables?.mapValues {
+                BuildFormProperty(
+                    id = it.key,
+                    required = it.value.allowModifyAtStartup ?: false,
+                    defaultValue = it.value.value,
+                    type = BuildFormPropertyType.STRING,
+                    options = null,
+                    desc = null,
+                    repoHashId = null,
+                    relativePath = null,
+                    scmType = null,
+                    containerType = null,
+                    glob = null,
+                    properties = null
+                )
+            }
+        }
     }
 
     private fun formatStage(
@@ -299,15 +335,22 @@ class ModelTransfer @Autowired constructor(
         return finally as LinkedHashMap<String, Any>?
     }
 
-    private fun makeExtend(templateInfo: TemplateDescriptor): Extends? {
+    private fun makeExtend(templateInfo: TemplateDescriptor): PreExtends? {
         if (templateInfo.fromTemplate != true) return null
         with(templateInfo) {
-            return Extends(
-                templatePath = templatePath,
-                templateRef = templateRef,
-                templateId = templateId,
-                templateVersionName = templateVersionName,
-                variables = templateVariables
+            return PreExtends(
+                template = ExtendsTemplate(
+                    templatePath = templatePath,
+                    templateRef = templateRef,
+                    templateId = templateId,
+                    templateVersionName = templateVersionName,
+                    variables = templateVariables?.mapValues {
+                        TemplateVariable(
+                            it.value.defaultValue,
+                            it.value.required
+                        )
+                    }
+                )
             )
         }
     }

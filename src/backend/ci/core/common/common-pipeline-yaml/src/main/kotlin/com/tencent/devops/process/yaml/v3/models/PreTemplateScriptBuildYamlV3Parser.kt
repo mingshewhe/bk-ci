@@ -58,7 +58,7 @@ data class PreTemplateScriptBuildYamlV3Parser(
     override var stages: ArrayList<Map<String, Any>>? = null,
     override val jobs: LinkedHashMap<String, Any>? = null,
     override val steps: ArrayList<Map<String, Any>>? = null,
-    override var extends: Extends? = null,
+    override var extends: PreExtends? = null,
     override var resources: Resources? = null,
     override var finally: LinkedHashMap<String, Any>? = null,
     override var notices: List<PacNotices>? = null,
@@ -92,13 +92,15 @@ data class PreTemplateScriptBuildYamlV3Parser(
             notices = notices,
             concurrency = concurrency,
             disablePipeline = disablePipeline,
-            syntaxDialect = syntaxDialect
+            syntaxDialect = syntaxDialect,
+            extends = extends
         )
     }
 
     @JsonIgnore
     lateinit var preYaml: PreScriptBuildYamlV3Parser
 
+    private val formatExtends = lazy { ScriptYmlUtils.preExtend2Extend(preYaml.extends) }
     private val formatStages = lazy { ScriptYmlUtils.formatStage(preYaml, transferData) }
     private val formatFinallyStage = lazy { ScriptYmlUtils.preJobs2Jobs(preYaml.finally, transferData) }
 
@@ -149,6 +151,11 @@ data class PreTemplateScriptBuildYamlV3Parser(
     override fun formatFinallyStage(): List<IJob> {
         checkInitialized()
         return formatFinallyStage.value
+    }
+
+    override fun formatExtends(): Extends? {
+        checkInitialized()
+        return formatExtends.value
     }
 
     override fun formatResources(): Resources? {

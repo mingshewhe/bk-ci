@@ -54,7 +54,7 @@ data class PreScriptBuildYamlV3Parser(
     override var stages: List<IPreStage>? = null,
     override var jobs: LinkedHashMap<String, IPreJob>? = null,
     override var steps: List<IPreStep>? = null,
-    override var extends: Extends? = null,
+    override var extends: PreExtends? = null,
     override var resources: Resources?,
     var notices: List<PacNotices>?,
     override var finally: LinkedHashMap<String, IPreJob>? = null,

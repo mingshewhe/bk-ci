@@ -77,6 +77,8 @@ interface IPreTemplateScriptBuildYamlParser : YamlVersionParser {
 
     fun formatResources(): Resources?
 
+    fun formatExtends(): Extends?
+
     fun templateFilter(): ITemplateFilter
 }
 
@@ -98,7 +100,7 @@ interface ITemplateFilter : YamlVersionParser {
     var stages: ArrayList<Map<String, Any>>?
     val jobs: LinkedHashMap<String, Any>?
     val steps: ArrayList<Map<String, Any>>?
-    var extends: Extends?
+    var extends: PreExtends?
     var resources: Resources?
     var finally: LinkedHashMap<String, Any>?
 
@@ -123,7 +125,7 @@ data class PreTemplateScriptBuildYamlParser(
     override var stages: ArrayList<Map<String, Any>>? = null,
     override val jobs: LinkedHashMap<String, Any>? = null,
     override val steps: ArrayList<Map<String, Any>>? = null,
-    override var extends: Extends? = null,
+    override var extends: PreExtends? = null,
     override var resources: Resources? = null,
     override var finally: LinkedHashMap<String, Any>? = null,
     override val notices: List<GitNotices>?,
@@ -178,6 +180,8 @@ data class PreTemplateScriptBuildYamlParser(
         checkInitialized()
         return ScriptYmlUtils.formatStage(preYaml)
     }
+
+    override fun formatExtends(): Extends? = null
 
     override fun formatFinallyStage(): List<IJob> {
         checkInitialized()

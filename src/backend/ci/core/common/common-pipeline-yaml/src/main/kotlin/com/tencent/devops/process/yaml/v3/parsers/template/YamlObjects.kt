@@ -38,6 +38,7 @@ import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.ResourcesPools
 import com.tencent.devops.common.pipeline.pojo.transfer.TemplateInfo
+import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.common.pipeline.type.BuildType
 import com.tencent.devops.common.pipeline.type.agent.DockerOptions
 import com.tencent.devops.common.web.utils.I18nUtil
@@ -45,6 +46,7 @@ import com.tencent.devops.process.yaml.pojo.TemplatePath
 import com.tencent.devops.process.yaml.v3.enums.TemplateType
 import com.tencent.devops.process.yaml.v3.exception.YamlFormatException
 import com.tencent.devops.process.yaml.v3.models.BuildContainerTypeYaml
+import com.tencent.devops.process.yaml.v3.models.ExtendsTemplate
 import com.tencent.devops.process.yaml.v3.models.GitNotices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
 import com.tencent.devops.process.yaml.v3.models.Variable
@@ -252,7 +254,7 @@ object YamlObjects {
             templateRef = step["ref"]?.toString(),
             templateId = step["template-id"]?.toString(),
             templateVersionName = step["version"]?.toString(),
-            variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+            variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
                 fromPath, TemplateType.STAGE.text, step["variables"]
             )
         )
@@ -459,6 +461,16 @@ object YamlObjects {
             throw YamlFormatException(Constants.TRANS_AS_ERROR.format(file.toString(), type))
         }
     }
+    inline fun <reified T> transValue(path: String, type: String, value: Any?): T {
+        if (value == null) {
+            throw YamlFormatException(Constants.TRANS_AS_ERROR.format(path, type))
+        }
+        return try {
+            value as T
+        } catch (e: Exception) {
+            throw YamlFormatException(Constants.TRANS_AS_ERROR.format(path, type))
+        }
+    }
 
     inline fun <reified T> transNullValue(file: TemplatePath, type: String, key: String, map: Map<String, Any?>): T? {
         return if (map[key] == null) {
@@ -480,7 +492,7 @@ object YamlObjects {
         }
     }
 
-    private fun getNotNullValue(key: String, mapName: String, map: Map<String, Any?>): String {
+    fun getNotNullValue(key: String, mapName: String, map: Map<String, Any?>): String {
         return if (map[key] == null) {
             throw YamlFormatException(Constants.ATTR_MISSING_ERROR.format(key, mapName))
         } else {
@@ -508,7 +520,7 @@ fun <T> YamlTemplate<T>.getStageTemplate(
         templateRef = stage["ref"]?.toString(),
         templateId = stage["template-id"]?.toString(),
         templateVersionName = stage["version"]?.toString(),
-        variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+        variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
             fromPath, TemplateType.STAGE.text, stage["variables"]
         )
     )
@@ -575,7 +587,7 @@ fun <T> YamlTemplate<T>.getJobTemplate(
         templateRef = job["ref"]?.toString(),
         templateId = job["template-id"]?.toString(),
         templateVersionName = job["version"]?.toString(),
-        variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+        variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
             fromPath, TemplateType.STAGE.text, job["variables"]
         )
     )

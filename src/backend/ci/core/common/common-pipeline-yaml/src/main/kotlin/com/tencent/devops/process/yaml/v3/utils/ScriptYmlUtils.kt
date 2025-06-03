@@ -52,6 +52,7 @@ import com.tencent.devops.common.api.util.YamlUtil
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
+import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.yaml.transfer.TransferMapper
 import com.tencent.devops.process.yaml.v3.check.Flow
@@ -62,7 +63,10 @@ import com.tencent.devops.process.yaml.v3.enums.ContentFormat
 import com.tencent.devops.process.yaml.v3.enums.StreamMrEventAction
 import com.tencent.devops.process.yaml.v3.enums.TemplateType
 import com.tencent.devops.process.yaml.v3.exception.YamlFormatException
+import com.tencent.devops.process.yaml.v3.models.Extends
+import com.tencent.devops.process.yaml.v3.models.ExtendsTemplate
 import com.tencent.devops.process.yaml.v3.models.IfField
+import com.tencent.devops.process.yaml.v3.models.PreExtends
 import com.tencent.devops.process.yaml.v3.models.PreRepositoryHook
 import com.tencent.devops.process.yaml.v3.models.PreScriptBuildYamlIParser
 import com.tencent.devops.process.yaml.v3.models.RepositoryHook
@@ -108,6 +112,7 @@ import com.tencent.devops.process.yaml.v3.models.step.PreCheckoutStep
 import com.tencent.devops.process.yaml.v3.models.step.Step
 import com.tencent.devops.process.yaml.v3.models.step.StepTemplate
 import com.tencent.devops.process.yaml.v3.parameter.ParametersType
+import com.tencent.devops.process.yaml.v3.parsers.template.YamlObjects
 import java.io.BufferedReader
 import java.io.StringReader
 import java.util.Random
@@ -346,6 +351,54 @@ object ScriptYmlUtils {
 
             else -> {
                 preStages2Stages(preScriptBuildYaml.stages, transferData)
+            }
+        }
+    }
+
+    fun preExtend2Extend(preExtend: PreExtends?): Extends? {
+        if (preExtend?.template == null) {
+            return null
+        }
+        when (preExtend.template) {
+            is String -> ExtendsTemplate(templatePath = preExtend.template)
+            else -> YamlUtil.getObjectMapper().readValue(
+                JsonUtil.toJson(preExtend.template),
+                ExtendsTemplate::class.java
+            )
+        }
+        return Extends(
+            template = getExtendsTemplate(preExtend.template)
+        )
+    }
+
+    private fun getExtendsTemplate(template: Any): ExtendsTemplate {
+        val map = YamlObjects.transValue<Map<String, Any?>>("Extends", "template", template)
+        return ExtendsTemplate(
+            templatePath = YamlObjects.getNullValue("path", map),
+            templateRef = YamlObjects.getNullValue("ref", map),
+            templateId = YamlObjects.getNullValue("template-id", map),
+            templateVersionName = YamlObjects.getNullValue("version", map),
+            variables = getExtendsTemplateVariables(map["variables"])
+        )
+    }
+
+    private fun getExtendsTemplateVariables(variables: Any?): Map<String, TemplateVariable>? {
+        if (variables == null) {
+            return null
+        }
+        val map = YamlObjects.transValue<Map<String, Any?>>("Extends.template", "variables", variables)
+        return map.mapValues {
+            when (it.value) {
+                is String -> TemplateVariable(it.value as String)
+                else -> {
+                    val variable =
+                        YamlObjects.transValue<Map<String, Any?>>("Extends.template.variables", it.key, it.value)
+                    TemplateVariable(
+                        value = YamlObjects.getNotNullValue("value", it.key, variable),
+                        allowModifyAtStartup = YamlObjects.getNullValue("allow-modify-at-startup", variable)
+                            ?.toBoolean() ?: true
+                    )
+                }
             }
         }
     }

@@ -74,5 +74,5 @@ data class PreStepTemplate(
     override val templateRef: String?,
     override val templateId: String?,
     override val templateVersionName: String?,
-    override val variables: Map<String, BuildFormProperty>?
+    override val variables: Map<String, TemplateVariable>?
 ) : IPreStep, CodeTemplate
