@@ -46,6 +46,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInf
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
+import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
@@ -54,6 +55,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSettingService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
+import com.tencent.devops.process.yaml.PipelineYamlService
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -70,7 +72,8 @@ class PipelineTemplateInstanceReqConverter(
     private val pipelineIdGenerator: PipelineIdGenerator,
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineYamlService: PipelineYamlService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
@@ -134,12 +137,30 @@ class PipelineTemplateInstanceReqConverter(
                 templateSettingVersion = templateResource.settingVersion
             )
 
+            val templatePath = refType.takeIf { it == TemplateInstanceRefType.PATH }?.let {
+                pipelineYamlService.getPipelineYamlInfo(
+                    projectId = projectId,
+                    pipelineId = templateId
+                )?.filePath ?: throw ErrorCodeException(
+                    errorCode = ERROR_TEMPLATE_NOT_EXISTS
+                )
+            }
+            // 流水线model转换成引用模版的方式
+            val pipelineModel = pipelineResourceFactory.createPipelineModel(
+                name = pipelineName,
+                desc = null,
+                refType = refType,
+                templateId = templateId,
+                templateVersionName = templateResource.versionName,
+                templatePath = templatePath,
+                templateRef = templateRef
+            )
             val newYaml = pipelineVersionGenerator.model2yaml(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
                 modelAndSetting = PipelineModelAndSetting(
-                    model = instanceModel,
+                    model = pipelineModel,
                     setting = pipelineSettingWithoutVersion
                 ),
                 oldYaml = null

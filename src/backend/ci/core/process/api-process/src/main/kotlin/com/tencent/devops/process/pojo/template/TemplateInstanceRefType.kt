@@ -25,30 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.pojo.template.v2
+package com.tencent.devops.process.pojo.template
 
-import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "模板实例请求体")
-data class PipelineTemplateInstancesRequest(
-    @get:Schema(title = "实例化引用类型", required = true)
-    val refType: TemplateInstanceRefType? = TemplateInstanceRefType.ID,
-    @get:Schema(title = "路径引用时,版本信息", required = true)
-    val ref: String?,
-    @get:Schema(title = "是否使用模版设置", required = true)
-    val useTemplateSetting: Boolean,
-    @get:Schema(title = "是否本次开启PAC", required = true)
-    val enablePac: Boolean,
-    @get:Schema(title = "版本描述", required = false)
-    val description: String?,
-    @get:Schema(title = "模板版本号（为空时默认最新）", required = false)
-    val targetAction: CodeTargetAction?,
-    @get:Schema(title = "代码库hashId", required = true)
-    val repoHashId: String?,
-    @get:Schema(title = "目标分支", required = true)
-    val targetBranch: String?,
-    @get:Schema(title = "模板实例发布实体", required = true)
-    val instanceReleaseInfos: List<PipelineTemplateInstanceReleaseInfo>
-)
+@Schema(title = "模板实例引用类型")
+enum class TemplateInstanceRefType {
+    // ID引用
+    ID,
+
+    // 路径引用
+    PATH
+}

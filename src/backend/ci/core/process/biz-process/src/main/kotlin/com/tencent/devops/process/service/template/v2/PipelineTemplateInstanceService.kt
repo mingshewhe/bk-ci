@@ -95,6 +95,8 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     projectId = projectId,
                     templateId = templateId,
                     templateVersion = version,
+                    refType = request.refType,
+                    templateRef = request.ref,
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
                     params = instance.param,
@@ -182,7 +184,9 @@ class PipelineTemplateInstanceService @Autowired constructor(
                 type = TemplateInstanceType.CREATE.name,
                 repoHashId = request.repoHashId,
                 targetBranch = request.targetBranch,
-                description = request.description
+                description = request.description,
+                refType = request.refType,
+                templateRef = request.ref
             )
             templateInstanceItemDao.createTemplateInstanceItemsV2(
                 dslContext = context,
@@ -620,6 +624,8 @@ class PipelineTemplateInstanceService @Autowired constructor(
         }
         val request = with(instanceBase) {
             PipelineTemplateInstancesRequest(
+                refType = refType,
+                ref = templateRef,
                 useTemplateSetting = useTemplateSetting,
                 enablePac = pac,
                 description = description,

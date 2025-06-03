@@ -17,10 +17,6 @@ data class PipelineTemplateInstanceItem(
     val pipelineId: String,
     @get:Schema(title = "流水线名称", required = true)
     val pipelineName: String,
-    @get:Schema(title = "流水线版本", required = true)
-    val pipelineVersion: Int?,
-    @get:Schema(title = "流水线版本名称", required = true)
-    val pipelineVersionName: String?,
     @get:Schema(title = "流水线构建号", required = true)
     val buildNo: BuildNo?,
     @get:Schema(title = "实例化状态", required = true)

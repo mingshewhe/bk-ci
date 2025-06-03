@@ -192,6 +192,8 @@ class PipelineTemplateInstanceListener @Autowired constructor(
             projectId = projectId,
             templateId = instanceBase.templateId,
             templateVersion = instanceBase.templateVersion,
+            refType = instanceBase.refType,
+            templateRef = instanceBase.templateRef,
             pipelineName = pipelineName,
             buildNo = buildNo,
             params = params,

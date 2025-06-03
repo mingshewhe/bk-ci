@@ -320,8 +320,6 @@ class TemplateInstanceItemDao {
             dslContext.update(this)
                 .apply {
                     record.status?.let { set(STATUS, it.name) }
-                    record.pipelineVersion?.let { set(PIPELINE_VERSION, it) }
-                    record.pipelineVersionName?.let { set(PIPELINE_VERSION_NAME, it) }
                     record.errorMessage?.let { set(ERROR_MESSAGE, it) }
                 }
                 .set(UPDATE_TIME, now)
@@ -362,8 +360,6 @@ class TemplateInstanceItemDao {
             projectId = projectId,
             pipelineId = pipelineId,
             pipelineName = pipelineName,
-            pipelineVersion = pipelineVersion,
-            pipelineVersionName = pipelineVersionName,
             buildNo = buildNo,
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
