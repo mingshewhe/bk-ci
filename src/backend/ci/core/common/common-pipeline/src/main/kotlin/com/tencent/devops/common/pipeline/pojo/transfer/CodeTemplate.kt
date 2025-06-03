@@ -29,6 +29,7 @@ package com.tencent.devops.common.pipeline.pojo.transfer
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 
 /**
  * model
@@ -39,6 +40,6 @@ interface CodeTemplate {
     val templatePath: String?
     val templateRef: String?
     val templateId: String?
-    val templateVersion: Long?
-    val variables: Map<String, Any>?
+    val templateVersionName: String?
+    val variables: Map<String, BuildFormProperty>?
 }

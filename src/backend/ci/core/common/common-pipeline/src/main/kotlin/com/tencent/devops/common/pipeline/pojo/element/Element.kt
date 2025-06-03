@@ -30,10 +30,11 @@ package com.tencent.devops.common.pipeline.pojo.element
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.devops.common.api.util.JsonUtil
-import com.tencent.devops.common.pipeline.ITemplateFunction
+import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.enums.BuildStatus
 import com.tencent.devops.common.pipeline.enums.StartType
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeGitElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeGitlabElement
 import com.tencent.devops.common.pipeline.pojo.element.agent.CodeSvnElement
@@ -157,11 +158,11 @@ abstract class Element(
     override  var templateRef: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
-    @get:Schema(title = "版本", required = false)
-    override var templateVersion: Long? = null,
+    @get:Schema(title = "模版版本名称", required = false)
+    override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, Any>? = null
-) : ITemplateFunction {
+    override var templateVariables: Map<String, BuildFormProperty>? = null
+) : TemplateDescriptor {
 
     open fun getAtomCode() = getClassType()
 

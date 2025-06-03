@@ -36,6 +36,7 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
@@ -79,11 +80,11 @@ data class Model(
     override  var templateRef: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
-    @get:Schema(title = "版本", required = false)
-    override var templateVersion: Long? = null,
+    @get:Schema(title = "模版版本名称", required = false)
+    override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, Any>? = null
-) : ITemplateModel, ITemplateFunction {
+    override var templateVariables: Map<String, BuildFormProperty>? = null
+) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0
 

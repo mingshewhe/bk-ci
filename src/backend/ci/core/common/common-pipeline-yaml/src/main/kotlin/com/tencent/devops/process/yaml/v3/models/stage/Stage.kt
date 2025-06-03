@@ -29,6 +29,7 @@ package com.tencent.devops.process.yaml.v3.models.stage
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.process.yaml.v3.check.StageCheck
 import com.tencent.devops.process.yaml.v3.models.IfField
@@ -68,6 +69,6 @@ data class StageTemplate(
     override val templatePath: String?,
     override val templateRef: String?,
     override val templateId: String?,
-    override val templateVersion: Long?,
-    override val variables: Map<String, Any>?
+    override val templateVersionName: String?,
+    override val variables: Map<String, BuildFormProperty>?
 ) : IStage, CodeTemplate

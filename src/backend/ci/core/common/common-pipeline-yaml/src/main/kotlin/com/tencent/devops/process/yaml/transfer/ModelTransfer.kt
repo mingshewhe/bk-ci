@@ -30,7 +30,7 @@ package com.tencent.devops.process.yaml.transfer
 import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
-import com.tencent.devops.common.pipeline.ITemplateFunction
+import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
@@ -299,14 +299,14 @@ class ModelTransfer @Autowired constructor(
         return finally as LinkedHashMap<String, Any>?
     }
 
-    private fun makeExtend(templateInfo: ITemplateFunction): Extends? {
+    private fun makeExtend(templateInfo: TemplateDescriptor): Extends? {
         if (templateInfo.fromTemplate != true) return null
         with(templateInfo) {
             return Extends(
                 templatePath = templatePath,
                 templateRef = templateRef,
                 templateId = templateId,
-                templateVersion = templateVersion,
+                templateVersionName = templateVersionName,
                 variables = templateVariables
             )
         }

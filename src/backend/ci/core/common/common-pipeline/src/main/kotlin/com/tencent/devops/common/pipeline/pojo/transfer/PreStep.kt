@@ -29,6 +29,7 @@ package com.tencent.devops.common.pipeline.pojo.transfer
 
 import com.fasterxml.jackson.annotation.JsonFilter
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import io.swagger.v3.oas.annotations.media.Schema
 
 interface IPreStep
@@ -72,6 +73,6 @@ data class PreStepTemplate(
     override val templatePath: String?,
     override val templateRef: String?,
     override val templateId: String?,
-    override val templateVersion: Long?,
-    override val variables: Map<String, Any>?
+    override val templateVersionName: String?,
+    override val variables: Map<String, BuildFormProperty>?
 ) : IPreStep, CodeTemplate

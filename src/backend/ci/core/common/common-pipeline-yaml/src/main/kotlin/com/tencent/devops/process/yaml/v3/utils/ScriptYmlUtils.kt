@@ -418,7 +418,7 @@ object ScriptYmlUtils {
                                 templatePath = templateJob.templatePath,
                                 templateRef = templateJob.templateRef,
                                 templateId = templateJob.templateId,
-                                templateVersion = templateJob.templateVersion,
+                                templateVersionName = templateJob.templateVersionName,
                                 variables = templateJob.variables,
                             )
                         )
@@ -514,7 +514,7 @@ object ScriptYmlUtils {
                             templatePath = preStep.templatePath,
                             templateRef = preStep.templateRef,
                             templateId = preStep.templateId,
-                            templateVersion = preStep.templateVersion,
+                            templateVersionName = preStep.templateVersionName,
                             variables = preStep.variables,
                         )
                     )
@@ -595,7 +595,7 @@ object ScriptYmlUtils {
                         templatePath = preStage.templatePath,
                         templateRef = preStage.templateRef,
                         templateId = preStage.templateId,
-                        templateVersion = preStage.templateVersion,
+                        templateVersionName = preStage.templateVersionName,
                         variables = preStage.variables,
                     )
                 )

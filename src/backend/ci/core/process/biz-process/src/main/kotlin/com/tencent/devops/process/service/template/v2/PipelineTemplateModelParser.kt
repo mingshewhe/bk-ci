@@ -27,19 +27,30 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.pipeline.ITemplateFunction
+import com.tencent.devops.common.api.util.JsonUtil.deepCopy
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.JobTemplateContainer
 import com.tencent.devops.common.pipeline.container.Stage
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.StepTemplateElement
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
+import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.yaml.PipelineYamlFileService
+import com.tencent.devops.process.yaml.PipelineYamlService
+import com.tencent.devops.repository.api.ServiceRepositoryResource
+import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
+import com.tencent.devops.repository.pojo.credential.AuthRepository
+import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -48,10 +59,14 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineTemplateModelParser @Autowired constructor(
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineYamlService: PipelineYamlService,
+    private val pipelineYamlFileService: PipelineYamlFileService,
+    private val client: Client
 ) {
 
-    fun parseModel(
+   /* fun parseModel(
         projectId: String,
         model: Model
     ): Model {
@@ -146,9 +161,9 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         stage: Stage
     ): List<Stage> {
-        val templateModel = getTemplateModelResource(
+        val templateModel = getPipelineTemplateResource(
             projectId = projectId,
-            function = stage
+            descriptor = stage
         ).model
         if (templateModel !is StageTemplateModel) {
             // 模型不匹配
@@ -163,9 +178,9 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         container: JobTemplateContainer
     ): List<Container> {
-        val templateModel = getTemplateModelResource(
+        val templateModel = getPipelineTemplateResource(
             projectId = projectId,
-            function = container
+            descriptor = container
         ).model
         if (templateModel !is JobTemplateModel) {
             // 模型不匹配
@@ -180,9 +195,9 @@ class PipelineTemplateModelParser @Autowired constructor(
         projectId: String,
         element: StepTemplateElement
     ): List<Element> {
-        val templateModel = getTemplateModelResource(
+        val templateModel = getPipelineTemplateResource(
             projectId = projectId,
-            function = element
+            descriptor = element
         ).model
         if (templateModel !is StepTemplateModel) {
             // 模型不匹配
@@ -191,31 +206,81 @@ class PipelineTemplateModelParser @Autowired constructor(
             )
         }
         return templateModel.container.elements
-    }
+    }*/
 
-    private fun getTemplateModelResource(
+    fun getPipelineTemplateResource(
         projectId: String,
-        function: ITemplateFunction
+        repoHashId: String,
+        descriptor: TemplateDescriptor,
+        webhookRef: String? = null
     ): PipelineTemplateResource {
-        with(function) {
-            val (templateId, templateVersion) = when {
-                templateId != null && templateVersion != null -> {
-                    Pair(templateId!!, templateVersion!!)
+        with(descriptor) {
+            return when {
+                templateId != null && templateVersionName != null -> {
+                    pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId!!)
+                    pipelineTemplateResourceService.getLatestResource(
+                        projectId = projectId,
+                        templateId = templateId!!,
+                        versionName = templateVersionName!!
+                    )
                 }
 
                 templatePath != null -> {
-                    Pair("", 1L)
+                    val repository = client.get(ServiceRepositoryResource::class).get(
+                        projectId = projectId,
+                        repositoryId = repoHashId,
+                        repositoryType = RepositoryType.ID
+                    ).data ?: throw ErrorCodeException(
+                        errorCode = ""
+                    )
+                    pipelineYamlService.getPipelineYamlInfo(
+                        projectId = projectId,
+                        repoHashId = repoHashId,
+                        filePath = templatePath!!
+                    ) ?: throw ErrorCodeException(
+                        errorCode = ""
+                    )
+                    val authRepository = AuthRepository(repository)
+
+                    val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepository(
+                        projectId = projectId,
+                        authRepository = authRepository
+                    ).data
+                    if (serverRepository !is GitScmServerRepository) {
+                        throw ErrorCodeException(
+                            errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+                        )
+                    }
+                    val defaultBranch = serverRepository.defaultBranch
+                    val ref = webhookRef ?: templateRef ?: defaultBranch
+                    val fileContent = pipelineYamlFileService.getFileContent(
+                        projectId = projectId,
+                        path = templatePath!!,
+                        ref = ref,
+                        authRepository = authRepository
+                    )
+                    val pipelineYamlVersion = pipelineYamlService.getTriggerVersion(
+                        projectId = projectId,
+                        repoHashId = repoHashId,
+                        filePath = templatePath!!,
+                        ref = ref,
+                        blobId = fileContent.blobId,
+                        defaultBranch = defaultBranch
+                    ) ?: throw ErrorCodeException(
+                        errorCode = ""
+                    )
+
+                    pipelineTemplateResourceService.getLatestResource(
+                        projectId = projectId,
+                        templateId = templateId!!,
+                        version = pipelineYamlVersion.version.toLong()
+                    )
                 }
 
                 else -> {
                     throw IllegalArgumentException("template version not found")
                 }
-            }
-            return pipelineTemplateResourceService.getTemplateResourceVersion(
-                projectId = projectId,
-                templateId = templateId,
-                version = templateVersion
-            ) ?: throw ErrorCodeException(
+            } ?: throw ErrorCodeException(
                 errorCode = ""
             )
         }

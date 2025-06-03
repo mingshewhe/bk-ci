@@ -29,6 +29,7 @@ package com.tencent.devops.process.yaml.v3.models
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 
 /**
@@ -40,6 +41,6 @@ data class Extends(
     override val templatePath: String?,
     override val templateRef: String?,
     override val templateId: String?,
-    override val templateVersion: Long?,
-    override val variables: Map<String, Any>?
+    override val templateVersionName: String?,
+    override val variables: Map<String, BuildFormProperty>?
 ) : CodeTemplate

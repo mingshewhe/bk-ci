@@ -115,9 +115,10 @@ class PipelineTemplateResourceService @Autowired constructor(
     fun getLatestResource(
         projectId: String,
         templateId: String,
-        status: VersionStatus,
+        status: VersionStatus? = null,
         version: Long? = null,
-        versionName: String? = null
+        versionName: String? = null,
+        includeDelete: Boolean = false
     ): PipelineTemplateResource? {
         return pipelineTemplateResourceDao.getLatestRecord(
             dslContext = dslContext,
@@ -125,7 +126,8 @@ class PipelineTemplateResourceService @Autowired constructor(
             templateId = templateId,
             status = status,
             version = version,
-            versionName = versionName
+            versionName = versionName,
+            includeDelete = includeDelete
         )
     }
 

@@ -339,7 +339,7 @@ class ElementTransfer @Autowired(required = false) constructor(
                             templatePath = step.templatePath,
                             templateRef = step.templateRef,
                             templateId = step.templateId,
-                            templateVersion = step.templateVersion,
+                            templateVersionName = step.templateVersionName,
                             templateVariables = step.variables
                         )
                     )

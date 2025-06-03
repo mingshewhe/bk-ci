@@ -258,7 +258,7 @@ class StageTransfer @Autowired(required = false) constructor(
                             templatePath = job.templatePath,
                             templateRef = job.templateRef,
                             templateId = job.templateId,
-                            templateVersion = job.templateVersion,
+                            templateVersionName = job.templateVersionName,
                             templateVariables = job.variables
                         )
                     )
@@ -335,7 +335,7 @@ class StageTransfer @Autowired(required = false) constructor(
             templatePath = stage.templatePath,
             templateRef = stage.templateRef,
             templateId = stage.templateId,
-            templateVersion = stage.templateVersion,
+            templateVersionName = stage.templateVersionName,
             templateVariables = stage.variables
         )
     }

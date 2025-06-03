@@ -27,10 +27,11 @@
 
 package com.tencent.devops.common.pipeline
 
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模版函数")
-interface ITemplateFunction {
+@Schema(title = "流水线模版描述器")
+interface TemplateDescriptor {
     @get:Schema(title = "是否来源于模版", required = false)
     var fromTemplate: Boolean?
 
@@ -43,9 +44,9 @@ interface ITemplateFunction {
     @get:Schema(title = "模板ID", required = false)
     var templateId: String?
 
-    @get:Schema(title = "版本", required = false)
-    var templateVersion: Long?
+    @get:Schema(title = "模版版本名称", required = false)
+    var templateVersionName: String?
 
     @get:Schema(title = "模板参数构建", required = false)
-    var templateVariables: Map<String, Any>?
+    var templateVariables: Map<String, BuildFormProperty>?
 }

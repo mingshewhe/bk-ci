@@ -31,6 +31,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.constant.CommonMessageCode.ERROR_YAML_FORMAT_EXCEPTION_NEED_PARAM
 import com.tencent.devops.common.api.pojo.OS
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.MetaData
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
@@ -250,8 +251,10 @@ object YamlObjects {
             templatePath = step["template"]?.toString(),
             templateRef = step["ref"]?.toString(),
             templateId = step["template-id"]?.toString(),
-            templateVersion = step["version"] as Long?,
-            variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, step["variables"])
+            templateVersionName = step["version"]?.toString(),
+            variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+                fromPath, TemplateType.STAGE.text, step["variables"]
+            )
         )
     }
 
@@ -504,8 +507,10 @@ fun <T> YamlTemplate<T>.getStageTemplate(
         templatePath = stage["template"]?.toString(),
         templateRef = stage["ref"]?.toString(),
         templateId = stage["template-id"]?.toString(),
-        templateVersion = stage["version"] as Long?,
-        variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, stage["variables"])
+        templateVersionName = stage["version"]?.toString(),
+        variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+            fromPath, TemplateType.STAGE.text, stage["variables"]
+        )
     )
 }
 
@@ -569,8 +574,10 @@ fun <T> YamlTemplate<T>.getJobTemplate(
         templatePath = job["template"]?.toString(),
         templateRef = job["ref"]?.toString(),
         templateId = job["template-id"]?.toString(),
-        templateVersion = job["version"] as Long?,
-        variables = YamlObjects.transValue<Map<String, Any>>(fromPath, TemplateType.STAGE.text, job["variables"])
+        templateVersionName = job["version"]?.toString(),
+        variables = YamlObjects.transValue<Map<String, BuildFormProperty>>(
+            fromPath, TemplateType.STAGE.text, job["variables"]
+        )
     )
 }
 

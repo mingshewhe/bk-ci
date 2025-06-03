@@ -30,6 +30,7 @@ package com.tencent.devops.common.pipeline.container
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.option.JobControlOption
 import com.tencent.devops.common.pipeline.option.MatrixControlOption
+import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
@@ -111,10 +112,10 @@ data class NormalContainer(
     override  var templateRef: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
-    @get:Schema(title = "版本", required = false)
-    override var templateVersion: Long? = null,
+    @get:Schema(title = "模版版本名称", required = false)
+    override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, Any>? = null
+    override var templateVariables: Map<String, BuildFormProperty>? = null
 ) : Container {
     companion object {
         const val classType = "normal"
