@@ -96,8 +96,8 @@ data class Model(
      * 示例: listOf(PipelineSettingGroupType.NOTICES),那么配置通知如
      * successSubscriptionList、failSubscriptionList将使用模板的配置
      */
-    @get:Schema(title = "指定需要从模板继承的设置", required = false)
-    var inheritedTemplateSetting: List<PipelineSettingGroupType>? = null
+    @get:Schema(title = "指定需要从模板继承的设置组", required = false)
+    var inheritedTemplateSettingGroups: List<PipelineSettingGroupType>? = null
 ) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0
