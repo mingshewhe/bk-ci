@@ -90,14 +90,16 @@ data class Model(
     @get:Schema(title = "触发器配置", required = false)
     var triggerConfigs: Map<String, PipelineTriggerConfig>? = null,
     /**
-     * 指定需要从模板继承的设置
+     * 覆盖模版设置组
      *
-     * 当不为空时，流水线设置将使用模板中对应设置组的配置
-     * 示例: listOf(PipelineSettingGroupType.NOTICES),那么配置通知如
-     * successSubscriptionList、failSubscriptionList将使用模板的配置
+     *  - 值为null时,使用流水线设置
+     *  - 值为空时,使用模版设置
+     *  - 值不为空时,使用流水线和模版设置的合并值,overrideTemplateSettingGroups组下的配置将使用流水线的设置,其他使用模版设置
+     *      示例: listOf(PipelineSettingGroupType.NOTICES),
+     *      那么通知组下successSubscriptionList、failSubscriptionList将使用流水线配置,其他的值使用模版配置
      */
-    @get:Schema(title = "指定需要从模板继承的设置组", required = false)
-    var inheritedTemplateSettingGroups: List<PipelineSettingGroupType>? = null
+    @get:Schema(title = "覆盖模版设置组", required = false)
+    var overrideTemplateSettingGroups: List<PipelineSettingGroupType>? = null
 ) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0

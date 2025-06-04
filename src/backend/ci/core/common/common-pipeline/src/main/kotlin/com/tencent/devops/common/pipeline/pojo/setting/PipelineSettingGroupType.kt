@@ -31,9 +31,15 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线-设置-组类型")
 enum class PipelineSettingGroupType {
+    // 构建号生成规则
+    BUILD_NUM_RULE,
+
     // 通知
     NOTICES,
 
     // 并发
-    CONCURRENCY
+    CONCURRENCY,
+
+    // 是否配置流水线变量值超长时终止执行
+    FAIL_IF_VARIABLE_INVALID
 }
