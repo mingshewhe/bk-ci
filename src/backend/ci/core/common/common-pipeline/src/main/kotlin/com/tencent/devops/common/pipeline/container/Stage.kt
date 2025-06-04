@@ -29,8 +29,8 @@ package com.tencent.devops.common.pipeline.container
 
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.option.StageControlOption
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.StagePauseCheck
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -83,7 +83,7 @@ data class Stage(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, BuildFormProperty>? = null
+    override var templateVariables: Map<String, TemplateParameter>? = null
 ) : TemplateDescriptor {
     /**
      * 刷新stage的所有配置，如果是初始化则重置所有历史数据

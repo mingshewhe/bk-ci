@@ -38,13 +38,12 @@ import com.tencent.devops.common.pipeline.container.NormalContainer
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.container.VMBuildContainer
-import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.enums.StageRunCondition
 import com.tencent.devops.common.pipeline.option.StageControlOption
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.StagePauseCheck
 import com.tencent.devops.common.pipeline.pojo.StageReviewGroup
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamPair
@@ -262,19 +261,10 @@ class StageTransfer @Autowired(required = false) constructor(
                             templateId = job.templateId,
                             templateVersionName = job.templateVersionName,
                             templateVariables = job.variables?.mapValues {
-                                BuildFormProperty(
-                                    id = it.key,
-                                    required = it.value.allowModifyAtStartup ?: false,
-                                    defaultValue = it.value.value,
-                                    type = BuildFormPropertyType.STRING,
-                                    options = null,
-                                    desc = null,
-                                    repoHashId = null,
-                                    relativePath = null,
-                                    scmType = null,
-                                    containerType = null,
-                                    glob = null,
-                                    properties = null
+                                TemplateParameter(
+                                    key = it.key,
+                                    value = it.value.value,
+                                    required = it.value.allowModifyAtStartup ?: false
                                 )
                             }
                         )
@@ -354,19 +344,10 @@ class StageTransfer @Autowired(required = false) constructor(
             templateId = stage.templateId,
             templateVersionName = stage.templateVersionName,
             templateVariables = stage.variables?.mapValues {
-                BuildFormProperty(
-                    id = it.key,
-                    required = it.value.allowModifyAtStartup ?: false,
-                    defaultValue = it.value.value,
-                    type = BuildFormPropertyType.STRING,
-                    options = null,
-                    desc = null,
-                    repoHashId = null,
-                    relativePath = null,
-                    scmType = null,
-                    containerType = null,
-                    glob = null,
-                    properties = null
+                TemplateParameter(
+                    key = it.key,
+                    value = it.value.value,
+                    required = it.value.allowModifyAtStartup ?: false
                 )
             }
         )

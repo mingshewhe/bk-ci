@@ -30,7 +30,6 @@ package com.tencent.devops.common.pipeline.container
 import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.option.JobControlOption
 import com.tencent.devops.common.pipeline.option.MatrixControlOption
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
@@ -103,19 +102,7 @@ data class NormalContainer(
     @get:Schema(title = "当前矩阵子容器的上下文组合（分裂后的子容器特有字段）", required = false)
     var matrixContext: Map<String, String>? = null,
     @get:Schema(title = "分裂后的容器集合（分裂后的父容器特有字段）", required = false)
-    var groupContainers: MutableList<NormalContainer>? = null,
-    @get:Schema(title = "来源于模版", required = false)
-    override var fromTemplate: Boolean? = null,
-    @get:Schema(title = "模板路径", required = false)
-    override var templatePath: String? = null,
-    @get:Schema(title = "模板版本引用,分支/tag/commit", required = false)
-    override  var templateRef: String? = null,
-    @get:Schema(title = "模板ID", required = false)
-    override var templateId: String? = null,
-    @get:Schema(title = "模版版本名称", required = false)
-    override var templateVersionName: String? = null,
-    @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, BuildFormProperty>? = null
+    var groupContainers: MutableList<NormalContainer>? = null
 ) : Container {
     companion object {
         const val classType = "normal"

@@ -38,6 +38,7 @@ import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.enums.BuildScriptType
 import com.tencent.devops.common.pipeline.enums.CharsetType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.RunCondition
@@ -343,19 +344,10 @@ class ElementTransfer @Autowired(required = false) constructor(
                             templateId = step.templateId,
                             templateVersionName = step.templateVersionName,
                             templateVariables = step.variables?.mapValues {
-                                BuildFormProperty(
-                                    id = it.key,
-                                    required = it.value.allowModifyAtStartup ?: false,
-                                    defaultValue = it.value.value,
-                                    type = BuildFormPropertyType.STRING,
-                                    options = null,
-                                    desc = null,
-                                    repoHashId = null,
-                                    relativePath = null,
-                                    scmType = null,
-                                    containerType = null,
-                                    glob = null,
-                                    properties = null
+                                TemplateParameter(
+                                    key = it.key,
+                                    value = it.value.value,
+                                    required = it.value.allowModifyAtStartup ?: false
                                 )
                             }
                         )

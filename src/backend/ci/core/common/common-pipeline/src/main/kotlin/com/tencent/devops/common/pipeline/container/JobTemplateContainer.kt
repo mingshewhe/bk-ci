@@ -27,7 +27,8 @@
 
 package com.tencent.devops.common.pipeline.container
 
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.TemplateDescriptor
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
@@ -87,8 +88,8 @@ data class JobTemplateContainer(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, BuildFormProperty>? = null
-) : Container {
+    override var templateVariables: Map<String, TemplateParameter>? = null
+) : Container, TemplateDescriptor {
     companion object {
         const val classType = "jobTemplate"
     }

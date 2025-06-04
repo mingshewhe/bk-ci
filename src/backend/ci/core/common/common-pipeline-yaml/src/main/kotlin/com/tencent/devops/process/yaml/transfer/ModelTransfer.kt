@@ -36,6 +36,7 @@ import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
@@ -199,19 +200,10 @@ class ModelTransfer @Autowired constructor(
             model.templateId = template.templateId
             model.templateVersionName = template.templateVersionName
             model.templateVariables = template.variables?.mapValues {
-                BuildFormProperty(
-                    id = it.key,
-                    required = it.value.allowModifyAtStartup ?: false,
-                    defaultValue = it.value.value,
-                    type = BuildFormPropertyType.STRING,
-                    options = null,
-                    desc = null,
-                    repoHashId = null,
-                    relativePath = null,
-                    scmType = null,
-                    containerType = null,
-                    glob = null,
-                    properties = null
+                TemplateParameter(
+                    key = it.key,
+                    value = it.value.value,
+                    required = it.value.allowModifyAtStartup ?: false
                 )
             }
         }
@@ -346,7 +338,7 @@ class ModelTransfer @Autowired constructor(
                     templateVersionName = templateVersionName,
                     variables = templateVariables?.mapValues {
                         TemplateVariable(
-                            it.value.defaultValue,
+                            it.value.value,
                             it.value.required
                         )
                     }

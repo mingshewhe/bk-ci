@@ -43,7 +43,7 @@ import io.swagger.v3.oas.annotations.media.Schema
     JsonSubTypes.Type(value = VMBuildContainer::class, name = VMBuildContainer.classType),
     JsonSubTypes.Type(value = JobTemplateContainer::class, name = JobTemplateContainer.classType)
 )
-interface Container : TemplateDescriptor {
+interface Container {
     var id: String? // seq id
     var name: String
     var elements: List<Element>

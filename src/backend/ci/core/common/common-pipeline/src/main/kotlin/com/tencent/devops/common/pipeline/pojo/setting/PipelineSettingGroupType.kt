@@ -25,28 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.common.pipeline
+package com.tencent.devops.common.pipeline.pojo.setting
 
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线模版描述器")
-interface TemplateDescriptor {
-    @get:Schema(title = "是否来源于模版", required = false)
-    var fromTemplate: Boolean?
+@Schema(title = "流水线-设置-组类型")
+enum class PipelineSettingGroupType {
+    // 通知
+    NOTICES,
 
-    @get:Schema(title = "模板路径", required = false)
-    var templatePath: String?
-
-    @get:Schema(title = "模板版本引用,分支/tag/commit", required = false)
-    var templateRef: String?
-
-    @get:Schema(title = "模板ID", required = false)
-    var templateId: String?
-
-    @get:Schema(title = "模版版本名称", required = false)
-    var templateVersionName: String?
-
-    @get:Schema(title = "模板参数值", required = false)
-    var templateVariables: Map<String, TemplateParameter>?
+    // 并发
+    CONCURRENCY
 }

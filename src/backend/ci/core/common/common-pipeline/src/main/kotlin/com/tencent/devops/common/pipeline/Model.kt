@@ -36,8 +36,10 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.PipelineTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
 import com.tencent.devops.common.pipeline.template.ITemplateModel
@@ -83,7 +85,19 @@ data class Model(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, BuildFormProperty>? = null
+    override var templateVariables: Map<String, TemplateParameter>? = null,
+    /* 模版实例化时触发器变量 */
+    @get:Schema(title = "触发器配置", required = false)
+    var triggerConfigs: Map<String, PipelineTriggerConfig>? = null,
+    /**
+     * 指定需要从模板继承的设置
+     *
+     * 当不为空时，流水线设置将使用模板中对应设置组的配置
+     * 示例: listOf(PipelineSettingGroupType.NOTICES),那么配置通知如
+     * successSubscriptionList、failSubscriptionList将使用模板的配置
+     */
+    @get:Schema(title = "指定需要从模板继承的设置", required = false)
+    var inheritedTemplateSetting: List<PipelineSettingGroupType>? = null
 ) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0
