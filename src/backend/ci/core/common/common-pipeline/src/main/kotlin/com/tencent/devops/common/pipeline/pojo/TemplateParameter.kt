@@ -36,5 +36,5 @@ data class TemplateParameter(
     @get:Schema(title = "元素值名称-显示用", required = true)
     val value: Any,
     @get:Schema(title = "是否必须（新前端的入参标识）", required = true)
-    var required: Boolean
+    var required: Boolean? = null
 )

@@ -29,10 +29,10 @@ package com.tencent.devops.common.pipeline.pojo
 
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线触发器配置")
-data class PipelineTriggerConfig(
+@Schema(title = "流水线实例化触发器配置")
+data class TemplateInstanceTriggerConfig(
     @get:Schema(title = "启用或禁用")
-    val disabled: Boolean = true,
+    val disabled: Boolean? = null,
 
     val cron: String? = null,
     @get:Schema(title = "触发器配置启动时启动的变量,目前仅定时触发支持")

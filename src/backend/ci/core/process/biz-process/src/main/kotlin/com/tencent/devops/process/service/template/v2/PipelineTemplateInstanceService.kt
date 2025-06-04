@@ -100,6 +100,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
                     params = instance.param,
+                    triggerConfigs = instance.triggerConfigs,
                     useTemplateSetting = request.useTemplateSetting,
                     enablePac = request.enablePac,
                     repoHashId = request.repoHashId,
@@ -619,6 +620,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                 pipelineName = it.pipelineName,
                 buildNo = it.buildNo,
                 param = it.params,
+                triggerConfigs = it.triggerConfigs,
                 filePath = it.filePath
             )
         }

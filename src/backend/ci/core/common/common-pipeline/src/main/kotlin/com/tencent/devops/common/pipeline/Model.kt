@@ -36,7 +36,7 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
-import com.tencent.devops.common.pipeline.pojo.PipelineTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
@@ -88,7 +88,7 @@ data class Model(
     override var templateVariables: Map<String, TemplateParameter>? = null,
     /* 模版实例化时触发器变量 */
     @get:Schema(title = "触发器配置", required = false)
-    var triggerConfigs: Map<String, PipelineTriggerConfig>? = null,
+    var triggerConfigs: Map<String, TemplateInstanceTriggerConfig>? = null,
     /**
      * 覆盖模版设置组
      *

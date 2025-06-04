@@ -33,6 +33,7 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.model.process.tables.TTemplateInstanceItem
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceItemRecord
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
@@ -126,7 +127,8 @@ class TemplateInstanceItemDao {
                     BASE_ID,
                     CREATOR,
                     MODIFIER,
-                    FILE_PATH
+                    FILE_PATH,
+                    TRIGGER_CONFIGS
                 ).values(
                     UUIDUtil.generate(),
                     projectId,
@@ -138,7 +140,8 @@ class TemplateInstanceItemDao {
                     baseId,
                     userId,
                     userId,
-                    it.filePath
+                    it.filePath,
+                    it.triggerConfigs?.let { self -> JsonUtil.toJson(self, formatted = false) }
                 ).onDuplicateKeyUpdate()
                     .set(PIPELINE_NAME, it.pipelineName)
                     .set(BUILD_NO_INFO, buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) })
@@ -148,6 +151,7 @@ class TemplateInstanceItemDao {
                     .set(CREATOR, userId)
                     .set(MODIFIER, userId)
                     .set(FILE_PATH, it.filePath)
+                    .set(TRIGGER_CONFIGS, it.triggerConfigs?.let { self -> JsonUtil.toJson(self, formatted = false) })
                     .execute()
             }
         }
@@ -363,6 +367,9 @@ class TemplateInstanceItemDao {
             buildNo = buildNo,
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
+            triggerConfigs = triggerConfigs?.let {
+                JsonUtil.to(it, object : TypeReference<Map<String, TemplateInstanceTriggerConfig>>() {})
+            },
             filePath = filePath,
             errorMessage = errorMessage,
             creator = creator,

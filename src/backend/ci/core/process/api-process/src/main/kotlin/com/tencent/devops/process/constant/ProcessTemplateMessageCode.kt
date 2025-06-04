@@ -29,4 +29,5 @@ package com.tencent.devops.process.constant
 
 object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_INSTANCE_NOT_EXISTS = "2101272"
+    const val ERROR_PIPELINE_TRIGGER_CONFIG_STEP_ID_NOT_FOUND = "2101273"
 }

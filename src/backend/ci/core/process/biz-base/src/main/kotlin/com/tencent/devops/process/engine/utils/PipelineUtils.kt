@@ -35,16 +35,20 @@ import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamType
+import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerElement
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.compatibility.BuildPropertyCompatibilityTools
 import com.tencent.devops.process.utils.PIPELINE_VARIABLES_STRING_LENGTH_MAX
-import java.util.regex.Pattern
 import jakarta.ws.rs.core.Response
 import org.slf4j.LoggerFactory
+import java.util.regex.Pattern
 
 object PipelineUtils {
 
@@ -247,6 +251,52 @@ object PipelineUtils {
     }
 
     /**
+     * 通过流水线参数、模板编排和触发器控制生成新Model
+     */
+    @Suppress("ALL")
+    fun instanceModelV2(
+        templateModel: Model,
+        pipelineName: String,
+        buildNo: BuildNo?,
+        param: List<BuildFormProperty>?,
+        instanceFromTemplate: Boolean,
+        labels: List<String>? = null,
+        defaultStageTagId: String?,
+        templateId: String? = null,
+        staticViews: List<String> = emptyList(),
+        triggerConfigs: Map<String, TemplateInstanceTriggerConfig>? = null
+    ): Model {
+        val templateTrigger = templateModel.getTriggerContainer()
+        val triggerElements = if (triggerConfigs != null) {
+            configTriggerElements(
+                templateTrigger = templateTrigger,
+                triggerConfigs = triggerConfigs
+            )
+        } else {
+            templateTrigger.elements
+        }
+        val instanceParam = param?.let { cleanOptions(it) } ?: emptyList()
+        val triggerContainer = TriggerContainer(
+            name = templateTrigger.name,
+            elements = triggerElements,
+            params = instanceParam,
+            buildNo = buildNo,
+            containerId = templateTrigger.containerId,
+            containerHashId = templateTrigger.containerHashId
+        )
+
+        return Model(
+            name = pipelineName,
+            desc = "",
+            stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId),
+            labels = labels ?: templateModel.labels,
+            instanceFromTemplate = instanceFromTemplate,
+            templateId = templateId,
+            staticViews = staticViews
+        )
+    }
+
+    /**
      * 清空options
      *
      * 当参数类型为GIT/SNV分支、代码库、子流水线时,流水线保存、模板保存和模板实例化时,需要清空options参数,减少model大小.
@@ -273,5 +323,54 @@ object PipelineUtils {
 
     fun isPipelineId(pipelineId: String): Boolean {
         return PIPELINE_ID_PATTERN.matcher(pipelineId).matches()
+    }
+
+    private fun configTriggerElements(
+        templateTrigger: TriggerContainer,
+        triggerConfigs: Map<String, TemplateInstanceTriggerConfig>
+    ): MutableList<Element> {
+        // 不存在的stepId列表
+        val errorStepIds = triggerConfigs.filterNot { (stepId, _) ->
+            templateTrigger.elements.any { it.stepId == stepId }
+        }.map { it.key }
+        if (errorStepIds.isNotEmpty()) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_TRIGGER_CONFIG_STEP_ID_NOT_FOUND,
+                params = arrayOf(errorStepIds.joinToString(","))
+            )
+        }
+
+        val elements = mutableListOf<Element>()
+        templateTrigger.elements.forEach { element ->
+            val triggerConfig = triggerConfigs[element.stepId]
+            if (triggerConfig != null) {
+                val instanceElement = configTriggerElement(triggerElement = element, triggerConfig = triggerConfig)
+                elements.add(instanceElement)
+            } else {
+                elements.add(element)
+            }
+        }
+        return elements
+    }
+
+    private fun configTriggerElement(
+        triggerElement: Element,
+        triggerConfig: TemplateInstanceTriggerConfig
+    ): Element {
+        triggerConfig.disabled?.let {
+            triggerElement.additionalOptions?.enable = !triggerConfig.disabled!!
+        }
+        val instanceElement = when (triggerElement) {
+            is TimerTriggerElement -> {
+                triggerConfig.cron?.let {
+                    triggerElement.copy(
+                        advanceExpression = listOf(triggerConfig.cron!!)
+                    )
+                } ?: triggerElement
+            }
+
+            else -> triggerElement
+        }
+        return instanceElement
     }
 }
