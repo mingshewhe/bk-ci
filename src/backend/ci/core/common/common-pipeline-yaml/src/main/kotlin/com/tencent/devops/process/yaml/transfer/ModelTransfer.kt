@@ -392,6 +392,7 @@ class ModelTransfer @Autowired constructor(
     }
 
     private fun makeTriggerOn(modelInput: ModelTransferInput): List<IPreTriggerOn> {
+        if (modelInput.model.stages.isEmpty()) return emptyList()
         modelInput.aspectWrapper.setModelStage4Model(
             modelInput.model.stages[0],
             PipelineTransferAspectWrapper.AspectType.BEFORE
