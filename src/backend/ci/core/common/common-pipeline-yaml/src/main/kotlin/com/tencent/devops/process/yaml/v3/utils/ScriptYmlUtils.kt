@@ -49,6 +49,7 @@ import com.tencent.devops.common.api.expression.Word
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.YamlUtil
+import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
@@ -359,15 +360,12 @@ object ScriptYmlUtils {
         if (preExtend?.template == null) {
             return null
         }
-        when (preExtend.template) {
-            is String -> ExtendsTemplate(templatePath = preExtend.template)
-            else -> YamlUtil.getObjectMapper().readValue(
-                JsonUtil.toJson(preExtend.template),
-                ExtendsTemplate::class.java
-            )
-        }
+
         return Extends(
-            template = getExtendsTemplate(preExtend.template)
+            template = when (preExtend.template) {
+                is String -> ExtendsTemplate(templatePath = preExtend.template)
+                else -> getExtendsTemplate(preExtend.template)
+            }
         )
     }
 
@@ -378,8 +376,29 @@ object ScriptYmlUtils {
             templateRef = YamlObjects.getNullValue("ref", map),
             templateId = YamlObjects.getNullValue("template-id", map),
             templateVersionName = YamlObjects.getNullValue("version", map),
-            variables = getExtendsTemplateVariables(map["variables"])
+            variables = getExtendsTemplateVariables(map["variables"]),
+            triggerConfig = getExtendsTriggerConfig(map["trigger-conf"])
         )
+    }
+
+    private fun getExtendsTriggerConfig(triggerConfig: Any?): Map<String, ExtendsTriggerConfig>? {
+        if (triggerConfig == null) {
+            return null
+        }
+        val map = YamlObjects.transValue<Map<String, Any?>>("Extends.template", "trigger-conf", triggerConfig)
+        return map.mapValues {
+            val config =
+                YamlObjects.transValue<Map<String, Any?>>("Extends.template.trigger-conf", it.key, it.value)
+            ExtendsTriggerConfig(
+                disabled = YamlObjects.getNullValue("path", config)?.toBooleanStrictOrNull(),
+                cron = YamlObjects.getNullValue("cron", config),
+                variables = YamlObjects.transValue<Map<String, Any>?>(
+                    path = "Extends.template.trigger-conf.${it.key}",
+                    type = "variables",
+                    value = YamlObjects.getNullValue("variables", config)
+                )
+            )
+        }
     }
 
     private fun getExtendsTemplateVariables(variables: Any?): Map<String, TemplateVariable>? {

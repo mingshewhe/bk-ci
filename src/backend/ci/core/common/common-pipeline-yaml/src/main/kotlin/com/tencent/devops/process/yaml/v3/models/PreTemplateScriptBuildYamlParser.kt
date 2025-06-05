@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.devops.common.api.enums.ScmType
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
 import com.tencent.devops.process.yaml.pojo.YamlVersion
 import com.tencent.devops.process.yaml.pojo.YamlVersionParser
@@ -80,6 +81,8 @@ interface IPreTemplateScriptBuildYamlParser : YamlVersionParser {
     fun formatExtends(): Extends?
 
     fun templateFilter(): ITemplateFilter
+
+    fun getSettingGroups(): List<PipelineSettingGroupType>?
 }
 
 /*
@@ -193,6 +196,8 @@ data class PreTemplateScriptBuildYamlParser(
     }
 
     override fun templateFilter(): ITemplateFilter = this
+
+    override fun getSettingGroups(): List<PipelineSettingGroupType>? = null
 
     private fun checkInitialized() {
         if (!this::preYaml.isInitialized) throw RuntimeException("need replaceTemplate before")

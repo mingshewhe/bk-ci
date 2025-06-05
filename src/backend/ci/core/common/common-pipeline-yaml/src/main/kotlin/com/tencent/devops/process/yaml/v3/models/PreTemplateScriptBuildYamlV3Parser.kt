@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
 import com.tencent.devops.process.yaml.pojo.YamlVersion
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
@@ -163,6 +164,20 @@ data class PreTemplateScriptBuildYamlV3Parser(
     }
 
     override fun templateFilter(): ITemplateFilter = this
+
+    override fun getSettingGroups(): List<PipelineSettingGroupType>? {
+        val res = mutableListOf<PipelineSettingGroupType>()
+        if (concurrency != null) {
+            res.add(PipelineSettingGroupType.CONCURRENCY)
+        }
+        if (customBuildNum != null) {
+            res.add(PipelineSettingGroupType.BUILD_NUM_RULE)
+        }
+        if (notices != null) {
+            res.add(PipelineSettingGroupType.NOTICES)
+        }
+        return res
+    }
 
     private fun checkInitialized() {
         if (!this::preYaml.isInitialized) throw RuntimeException("need replaceTemplate before")

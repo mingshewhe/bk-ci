@@ -31,15 +31,16 @@ import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
-import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.container.Stage
+import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
-import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
+import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.transfer.IfType
 import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT
@@ -51,7 +52,6 @@ import com.tencent.devops.process.yaml.transfer.pojo.ModelTransferInput
 import com.tencent.devops.process.yaml.transfer.pojo.YamlTransferInput
 import com.tencent.devops.process.yaml.v3.enums.SyntaxDialectType
 import com.tencent.devops.process.yaml.v3.models.Concurrency
-import com.tencent.devops.process.yaml.v3.models.Extends
 import com.tencent.devops.process.yaml.v3.models.ExtendsTemplate
 import com.tencent.devops.process.yaml.v3.models.IPreTemplateScriptBuildYamlParser
 import com.tencent.devops.process.yaml.v3.models.Notices
@@ -183,17 +183,18 @@ class ModelTransfer @Autowired constructor(
         formatStage(yamlInput, stageList, stageIndex)
         // 添加finally
         formatFinally(yamlInput, stageList, stageIndex.incrementAndGet())
-        formatTemplate(yamlInput.yaml.formatExtends(), model)
+        formatTemplate(yamlInput, model)
         yamlInput.aspectWrapper.setModel4Model(model, PipelineTransferAspectWrapper.AspectType.AFTER)
         return model
     }
 
     private fun formatTemplate(
-        extends: Extends?,
+        input: YamlTransferInput,
         model: Model
     ) {
-        val template = extends?.template
+        val template = input.yaml.formatExtends()?.template
         if (template != null) {
+            model.overrideTemplateSettingGroups = input.yaml.getSettingGroups()
             model.fromTemplate = true
             model.templatePath = template.templatePath
             model.templateRef = template.templateRef
@@ -204,6 +205,13 @@ class ModelTransfer @Autowired constructor(
                     key = it.key,
                     value = it.value.value,
                     required = it.value.allowModifyAtStartup ?: false
+                )
+            }
+            model.triggerConfigs = template.triggerConfig?.mapValues {
+                TemplateInstanceTriggerConfig(
+                    disabled = it.value.disabled,
+                    cron = it.value.cron,
+                    variables = it.value.variables
                 )
             }
         }
@@ -265,7 +273,6 @@ class ModelTransfer @Autowired constructor(
                 desc = modelInput.setting.desc.ifEmpty { null },
                 label = label,
                 resources = modelInput.model.resources,
-                notices = makeNoticesV3(modelInput.setting),
                 syntaxDialect = makeSyntaxDialect(modelInput.setting)
             )
         }
@@ -280,13 +287,14 @@ class ModelTransfer @Autowired constructor(
                 yaml.triggerOn = triggerOn.ifEmpty { null }?.let { if (it.size == 1) it.first() else it }
             }
         }
+        yaml.notices = makeNoticesV3(modelInput)
         yaml.stages = TransferMapper.anyTo(makeStages(modelInput))
-        yaml.variables = variableTransfer.makeVariableFromModel(modelInput.model.getTriggerContainer())
+        yaml.variables = variableTransfer.makeVariableFromModel(getTriggerContainer(modelInput))
         yaml.extends = makeExtend(modelInput.model)
         yaml.finally = makeFinally(modelInput)
-        yaml.concurrency = makeConcurrency(modelInput.setting)
-        yaml.customBuildNum = modelInput.setting.buildNumRule
-        yaml.recommendedVersion = variableTransfer.makeRecommendedVersion(modelInput.model.getTriggerContainer())
+        yaml.concurrency = makeConcurrency(modelInput)
+        yaml.customBuildNum = makeBuildNum(modelInput)
+        yaml.recommendedVersion = variableTransfer.makeRecommendedVersion(getTriggerContainer(modelInput))
         yaml.disablePipeline = (modelInput.setting.runLockType == PipelineRunLockType.LOCK ||
             modelInput.pipelineInfo?.locked == true).nullIfDefault(false)
         modelInput.aspectWrapper.setYaml4Yaml(yaml, PipelineTransferAspectWrapper.AspectType.AFTER)
@@ -314,8 +322,8 @@ class ModelTransfer @Autowired constructor(
     }
 
     private fun makeFinally(modelInput: ModelTransferInput): LinkedHashMap<String, Any>? {
-        val lastStage = modelInput.model.stages.last()
-        val finally = if (lastStage.finally) {
+        val lastStage = modelInput.model.stages.lastOrNull()
+        val finally = if (lastStage != null && lastStage.finally) {
             modelInput.aspectWrapper.setModelStage4Model(lastStage, PipelineTransferAspectWrapper.AspectType.BEFORE)
             modelStage.model2YamlStage(
                 stage = lastStage,
@@ -327,7 +335,7 @@ class ModelTransfer @Autowired constructor(
         return finally as LinkedHashMap<String, Any>?
     }
 
-    private fun makeExtend(templateInfo: TemplateDescriptor): PreExtends? {
+    private fun makeExtend(templateInfo: Model): PreExtends? {
         if (templateInfo.fromTemplate != true) return null
         with(templateInfo) {
             return PreExtends(
@@ -341,11 +349,30 @@ class ModelTransfer @Autowired constructor(
                             it.value.value,
                             it.value.required
                         )
+                    },
+                    triggerConfig = triggerConfigs?.mapValues {
+                        ExtendsTriggerConfig(
+                            disabled = it.value.disabled,
+                            cron = it.value.cron,
+                            variables = it.value.variables
+                        )
                     }
                 )
             )
         }
     }
+
+    fun getTriggerContainer(modelInput: ModelTransferInput): TriggerContainer? {
+        return modelInput.model.stages.firstOrNull()?.containers?.firstOrNull() as TriggerContainer?
+    }
+
+    fun makeNoticesV3(modelInput: ModelTransferInput): List<PacNotices>? {
+        if (modelInput.fromTemplate() && !modelInput.overrideTemplateSettingGroups(PipelineSettingGroupType.NOTICES)) {
+            return null
+        }
+        return makeNoticesV3(modelInput.setting)
+    }
+
 
     fun makeNoticesV3(setting: PipelineSetting): List<PacNotices>? {
         val res = mutableListOf<PacNotices>()
@@ -364,7 +391,25 @@ class ModelTransfer @Autowired constructor(
         return res.ifEmpty { null }
     }
 
-    private fun makeConcurrency(setting: PipelineSetting): Concurrency? {
+    fun makeBuildNum(modelInput: ModelTransferInput): String? {
+        if (modelInput.fromTemplate() &&
+            !modelInput.overrideTemplateSettingGroups(PipelineSettingGroupType.BUILD_NUM_RULE)
+        ) {
+            return null
+        }
+        return modelInput.setting.buildNumRule
+    }
+
+    fun makeConcurrency(modelInput: ModelTransferInput): Concurrency? {
+        if (modelInput.fromTemplate() &&
+            !modelInput.overrideTemplateSettingGroups(PipelineSettingGroupType.CONCURRENCY)
+        ) {
+            return null
+        }
+        return makeConcurrency(modelInput.setting)
+    }
+
+    fun makeConcurrency(setting: PipelineSetting): Concurrency? {
         if (setting.runLockType == PipelineRunLockType.GROUP_LOCK ||
             setting.runLockType == PipelineRunLockType.LOCK
         ) {
@@ -401,7 +446,7 @@ class ModelTransfer @Autowired constructor(
             modelInput.model.stages[0].containers[0],
             PipelineTransferAspectWrapper.AspectType.BEFORE
         )
-        val triggers = (modelInput.model.getTriggerContainer())?.elements ?: return emptyList()
+        val triggers = getTriggerContainer(modelInput)?.elements ?: return emptyList()
         val baseTrigger = elementTransfer.baseTriggers2yaml(triggers, modelInput.aspectWrapper)
             ?.toPre(modelInput.version)
         val scmTrigger = elementTransfer.scmTriggers2Yaml(

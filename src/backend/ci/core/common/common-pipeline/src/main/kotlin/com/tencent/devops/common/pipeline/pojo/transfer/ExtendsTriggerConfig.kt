@@ -25,43 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.yaml.v3.models
+package com.tencent.devops.common.pipeline.pojo.transfer
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
-import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import io.swagger.v3.oas.annotations.media.Schema
 
-/**
- * model
- */
+@Schema(title = "流水线实例化触发器配置")
+data class ExtendsTriggerConfig(
+    @get:Schema(title = "启用或禁用")
+    val disabled: Boolean? = null,
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class PreExtends(
-    val template: Any?
+    val cron: String? = null,
+    @get:Schema(title = "触发器配置启动时启动的变量,目前仅定时触发支持")
+    val variables: Map<String, Any>? = null,
 )
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Extends(
-    val template: ExtendsTemplate?
-)
-
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class ExtendsTemplate(
-    @JsonProperty("path")
-    override val templatePath: String? = null,
-    @JsonProperty("ref")
-    override val templateRef: String? = null,
-    @JsonProperty("template-id")
-    override val templateId: String? = null,
-    @JsonProperty("version")
-    override val templateVersionName: String? = null,
-    @JsonProperty("variables")
-    override val variables: Map<String, TemplateVariable>? = null,
-    @JsonProperty("trigger-conf")
-    val triggerConfig: Map<String, ExtendsTriggerConfig>? = null
-) : CodeTemplate

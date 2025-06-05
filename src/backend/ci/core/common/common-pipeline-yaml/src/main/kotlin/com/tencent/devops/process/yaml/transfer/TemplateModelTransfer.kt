@@ -203,7 +203,7 @@ class TemplateModelTransfer @Autowired constructor(
             baseYaml.label = prepareYamlLabels(modelInput.userId, setting).ifEmpty { null }
             baseYaml.notices = modelTransfer.makeNoticesV3(setting)
             baseYaml.syntaxDialect = makeSyntaxDialect(setting)
-            baseYaml.concurrency = makeConcurrency(setting)
+            baseYaml.concurrency = modelTransfer.makeConcurrency(setting)
             baseYaml.customBuildNum = setting.buildNumRule
             baseYaml.disablePipeline = (setting.runLockType == PipelineRunLockType.LOCK).nullIfDefault(false)
             modelInput.aspectWrapper.setYaml4Yaml(baseYaml, PipelineTransferAspectWrapper.AspectType.AFTER)
@@ -225,33 +225,6 @@ class TemplateModelTransfer @Autowired constructor(
         is JobTemplateModel -> null
         is StepTemplateModel -> null
         else -> null
-    }
-
-    private fun makeConcurrency(setting: PipelineSetting): Concurrency? {
-        if (setting.runLockType == PipelineRunLockType.GROUP_LOCK ||
-            setting.runLockType == PipelineRunLockType.LOCK
-        ) {
-            return Concurrency(
-                group = setting.concurrencyGroup,
-                cancelInProgress = setting.concurrencyCancelInProgress.nullIfDefault(false),
-                queueLength = setting.maxQueueSize
-                    .nullIfDefault(VariableDefault.DEFAULT_PIPELINE_SETTING_MAX_QUEUE_SIZE),
-                queueTimeoutMinutes = setting.waitQueueTimeMinute
-                    .nullIfDefault(VariableDefault.DEFAULT_WAIT_QUEUE_TIME_MINUTE),
-                maxParallel = null
-            )
-        }
-        if (setting.runLockType == PipelineRunLockType.MULTIPLE) {
-            return Concurrency(
-                group = null,
-                cancelInProgress = null,
-                queueLength = null,
-                queueTimeoutMinutes = setting.waitQueueTimeMinute
-                    .nullIfDefault(VariableDefault.DEFAULT_WAIT_QUEUE_TIME_MINUTE),
-                maxParallel = setting.maxConRunningQueueSize.nullIfDefault(PIPELINE_SETTING_MAX_CON_QUEUE_SIZE_MAX)
-            )
-        }
-        return null
     }
 
     private fun makeTriggerOn(modelInput: TemplateModelTransferInput): List<IPreTriggerOn> {
