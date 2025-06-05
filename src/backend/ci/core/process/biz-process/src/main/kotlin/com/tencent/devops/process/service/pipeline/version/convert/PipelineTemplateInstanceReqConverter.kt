@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.pipeline.version.convert
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
@@ -35,9 +36,11 @@ import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
@@ -47,6 +50,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
@@ -73,11 +77,12 @@ class PipelineTemplateInstanceReqConverter(
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val pipelineYamlService: PipelineYamlService
+    private val pipelineYamlService: PipelineYamlService,
+    private val pipelineAsCodeService: PipelineAsCodeService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     override fun convert(
         userId: String,
         projectId: String,
@@ -100,29 +105,14 @@ class PipelineTemplateInstanceReqConverter(
             }
             if (refType == TemplateInstanceRefType.PATH && !enablePac) {
                 throw ErrorCodeException(
-                    errorCode = ""
-                )
-            }
-            val templateInfo = pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId)
-            if (templateInfo.type != PipelineTemplateType.PIPELINE) {
-                throw ErrorCodeException(
-                    errorCode = ERROR_TEMPLATE_NOT_EXISTS
-                )
-            }
-            val templateResource = pipelineTemplateResourceService.get(
-                projectId = projectId,
-                templateId = templateId,
-                version = templateVersion
-            )
-            if (templateResource.model !is Model) {
-                throw ErrorCodeException(
-                    errorCode = ERROR_TEMPLATE_NOT_EXISTS
+                    errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_PIPELINE_NEED_PAC,
                 )
             }
 
             // 生成流水线ID
             val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
 
+            // 生成流水线基本信息
             val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
                 projectId = projectId,
                 pipelineId = newPipelineId,
@@ -131,6 +121,7 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineDesc = null
             )
 
+            // 获取版本状态
             val (versionStatus, branchName) = pipelineVersionGenerator.getVersionStatusAndBranchName(
                 projectId = projectId,
                 templateId = templateId,
@@ -141,15 +132,33 @@ class PipelineTemplateInstanceReqConverter(
                 targetBranch = targetBranch
             )
 
+            val templateInfo = pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId)
+            if (templateInfo.type != PipelineTemplateType.PIPELINE) {
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE,
+                )
+            }
+            val templateResource = pipelineTemplateResourceService.get(
+                projectId = projectId,
+                templateId = templateId,
+                version = templateVersion
+            )
+            if (templateResource.model !is Model) {
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+                )
+            }
+
+            // 生成实例化流水线model
             val templatePath = refType.takeIf { it == TemplateInstanceRefType.PATH }?.let {
                 pipelineYamlService.getPipelineYamlInfo(
                     projectId = projectId,
                     pipelineId = templateId
                 )?.filePath ?: throw ErrorCodeException(
-                    errorCode = ERROR_TEMPLATE_NOT_EXISTS
+                    errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_TEMPLATE_NEED_PAC
                 )
             }
-            // 流水线model转换成引用模版的方式
+            val templateParameters = params?.associateBy({ it.id }, { TemplateParameter(it) })
             val pipelineModel = pipelineResourceFactory.createPipelineModel(
                 name = pipelineName,
                 desc = null,
@@ -157,14 +166,18 @@ class PipelineTemplateInstanceReqConverter(
                 templateId = templateId,
                 templateVersionName = templateResource.versionName,
                 templatePath = templatePath,
-                templateRef = templateRef
+                templateRef = templateRef,
+                templateVariables = templateParameters,
+                triggerConfigs = triggerConfigs,
+                overrideTemplateSettingGroups = useTemplateSetting.takeIf { it }?.let { emptyList() }
             )
-            // 生成流水线配置
             val pipelineSettingWithoutVersion = getPipelineSetting(
                 projectId = projectId,
                 pipelineId = newPipelineId,
-                templateSettingVersion = templateResource.settingVersion
+                templateSettingVersion = templateResource.settingVersion,
+                enablePac = enablePac
             )
+            // 转换成yaml
             val newYaml = pipelineVersionGenerator.model2yaml(
                 userId = userId,
                 projectId = projectId,
@@ -176,24 +189,7 @@ class PipelineTemplateInstanceReqConverter(
                 oldYaml = null
             )
 
-            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
-                projectId = projectId,
-                pipelineId = newPipelineId,
-                model = pipelineModel,
-                yaml = newYaml?.yamlStr,
-                yamlVersion = newYaml?.versionTag,
-                creator = userId,
-                createTime = LocalDateTime.now(),
-                updater = userId,
-                updateTime = LocalDateTime.now(),
-                status = versionStatus,
-                branchAction = BranchVersionAction.ACTIVE.takeIf {
-                    versionStatus == VersionStatus.BRANCH
-                },
-                description = description,
-            )
-
-            // 根据模版model生成流水线model
+            // 生成实例化model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
             val instanceModel = PipelineUtils.instanceModelV2(
                 templateModel = templateResource.model as Model,
@@ -205,6 +201,29 @@ class PipelineTemplateInstanceReqConverter(
                 templateId = templateId,
                 triggerConfigs = triggerConfigs
             )
+
+            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
+                projectId = projectId,
+                pipelineId = newPipelineId,
+                model = pipelineModel,
+                yaml = newYaml?.yamlStr,
+                yamlVersion = newYaml?.versionTag,
+                instanceModel = instanceModel,
+                creator = userId,
+                createTime = LocalDateTime.now(),
+                updater = userId,
+                updateTime = LocalDateTime.now(),
+                status = versionStatus,
+                branchAction = BranchVersionAction.ACTIVE.takeIf {
+                    versionStatus == VersionStatus.BRANCH
+                },
+                description = description,
+            )
+
+            val pipelineDialect = pipelineAsCodeService.getPipelineDialect(
+                projectId = projectId,
+                asCodeSettings = pipelineSettingWithoutVersion.pipelineAsCodeSettings
+            )
             val pipelineModelBasicInfo = pipelineResourceFactory.createPipelineModelBasicInfo(
                 model = instanceModel,
                 projectId = projectId,
@@ -212,7 +231,8 @@ class PipelineTemplateInstanceReqConverter(
                 userId = userId,
                 create = pipelineId == null,
                 versionStatus = versionStatus,
-                channelCode = ChannelCode.BS
+                channelCode = ChannelCode.BS,
+                pipelineDialect = pipelineDialect
             )
 
             val templateInstanceBasicInfo = PipelineTemplateInstanceBasicInfo(
@@ -250,7 +270,8 @@ class PipelineTemplateInstanceReqConverter(
     private fun PipelineTemplateInstanceReq.getPipelineSetting(
         projectId: String,
         pipelineId: String,
-        templateSettingVersion: Int
+        templateSettingVersion: Int,
+        enablePac: Boolean,
     ): PipelineSetting {
         val pipelineSetting = if (useTemplateSetting) {
             val templateSetting = pipelineTemplateSettingService.get(
@@ -274,6 +295,11 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineName = pipelineName
             )
         }
-        return pipelineSetting
+        val pacSetting = enablePac.takeIf { it }?.let {
+            val pipelineAsCodeSettings =
+                pipelineSetting.pipelineAsCodeSettings?.copy(enable = true) ?: PipelineAsCodeSettings(enable = true)
+            pipelineSetting.copy(pipelineAsCodeSettings = pipelineAsCodeSettings)
+        } ?: pipelineSetting
+        return pacSetting
     }
 }

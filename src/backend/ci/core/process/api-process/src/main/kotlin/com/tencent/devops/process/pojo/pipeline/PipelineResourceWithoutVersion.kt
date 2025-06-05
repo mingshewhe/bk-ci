@@ -39,12 +39,14 @@ data class PipelineResourceWithoutVersion(
     val projectId: String,
     @get:Schema(title = "流水线ID", required = true)
     val pipelineId: String,
-    @get:Schema(title = "JSON编排内容（POJO）", required = true)
+    @get:Schema(title = "流水线model,如果从模版实例化,则仅保存了模版的引用,没有编排内容", required = true)
     var model: Model,
     @get:Schema(title = "YAML编排内容", required = false)
     var yaml: String?,
     @get:Schema(title = "YAML编排版本", required = false)
     var yamlVersion: String?,
+    @get:Schema(title = "实例化model,如果从模版实例化,有完整的编排内容", required = false)
+    val instanceModel: Model? = null,
     @get:Schema(title = "创建者", required = true)
     val creator: String,
     @get:Schema(title = "版本创建时间", required = true)

@@ -37,4 +37,10 @@ data class TemplateParameter(
     val value: Any,
     @get:Schema(title = "是否必须（新前端的入参标识）", required = true)
     var required: Boolean? = null
-)
+) {
+    constructor(buildFormProperty: BuildFormProperty) : this(
+        key = buildFormProperty.id,
+        value = buildFormProperty.defaultValue,
+        required = buildFormProperty.required
+    )
+}

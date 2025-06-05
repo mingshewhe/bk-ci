@@ -36,6 +36,7 @@ import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamType
@@ -325,6 +326,25 @@ object PipelineUtils {
         return PIPELINE_ID_PATTERN.matcher(pipelineId).matches()
     }
 
+    fun mergeTemplateParams(
+        templateParams: List<BuildFormProperty>,
+        templateParameters: Map<String, TemplateParameter>?
+    ): List<BuildFormProperty> {
+        if (templateParameters == null) return templateParams
+        val pipelineParams = mutableListOf<BuildFormProperty>()
+        templateParams.forEach { param ->
+            val templateParameter = templateParameters[param.id]
+            templateParameter?.let {
+                val pipelineParam = param.copy(
+                    defaultValue = templateParameter.value,
+                    required = templateParameter.required ?: param.required
+                )
+                pipelineParams.add(pipelineParam)
+            }
+        }
+        return pipelineParams
+    }
+
     private fun configTriggerElements(
         templateTrigger: TriggerContainer,
         triggerConfigs: Map<String, TemplateInstanceTriggerConfig>
@@ -344,7 +364,9 @@ object PipelineUtils {
         templateTrigger.elements.forEach { element ->
             val triggerConfig = triggerConfigs[element.stepId]
             if (triggerConfig != null) {
-                val instanceElement = configTriggerElement(triggerElement = element, triggerConfig = triggerConfig)
+                val instanceElement = configTriggerElement(
+                    triggerElement = element, triggerConfig = triggerConfig
+                )
                 elements.add(instanceElement)
             } else {
                 elements.add(element)

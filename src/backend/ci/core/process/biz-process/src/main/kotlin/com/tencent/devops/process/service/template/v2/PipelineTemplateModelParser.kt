@@ -208,7 +208,7 @@ class PipelineTemplateModelParser @Autowired constructor(
         return templateModel.container.elements
     }*/
 
-    fun getPipelineTemplateResource(
+    fun parseTemplateDescriptor(
         projectId: String,
         repoHashId: String,
         descriptor: TemplateDescriptor,

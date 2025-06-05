@@ -28,6 +28,10 @@
 package com.tencent.devops.process.constant
 
 object ProcessTemplateMessageCode {
-    const val ERROR_TEMPLATE_INSTANCE_NOT_EXISTS = "2101272"
-    const val ERROR_PIPELINE_TRIGGER_CONFIG_STEP_ID_NOT_FOUND = "2101273"
+    const val ERROR_TEMPLATE_INSTANCE_NOT_EXISTS = "2101281"
+    const val ERROR_PIPELINE_TRIGGER_CONFIG_STEP_ID_NOT_FOUND = "2101282"
+    const val ERROR_TEMPLATE_PATH_REF_PIPELINE_NEED_PAC = "2101283" // 路径引用流水线必须开启PAC
+    const val ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE = "2101284" // 实例化仅支持流水线类型
+    const val ERROR_TEMPLATE_PATH_REF_TEMPLATE_NEED_PAC = "2101285" // 模版没有开启PAC不能使用路径引用
+    const val ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH = "2101286" // 模版类型和编排类型不匹配
 }

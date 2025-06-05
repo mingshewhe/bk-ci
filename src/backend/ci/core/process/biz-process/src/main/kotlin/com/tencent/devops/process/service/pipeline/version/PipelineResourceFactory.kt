@@ -32,7 +32,11 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
+import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
@@ -132,6 +136,9 @@ class PipelineResourceFactory @Autowired constructor(
         templateVersionName: String? = null,
         templatePath: String? = null,
         templateRef: String? = null,
+        templateVariables: Map<String, TemplateParameter>? = null,
+        triggerConfigs: Map<String, TemplateInstanceTriggerConfig>? = null,
+        overrideTemplateSettingGroups: List<PipelineSettingGroupType>? = null
     ): Model {
         return if (refType == TemplateInstanceRefType.PATH) {
             if (templatePath.isNullOrEmpty()) {
@@ -143,7 +150,10 @@ class PipelineResourceFactory @Autowired constructor(
                 stages = emptyList(),
                 fromTemplate = true,
                 templatePath = templatePath,
-                templateRef = templateRef
+                templateRef = templateRef,
+                templateVariables = templateVariables,
+                triggerConfigs = triggerConfigs,
+                overrideTemplateSettingGroups = overrideTemplateSettingGroups
             )
 
         } else {
@@ -156,7 +166,10 @@ class PipelineResourceFactory @Autowired constructor(
                 stages = emptyList(),
                 fromTemplate = true,
                 templateId = templateId,
-                templateVersionName = templateVersionName
+                templateVersionName = templateVersionName,
+                templateVariables = templateVariables,
+                triggerConfigs = triggerConfigs,
+                overrideTemplateSettingGroups = overrideTemplateSettingGroups
             )
         }
     }
