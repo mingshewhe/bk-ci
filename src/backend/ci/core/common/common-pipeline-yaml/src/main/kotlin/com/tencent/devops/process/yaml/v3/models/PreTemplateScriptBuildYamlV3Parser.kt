@@ -165,7 +165,7 @@ data class PreTemplateScriptBuildYamlV3Parser(
 
     override fun templateFilter(): ITemplateFilter = this
 
-    override fun getSettingGroups(): List<PipelineSettingGroupType>? {
+    override fun settingGroups(): List<PipelineSettingGroupType>? {
         val res = mutableListOf<PipelineSettingGroupType>()
         if (concurrency != null) {
             res.add(PipelineSettingGroupType.CONCURRENCY)

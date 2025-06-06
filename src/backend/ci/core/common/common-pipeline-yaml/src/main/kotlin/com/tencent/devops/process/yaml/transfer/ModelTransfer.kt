@@ -194,7 +194,7 @@ class ModelTransfer @Autowired constructor(
     ) {
         val template = input.yaml.formatExtends()?.template
         if (template != null) {
-            model.overrideTemplateSettingGroups = input.yaml.getSettingGroups()
+            model.overrideTemplateSettingGroups = input.yaml.settingGroups()
             model.fromTemplate = true
             model.templatePath = template.templatePath
             model.templateRef = template.templateRef

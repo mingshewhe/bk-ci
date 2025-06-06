@@ -82,7 +82,7 @@ interface IPreTemplateScriptBuildYamlParser : YamlVersionParser {
 
     fun templateFilter(): ITemplateFilter
 
-    fun getSettingGroups(): List<PipelineSettingGroupType>?
+    fun settingGroups(): List<PipelineSettingGroupType>?
 }
 
 /*
@@ -197,7 +197,7 @@ data class PreTemplateScriptBuildYamlParser(
 
     override fun templateFilter(): ITemplateFilter = this
 
-    override fun getSettingGroups(): List<PipelineSettingGroupType>? = null
+    override fun settingGroups(): List<PipelineSettingGroupType>? = null
 
     private fun checkInitialized() {
         if (!this::preYaml.isInitialized) throw RuntimeException("need replaceTemplate before")
