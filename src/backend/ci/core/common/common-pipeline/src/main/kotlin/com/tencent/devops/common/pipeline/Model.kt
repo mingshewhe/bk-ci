@@ -27,6 +27,7 @@
 
 package com.tencent.devops.common.pipeline
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.NormalContainer
@@ -253,7 +254,13 @@ data class Model(
         return pipelineCallBack
     }
 
-    fun getTriggerContainer() = stages[0].containers[0] as TriggerContainer
+    @JsonIgnore
+    fun getTriggerContainer() = if (fromTemplate == true) {
+        // 如果来源于模版,这个触发器容器是动态的,需要考虑要怎么处理
+        TriggerContainer()
+    } else {
+        stages[0].containers[0] as TriggerContainer
+    }
 
     companion object {
         const val classType = "model"

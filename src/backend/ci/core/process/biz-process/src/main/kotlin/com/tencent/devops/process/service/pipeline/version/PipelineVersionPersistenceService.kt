@@ -174,13 +174,11 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     transactionContext = transactionContext,
                     pipelineSetting = pipelineSetting
                 )
-                with(pipelineBasicInfo) {
-                    pipelinePermissionService.modifyResource(
-                        projectId = projectId,
-                        pipelineId = pipelineId,
-                        pipelineName = pipelineName
-                    )
-                }
+                pipelinePermissionService.modifyResource(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    pipelineName = pipelineBasicInfo.pipelineName
+                )
                 postProcessInTransactionVersionCreate(
                     transactionContext = transactionContext,
                     context = context,

@@ -221,7 +221,7 @@ class PipelineTemplateInstanceListener @Autowired constructor(
             deployPipelineResult
         } catch (ignored: Throwable) {
             logger.warn(
-                "Failed to instance template|$projectId|$baseId$pipelineId",
+                "Failed to instance template|$projectId|$baseId|$pipelineId",
                 ignored
             )
             handleTemplateInstanceEventError(
