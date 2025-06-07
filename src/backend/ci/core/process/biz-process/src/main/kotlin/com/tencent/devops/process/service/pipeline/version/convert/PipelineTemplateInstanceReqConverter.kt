@@ -38,10 +38,11 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
-import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
@@ -78,7 +79,8 @@ class PipelineTemplateInstanceReqConverter(
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val pipelineYamlService: PipelineYamlService,
-    private val pipelineAsCodeService: PipelineAsCodeService
+    private val pipelineAsCodeService: PipelineAsCodeService,
+    private val pipelineInfoService: PipelineInfoService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq) = request is PipelineTemplateInstanceReq
 
@@ -111,6 +113,8 @@ class PipelineTemplateInstanceReqConverter(
 
             // 生成流水线ID
             val newPipelineId = pipelineId ?: pipelineIdGenerator.getNextId()
+            // 异步创建实例化,在请求时会创建线ID,所以不能根据pipelineId为空判断是否是创建流水线
+            val pipelineInfo = pipelineInfoService.getPipelineInfo(projectId = projectId, pipelineId = newPipelineId)
 
             // 生成流水线基本信息
             val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
@@ -169,7 +173,11 @@ class PipelineTemplateInstanceReqConverter(
                 templateRef = templateRef,
                 templateVariables = templateParameters,
                 triggerConfigs = triggerConfigs,
-                overrideTemplateSettingGroups = useTemplateSetting.takeIf { it }?.let { emptyList() }
+                overrideTemplateSettingGroups = if (useTemplateSetting) {
+                    emptyList()
+                } else {
+                    PipelineSettingGroupType.values().toList()
+                }
             )
             val pipelineSettingWithoutVersion = getPipelineSetting(
                 projectId = projectId,
@@ -249,6 +257,7 @@ class PipelineTemplateInstanceReqConverter(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 versionAction = PipelineVersionAction.TEMPLATE_INSTANCE,
+                pipelineInfo = pipelineInfo,
                 pipelineBasicInfo = pipelineBasicInfo,
                 pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,

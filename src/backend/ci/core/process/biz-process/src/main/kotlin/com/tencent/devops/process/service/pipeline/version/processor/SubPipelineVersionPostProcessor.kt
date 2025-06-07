@@ -25,11 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.service.pipeline.version.processor
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
+import com.tencent.devops.process.engine.service.SubPipelineTaskService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
@@ -37,11 +37,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
- * 流水线版本创建后,model task后置处理器
+ * 流水线版本创建后,子流水线后置处理器
  */
 @Service
-class PipelineModelTaskVersionPostProcessor @Autowired constructor(
-    private val pipelineModelTaskDao: PipelineModelTaskDao
+class SubPipelineVersionPostProcessor @Autowired constructor(
+    private val dslContext: DSLContext,
+    private val subPipelineTaskService: SubPipelineTaskService
 ) : PipelineVersionCreatePostProcessor {
 
     override fun postProcessInTransactionVersionCreate(
@@ -51,18 +52,16 @@ class PipelineModelTaskVersionPostProcessor @Autowired constructor(
         pipelineSetting: PipelineSetting
     ) {
         with(context) {
-            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
+            // 更新流水线,只有正式版本才刷新子流水线引用关系
+            if (pipelineInfo != null && pipelineResourceVersion.status != VersionStatus.RELEASED) {
                 return
             }
-            if (!newPipeline) {
-                pipelineModelTaskDao.deletePipelineTasks(
-                    dslContext = transactionContext,
-                    projectId = projectId,
-                    pipelineId = pipelineId
-                )
-            }
-            pipelineModelTaskDao.batchSave(
-                dslContext = transactionContext,
+            subPipelineTaskService.batchAdd(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                model = pipelineResourceVersion.model,
+                channel = pipelineBasicInfo.channelCode.name,
                 modelTasks = pipelineModelBasicInfo.modelTasks
             )
         }

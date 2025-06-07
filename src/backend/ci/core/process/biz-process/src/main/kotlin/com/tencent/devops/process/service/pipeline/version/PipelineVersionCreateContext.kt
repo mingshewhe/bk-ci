@@ -30,6 +30,7 @@ package com.tencent.devops.process.service.pipeline.version
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.engine.pojo.PipelineInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
@@ -49,12 +50,12 @@ data class PipelineVersionCreateContext(
     val version: Int? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
-    @get:Schema(title = "是否是新建流水线", required = true)
-    val newPipeline: Boolean = false,
 
     @get:Schema(title = "是否校验权限", required = true)
     val checkPermission: Boolean = true,
 
+    @get:Schema(title = "流水线信息,新流水线时,值为空", required = true)
+    val pipelineInfo: PipelineInfo? = null,
     @get:Schema(title = "流水线信息", required = true)
     val pipelineBasicInfo: PipelineBasicInfo,
     @get:Schema(title = "流水线模型解析后数据", required = true)

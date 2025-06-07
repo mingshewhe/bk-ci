@@ -45,7 +45,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
-import com.tencent.devops.process.service.pipeline.version.listener.PipelineVersionCreatePostProcessor
+import com.tencent.devops.process.service.pipeline.version.processor.PipelineVersionCreatePostProcessor
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.jooq.DSLContext

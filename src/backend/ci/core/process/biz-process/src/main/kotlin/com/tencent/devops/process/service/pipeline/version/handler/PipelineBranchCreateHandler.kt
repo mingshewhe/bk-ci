@@ -33,12 +33,10 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
-import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
-import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -48,8 +46,6 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineBranchCreateHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
-    private val dslContext: DSLContext,
-    private val pipelineInfoDao: PipelineInfoDao,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
 ) : PipelineVersionCreateHandler {
@@ -60,19 +56,13 @@ class PipelineBranchCreateHandler @Autowired constructor(
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
             if (!enablePac) {
-                throw ErrorCodeException(
-                    errorCode = ""
-                )
+                throw IllegalArgumentException("enablePac must be true")
             }
             if (yamlFileInfo == null) {
-                throw ErrorCodeException(
-                    errorCode = ""
-                )
+                throw IllegalArgumentException("yamlFileInfo is null")
             }
             if (branchName == null) {
-                throw ErrorCodeException(
-                    errorCode = ""
-                )
+                throw IllegalArgumentException("branchName is null")
             }
             if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
                 // TEMPLATE_NOT_RELEASED
@@ -89,9 +79,6 @@ class PipelineBranchCreateHandler @Autowired constructor(
     }
 
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
-        val pipelineInfo = pipelineInfoDao.getPipelineInfo(
-            dslContext = dslContext, projectId = projectId, pipelineId = pipelineId
-        )
         val resourceOnlyVersion = if (pipelineInfo == null) {
             val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
                 versionStatus = pipelineResourceWithoutVersion.status,

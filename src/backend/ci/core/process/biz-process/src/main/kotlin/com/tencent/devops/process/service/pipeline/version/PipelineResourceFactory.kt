@@ -32,8 +32,8 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
@@ -41,7 +41,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
-import com.tencent.devops.process.yaml.PipelineYamlService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -49,8 +48,7 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineResourceFactory @Autowired constructor(
     private val client: Client,
-    private val pipelineRepositoryService: PipelineRepositoryService,
-    private val pipelineYamlService: PipelineYamlService
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) {
 
     fun createPipelineBasicInfo(
@@ -147,6 +145,7 @@ class PipelineResourceFactory @Autowired constructor(
                 name = name,
                 desc = desc,
                 stages = emptyList(),
+                instanceFromTemplate = true,
                 fromTemplate = true,
                 templatePath = templatePath,
                 templateRef = templateRef,
@@ -163,6 +162,7 @@ class PipelineResourceFactory @Autowired constructor(
                 name = name,
                 desc = desc,
                 stages = emptyList(),
+                instanceFromTemplate = true,
                 fromTemplate = true,
                 templateId = templateId,
                 templateVersionName = templateVersionName,

@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.service.pipeline.version.processor
 
 import com.tencent.devops.common.api.util.AESUtil
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -57,7 +57,8 @@ class PipelineCallbackEventVersionPostProcessor @Autowired constructor(
         pipelineSetting: PipelineSetting
     ) {
         with(context) {
-            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
+            // 更新流水线,只有正式版本才需要更新回调
+            if (pipelineInfo != null && pipelineResourceVersion.status != VersionStatus.RELEASED) {
                 return
             }
             // 初始化流水线单体回调

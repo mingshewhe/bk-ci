@@ -40,6 +40,7 @@ import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
@@ -64,7 +65,8 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineTemplateModelParser: PipelineTemplateModelParser,
     private val stageTagService: StageTagService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineInfoService: PipelineInfoService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
         return request is PipelineYamlWebhookReq
@@ -130,6 +132,8 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
         val model = modelAndSetting.model.copy(
             name = pipelineName
         )
+        val pipelineInfo = pipelineInfoService.getPipelineInfo(projectId = projectId, pipelineId = newPipelineId)
+
         val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
             projectId = projectId,
             pipelineId = newPipelineId,
@@ -190,7 +194,7 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
             projectId = projectId,
             pipelineId = newPipelineId,
             versionAction = versionAction,
-            newPipeline = pipelineId == null,
+            pipelineInfo = pipelineInfo,
             pipelineBasicInfo = pipelineBasicInfo,
             pipelineModelBasicInfo = pipelineModelBasicInfo,
             pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
@@ -221,6 +225,8 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
         val model = modelAndSetting.model.copy(
             name = pipelineName
         )
+        val pipelineInfo = pipelineInfoService.getPipelineInfo(projectId = projectId, pipelineId = newPipelineId)
+
         val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
             projectId = projectId,
             pipelineId = newPipelineId,
@@ -327,7 +333,7 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
             projectId = projectId,
             pipelineId = newPipelineId,
             versionAction = versionAction,
-            newPipeline = pipelineId == null,
+            pipelineInfo = pipelineInfo,
             pipelineBasicInfo = pipelineBasicInfo,
             pipelineModelBasicInfo = pipelineModelBasicInfo,
             pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,

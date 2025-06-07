@@ -73,22 +73,7 @@ class PipelineVersionValidator @Autowired constructor(
                 errorCode = ProcessMessageCode.ERROR_PIPELINE_NAME_EXISTS
             )
         }
-        if (newPipeline) {
-            val pipeline = pipelineRepositoryService.getPipelineInfo(
-                projectId = projectId, pipelineId = pipelineId
-            ) ?: throw ErrorCodeException(
-                statusCode = Response.Status.NOT_FOUND.statusCode,
-                errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS
-            )
-
-            if (pipeline.channelCode != pipelineBasicInfo.channelCode) {
-                throw ErrorCodeException(
-                    statusCode = Response.Status.NOT_FOUND.statusCode,
-                    errorCode = ProcessMessageCode.ERROR_PIPELINE_CHANNEL_CODE,
-                    params = arrayOf(pipeline.channelCode.name)
-                )
-            }
-
+        if (pipelineInfo == null) {
             // 检查用户流水线是否达到上限
             val projectVO = projectCacheService.getProject(projectId)
             if (projectVO?.pipelineLimit != null) {
@@ -103,14 +88,22 @@ class PipelineVersionValidator @Autowired constructor(
                     )
                 }
             }
+        } else {
+            if (pipelineInfo.channelCode != pipelineBasicInfo.channelCode) {
+                throw ErrorCodeException(
+                    statusCode = Response.Status.NOT_FOUND.statusCode,
+                    errorCode = ProcessMessageCode.ERROR_PIPELINE_CHANNEL_CODE,
+                    params = arrayOf(pipelineInfo.channelCode.name)
+                )
+            }
         }
     }
 
     fun PipelineVersionCreateContext.validateModelBasicInfo() {
-        if (newPipeline) {
+        if (pipelineInfo != null) {
             val model = pipelineResourceWithoutVersion.model
             // 只在更新操作时检查stage数量不为1
-            if (model.stages.size <= 1) throw ErrorCodeException(
+            if (model.fromTemplate != true && model.stages.size <= 1) throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_PIPELINE_WITH_EMPTY_STAGE, params = arrayOf()
             )
         }
@@ -119,7 +112,7 @@ class PipelineVersionValidator @Autowired constructor(
     fun PipelineVersionCreateContext.validatePermission() {
         if (!checkPermission) return
         val language = I18nUtil.getLanguage(userId)
-        if (newPipeline) {
+        if (pipelineInfo == null) {
             val permission = AuthPermission.CREATE
             pipelinePermissionService.validPipelinePermission(
                 userId = userId,

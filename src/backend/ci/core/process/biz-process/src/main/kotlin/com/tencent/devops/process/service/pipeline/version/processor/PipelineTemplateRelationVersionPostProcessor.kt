@@ -25,13 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.service.pipeline.version.processor
 
+import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.template.TemplateInstanceUpdate
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelated
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
@@ -55,21 +55,17 @@ class PipelineTemplateRelationVersionPostProcessor @Autowired constructor(
         pipelineSetting: PipelineSetting
     ) {
         with(context) {
-            val pipelineTemplateRelated = pipelineTemplateRelatedService.get(
-                condition = PipelineTemplateRelatedCommonCondition(
-                    projectId = projectId,
-                    pipelineId = pipelineId
-                )
-            )
+            // 更新流水线,只有正式版本才更新版本关联关系
+            if (pipelineInfo != null && pipelineResourceVersion.status != VersionStatus.RELEASED) {
+                return
+            }
             if (templateInstanceBasicInfo != null) {
                 createOrUpdateRelation(
-                    transactionContext = transactionContext,
-                    pipelineTemplateRelated = pipelineTemplateRelated
+                    transactionContext = transactionContext
                 )
             } else {
                 unbindRelation(
-                    transactionContext = transactionContext,
-                    pipelineTemplateRelated = pipelineTemplateRelated
+                    transactionContext = transactionContext
                 )
             }
         }
@@ -79,16 +75,20 @@ class PipelineTemplateRelationVersionPostProcessor @Autowired constructor(
      * 创建/更新更新模板关联
      */
     private fun PipelineVersionCreateContext.createOrUpdateRelation(
-        transactionContext: DSLContext,
-        pipelineTemplateRelated: PipelineTemplateRelated?
+        transactionContext: DSLContext
     ) {
-        if (templateInstanceBasicInfo == null) return
+        val pipelineTemplateRelated = pipelineTemplateRelatedService.get(
+            condition = PipelineTemplateRelatedCommonCondition(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+        )
         if (pipelineTemplateRelated == null) {
             pipelineTemplateRelatedService.createRelation(
                 userId = userId,
                 projectId = pipelineBasicInfo.projectId,
                 pipelineId = pipelineBasicInfo.pipelineId,
-                templateId = templateInstanceBasicInfo.templateId,
+                templateId = templateInstanceBasicInfo!!.templateId,
                 instanceType = templateInstanceBasicInfo.instanceType.type,
                 buildNo = pipelineModelBasicInfo.buildNo,
                 param = pipelineModelBasicInfo.param,
@@ -100,7 +100,7 @@ class PipelineTemplateRelationVersionPostProcessor @Autowired constructor(
             templatePipelineDao.update(
                 dslContext = transactionContext,
                 projectId = pipelineBasicInfo.projectId,
-                templateVersion = templateInstanceBasicInfo.templateVersion,
+                templateVersion = templateInstanceBasicInfo!!.templateVersion,
                 versionName = templateInstanceBasicInfo.templateVersionName ?: "",
                 userId = userId,
                 instance = TemplateInstanceUpdate(
@@ -119,9 +119,14 @@ class PipelineTemplateRelationVersionPostProcessor @Autowired constructor(
      * 解绑模板关联
      */
     private fun PipelineVersionCreateContext.unbindRelation(
-        transactionContext: DSLContext,
-        pipelineTemplateRelated: PipelineTemplateRelated?
+        transactionContext: DSLContext
     ) {
+        val pipelineTemplateRelated = pipelineTemplateRelatedService.get(
+            condition = PipelineTemplateRelatedCommonCondition(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+        )
         pipelineTemplateRelated?.let {
             pipelineTemplateRelatedService.delete(
                 transactionContext = transactionContext,

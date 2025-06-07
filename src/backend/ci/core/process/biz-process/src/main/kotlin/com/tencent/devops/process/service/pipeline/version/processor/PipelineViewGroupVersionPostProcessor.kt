@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.service.pipeline.version.processor
 
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -51,7 +51,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
-        if (context.newPipeline) {
+        if (context.pipelineInfo == null) {
             createViewGroup(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,

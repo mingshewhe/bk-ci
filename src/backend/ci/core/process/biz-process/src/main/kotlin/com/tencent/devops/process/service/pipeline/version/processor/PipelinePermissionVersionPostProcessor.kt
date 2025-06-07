@@ -25,24 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.pipeline.version.listener
+package com.tencent.devops.process.service.pipeline.version.processor
 
+import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.auth.api.AuthResourceType
+import com.tencent.devops.common.auth.api.pojo.ResourceAuthorizationDTO
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.process.engine.service.SubPipelineTaskService
+import com.tencent.devops.process.permission.PipelineAuthorizationService
+import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
-/**
- * 流水线版本创建后,子流水线后置处理器
- */
 @Service
-class SubPipelineVersionPostProcessor @Autowired constructor(
-    private val dslContext: DSLContext,
-    private val subPipelineTaskService: SubPipelineTaskService
+class PipelinePermissionVersionPostProcessor @Autowired constructor(
+    private val pipelinePermissionService: PipelinePermissionService,
+    private val pipelineAuthorizationService: PipelineAuthorizationService,
 ) : PipelineVersionCreatePostProcessor {
 
     override fun postProcessInTransactionVersionCreate(
@@ -51,17 +53,48 @@ class SubPipelineVersionPostProcessor @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
+        if (!context.checkPermission) return
+        if (context.pipelineInfo == null) {
+            createResource(context = context)
+        } else {
+            modifyResource(context = context)
+        }
+    }
+
+    private fun createResource(context: PipelineVersionCreateContext) {
         with(context) {
-            if (!newPipeline && pipelineResourceVersion.status != VersionStatus.RELEASED) {
-                return
-            }
-            subPipelineTaskService.batchAdd(
-                dslContext = dslContext,
+            val pipelineName = pipelineBasicInfo.pipelineName
+            pipelinePermissionService.createResource(
+                userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
-                model = pipelineResourceVersion.model,
-                channel = pipelineBasicInfo.channelCode.name,
-                modelTasks = pipelineModelBasicInfo.modelTasks
+                pipelineName = pipelineName
+            )
+            pipelineAuthorizationService.addResourceAuthorization(
+                projectId = projectId,
+                resourceAuthorizationList = listOf(
+                    ResourceAuthorizationDTO(
+                        projectCode = projectId,
+                        resourceType = AuthResourceType.PIPELINE_DEFAULT.value,
+                        resourceCode = pipelineId,
+                        resourceName = pipelineName,
+                        handoverFrom = userId,
+                        handoverTime = LocalDateTime.now().timestampmilli()
+                    )
+                )
+            )
+        }
+    }
+
+    private fun modifyResource(context: PipelineVersionCreateContext) {
+        with(context) {
+            if (pipelineResourceWithoutVersion.status != VersionStatus.RELEASED) {
+                return
+            }
+            pipelinePermissionService.modifyResource(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                pipelineName = pipelineBasicInfo.pipelineName
             )
         }
     }
