@@ -39,6 +39,7 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
@@ -208,14 +209,14 @@ class PipelineVersionGenerator constructor(
             projectId = projectId,
             pipelineId = pipelineId
         ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
+            errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND
         )
         val latestSetting = pipelineSettingVersionDao.getLatestSettingVersion(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
         ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
+            errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND
         )
         val latestReleaseResource = pipelineResourceDao.getReleaseVersionResource(
             dslContext = dslContext,
@@ -613,7 +614,7 @@ class PipelineVersionGenerator constructor(
             result.yamlWithVersion
         } catch (ignore: Throwable) {
             // 旧流水线可能无法转换，用空YAML代替
-            logger.warn("TRANSFER_YAML|$projectId|$userId|${ignore.message}")
+            logger.warn("TRANSFER_YAML|$projectId|$userId", ignore)
             null
         }
     }

@@ -29,7 +29,7 @@ package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "创建/升级单条实例请求体")
@@ -43,7 +43,7 @@ data class PipelineTemplateInstanceReleaseInfo(
     @get:Schema(title = "流水线变量列表", required = false)
     val param: List<BuildFormProperty>? = null,
     @get:Schema(title = "触发器配置", required = false)
-    val triggerConfigs: Map<String,TemplateInstanceTriggerConfig>? = null,
+    val triggerConfigs: Map<String,TemplateTriggerConfig>? = null,
     @get:Schema(title = "yaml文件路径", required = true)
     val filePath: String? = null
 )

@@ -220,6 +220,10 @@ class PipelineTemplateInstanceListener @Autowired constructor(
             successPipelines.add(pipelineId)
             deployPipelineResult
         } catch (ignored: Throwable) {
+            logger.warn(
+                "Failed to instance template|$projectId|$baseId$pipelineId",
+                ignored
+            )
             handleTemplateInstanceEventError(
                 projectId = projectId,
                 userId = creator,
@@ -301,10 +305,7 @@ class PipelineTemplateInstanceListener @Autowired constructor(
         exception: Throwable,
         failurePipelines: MutableList<String>
     ) {
-        logger.warn(
-            "Failed to instance template|$projectId|${instanceItem.baseId}|" +
-                    "${instanceItem.pipelineId}|$userId|${exception.message}"
-        )
+
         val errorMessage = pipelineTemplateInstanceService.translateInstanceException(
             userId = userId,
             projectId = projectId,

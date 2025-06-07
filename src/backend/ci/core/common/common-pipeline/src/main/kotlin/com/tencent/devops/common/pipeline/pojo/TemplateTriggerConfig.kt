@@ -29,8 +29,8 @@ package com.tencent.devops.common.pipeline.pojo
 
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线实例化触发器配置")
-data class TemplateInstanceTriggerConfig(
+@Schema(title = "模版-触发器配置")
+data class TemplateTriggerConfig(
     @get:Schema(title = "启用或禁用")
     val disabled: Boolean? = null,
 

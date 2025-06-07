@@ -35,7 +35,7 @@ import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
@@ -265,7 +265,7 @@ object PipelineUtils {
         defaultStageTagId: String?,
         templateId: String? = null,
         staticViews: List<String> = emptyList(),
-        triggerConfigs: Map<String, TemplateInstanceTriggerConfig>? = null
+        triggerConfigs: Map<String, TemplateTriggerConfig>? = null
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
         val triggerElements = if (triggerConfigs != null) {
@@ -347,7 +347,7 @@ object PipelineUtils {
 
     private fun configTriggerElements(
         templateTrigger: TriggerContainer,
-        triggerConfigs: Map<String, TemplateInstanceTriggerConfig>
+        triggerConfigs: Map<String, TemplateTriggerConfig>
     ): MutableList<Element> {
         // 不存在的stepId列表
         val errorStepIds = triggerConfigs.filterNot { (stepId, _) ->
@@ -377,7 +377,7 @@ object PipelineUtils {
 
     private fun configTriggerElement(
         triggerElement: Element,
-        triggerConfig: TemplateInstanceTriggerConfig
+        triggerConfig: TemplateTriggerConfig
     ): Element {
         triggerConfig.disabled?.let {
             triggerElement.additionalOptions?.enable = !triggerConfig.disabled!!

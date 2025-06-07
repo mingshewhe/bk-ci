@@ -33,7 +33,7 @@ import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.model.process.tables.TTemplateInstanceItem
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceItemRecord
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
@@ -368,7 +368,7 @@ class TemplateInstanceItemDao {
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
             triggerConfigs = triggerConfigs?.let {
-                JsonUtil.to(it, object : TypeReference<Map<String, TemplateInstanceTriggerConfig>>() {})
+                JsonUtil.to(it, object : TypeReference<Map<String, TemplateTriggerConfig>>() {})
             },
             filePath = filePath,
             errorMessage = errorMessage,

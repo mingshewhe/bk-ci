@@ -34,7 +34,7 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -208,7 +208,7 @@ class ModelTransfer @Autowired constructor(
                 )
             }
             model.triggerConfigs = template.triggerConfig?.mapValues {
-                TemplateInstanceTriggerConfig(
+                TemplateTriggerConfig(
                     disabled = it.value.disabled,
                     cron = it.value.cron,
                     variables = it.value.variables

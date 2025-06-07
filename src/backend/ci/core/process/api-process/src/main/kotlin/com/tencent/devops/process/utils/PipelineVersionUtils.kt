@@ -83,24 +83,41 @@ object PipelineVersionUtils {
         originModel: Model,
         newModel: Model
     ): Int {
-        return try {
-            var changed = false
-            val originTrigger = (originModel.stages.first().containers.first() as TriggerContainer)
-                .copy(params = emptyList())
-            val newTrigger = (newModel.stages.first().containers.first() as TriggerContainer)
-                .copy(params = emptyList())
-            if (originTrigger == newTrigger) {
-                originTrigger.elements.forEachIndexed { index, origin ->
-                    val new = newTrigger.elements[index]
-                    if (origin != new) changed = true
-                    if (origin.elementEnabled() != new.elementEnabled()) changed = true
-                }
-            } else {
-                changed = true
+        return when {
+            // 流水线从非模板变成模版实例化
+            (originModel.fromTemplate != true && newModel.fromTemplate == true) ||
+                    (originModel.fromTemplate == true && newModel.fromTemplate != true) -> {
+                currVersion + 1
             }
-            if (changed) currVersion + 1 else currVersion
-        } catch (ignore: Throwable) {
-            currVersion + 1
+            // 都是模版实例化,则对比触发器配置
+            originModel.fromTemplate == true && newModel.fromTemplate == true -> {
+                if (originModel.triggerConfigs == newModel.triggerConfigs) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+            else -> {
+                try {
+                    var changed = false
+                    val originTrigger = (originModel.stages.first().containers.first() as TriggerContainer)
+                        .copy(params = emptyList())
+                    val newTrigger = (newModel.stages.first().containers.first() as TriggerContainer)
+                        .copy(params = emptyList())
+                    if (originTrigger == newTrigger) {
+                        originTrigger.elements.forEachIndexed { index, origin ->
+                            val new = newTrigger.elements[index]
+                            if (origin != new) changed = true
+                            if (origin.elementEnabled() != new.elementEnabled()) changed = true
+                        }
+                    } else {
+                        changed = true
+                    }
+                    if (changed) currVersion + 1 else currVersion
+                } catch (ignore: Throwable) {
+                    currVersion + 1
+                }
+            }
         }
     }
 
@@ -112,14 +129,32 @@ object PipelineVersionUtils {
         originModel: Model,
         newModel: Model
     ): Int {
-        val originStages = originModel.stages.drop(1)
-        val newStages = newModel.stages.drop(1)
-        val originParams = (originModel.stages.first().containers.first() as TriggerContainer).params
-        val newParams = (newModel.stages.first().containers.first() as TriggerContainer).params
-        return if (originStages.differ(newStages) && originParams == newParams) {
-            currVersion
-        } else {
-            currVersion + 1
+        return when {
+            // 流水线从非模板变成模版实例化
+            (originModel.fromTemplate != true && newModel.fromTemplate == true) ||
+                    (originModel.fromTemplate == true && newModel.fromTemplate != true) -> {
+                currVersion + 1
+            }
+            // 都是模版实例化,则对比参数
+            originModel.fromTemplate == true && newModel.fromTemplate == true -> {
+                if (originModel.templateVariables == newModel.templateVariables) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
+            // 都不是从模版实例化
+            else -> {
+                val originStages = originModel.stages.drop(1)
+                val newStages = newModel.stages.drop(1)
+                val originParams = (originModel.stages.first().containers.first() as TriggerContainer).params
+                val newParams = (newModel.stages.first().containers.first() as TriggerContainer).params
+                if (originStages.differ(newStages) && originParams == newParams) {
+                    currVersion
+                } else {
+                    currVersion + 1
+                }
+            }
         }
     }
 
