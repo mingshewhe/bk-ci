@@ -1,7 +1,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -22,7 +22,7 @@ data class PipelineTemplateInstanceBase(
     val type: TemplateInstanceType,
     val repoHashId: String?,
     val targetBranch: String?,
-    val refType: TemplateInstanceRefType?,
+    val templateRefType: TemplateRefType?,
     val templateRef: String?,
     val creator: String,
     val modifier: String,

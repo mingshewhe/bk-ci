@@ -40,7 +40,7 @@ import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -128,7 +128,7 @@ class PipelineResourceFactory @Autowired constructor(
     fun createPipelineModel(
         name: String,
         desc: String?,
-        refType: TemplateInstanceRefType?,
+        refType: TemplateRefType?,
         templateId: String? = null,
         templateVersionName: String? = null,
         templatePath: String? = null,
@@ -137,7 +137,7 @@ class PipelineResourceFactory @Autowired constructor(
         triggerConfigs: Map<String, TemplateTriggerConfig>? = null,
         overrideTemplateSettingGroups: List<PipelineSettingGroupType>? = null
     ): Model {
-        return if (refType == TemplateInstanceRefType.PATH) {
+        return if (refType == TemplateRefType.PATH) {
             if (templatePath.isNullOrEmpty()) {
                 throw IllegalArgumentException("templatePath is empty")
             }

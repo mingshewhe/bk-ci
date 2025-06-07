@@ -55,9 +55,8 @@ class PipelineReleaseCreateHandler @Autowired constructor(
 
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
-            if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
-                // TEMPLATE_NOT_RELEASED
-                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+            if (pipelineResourceWithoutVersion.status != VersionStatus.RELEASED) {
+                throw IllegalArgumentException("pipeline version status must be released")
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {

@@ -28,15 +28,15 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模板实例请求体")
 data class PipelineTemplateInstancesRequest(
     @get:Schema(title = "实例化引用类型", required = true)
-    val refType: TemplateInstanceRefType? = TemplateInstanceRefType.ID,
-    @get:Schema(title = "路径引用时,版本信息", required = true)
-    val ref: String?,
+    val templateRefType: TemplateRefType? = TemplateRefType.ID,
+    @get:Schema(title = "路径引用时,模版引用版本", required = true)
+    val templateRef: String?,
     @get:Schema(title = "是否使用模版设置", required = true)
     val useTemplateSetting: Boolean,
     @get:Schema(title = "是否本次开启PAC", required = true)

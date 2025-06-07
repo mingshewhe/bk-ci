@@ -31,7 +31,7 @@ import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.model.process.tables.TTemplateInstanceBase
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceBaseRecord
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstanceBase
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
@@ -60,7 +60,7 @@ class TemplateInstanceBaseDao {
         type: String? = TemplateInstanceType.UPDATE.name,
         repoHashId: String? = null,
         targetBranch: String? = null,
-        refType: TemplateInstanceRefType? = null,
+        templateRefType: TemplateRefType? = null,
         templateRef: String? = null
     ) {
         with(TTemplateInstanceBase.T_TEMPLATE_INSTANCE_BASE) {
@@ -82,7 +82,7 @@ class TemplateInstanceBaseDao {
                     TYPE,
                     REPO_HASH_ID,
                     TARGET_BRANCH,
-                    REF_TYPE,
+                    TEMPLATE_REF_TYPE,
                     TEMPLATE_REF
                 ).values(
                     baseId,
@@ -100,7 +100,7 @@ class TemplateInstanceBaseDao {
                     type,
                     repoHashId,
                     targetBranch,
-                    refType?.name,
+                    templateRefType?.name,
                     templateRef
                 )
                     .onDuplicateKeyUpdate()
@@ -117,7 +117,7 @@ class TemplateInstanceBaseDao {
                     .set(DESCRIPTION, description)
                     .set(REPO_HASH_ID, repoHashId)
                     .set(TARGET_BRANCH, targetBranch)
-                    .set(REF_TYPE, refType?.name)
+                    .set(TEMPLATE_REF_TYPE, templateRefType?.name)
                     .set(TEMPLATE_REF, templateRef)
                     .execute()
             )
@@ -243,7 +243,7 @@ class TemplateInstanceBaseDao {
             type = TemplateInstanceType.valueOf(type),
             repoHashId = repoHashId,
             targetBranch = targetBranch,
-            refType = refType?.let { TemplateInstanceRefType.valueOf(it) },
+            templateRefType = templateRefType?.let { TemplateRefType.valueOf(it) },
             templateRef = templateRef,
             creator = creator,
             modifier = modifier,

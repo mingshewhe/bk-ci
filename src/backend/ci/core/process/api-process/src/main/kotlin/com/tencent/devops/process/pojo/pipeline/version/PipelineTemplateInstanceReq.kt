@@ -31,7 +31,7 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版实例创建请求")
@@ -43,7 +43,7 @@ data class PipelineTemplateInstanceReq(
     @get:Schema(title = "模版版本", required = false)
     val templateVersion: Long,
     @get:Schema(title = "模版实例化引用类型", required = false)
-    val refType: TemplateInstanceRefType? = TemplateInstanceRefType.ID,
+    val templateRefType: TemplateRefType? = TemplateRefType.ID,
     @get:Schema(title = "模版路径引用,分支/tag/commit", required = false)
     val templateRef: String?,
     @get:Schema(title = "流水线名称", required = false)

@@ -65,8 +65,7 @@ class PipelineBranchCreateHandler @Autowired constructor(
                 throw IllegalArgumentException("branchName is null")
             }
             if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
-                // TEMPLATE_NOT_RELEASED
-                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+                throw IllegalArgumentException("pipeline version status must be branch")
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {

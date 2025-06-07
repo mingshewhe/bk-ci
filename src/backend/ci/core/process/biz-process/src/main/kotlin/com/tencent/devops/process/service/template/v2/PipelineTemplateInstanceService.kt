@@ -95,8 +95,8 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     projectId = projectId,
                     templateId = templateId,
                     templateVersion = version,
-                    refType = request.refType,
-                    templateRef = request.ref,
+                    templateRefType = request.templateRefType,
+                    templateRef = request.templateRef,
                     pipelineName = instance.pipelineName,
                     buildNo = instance.buildNo,
                     params = instance.param,
@@ -186,8 +186,8 @@ class PipelineTemplateInstanceService @Autowired constructor(
                 repoHashId = request.repoHashId,
                 targetBranch = request.targetBranch,
                 description = request.description,
-                refType = request.refType,
-                templateRef = request.ref
+                templateRefType = request.templateRefType,
+                templateRef = request.templateRef
             )
             templateInstanceItemDao.createTemplateInstanceItemsV2(
                 dslContext = context,
@@ -245,7 +245,9 @@ class PipelineTemplateInstanceService @Autowired constructor(
                 type = TemplateInstanceType.UPDATE.name,
                 description = request.description,
                 repoHashId = request.repoHashId,
-                targetBranch = request.targetBranch
+                targetBranch = request.targetBranch,
+                templateRefType = request.templateRefType,
+                templateRef = request.templateRef
             )
             templateInstanceItemDao.createTemplateInstanceItemsV2(
                 dslContext = context,
@@ -626,8 +628,8 @@ class PipelineTemplateInstanceService @Autowired constructor(
         }
         val request = with(instanceBase) {
             PipelineTemplateInstancesRequest(
-                refType = refType,
-                ref = templateRef,
+                templateRefType = templateRefType,
+                templateRef = templateRef,
                 useTemplateSetting = useTemplateSetting,
                 enablePac = pac,
                 description = description,

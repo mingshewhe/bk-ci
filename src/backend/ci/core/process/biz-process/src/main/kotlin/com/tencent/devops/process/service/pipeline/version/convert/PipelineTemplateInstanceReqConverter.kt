@@ -50,7 +50,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInf
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineTemplateInstanceReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
-import com.tencent.devops.process.pojo.template.TemplateInstanceRefType
+import com.tencent.devops.process.pojo.template.TemplateRefType
 import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
@@ -105,10 +105,17 @@ class PipelineTemplateInstanceReqConverter(
                     throw IllegalArgumentException("filePath is null")
                 }
             }
-            if (refType == TemplateInstanceRefType.PATH && !enablePac) {
-                throw ErrorCodeException(
-                    errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_PIPELINE_NEED_PAC,
-                )
+            if (templateRefType == TemplateRefType.PATH) {
+                if (!enablePac) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_PIPELINE_NEED_PAC,
+                    )
+                }
+                if (templateRef.isNullOrEmpty()) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_TEMPLATE_REF_NOT_EMPTY,
+                    )
+                }
             }
 
             // 生成流水线ID
@@ -154,7 +161,7 @@ class PipelineTemplateInstanceReqConverter(
             }
 
             // 生成实例化流水线model
-            val templatePath = refType.takeIf { it == TemplateInstanceRefType.PATH }?.let {
+            val templatePath = templateRefType?.takeIf { it == TemplateRefType.PATH }?.let {
                 pipelineYamlService.getPipelineYamlInfo(
                     projectId = projectId,
                     pipelineId = templateId
@@ -166,7 +173,7 @@ class PipelineTemplateInstanceReqConverter(
             val pipelineModel = pipelineResourceFactory.createPipelineModel(
                 name = pipelineName,
                 desc = null,
-                refType = refType,
+                refType = templateRefType,
                 templateId = templateId,
                 templateVersionName = templateResource.versionName,
                 templatePath = templatePath,

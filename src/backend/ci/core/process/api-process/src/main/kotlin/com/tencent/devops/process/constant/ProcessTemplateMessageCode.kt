@@ -33,8 +33,9 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_PATH_REF_PIPELINE_NEED_PAC = "2101283" // 路径引用流水线必须开启PAC
     const val ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE = "2101284" // 实例化仅支持流水线类型
     const val ERROR_TEMPLATE_PATH_REF_TEMPLATE_NEED_PAC = "2101285" // 模版没有开启PAC不能使用路径引用
-    const val ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH = "2101286" // 模版类型和编排类型不匹配
+    const val ERROR_TEMPLATE_PATH_REF_TEMPLATE_REF_NOT_EMPTY = "2101286" // 路径引用,模板分支不能为空
+    const val ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH = "2101287" // 模版类型和编排类型不匹配
 
-    const val ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND = "2101287" // 未找到流水线最新版本
-    const val ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND = "2101288" // 未找到流水线最新版本
+    const val ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND = "2101288" // 未找到流水线最新版本
+    const val ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND = "2101289" // 未找到流水线最新版本
 }
