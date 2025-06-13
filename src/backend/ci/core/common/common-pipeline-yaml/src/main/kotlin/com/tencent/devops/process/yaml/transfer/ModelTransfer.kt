@@ -34,8 +34,8 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
@@ -177,7 +177,9 @@ class ModelTransfer @Autowired constructor(
         // 蓝盾引擎会将stageId从1开始顺序强制重写，因此在生成model时保持一致
         val stageIndex = AtomicInteger(0)
         // trigger stage
-        stageList.add(modelStage.yaml2TriggerStage(yamlInput, stageIndex.incrementAndGet()))
+        if (!yamlInput.yaml.checkForTemplateUse()) {
+            stageList.add(modelStage.yaml2TriggerStage(yamlInput, stageIndex.incrementAndGet()))
+        }
 
         // 其他的stage
         formatStage(yamlInput, stageList, stageIndex)
@@ -288,7 +290,7 @@ class ModelTransfer @Autowired constructor(
             }
         }
         yaml.notices = makeNoticesV3(modelInput)
-        yaml.stages = TransferMapper.anyTo(makeStages(modelInput))
+        yaml.stages = makeStages(modelInput).ifEmpty { null }?.let { TransferMapper.anyTo(it) }
         yaml.variables = variableTransfer.makeVariableFromModel(getTriggerContainer(modelInput))
         yaml.extends = makeExtend(modelInput.model)
         yaml.finally = makeFinally(modelInput)

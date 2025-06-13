@@ -179,6 +179,8 @@ data class PreTemplateScriptBuildYamlV3Parser(
         return res
     }
 
+    override fun checkForTemplateUse() = formatExtends()?.template != null
+
     private fun checkInitialized() {
         if (!this::preYaml.isInitialized) throw RuntimeException("need replaceTemplate before")
     }
