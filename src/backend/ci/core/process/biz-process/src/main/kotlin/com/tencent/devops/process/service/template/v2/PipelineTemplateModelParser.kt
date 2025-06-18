@@ -261,20 +261,11 @@ class PipelineTemplateModelParser @Autowired constructor(
         }
 
         val templateModel = templateResource.model as Model
-        val pipelineParams = PipelineUtils.mergeTemplateParams(
-            templateParams = templateModel.getTriggerContainer().params,
-            templateParameters = model.templateVariables,
-        )
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
         return PipelineUtils.instanceModelV2(
-            templateModel = templateResource.model as Model,
-            pipelineName = model.name,
-            buildNo = null,
-            param = pipelineParams,
-            instanceFromTemplate = true,
-            defaultStageTagId = defaultStageTagId,
-            templateId = templateResource.templateId,
-            triggerConfigs = model.triggerConfigs
+            model = model,
+            templateModel = templateModel,
+            defaultStageTagId = defaultStageTagId
         )
     }
 

@@ -297,6 +297,39 @@ object PipelineUtils {
         )
     }
 
+    fun instanceModelV2(
+        model: Model,
+        templateModel: Model,
+        defaultStageTagId: String?
+    ): Model {
+        val templateTrigger = templateModel.getTriggerContainer()
+        val triggerConfigs = model.triggerConfigs
+        val triggerElements = if (triggerConfigs != null) {
+            configTriggerElements(
+                templateTrigger = templateTrigger,
+                triggerConfigs = triggerConfigs
+            )
+        } else {
+            templateTrigger.elements
+        }
+        val pipelineParams = mergeTemplateParams(
+            templateParams = templateModel.getTriggerContainer().params,
+            templateParameters = model.templateVariables,
+        )
+        val instanceParam = cleanOptions(pipelineParams)
+        val triggerContainer = TriggerContainer(
+            name = templateTrigger.name,
+            elements = triggerElements,
+            params = instanceParam,
+            buildNo = null,
+            containerId = templateTrigger.containerId,
+            containerHashId = templateTrigger.containerHashId
+        )
+        return model.copy(
+            stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId)
+        )
+    }
+
     /**
      * 清空options
      *
