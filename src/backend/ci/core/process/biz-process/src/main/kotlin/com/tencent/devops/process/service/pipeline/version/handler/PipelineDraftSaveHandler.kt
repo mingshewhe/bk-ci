@@ -31,39 +31,30 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
-/**
- * 分支版本创建
- */
 @Service
-class PipelineBranchCreateHandler @Autowired constructor(
+class PipelineDraftSaveHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
+    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService,
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) : PipelineVersionCreateHandler {
     override fun support(context: PipelineVersionCreateContext): Boolean {
-        return context.versionAction == PipelineVersionAction.CREATE_BRANCH
+        return context.versionAction == PipelineVersionAction.SAVE_DRAFT
     }
 
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
-            if (!enablePac) {
-                throw IllegalArgumentException("enablePac must be true")
-            }
-            if (yamlFileInfo == null) {
-                throw IllegalArgumentException("yamlFileInfo is null")
-            }
-            if (branchName == null) {
-                throw IllegalArgumentException("branchName is null")
-            }
-            if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
-                throw IllegalArgumentException("pipeline version status must be branch")
+            if (pipelineResourceWithoutVersion.status != VersionStatus.COMMITTING) {
+                throw IllegalArgumentException("pipeline version status must be released")
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {
@@ -78,23 +69,35 @@ class PipelineBranchCreateHandler @Autowired constructor(
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
         val resourceOnlyVersion = if (pipelineInfo == null) {
             val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
-                versionStatus = pipelineResourceWithoutVersion.status,
-                branchName = branchName
+                versionStatus = pipelineResourceWithoutVersion.status
             )
             pipelineVersionPersistenceService.initializeTemplate(
                 context = this, resourceOnlyVersion = resourceOnlyVersion
             )
             resourceOnlyVersion
         } else {
-            val resourceOnlyVersion = pipelineVersionGenerator.generateBranchVersion(
+            val draftVersionResource = pipelineRepositoryService.getDraftVersionResource(
                 projectId = projectId,
-                pipelineId = pipelineId,
-                branchName = branchName!!,
+                pipelineId = pipelineId
             )
-            pipelineVersionPersistenceService.createBranchVersion(
-                context = this, resourceOnlyVersion = resourceOnlyVersion
-            )
-            resourceOnlyVersion
+            if (draftVersionResource == null) {
+                val resourceOnlyVersion = pipelineVersionGenerator.generateDraftVersion(
+                    projectId = projectId,
+                    pipelineId = pipelineId
+                )
+                pipelineVersionPersistenceService.createDraftVersion(
+                    context = this,
+                    resourceOnlyVersion = resourceOnlyVersion
+                )
+                resourceOnlyVersion
+            } else {
+                val resourceOnlyVersion = PipelineResourceOnlyVersion(draftVersionResource)
+                pipelineVersionPersistenceService.updateDraftVersion(
+                    context = this,
+                    resourceOnlyVersion = resourceOnlyVersion
+                )
+                resourceOnlyVersion
+            }
         }
 
         return DeployPipelineResult(

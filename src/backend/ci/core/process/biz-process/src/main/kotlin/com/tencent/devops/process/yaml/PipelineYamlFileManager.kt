@@ -366,7 +366,6 @@ class PipelineYamlFileManager @Autowired constructor(
                     repoHashId = repoHashId,
                     filePath = filePath,
                     branch = ref,
-                    pullRequestId = pullRequest?.id,
                     pullRequestUrl = pullRequest?.link
                 )
             } catch (ignored: Exception) {

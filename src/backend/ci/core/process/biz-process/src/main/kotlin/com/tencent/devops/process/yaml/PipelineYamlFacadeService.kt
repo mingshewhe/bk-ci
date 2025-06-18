@@ -427,7 +427,6 @@ class PipelineYamlFacadeService @Autowired constructor(
                     repoHashId = repoHashId,
                     filePath = gitPushResult.filePath,
                     branch = gitPushResult.branch,
-                    pullRequestId = null,
                     pullRequestUrl = gitPushResult.mrUrl
                 )
             } catch (exception: Exception) {

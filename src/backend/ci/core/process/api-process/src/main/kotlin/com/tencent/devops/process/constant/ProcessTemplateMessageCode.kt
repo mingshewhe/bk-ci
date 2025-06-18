@@ -38,4 +38,14 @@ object ProcessTemplateMessageCode {
 
     const val ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND = "2101288" // 未找到流水线最新版本
     const val ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND = "2101289" // 未找到流水线最新版本
+    const val ERROR_PIPELINE_RELEASE_MUST_DRAFT_VERSION = "2101290" // 发布流水线时必须使用草稿版本
+    const val ERROR_PIPELINE_VERSION_NOT_DRAFT_VERSION = "2101291" // 发布的版本不是草稿版本
+    const val ERROR_PIPELINE_BASE_VERSION_NOT_FOUND = "2101292" // 未找到基线版本
+    const val ERROR_TEMPLATE_YAML_REPOSITORY_NOT_FOUND = "2101293" // 模板YAML文件所属的代码仓库不存在
+    const val ERROR_YAML_FOR_TEMPLATE_NOT_FOUND = "2101294" // YAML文件$0对应的模板不存在
+    const val ERROR_TEMPLATE_YAML_VERSION_NOT_FOUND = "2101295" // 分支$0下的文件$1对应的模版版本不存在
+    const val ERROR_TEMPLATE_VERSION_BY_ID_NOT_FOUND = "2101296" // 模版$0对应的版本$1不存在
+    const val ERROR_TEMPLATE_VERSION_BY_PATH_NOT_FOUND = "2101297" // 模版$0在分支$1对应的版本不存在
+    const val ERROR_TEMPLATE_REF_TYPE = "2101298" // 模版引用templateId和templatePath不能同时为空
+    const val ERROR_TEMPLATE_VERSION_NAME_NOT_EMPTY = "2101298" // 模版版本名称不能为空
 }

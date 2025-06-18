@@ -264,8 +264,7 @@ class PipelineTemplateInstanceListener @Autowired constructor(
     ) {
         logger.info(
             "success to template instance item|$baseId|$projectId|$pipelineId|" +
-                    "${deployPipelineResult.version}|${deployPipelineResult.versionName}|" +
-                    "${deployPipelineResult.pullRequestId}"
+                    "${deployPipelineResult.version}|${deployPipelineResult.versionName}"
         )
         val record = PipelineTemplateInstanceItemUpdate(
             status = TemplateInstanceStatus.SUCCESS,
@@ -277,7 +276,7 @@ class PipelineTemplateInstanceListener @Autowired constructor(
             baseId = baseId,
             pipelineId = pipelineId,
         )
-        val status = if (deployPipelineResult.pullRequestId != null) {
+        val status = if (deployPipelineResult.targetUrl != null) {
             TemplatePipelineStatus.UPDATING
         } else {
             TemplatePipelineStatus.UPDATED

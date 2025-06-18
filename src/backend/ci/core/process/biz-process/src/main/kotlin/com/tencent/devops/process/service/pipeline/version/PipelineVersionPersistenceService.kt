@@ -196,10 +196,16 @@ class PipelineVersionPersistenceService @Autowired constructor(
 
     fun createDraftVersion(
         context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
+        resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
+            )
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
+            )
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
                 createPipelineResourceVersion(
@@ -216,24 +222,29 @@ class PipelineVersionPersistenceService @Autowired constructor(
     }
 
     fun updateDraftVersion(
-        userId: String,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting,
-        settingId: Long
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            createPipelineResourceVersion(
-                transactionContext = transactionContext,
-                userId = userId,
-                pipelineResourceVersion = pipelineResourceVersion
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineSettingVersionDao.saveSetting(
-                dslContext = transactionContext,
-                setting = pipelineSetting,
-                version = pipelineSetting.version,
-                id = settingId
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
             )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                pipelineSettingVersionDao.update(
+                    dslContext = transactionContext,
+                    setting = pipelineSetting
+                )
+            }
         }
     }
 
@@ -268,6 +279,108 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 createPipelineSettingVersion(
                     transactionContext = transactionContext,
                     pipelineSetting = pipelineSetting
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineResourceVersion = pipelineResourceVersion,
+                    pipelineSetting = pipelineSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
+            )
+        }
+    }
+
+    /**
+     * 发布草稿到正式版本
+     */
+    fun releaseDraft2ReleaseVersion(
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
+    ) {
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
+            )
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                updatePipelineInfo(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineBasicInfo = pipelineBasicInfo,
+                    pipelineModelBasicInfo = pipelineModelBasicInfo,
+                    version = pipelineResourceVersion.version,
+                    latestVersionStatus = pipelineResourceVersion.status,
+                )
+                updatePipelineResource(
+                    transactionContext = transactionContext,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                // 将草稿版本转换成正式版本
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
+                )
+                pipelinePermissionService.modifyResource(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    pipelineName = pipelineBasicInfo.pipelineName
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineResourceVersion = pipelineResourceVersion,
+                    pipelineSetting = pipelineSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
+            )
+        }
+    }
+
+    /**
+     * 发布草稿到分支版本
+     */
+    fun releaseDraft2BranchVersion(
+        context: PipelineVersionCreateContext,
+        resourceOnlyVersion: PipelineResourceOnlyVersion
+    ) {
+        with(context) {
+            val pipelineResourceVersion = PipelineResourceVersion(
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineResourceOnlyVersion = resourceOnlyVersion
+            )
+            val pipelineSetting = pipelineSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion!!
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                // 分支版本需要将同分支版本置为无效
+                pipelineResourceVersionDao.updateBranchVersion(
+                    dslContext = transactionContext,
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    branchName = branchName,
+                    branchVersionAction = BranchVersionAction.INACTIVE
+                )
+                // 将草稿版本转换成分支版本
+                createPipelineResourceVersion(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    pipelineResourceVersion = pipelineResourceVersion
                 )
                 postProcessInTransactionVersionCreate(
                     transactionContext = transactionContext,

@@ -213,7 +213,7 @@ class PipelineTemplateGenerator @Autowired constructor(
     /**
      * 生成草稿发布版本
      */
-    fun generateReleaseDraftVersion(
+    fun generateDraftReleaseVersion(
         projectId: String,
         templateId: String,
         draftResource: PipelineTemplateResource,

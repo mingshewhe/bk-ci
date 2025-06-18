@@ -27,31 +27,43 @@
 
 package com.tencent.devops.process.service.pipeline.version.handler
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
+import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
+import com.tencent.devops.process.yaml.PipelineYamlFacadeService
+import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
+/**
+ * 流水线发布处理器
+ */
 @Service
-class PipelineTemplateInstanceHandler @Autowired constructor(
+class PipelineDraftReleaseHandler @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService
+    private val pipelineVersionPersistenceService: PipelineVersionPersistenceService,
+    private val dslContext: DSLContext,
+    private val pipelineResourceVersionDao: PipelineResourceVersionDao,
+    @Lazy
+    private val pipelineYamlFacadeService: PipelineYamlFacadeService
 ) : PipelineVersionCreateHandler {
-    override fun support(context: PipelineVersionCreateContext) =
-        context.versionAction == PipelineVersionAction.TEMPLATE_INSTANCE
+    override fun support(context: PipelineVersionCreateContext): Boolean {
+        return context.versionAction == PipelineVersionAction.RELEASE_DRAFT
+    }
 
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
-            if (templateInstanceBasicInfo == null) {
-                throw IllegalArgumentException("templateInstanceBasicInfo is null")
-            }
             if (enablePac) {
                 if (targetAction == null) {
                     throw IllegalArgumentException("targetAction is null")
@@ -74,37 +86,40 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
     }
 
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
-        val resourceOnlyVersion = if (pipelineInfo == null) {
-            val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
-                versionStatus = pipelineResourceWithoutVersion.status,
-                branchName = branchName
+        val draftResource = pipelineResourceVersionDao.getVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            version = version,
+            includeDraft = true
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_DRAFT_EXISTS,
+        )
+        // 加锁之后,再次验证草稿版本是否已经发布
+        if (draftResource.status != VersionStatus.COMMITTING) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_RELEASE_MUST_DRAFT_VERSION
             )
-            pipelineVersionPersistenceService.initializeTemplate(
-                context = this, resourceOnlyVersion = resourceOnlyVersion
+        }
+        val resourceOnlyVersion = pipelineVersionGenerator.generateDratReleaseVersion(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            draftResource = draftResource,
+            enablePac = enablePac,
+            repoHashId = yamlFileInfo?.repoHashId,
+            targetAction = targetAction,
+            targetBranch = branchName
+        )
+        if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
+            pipelineVersionPersistenceService.releaseDraft2ReleaseVersion(
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
             )
-            resourceOnlyVersion
         } else {
-            val resourceOnlyVersion = pipelineVersionGenerator.generateInstanceVersion(
-                projectId = projectId,
-                pipelineId = pipelineId,
-                newModel = pipelineResourceWithoutVersion.model,
-                enablePac = enablePac,
-                repoHashId = yamlFileInfo?.repoHashId,
-                targetAction = targetAction,
-                targetBranch = branchName,
-                templateId = templateInstanceBasicInfo!!.templateId,
-                templateVersion = templateInstanceBasicInfo.templateVersion
+            pipelineVersionPersistenceService.releaseDraft2BranchVersion(
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
             )
-            if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
-                pipelineVersionPersistenceService.createReleaseVersion(
-                    context = this, resourceOnlyVersion = resourceOnlyVersion
-                )
-            } else {
-                pipelineVersionPersistenceService.createBranchVersion(
-                    context = this, resourceOnlyVersion = resourceOnlyVersion
-                )
-            }
-            resourceOnlyVersion
         }
 
         // 推送文件
@@ -115,12 +130,18 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             )
         }
 
+        val yamlInfo = pipelineYamlFacadeService.getPipelineYamlInfo(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            version = resourceOnlyVersion.version
+        )
         return DeployPipelineResult(
             pipelineId = pipelineId,
-            pipelineName = pipelineSettingWithoutVersion.pipelineName,
+            pipelineName = pipelineBasicInfo.pipelineName,
             version = resourceOnlyVersion.version,
             versionNum = resourceOnlyVersion.versionNum,
             versionName = resourceOnlyVersion.versionName,
+            yamlInfo = yamlInfo,
             targetUrl = yamlFileReleaseResult?.pullRequestUrl
         )
     }

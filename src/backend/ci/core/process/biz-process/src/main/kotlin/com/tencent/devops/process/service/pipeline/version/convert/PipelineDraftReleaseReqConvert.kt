@@ -1,0 +1,161 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.devops.process.service.pipeline.version.convert
+
+import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
+import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
+import com.tencent.devops.process.engine.service.PipelineInfoService
+import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
+import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
+import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
+import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
+import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
+import com.tencent.devops.process.yaml.PipelineYamlService
+import org.jooq.DSLContext
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
+
+@Service
+class PipelineDraftReleaseReqConvert @Autowired constructor(
+    private val pipelineInfoService: PipelineInfoService,
+    private val pipelineSettingFacadeService: PipelineSettingFacadeService,
+    private val dslContext: DSLContext,
+    private val pipelineResourceVersionDao: PipelineResourceVersionDao,
+    private val pipelineVersionGenerator: PipelineVersionGenerator,
+    private val pipelineVersionCommonConvert: PipelineVersionCommonConvert,
+    private val pipelineYamlService: PipelineYamlService
+) : PipelineVersionCreateReqConverter {
+    override fun support(request: PipelineVersionCreateReq): Boolean {
+        return request is PipelineVersionReleaseRequest
+    }
+
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    override fun convert(
+        userId: String,
+        projectId: String,
+        pipelineId: String?,
+        version: Int?,
+        request: PipelineVersionCreateReq
+    ): PipelineVersionCreateContext {
+        request as PipelineVersionReleaseRequest
+        with(request) {
+            if (pipelineId == null) {
+                throw IllegalArgumentException("pipelineId is null")
+            }
+            if (version == null) {
+                throw IllegalArgumentException("version is null")
+            }
+            pipelineInfoService.getPipelineInfo(
+                projectId = projectId,
+                pipelineId = pipelineId,
+            ) ?: throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+                params = arrayOf(pipelineId)
+            )
+            val draftResource = pipelineResourceVersionDao.getVersionResource(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = version,
+                includeDraft = true
+            ) ?: throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_DRAFT_EXISTS,
+            )
+            if (draftResource.status != VersionStatus.COMMITTING) {
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_RELEASE_MUST_DRAFT_VERSION
+                )
+            }
+            if (enablePac) {
+                if (targetAction == null) {
+                    throw IllegalArgumentException("targetAction is null")
+                }
+                if (yamlInfo == null) {
+                    throw IllegalArgumentException("yamlInfo is null")
+                }
+                if (draftResource.yaml == null) {
+                    throw IllegalArgumentException("yaml is null")
+                }
+            }
+
+            val versionStatus = pipelineVersionGenerator.getDraftReleaseStatusAndBranchName(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = version,
+                enablePac = enablePac,
+                repoHashId = yamlInfo?.repoHashId,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            ).first
+
+            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(draftResource).copy(
+                status = versionStatus
+            )
+
+            val pipelineSettingWithoutVersion = draftResource.settingVersion?.let {
+                pipelineSettingFacadeService.userGetSetting(
+                    userId = userId,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    version = it
+                )
+            } ?: pipelineSettingFacadeService.userGetSetting(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+            // 通过路径引用的方式,模版yaml文件所属的仓库ID应与流水线相同
+            val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+            return pipelineVersionCommonConvert.convert(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = version,
+                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
+                versionStatus = versionStatus,
+                versionAction = PipelineVersionAction.RELEASE_DRAFT,
+                repoHashId = pipelineYamlInfo?.repoHashId
+            ).copy(
+                yamlFileInfo = yamlInfo?.let { PipelineYamlFileInfo(it) },
+                enablePac = enablePac,
+                targetAction = targetAction,
+                targetBranch = targetBranch
+            )
+        }
+    }
+}

@@ -33,11 +33,11 @@ import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.model.process.tables.TPipelineSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineSettingVersionRecord
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
-import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import org.jooq.DSLContext
 import org.jooq.RecordMapper
 import org.slf4j.LoggerFactory
@@ -118,6 +118,36 @@ class PipelineSettingVersionDao {
                 .set(PIPELINE_AS_CODE_SETTINGS, setting.pipelineAsCodeSettings?.let { self ->
                     JsonUtil.toJson(self, false)
                 })
+                .execute()
+        }
+    }
+
+    fun update(
+        dslContext: DSLContext,
+        setting: PipelineSetting
+    ) {
+        val successSubscriptionList = setting.successSubscriptionList ?: emptyList()
+        val failSubscriptionList = setting.failSubscriptionList ?: emptyList()
+        with(TPipelineSettingVersion.T_PIPELINE_SETTING_VERSION) {
+            dslContext.update(this)
+                .set(NAME, setting.pipelineName)
+                .set(DESC, setting.desc)
+                .set(LABELS, setting.labels.let { self -> JsonUtil.toJson(self, false) })
+                .set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(setting.runLockType))
+                .set(WAIT_QUEUE_TIME_SECOND, DateTimeUtil.minuteToSecond(setting.waitQueueTimeMinute))
+                .set(MAX_QUEUE_SIZE, setting.maxQueueSize)
+                .set(BUILD_NUM_RULE, setting.buildNumRule)
+                .set(CONCURRENCY_GROUP, setting.concurrencyGroup)
+                .set(CONCURRENCY_CANCEL_IN_PROGRESS, setting.concurrencyCancelInProgress)
+                .set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(successSubscriptionList, false))
+                .set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(failSubscriptionList, false))
+                .set(MAX_CON_RUNNING_QUEUE_SIZE, setting.maxConRunningQueueSize ?: -1)
+                .set(PIPELINE_AS_CODE_SETTINGS, setting.pipelineAsCodeSettings?.let { self ->
+                    JsonUtil.toJson(self, false)
+                })
+                .where(PROJECT_ID.eq(setting.projectId))
+                .and(PIPELINE_ID.eq(setting.pipelineId))
+                .and(VERSION.eq(setting.version))
                 .execute()
         }
     }

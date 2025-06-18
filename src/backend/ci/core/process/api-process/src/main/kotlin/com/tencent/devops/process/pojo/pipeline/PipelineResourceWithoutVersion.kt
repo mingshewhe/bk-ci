@@ -45,8 +45,6 @@ data class PipelineResourceWithoutVersion(
     var yaml: String?,
     @get:Schema(title = "YAML编排版本", required = false)
     var yamlVersion: String?,
-    @get:Schema(title = "实例化model,如果从模版实例化,有完整的编排内容", required = false)
-    val instanceModel: Model? = null,
     @get:Schema(title = "创建者", required = true)
     val creator: String,
     @get:Schema(title = "版本创建时间", required = true)

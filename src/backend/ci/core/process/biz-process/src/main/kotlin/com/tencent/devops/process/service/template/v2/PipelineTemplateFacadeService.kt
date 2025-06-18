@@ -206,7 +206,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         val templateSetting = pipelineTemplateSettingService.get(
             projectId = projectId, templateId = templateId, settingVersion = draftResource.settingVersion
         )
-        val resourceOnlyVersion = pipelineTemplateGenerator.generateReleaseDraftVersion(
+        val resourceOnlyVersion = pipelineTemplateGenerator.generateDraftReleaseVersion(
             projectId = projectId,
             templateId = templateId,
             draftResource = draftResource,

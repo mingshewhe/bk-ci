@@ -468,7 +468,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
         version: Long,
         request: PipelineTemplateInstancesRequest
     ): List<PrefetchReleaseResult> {
-        return pipelineVersionGenerator.batchGenerateInstanceVersion(
+        return pipelineVersionGenerator.batchPreFetchInstanceVersion(
             projectId = projectId,
             templateId = templateId,
             version = version,

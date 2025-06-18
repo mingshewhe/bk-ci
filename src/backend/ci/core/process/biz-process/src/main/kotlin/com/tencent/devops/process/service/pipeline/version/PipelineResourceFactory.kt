@@ -27,20 +27,29 @@
 
 package com.tencent.devops.process.service.pipeline.version
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
+import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
+import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateRefType
+import com.tencent.devops.process.service.StageTagService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelParser
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -48,7 +57,10 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineResourceFactory @Autowired constructor(
     private val client: Client,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val stageTagService: StageTagService,
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateModelParser: PipelineTemplateModelParser
 ) {
 
     fun createPipelineBasicInfo(
@@ -171,5 +183,57 @@ class PipelineResourceFactory @Autowired constructor(
                 overrideTemplateSettingGroups = overrideTemplateSettingGroups
             )
         }
+    }
+
+    fun createTemplateInstanceBasicInfo(
+        projectId: String,
+        model: Model,
+        repoHashId: String? = null,
+        branchName: String? = null
+    ): PipelineTemplateInstanceBasicInfo {
+        val templateResource = pipelineTemplateModelParser.parseTemplateDescriptor(
+            projectId = projectId,
+            descriptor = model,
+            repoHashId = repoHashId,
+            branchName = branchName
+        )
+        if (templateResource.model !is Model) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+            )
+        }
+        val templateInfo = pipelineTemplateInfoService.get(
+            projectId = projectId, templateId = templateResource.templateId
+        )
+        if (templateInfo.type != PipelineTemplateType.PIPELINE) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE,
+            )
+        }
+
+        val templateModel = templateResource.model as Model
+        val pipelineParams = PipelineUtils.mergeTemplateParams(
+            templateParams = templateModel.getTriggerContainer().params,
+            templateParameters = model.templateVariables,
+        )
+        val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
+        val instanceModel = PipelineUtils.instanceModelV2(
+            templateModel = templateResource.model as Model,
+            pipelineName = model.name,
+            buildNo = null,
+            param = pipelineParams,
+            instanceFromTemplate = true,
+            defaultStageTagId = defaultStageTagId,
+            templateId = templateResource.templateId,
+            triggerConfigs = model.triggerConfigs
+        )
+        return PipelineTemplateInstanceBasicInfo(
+            templateId = templateResource.templateId,
+            templateName = templateInfo.name,
+            templateVersion = templateResource.version,
+            templateVersionName = templateResource.versionName,
+            instanceModel = instanceModel,
+            instanceType = PipelineInstanceTypeEnum.CONSTRAINT
+        )
     }
 }

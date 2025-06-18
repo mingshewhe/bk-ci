@@ -23,23 +23,34 @@
  * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package com.tencent.devops.process.pojo.pipeline
+package com.tencent.devops.process.pojo.pipeline.version
 
+import com.tencent.devops.common.pipeline.PipelineVersionWithModelRequest
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
+import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
-@Schema(title = "流水线yaml文件发布结果")
-data class PipelineYamlFileReleaseResult(
-    @get:Schema(title = "项目ID")
-    val projectId: String,
-    @get:Schema(title = "代码库ID")
-    val repoHashId: String,
-    @get:Schema(title = "ci文件路径")
-    val filePath: String,
-    @get:Schema(title = "分支名")
-    val branch: String,
-    @get:Schema(title = "合并请求链接")
-    val pullRequestUrl: String?
-)
+@Schema(title = "流水线保存草稿请求")
+data class PipelineDraftSaveReq(
+    @get:Schema(title = "流水线ID（为空时导入并创建流水线）", required = false)
+    val pipelineId: String?,
+    @get:Schema(title = "草稿的来源版本（前端保存时传递）", required = true)
+    val baseVersion: Int,
+    @get:Schema(title = "流水线模型", required = true)
+    val modelAndSetting: PipelineModelAndSetting?,
+    @get:Schema(title = "流水线YAML编排（不为空时以YAML为准）", required = false)
+    val yaml: String?,
+    @get:Schema(title = "存储格式", required = false)
+    val storageType: PipelineStorageType? = PipelineStorageType.MODEL
+) : PipelineVersionCreateReq {
+
+    constructor(modelAndYaml: PipelineVersionWithModelRequest) : this(
+        pipelineId = modelAndYaml.pipelineId,
+        baseVersion = modelAndYaml.baseVersion,
+        modelAndSetting = modelAndYaml.modelAndSetting,
+        yaml = modelAndYaml.yaml,
+        storageType = modelAndYaml.storageType
+    )
+}

@@ -133,15 +133,16 @@ class PipelineTemplateInstanceReqConverter(
             )
 
             // 获取版本状态
-            val (versionStatus, branchName) = pipelineVersionGenerator.getVersionStatusAndBranchName(
+            val versionStatus = pipelineVersionGenerator.getInstanceStatusAndBranchName(
                 projectId = projectId,
+                pipelineId = newPipelineId,
                 templateId = templateId,
                 templateVersion = templateVersion,
                 enablePac = enablePac,
                 repoHashId = repoHashId,
                 targetAction = targetAction,
                 targetBranch = targetBranch
-            )
+            ).first
 
             val templateInfo = pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId)
             if (templateInfo.type != PipelineTemplateType.PIPELINE) {
@@ -223,7 +224,6 @@ class PipelineTemplateInstanceReqConverter(
                 model = pipelineModel,
                 yaml = newYaml?.yamlStr,
                 yamlVersion = newYaml?.versionTag,
-                instanceModel = instanceModel,
                 creator = userId,
                 createTime = LocalDateTime.now(),
                 updater = userId,
@@ -255,8 +255,8 @@ class PipelineTemplateInstanceReqConverter(
                 templateName = templateInfo.name,
                 templateVersion = templateVersion,
                 templateVersionName = templateResource.versionName,
-                instanceType = PipelineInstanceTypeEnum.CONSTRAINT,
-                useTemplateSetting = useTemplateSetting
+                instanceModel = instanceModel,
+                instanceType = PipelineInstanceTypeEnum.CONSTRAINT
             )
 
             return PipelineVersionCreateContext(
@@ -269,6 +269,7 @@ class PipelineTemplateInstanceReqConverter(
                 pipelineModelBasicInfo = pipelineModelBasicInfo,
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
+                templateInstanceBasicInfo = templateInstanceBasicInfo,
                 enablePac = enablePac,
                 yamlFileInfo = enablePac.takeIf { it }?.let {
                     PipelineYamlFileInfo(
@@ -277,8 +278,7 @@ class PipelineTemplateInstanceReqConverter(
                     )
                 },
                 targetAction = targetAction,
-                branchName = branchName,
-                templateInstanceBasicInfo = templateInstanceBasicInfo
+                targetBranch = targetBranch
             )
         }
     }

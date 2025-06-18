@@ -35,4 +35,9 @@ data class PipelineYamlFileInfo(
     val repoHashId: String,
     @get:Schema(title = "ci文件路径")
     val filePath: String
-)
+) {
+    constructor(yamlVo: PipelineYamlVo): this(
+        repoHashId = yamlVo.repoHashId,
+        filePath = yamlVo.filePath
+    )
+}

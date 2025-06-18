@@ -194,15 +194,12 @@ class PipelineVersionGenerator constructor(
      *
      * @param draftResource 草稿版本编排
      * @param newModel 新版编排
-     * @param useTemplateSettings 是否使用模版设置
      */
     fun generateReleaseVersion(
         projectId: String,
         pipelineId: String,
         draftResource: PipelineResourceVersion? = null,
-        newModel: Model,
-        instanceFromTemplate: Boolean = false,
-        useTemplateSettings: Boolean = false
+        newModel: Model
     ): PipelineResourceOnlyVersion {
         val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
             dslContext = dslContext,
@@ -224,13 +221,7 @@ class PipelineVersionGenerator constructor(
             pipelineId = pipelineId
         )
         val (version, settingVersion) = if (draftResource == null) {
-            // 不使用模版设置,则使用流水线最新版本,如果最新版本不存在,则创建一个新的
-            val newSettingVersion = if (instanceFromTemplate && !useTemplateSettings) {
-                latestReleaseResource?.settingVersion ?: (latestSetting.version + 1)
-            } else {
-                latestSetting.version + 1
-            }
-            Pair(latestResource.version + 1, newSettingVersion)
+            Pair(latestResource.version + 1, latestSetting.version + 1)
         } else {
             Pair(draftResource.version, draftResource.settingVersion)
         }
@@ -283,8 +274,177 @@ class PipelineVersionGenerator constructor(
         }
     }
 
-    fun getVersionStatusAndBranchName(
+    /**
+     * 生成模版实例化版本
+     *
+     */
+    fun generateInstanceVersion(
         projectId: String,
+        pipelineId: String,
+        newModel: Model,
+        enablePac: Boolean,
+        repoHashId: String?,
+        targetAction: CodeTargetAction?,
+        targetBranch: String? = null,
+        defaultBranch: String? = null,
+        templateId: String,
+        templateVersion: Long
+    ): PipelineResourceOnlyVersion {
+        return if (enablePac) {
+            if (repoHashId.isNullOrEmpty()) {
+                throw IllegalArgumentException("repoHashId is empty")
+            }
+            val checkoutBranch = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
+            generateVersionWithPac(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                newModel = newModel,
+                repoHashId = repoHashId,
+                targetAction = targetAction,
+                checkoutBranch = checkoutBranch,
+                targetBranch = targetBranch,
+                defaultBranch = defaultBranch
+            )
+        } else {
+            val resourceOnlyVersion = generateReleaseVersion(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                newModel = newModel
+            )
+            resourceOnlyVersion
+        }
+    }
+
+    fun generateDratReleaseVersion(
+        projectId: String,
+        pipelineId: String,
+        draftResource: PipelineResourceVersion,
+        enablePac: Boolean,
+        repoHashId: String?,
+        targetAction: CodeTargetAction?,
+        targetBranch: String? = null
+    ): PipelineResourceOnlyVersion {
+        return if (enablePac) {
+            if (repoHashId.isNullOrEmpty()) {
+                throw IllegalArgumentException("repoHashId is empty")
+            }
+            val checkoutBranch = "$PAC_BRANCH_PREFIX$pipelineId-${draftResource.version}"
+            generateVersionWithPac(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                newModel = draftResource.model,
+                repoHashId = repoHashId,
+                targetAction = targetAction,
+                checkoutBranch = checkoutBranch,
+                baseVersion = draftResource.version,
+                targetBranch = targetBranch
+            )
+        } else {
+            generateReleaseVersion(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                draftResource = draftResource,
+                newModel = draftResource.model
+            )
+        }
+    }
+
+    /**
+     * 生成开启PAC实例化版本
+     *
+     * @param checkoutBranch 当targetAction==CHECKOUT_BRANCH_AND_REQUEST_MERGE,则需要传入checkoutBranch,新建分支名
+     * @param baseVersion 当targetAction==COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE
+     *  或COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE,则需要传入baseVersion,基准版本号
+     * @param targetBranch 当targetAction==COMMIT_TO_TARGET_BRANCH,则需要传入targetBranch,表示指定的分支
+     * @param defaultBranch 默认分支
+     */
+    fun generateVersionWithPac(
+        projectId: String,
+        pipelineId: String,
+        newModel: Model,
+        repoHashId: String,
+        targetAction: CodeTargetAction?,
+        checkoutBranch: String? = null,
+        baseVersion: Int? = null,
+        targetBranch: String? = null,
+        defaultBranch: String? = null
+    ): PipelineResourceOnlyVersion {
+        return when (targetAction) {
+            CodeTargetAction.COMMIT_TO_MASTER -> {
+                generateReleaseVersion(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    newModel = newModel
+                )
+            }
+
+            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
+                if (checkoutBranch.isNullOrEmpty()) {
+                    throw IllegalArgumentException("checkoutBranch is null")
+                }
+                generateBranchVersion(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    branchName = checkoutBranch
+                )
+            }
+
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH,
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE -> {
+                if (baseVersion == null) {
+                    throw IllegalArgumentException("baseBranch is null")
+                }
+                val pipelineVersionSimple = pipelineResourceVersionDao.getPipelineVersionSimple(
+                    dslContext = dslContext,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    version = baseVersion
+                ) ?: throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_BASE_VERSION_NOT_FOUND,
+                    params = arrayOf(baseVersion.toString())
+                )
+                generateBranchVersion(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    branchName = pipelineVersionSimple.versionName
+                )
+            }
+
+            CodeTargetAction.COMMIT_TO_BRANCH -> {
+                if (targetBranch == null) {
+                    throw IllegalArgumentException("targetBranch is null")
+                }
+                val finalDefaultBranch = defaultBranch ?: getDefaultBranch(
+                    projectId = projectId, repoHashId = repoHashId
+                )
+                // 如果选择的是默认分支,则应该发布正式版本
+                if (targetBranch == finalDefaultBranch) {
+                    generateReleaseVersion(
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        newModel = newModel
+                    )
+                } else {
+                    generateBranchVersion(
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        branchName = targetBranch
+                    )
+                }
+            }
+
+            else -> {
+                throw IllegalArgumentException("targetAction is illegal")
+            }
+        }
+    }
+
+    /**
+     * 获取模版实例化版本状态和分支名
+     */
+    fun getInstanceStatusAndBranchName(
+        projectId: String,
+        pipelineId: String?,
         templateId: String,
         templateVersion: Long,
         enablePac: Boolean,
@@ -294,12 +454,13 @@ class PipelineVersionGenerator constructor(
         defaultBranch: String? = null
     ): Pair<VersionStatus, String?> {
         return if (enablePac) {
-            return getVersionStatusAndBranchNameWithPac(
+            val checkoutBranch = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
+            return getStatusAndBranchNameWithPac(
                 projectId = projectId,
-                templateId = templateId,
-                templateVersion = templateVersion,
+                pipelineId = pipelineId,
                 repoHashId = repoHashId,
                 targetAction = targetAction,
+                checkoutBranch = checkoutBranch,
                 targetBranch = targetBranch,
                 defaultBranch = defaultBranch
             )
@@ -308,13 +469,44 @@ class PipelineVersionGenerator constructor(
         }
     }
 
-    private fun getVersionStatusAndBranchNameWithPac(
+    /**
+     * 获取草稿发版流水线版本状态和分支名
+     */
+    fun getDraftReleaseStatusAndBranchName(
         projectId: String,
-        templateId: String,
-        templateVersion: Long,
+        pipelineId: String,
+        version: Int,
+        enablePac: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
-        targetBranch: String?,
+        targetBranch: String? = null,
+    ): Pair<VersionStatus, String?> {
+        return if (enablePac) {
+            val checkoutBranch = "$PAC_BRANCH_PREFIX$pipelineId-$version"
+            return getStatusAndBranchNameWithPac(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                repoHashId = repoHashId,
+                targetAction = targetAction,
+                checkoutBranch = checkoutBranch,
+                targetBranch = targetBranch,
+            )
+        } else {
+            Pair(VersionStatus.RELEASED, null)
+        }
+    }
+
+    /**
+     * 获取PAC实例化版本状态和分支名
+     */
+    private fun getStatusAndBranchNameWithPac(
+        projectId: String,
+        pipelineId: String?,
+        repoHashId: String?,
+        targetAction: CodeTargetAction?,
+        checkoutBranch: String? = null,
+        baseVersion: Int? = null,
+        targetBranch: String? = null,
         defaultBranch: String? = null,
     ): Pair<VersionStatus, String?> {
         if (repoHashId.isNullOrBlank()) {
@@ -326,10 +518,31 @@ class PipelineVersionGenerator constructor(
                 Pair(VersionStatus.RELEASED, null)
             }
 
-            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
-            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
-                val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
-                Pair(VersionStatus.BRANCH, branchName)
+            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE -> {
+                if (checkoutBranch.isNullOrEmpty()) {
+                    throw IllegalArgumentException("checkoutBranch is null")
+                }
+                Pair(VersionStatus.BRANCH, checkoutBranch)
+            }
+
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH,
+            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE -> {
+                if (pipelineId.isNullOrEmpty()) {
+                    throw IllegalArgumentException("pipelineId is null")
+                }
+                if (baseVersion == null) {
+                    throw IllegalArgumentException("baseBranch is null")
+                }
+                val pipelineVersionSimple = pipelineResourceVersionDao.getPipelineVersionSimple(
+                    dslContext = dslContext,
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    version = baseVersion
+                ) ?: throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_BASE_VERSION_NOT_FOUND,
+                    params = arrayOf(baseVersion.toString())
+                )
+                Pair(VersionStatus.BRANCH, pipelineVersionSimple.versionName)
             }
 
             CodeTargetAction.COMMIT_TO_BRANCH -> {
@@ -348,119 +561,7 @@ class PipelineVersionGenerator constructor(
         }
     }
 
-    /**
-     * 生成模版实例化版本
-     *
-     */
-    fun generateInstanceVersion(
-        projectId: String,
-        pipelineId: String,
-        newModel: Model,
-        useTemplateSetting: Boolean,
-        enablePac: Boolean,
-        repoHashId: String?,
-        targetAction: CodeTargetAction?,
-        targetBranch: String? = null,
-        defaultBranch: String? = null,
-        templateId: String,
-        templateVersion: Long
-    ): PipelineResourceOnlyVersion {
-
-        return if (enablePac) {
-            generateInstanceVersionWithPac(
-                projectId = projectId,
-                pipelineId = pipelineId,
-                newModel = newModel,
-                useTemplateSetting = useTemplateSetting,
-                repoHashId = repoHashId,
-                targetAction = targetAction,
-                targetBranch = targetBranch,
-                defaultBranch = defaultBranch,
-                templateId = templateId,
-                templateVersion = templateVersion
-            )
-        } else {
-            val resourceOnlyVersion = generateReleaseVersion(
-                projectId = projectId,
-                pipelineId = pipelineId,
-                newModel = newModel,
-                instanceFromTemplate = true,
-                useTemplateSettings = useTemplateSetting
-            )
-            resourceOnlyVersion
-        }
-    }
-
-    /**
-     * 生成开启PAC实例化版本
-     */
-    fun generateInstanceVersionWithPac(
-        projectId: String,
-        pipelineId: String,
-        newModel: Model,
-        useTemplateSetting: Boolean,
-        repoHashId: String?,
-        targetAction: CodeTargetAction?,
-        targetBranch: String? = null,
-        defaultBranch: String? = null,
-        templateId: String,
-        templateVersion: Long,
-    ): PipelineResourceOnlyVersion {
-        if (repoHashId.isNullOrBlank()) {
-            throw IllegalArgumentException("repoHashId is null")
-        }
-        return when (targetAction) {
-            CodeTargetAction.COMMIT_TO_MASTER -> {
-                generateReleaseVersion(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    newModel = newModel,
-                    instanceFromTemplate = true,
-                    useTemplateSettings = useTemplateSetting
-                )
-            }
-
-            CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE,
-            CodeTargetAction.COMMIT_TO_SOURCE_BRANCH -> {
-                val branchName = "$PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX$templateId-$templateVersion"
-                generateBranchVersion(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    branchName = branchName
-                )
-            }
-
-            CodeTargetAction.COMMIT_TO_BRANCH -> {
-                if (targetBranch == null) {
-                    throw IllegalArgumentException("targetBranch is null")
-                }
-                val finalDefaultBranch =
-                    defaultBranch ?: getDefaultBranch(projectId = projectId, repoHashId = repoHashId)
-                // 如果选择的是默认分支,则应该发布正式版本
-                if (targetBranch == finalDefaultBranch) {
-                    generateReleaseVersion(
-                        projectId = projectId,
-                        pipelineId = pipelineId,
-                        newModel = newModel,
-                        instanceFromTemplate = true,
-                        useTemplateSettings = useTemplateSetting
-                    )
-                } else {
-                    generateBranchVersion(
-                        projectId = projectId,
-                        pipelineId = pipelineId,
-                        branchName = targetBranch
-                    )
-                }
-            }
-
-            else -> {
-                throw IllegalArgumentException("targetAction is illegal")
-            }
-        }
-    }
-
-    fun batchGenerateInstanceVersion(
+    fun batchPreFetchInstanceVersion(
         projectId: String,
         templateId: String,
         version: Long,
@@ -480,8 +581,9 @@ class PipelineVersionGenerator constructor(
             return instanceReleaseInfos.map { releaseInfo ->
                 // 新增实例化
                 val resourceOnlyVersion = if (releaseInfo.pipelineId.isEmpty()) {
-                    val (versionStatus, branchName) = getVersionStatusAndBranchName(
+                    val (versionStatus, branchName) = getInstanceStatusAndBranchName(
                         projectId = projectId,
+                        pipelineId = null,
                         templateId = templateId,
                         templateVersion = version,
                         enablePac = enablePac,
@@ -508,7 +610,6 @@ class PipelineVersionGenerator constructor(
                         projectId = projectId,
                         pipelineId = releaseInfo.pipelineId,
                         newModel = instanceModel,
-                        useTemplateSetting = request.useTemplateSetting,
                         enablePac = enablePac,
                         repoHashId = repoHashId,
                         targetAction = targetAction,
@@ -554,9 +655,7 @@ class PipelineVersionGenerator constructor(
         userId: String,
         projectId: String,
         yaml: String,
-        yamlFileName: String,
-        isDefaultBranch: Boolean,
-        branchName: String,
+        yamlFileName: String? = null,
         aspects: LinkedList<IPipelineTransferAspect>? = null
     ): Pair<PipelineModelAndSetting, YamlWithVersion?>  {
         return try {
@@ -569,7 +668,7 @@ class PipelineVersionGenerator constructor(
                 aspects = aspects ?: LinkedList()
             )
             if (result.modelAndSetting == null) {
-                logger.warn("TRANSFER_YAML|$projectId|$userId|$isDefaultBranch|yml=\n$yaml")
+                logger.warn("TRANSFER_YAML|$projectId|$userId|yml=\n$yaml")
                 throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
                 )
@@ -577,7 +676,7 @@ class PipelineVersionGenerator constructor(
             Pair(result.modelAndSetting!!, result.yamlWithVersion)
         } catch (ignore: Throwable) {
             if (ignore is ErrorCodeException) throw ignore
-            logger.warn("TRANSFER_YAML|$projectId|$userId|$branchName|$isDefaultBranch|yml=\n$yaml", ignore)
+            logger.warn("TRANSFER_YAML|$projectId|$userId|yml=\n$yaml", ignore)
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_OCCURRED_IN_TRANSFER
             )
@@ -622,6 +721,7 @@ class PipelineVersionGenerator constructor(
     companion object {
         const val INIT_VERSION = 1
         private const val PAC_TEMPLATE_INSTANCE_BRANCH_PREFIX = "bk-ci-template-instance-"
+        private const val PAC_BRANCH_PREFIX = "bk-ci-pipeline-"
         private val logger = LoggerFactory.getLogger(PipelineVersionGenerator::class.java)
     }
 }

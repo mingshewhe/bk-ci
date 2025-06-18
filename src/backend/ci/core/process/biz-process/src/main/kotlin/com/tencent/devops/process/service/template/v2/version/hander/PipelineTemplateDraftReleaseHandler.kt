@@ -104,7 +104,7 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
         val templateSetting = pipelineTemplateSettingService.get(
             projectId = projectId, templateId = templateId, settingVersion = draftResource.settingVersion
         )
-        val (versionStatus, resourceOnlyVersion) = pipelineTemplateGenerator.generateReleaseDraftVersion(
+        val (versionStatus, resourceOnlyVersion) = pipelineTemplateGenerator.generateDraftReleaseVersion(
             projectId = projectId,
             templateId = templateId,
             draftResource = draftResource,

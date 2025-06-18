@@ -57,8 +57,8 @@ class PipelineTemplateRelatedDao {
                     updater,
                     now,
                     now,
-                    buildNo?.let { JsonUtil.toJson(it) } ?: "",
-                    params?.let { JsonUtil.toJson(it) } ?: "",
+                    buildNo?.let { JsonUtil.toJson(it) },
+                    params?.let { JsonUtil.toJson(it) },
                     status?.name,
                     pullRequestUrl
                 ).execute()

@@ -46,6 +46,16 @@ class PipelineTemplateRelatedService @Autowired constructor(
         )
     }
 
+    fun get(projectId: String, pipelineId: String): PipelineTemplateRelated? {
+        return pipelineTemplateRelatedDao.get(
+            dslContext = dslContext,
+            condition = PipelineTemplateRelatedCommonCondition(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+        )
+    }
+
     fun count(condition: PipelineTemplateRelatedCommonCondition): Int {
         return pipelineTemplateRelatedDao.count(
             dslContext = dslContext,

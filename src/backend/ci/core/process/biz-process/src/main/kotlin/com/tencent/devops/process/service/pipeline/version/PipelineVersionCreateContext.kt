@@ -73,7 +73,9 @@ data class PipelineVersionCreateContext(
     val yamlFileInfo: PipelineYamlFileInfo? = null,
     @get:Schema(title = "发布操作", required = false)
     val targetAction: CodeTargetAction? = null,
-    @get:Schema(title = "分支名,发布时的分支或者代码库推送的分支", required = false)
+    @get:Schema(title = "当targetAction==COMMIT_TO_BRANCH,指定的分支", required = false)
+    val targetBranch: String? = null,
+    @get:Schema(title = "分支名,代码库推送的分支", required = false)
     val branchName: String? = null,
     @get:Schema(title = "合并请求连接", required = false)
     val pullRequestUrl: String? = null
