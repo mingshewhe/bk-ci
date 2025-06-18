@@ -41,7 +41,6 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
@@ -197,11 +196,6 @@ class PipelineResourceFactory @Autowired constructor(
             repoHashId = repoHashId,
             branchName = branchName
         )
-        if (templateResource.model !is Model) {
-            throw ErrorCodeException(
-                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
-            )
-        }
         val templateInfo = pipelineTemplateInfoService.get(
             projectId = projectId, templateId = templateResource.templateId
         )
@@ -210,22 +204,9 @@ class PipelineResourceFactory @Autowired constructor(
                 errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE,
             )
         }
-
-        val templateModel = templateResource.model as Model
-        val pipelineParams = PipelineUtils.mergeTemplateParams(
-            templateParams = templateModel.getTriggerContainer().params,
-            templateParameters = model.templateVariables,
-        )
-        val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
-        val instanceModel = PipelineUtils.instanceModelV2(
-            templateModel = templateResource.model as Model,
-            pipelineName = model.name,
-            buildNo = null,
-            param = pipelineParams,
-            instanceFromTemplate = true,
-            defaultStageTagId = defaultStageTagId,
-            templateId = templateResource.templateId,
-            triggerConfigs = model.triggerConfigs
+        val instanceModel = pipelineTemplateModelParser.instanceModel(
+            model = model,
+            templateResource = templateResource
         )
         return PipelineTemplateInstanceBasicInfo(
             templateId = templateResource.templateId,

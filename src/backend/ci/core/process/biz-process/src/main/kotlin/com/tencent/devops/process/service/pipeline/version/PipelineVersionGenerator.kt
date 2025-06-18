@@ -215,7 +215,7 @@ class PipelineVersionGenerator constructor(
         ) ?: throw ErrorCodeException(
             errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND
         )
-        val latestReleaseResource = pipelineResourceDao.getReleaseVersionResource(
+        val latestReleaseResource = pipelineResourceVersionDao.getReleaseVersionRecord(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId

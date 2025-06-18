@@ -30,11 +30,14 @@ package com.tencent.devops.process.service.template.v2
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
+import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.yaml.PipelineYamlFileService
 import com.tencent.devops.process.yaml.PipelineYamlService
 import com.tencent.devops.repository.api.ServiceRepositoryResource
@@ -54,10 +57,40 @@ class PipelineTemplateModelParser @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineYamlService: PipelineYamlService,
     private val pipelineYamlFileService: PipelineYamlFileService,
-    private val client: Client
+    private val client: Client,
+    private val stageTagService: StageTagService,
 ) {
 
-   /* fun parseModel(
+    /**
+     * 解析运行时model
+     *
+     * 运行时,需要将局部模版引用转换成具体的编排,然后组合成完整的编排
+     */
+    fun parseRuntimeModel(
+        projectId: String,
+        model: Model
+    ): Model {
+        return model
+    }
+
+    /**
+     * 解析展示时模型（用于前端展示）
+     */
+    fun parseViewModel(
+        projectId: String,
+        model: Model
+    ): Model {
+        return if (model.fromTemplate == true) {
+            instanceModel(
+                projectId = projectId,
+                model = model
+            )
+        } else {
+            model
+        }
+    }
+
+    /*fun parseModel(
         projectId: String,
         model: Model
     ): Model {
@@ -199,6 +232,52 @@ class PipelineTemplateModelParser @Autowired constructor(
         return templateModel.container.elements
     }*/
 
+    fun instanceModel(
+        projectId: String,
+        model: Model,
+        repoHashId: String? = null,
+        branchName: String? = null
+    ): Model {
+        val templateResource = parseTemplateDescriptor(
+            projectId = projectId,
+            descriptor = model,
+            repoHashId = repoHashId,
+            branchName = branchName
+        )
+        return instanceModel(
+            model = model,
+            templateResource = templateResource
+        )
+    }
+
+    fun instanceModel(
+        model: Model,
+        templateResource: PipelineTemplateResource
+    ): Model {
+        if (templateResource.model !is Model) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+            )
+        }
+
+        val templateModel = templateResource.model as Model
+        val pipelineParams = PipelineUtils.mergeTemplateParams(
+            templateParams = templateModel.getTriggerContainer().params,
+            templateParameters = model.templateVariables,
+        )
+        val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
+        return PipelineUtils.instanceModelV2(
+            templateModel = templateResource.model as Model,
+            pipelineName = model.name,
+            buildNo = null,
+            param = pipelineParams,
+            instanceFromTemplate = true,
+            defaultStageTagId = defaultStageTagId,
+            templateId = templateResource.templateId,
+            triggerConfigs = model.triggerConfigs
+        )
+    }
+
     /**
      * @param repoHashId 仓库hashId,当通过模版路径引用时，必须传入
      * @param branchName 触发分支名称,当webhook触发时才有值
@@ -210,7 +289,6 @@ class PipelineTemplateModelParser @Autowired constructor(
         branchName: String? = null
     ): PipelineTemplateResource {
         with(descriptor) {
-
             return when {
                 // 通过模版ID方式引用
                 !templateId.isNullOrEmpty() -> {
