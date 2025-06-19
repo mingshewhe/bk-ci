@@ -253,6 +253,19 @@ class PipelineTemplateInfoDao {
         }
     }
 
+    fun get(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String
+    ): PipelineTemplateInfoV2? {
+        return with(TPipelineTemplateInfo.T_PIPELINE_TEMPLATE_INFO) {
+            dslContext.selectFrom(this)
+                .where(ID.eq(templateId))
+                .and(PROJECT_ID.eq(projectId))
+                .fetchOne()?.convert()
+        }
+    }
+
     fun isNameExist(
         dslContext: DSLContext,
         projectId: String,

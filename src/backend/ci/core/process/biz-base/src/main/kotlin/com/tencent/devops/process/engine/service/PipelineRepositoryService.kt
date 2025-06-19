@@ -115,6 +115,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.TemplateInfo
 import com.tencent.devops.process.pojo.setting.PipelineModelVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
+import com.tencent.devops.process.service.PipelineModelParser
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
@@ -177,7 +178,8 @@ class PipelineRepositoryService constructor(
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineCallbackDao: PipelineCallbackDao,
     private val subPipelineTaskService: SubPipelineTaskService,
-    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao
+    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao,
+    private val pipelineModelParser: PipelineModelParser
 ) {
 
     companion object {
@@ -1400,10 +1402,15 @@ class PipelineRepositoryService constructor(
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_EXISTS_BY_ID,
                     params = arrayOf(pipelineId)
                 )
+                val fullModel = pipelineModelParser.parseModel(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    model = defaultVersion.model
+                )
                 // 正式执行时，当前最新版本可能是草稿，则作为调试执行
                 return Triple(
                     pipelineInfo,
-                    defaultVersion,
+                    defaultVersion.copy(model = fullModel),
                     defaultVersion.status == VersionStatus.COMMITTING
                 )
             } else {
@@ -1416,13 +1423,19 @@ class PipelineRepositoryService constructor(
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_VERSION_EXISTS_BY_ID,
                     params = arrayOf(version.toString())
                 )
+                val fullModel = pipelineModelParser.parseModel(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    model = targetResource.model
+                )
+                val finalResource = targetResource.copy(model = fullModel)
                 return when (targetResource.status) {
                     VersionStatus.COMMITTING -> {
-                        Triple(pipelineInfo, targetResource, true)
+                        Triple(pipelineInfo, finalResource, true)
                     }
 
                     else -> {
-                        Triple(pipelineInfo, targetResource, false)
+                        Triple(pipelineInfo, finalResource, false)
                     }
                 }
             }

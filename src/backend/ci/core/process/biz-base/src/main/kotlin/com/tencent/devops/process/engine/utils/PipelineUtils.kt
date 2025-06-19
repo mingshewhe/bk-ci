@@ -297,7 +297,10 @@ object PipelineUtils {
         )
     }
 
-    fun instanceModelV2(
+    /**
+     * 流水线编排与模版编排合并
+     */
+    fun mergeModel(
         model: Model,
         templateModel: Model,
         defaultStageTagId: String?

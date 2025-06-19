@@ -72,7 +72,6 @@ import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
 import com.tencent.devops.process.service.scm.ScmProxyService
 import com.tencent.devops.process.service.template.TemplateFacadeService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateModelParser
 import com.tencent.devops.process.service.view.PipelineViewGroupService
 import com.tencent.devops.process.template.service.TemplateService
 import com.tencent.devops.process.utils.PipelineVersionUtils
@@ -109,7 +108,7 @@ class PipelineVersionFacadeService @Autowired constructor(
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val scmProxyService: ScmProxyService,
     private val pipelineVersionManager: PipelineVersionManager,
-    private val pipelineTemplateModelParser: PipelineTemplateModelParser
+    private val pipelineModelParser: PipelineModelParser
 ) {
 
     companion object {
@@ -474,12 +473,13 @@ class PipelineVersionFacadeService @Autowired constructor(
             pipelineId = pipelineId,
             version = resource.settingVersion ?: 0 // 历史没有关联过setting版本应该取正式版本
         )
-        val viewModel = pipelineTemplateModelParser.parseViewModel(
+        val fullModel = pipelineModelParser.parseModel(
             projectId = projectId,
+            pipelineId = pipelineId,
             model = resource.model
         )
         val model = pipelineInfoFacadeService.getFixedModel(
-            model = viewModel,
+            model = fullModel,
             projectId = projectId,
             pipelineId = pipelineId,
             userId = userId,

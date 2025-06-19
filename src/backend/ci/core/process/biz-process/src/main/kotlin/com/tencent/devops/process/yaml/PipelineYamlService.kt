@@ -638,46 +638,4 @@ class PipelineYamlService(
             pipelineIds = pipelineIds
         )
     }
-
-    /**
-     * 获取触发时版本
-     *
-     * 1. 查看触发分支有没有blobId对应的版本
-     * 2. 如果触发分支没有,则查看默认分支
-     * 3. 如果默认分支也没有,则查看其他分支是不是有没有对应的版本
-     */
-    fun getTriggerVersion(
-        projectId: String,
-        repoHashId: String,
-        filePath: String,
-        ref: String,
-        blobId: String,
-        defaultBranch: String
-    ): PipelineYamlVersion? {
-        val pipelineBranchVersion = getPipelineYamlVersion(
-            projectId = projectId,
-            repoHashId = repoHashId,
-            filePath = filePath,
-            ref = ref,
-            blobId = blobId,
-            branchAction = BranchVersionAction.ACTIVE.name
-        )
-        return if (ref == defaultBranch) {
-            pipelineBranchVersion
-        } else {
-            pipelineBranchVersion ?: getPipelineYamlVersion(
-                projectId = projectId,
-                repoHashId = repoHashId,
-                filePath = filePath,
-                ref = defaultBranch,
-                blobId = blobId,
-                branchAction = BranchVersionAction.ACTIVE.name
-            ) ?: getPipelineYamlVersion(
-                projectId = projectId,
-                repoHashId = repoHashId,
-                filePath = filePath,
-                blobId = blobId
-            )
-        }
-    }
 }

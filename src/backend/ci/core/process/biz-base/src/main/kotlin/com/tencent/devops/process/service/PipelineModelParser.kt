@@ -25,25 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2
+package com.tencent.devops.process.service
 
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
+import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
+import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
+import com.tencent.devops.process.engine.dao.PipelineYamlInfoDao
+import com.tencent.devops.process.engine.dao.PipelineYamlVersionDao
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.process.service.StageTagService
-import com.tencent.devops.process.yaml.PipelineYamlFileService
-import com.tencent.devops.process.yaml.PipelineYamlService
 import com.tencent.devops.repository.api.ServiceRepositoryResource
+import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
 import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.repository.pojo.credential.AuthRepository
 import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
+import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -52,53 +57,47 @@ import org.springframework.stereotype.Service
  * 流水线模版模型解析器
  */
 @Service
-class PipelineTemplateModelParser @Autowired constructor(
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineYamlService: PipelineYamlService,
-    private val pipelineYamlFileService: PipelineYamlFileService,
+class PipelineModelParser @Autowired constructor(
+    private val dslContext: DSLContext,
+    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao,
+    private val pipelineTemplateResourceDao: PipelineTemplateResourceDao,
+    private val pipelineYamlInfoDao: PipelineYamlInfoDao,
+    private val pipelineYamlVersionDao: PipelineYamlVersionDao,
     private val client: Client,
     private val stageTagService: StageTagService,
 ) {
 
     /**
-     * 解析运行时model
-     *
-     * 运行时,需要将局部模版引用转换成具体的编排,然后组合成完整的编排
+     * 解析模版编排,将模版引用转换成具体的编排
      */
-    fun parseRuntimeModel(
+    fun parseModel(
         projectId: String,
-        model: Model
-    ): Model {
-        return model
-    }
-
-    /**
-     * 解析展示时模型（用于前端展示）
-     */
-    fun parseViewModel(
-        projectId: String,
-        model: Model
+        pipelineId: String,
+        model: Model,
+        branchName: String? = null
     ): Model {
         return if (model.fromTemplate == true) {
-            instanceModel(
+            val pipelineYamlInfo = pipelineYamlInfoDao.get(
+                dslContext = dslContext,
                 projectId = projectId,
-                model = model
+                pipelineId = pipelineId,
+            )
+            val templateResource = parseTemplateDescriptor(
+                projectId = projectId,
+                descriptor = model,
+                repoHashId = pipelineYamlInfo?.repoHashId,
+                branchName = branchName
+            )
+            instanceModel(
+                model = model,
+                templateResource = templateResource
             )
         } else {
             model
         }
     }
 
-    /*fun parseModel(
-        projectId: String,
-        model: Model
-    ): Model {
-        val newStages = parseStages(projectId = projectId, stages = model.stages)
-        return model.copy(stages = newStages)
-    }
-
-    fun parseTemplateModel(
+    /*fun parseTemplateModel(
         projectId: String,
         model: ITemplateModel
     ): ITemplateModel {
@@ -233,24 +232,6 @@ class PipelineTemplateModelParser @Autowired constructor(
     }*/
 
     fun instanceModel(
-        projectId: String,
-        model: Model,
-        repoHashId: String? = null,
-        branchName: String? = null
-    ): Model {
-        val templateResource = parseTemplateDescriptor(
-            projectId = projectId,
-            descriptor = model,
-            repoHashId = repoHashId,
-            branchName = branchName
-        )
-        return instanceModel(
-            model = model,
-            templateResource = templateResource
-        )
-    }
-
-    fun instanceModel(
         model: Model,
         templateResource: PipelineTemplateResource
     ): Model {
@@ -262,7 +243,7 @@ class PipelineTemplateModelParser @Autowired constructor(
 
         val templateModel = templateResource.model as Model
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
-        return PipelineUtils.instanceModelV2(
+        return PipelineUtils.mergeModel(
             model = model,
             templateModel = templateModel,
             defaultStageTagId = defaultStageTagId
@@ -289,8 +270,16 @@ class PipelineTemplateModelParser @Autowired constructor(
                         )
                     }
                     logger.info("parse template descriptor by id|$projectId|$templateId|$templateVersionName")
-                    pipelineTemplateInfoService.get(projectId = projectId, templateId = templateId!!)
-                    pipelineTemplateResourceService.getLatestResource(
+                    pipelineTemplateInfoDao.get(
+                        dslContext = dslContext,
+                        projectId = projectId,
+                        templateId = templateId!!
+                    ) ?: throw ErrorCodeException(
+                        errorCode = ERROR_TEMPLATE_NOT_EXISTS,
+                        params = arrayOf(templateId!!)
+                    )
+                    pipelineTemplateResourceDao.getLatestRecord(
+                        dslContext = dslContext,
                         projectId = projectId,
                         templateId = templateId!!,
                         versionName = templateVersionName!!
@@ -307,7 +296,8 @@ class PipelineTemplateModelParser @Autowired constructor(
                     }
                     logger.info("parse template descriptor by path|$projectId|$repoHashId|$templatePath|$templateRef")
                     // 1. 获取yaml文件绑定的模版
-                    val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
+                    val pipelineYamlInfo = pipelineYamlInfoDao.get(
+                        dslContext = dslContext,
                         projectId = projectId,
                         repoHashId = repoHashId,
                         filePath = templatePath!!
@@ -326,8 +316,13 @@ class PipelineTemplateModelParser @Autowired constructor(
                                 "${pipelineYamlInfo.pipelineId}|${pipelineYamlVersion.version}"
                     )
 
-                    pipelineTemplateInfoService.get(projectId = projectId, templateId = pipelineYamlInfo.pipelineId)
-                    pipelineTemplateResourceService.getLatestResource(
+                    pipelineTemplateInfoDao.get(
+                        dslContext = dslContext,
+                        projectId = projectId,
+                        templateId = pipelineYamlInfo.pipelineId
+                    )
+                    pipelineTemplateResourceDao.getLatestRecord(
+                        dslContext = dslContext,
                         projectId = projectId,
                         templateId = pipelineYamlInfo.pipelineId,
                         version = pipelineYamlVersion.version.toLong()
@@ -376,13 +371,13 @@ class PipelineTemplateModelParser @Autowired constructor(
          */
         val ref = templateRef?.takeIf { it.isNotEmpty() } ?: branchName?.takeIf { it.isNotEmpty() } ?: defaultBranch
         // 这里后续看是否可以改成从T_PIPELINE_YAML_BRANCH_FILE表中获取
-        val fileContent = pipelineYamlFileService.getFileContent(
+        val fileContent = client.get(ServiceScmFileApiResource::class).getFileContent(
             projectId = projectId,
             path = templatePath!!,
             ref = ref,
             authRepository = authRepository
-        )
-        return pipelineYamlService.getTriggerVersion(
+        ).data!!
+        return getPipelineYamlVersion(
             projectId = projectId,
             repoHashId = repoHashId,
             filePath = templatePath!!,
@@ -395,7 +390,52 @@ class PipelineTemplateModelParser @Autowired constructor(
         )
     }
 
+    /**
+     * 获取触发时版本
+     *
+     * 1. 查看触发分支有没有blobId对应的版本
+     * 2. 如果触发分支没有,则查看默认分支
+     * 3. 如果默认分支也没有,则查看其他分支是不是有对应的版本
+     */
+    private fun getPipelineYamlVersion(
+        projectId: String,
+        repoHashId: String,
+        filePath: String,
+        ref: String,
+        blobId: String,
+        defaultBranch: String
+    ): PipelineYamlVersion? {
+        val pipelineBranchVersion = pipelineYamlVersionDao.getPipelineYamlVersion(
+            dslContext = dslContext,
+            projectId = projectId,
+            repoHashId = repoHashId,
+            filePath = filePath,
+            ref = ref,
+            blobId = blobId,
+            branchAction = BranchVersionAction.ACTIVE.name
+        )
+        return if (ref == defaultBranch) {
+            pipelineBranchVersion
+        } else {
+            pipelineBranchVersion ?: pipelineYamlVersionDao.getPipelineYamlVersion(
+                dslContext = dslContext,
+                projectId = projectId,
+                repoHashId = repoHashId,
+                filePath = filePath,
+                ref = defaultBranch,
+                blobId = blobId,
+                branchAction = BranchVersionAction.ACTIVE.name
+            ) ?: pipelineYamlVersionDao.getPipelineYamlVersion(
+                dslContext = dslContext,
+                projectId = projectId,
+                repoHashId = repoHashId,
+                filePath = filePath,
+                blobId = blobId
+            )
+        }
+    }
+
     companion object {
-        private val logger = LoggerFactory.getLogger(PipelineTemplateModelParser::class.java)
+        private val logger = LoggerFactory.getLogger(PipelineModelParser::class.java)
     }
 }

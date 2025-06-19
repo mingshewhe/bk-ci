@@ -46,9 +46,9 @@ import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateRefType
+import com.tencent.devops.process.service.PipelineModelParser
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateModelParser
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -59,7 +59,7 @@ class PipelineResourceFactory @Autowired constructor(
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val stageTagService: StageTagService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateModelParser: PipelineTemplateModelParser
+    private val pipelineModelParser: PipelineModelParser
 ) {
 
     fun createPipelineBasicInfo(
@@ -190,7 +190,7 @@ class PipelineResourceFactory @Autowired constructor(
         repoHashId: String? = null,
         branchName: String? = null
     ): PipelineTemplateInstanceBasicInfo {
-        val templateResource = pipelineTemplateModelParser.parseTemplateDescriptor(
+        val templateResource = pipelineModelParser.parseTemplateDescriptor(
             projectId = projectId,
             descriptor = model,
             repoHashId = repoHashId,
@@ -204,7 +204,7 @@ class PipelineResourceFactory @Autowired constructor(
                 errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE,
             )
         }
-        val instanceModel = pipelineTemplateModelParser.instanceModel(
+        val instanceModel = pipelineModelParser.instanceModel(
             model = model,
             templateResource = templateResource
         )
