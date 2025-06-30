@@ -39,10 +39,12 @@ import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.service.StageTagService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 
 /**
  * Pipeline模板模型初始化器
  */
+@Service
 class PipelineTemplateModelInitializer @Autowired constructor(
     private val stageTagService: StageTagService,
     private val modelTaskIdGenerator: ModelTaskIdGenerator,
