@@ -30,8 +30,8 @@ class PipelineTemplateResourceDao {
         record: PipelineTemplateResource
     ) {
         with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
-            val params = record.params?.let { JsonUtil.toJson(it) }
-            val model = record.model.let { JsonUtil.toJson(it) }
+            val params = record.params?.let { JsonUtil.toJson(it, false) }
+            val model = record.model.let { JsonUtil.toJson(it, false) }
             dslContext.insertInto(
                 this,
                 PROJECT_ID,
@@ -135,8 +135,8 @@ class PipelineTemplateResourceDao {
                     record.triggerVersion?.let { set(TRIGGER_VERSION, it) }
                     record.baseVersion?.let { set(BASE_VERSION, it) }
                     record.baseVersionName?.let { set(BASE_VERSION_NAME, it) }
-                    record.params?.let { set(PARAMS, JsonUtil.toJson(it)) }
-                    record.model?.let { set(MODEL, JsonUtil.toJson(it)) }
+                    record.params?.let { set(PARAMS, JsonUtil.toJson(it, false)) }
+                    record.model?.let { set(MODEL, JsonUtil.toJson(it, false)) }
                     record.yaml?.let { set(YAML, it) }
                     record.status?.let { set(STATUS, it.name) }
                     record.branchAction?.let { set(BRANCH_ACTION, it.name) }

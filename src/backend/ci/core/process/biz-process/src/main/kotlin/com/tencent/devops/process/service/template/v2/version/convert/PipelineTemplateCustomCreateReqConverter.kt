@@ -88,8 +88,8 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
             val pipelineTemplateInfo = PipelineTemplateInfoV2(
                 id = newTemplateId,
                 projectId = projectId,
-                name = request.name,
-                desc = request.desc,
+                name = name,
+                desc = desc,
                 mode = TemplateType.CUSTOMIZE,
                 type = request.type,
                 enablePac = false,

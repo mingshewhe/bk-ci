@@ -113,6 +113,7 @@ class PipelineTemplateGenerator @Autowired constructor(
                 projectId = projectId,
                 pipelineId = templateId,
                 pipelineName = templateName,
+                desc = desc,
                 creator = creator,
                 updater = creator
             )
