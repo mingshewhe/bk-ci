@@ -78,8 +78,7 @@ class PipelineTemplateModelInitializer @Autowired constructor(
                         PipelineUtils.cleanOptions(params = it)
                     }
                 }
-                container.id = containerSeqId.get().toString()
-                container.containerId = container.id
+                container.id = containerSeqId.getAndIncrement().toString()
                 if (container.containerId.isNullOrBlank()) {
                     container.containerId = container.id
                 }
