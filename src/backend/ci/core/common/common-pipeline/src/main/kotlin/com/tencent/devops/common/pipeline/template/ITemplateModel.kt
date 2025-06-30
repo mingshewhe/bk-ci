@@ -40,7 +40,6 @@ import io.swagger.v3.oas.annotations.media.Schema
     defaultImpl = Model::class
 )
 @JsonSubTypes(
-    JsonSubTypes.Type(value = Model::class, name = Model.classType),
     JsonSubTypes.Type(value = StageTemplateModel::class, name = StageTemplateModel.classType),
     JsonSubTypes.Type(value = JobTemplateModel::class, name = JobTemplateModel.classType),
     JsonSubTypes.Type(value = StepTemplateModel::class, name = StepTemplateModel.classType)

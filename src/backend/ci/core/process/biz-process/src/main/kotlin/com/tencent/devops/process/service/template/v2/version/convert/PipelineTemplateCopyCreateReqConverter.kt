@@ -42,6 +42,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
@@ -59,7 +60,8 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateSettingService: PipelineTemplateSettingService
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
+    private val pipelineTemplateModelInitializer: PipelineTemplateModelInitializer
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
@@ -148,6 +150,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 updater = userId,
                 latestVersionStatus = VersionStatus.RELEASED
             )
+            pipelineTemplateModelInitializer.initTemplateModel(transferResult.templateModel)
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = newTemplateId,

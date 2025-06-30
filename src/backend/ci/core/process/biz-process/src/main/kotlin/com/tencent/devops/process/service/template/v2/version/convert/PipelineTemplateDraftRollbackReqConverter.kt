@@ -34,6 +34,7 @@ import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersi
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateDraftRollbackReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
@@ -48,7 +49,8 @@ import org.springframework.stereotype.Service
 class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateSettingService: PipelineTemplateSettingService
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService,
+    private val pipelineTemplateModelInitializer: PipelineTemplateModelInitializer
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {

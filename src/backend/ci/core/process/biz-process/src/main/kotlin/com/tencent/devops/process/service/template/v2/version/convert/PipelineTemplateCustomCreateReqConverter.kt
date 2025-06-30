@@ -38,6 +38,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.beans.factory.annotation.Autowired
@@ -49,7 +50,8 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineTemplateModelInitializer: PipelineTemplateModelInitializer
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
@@ -96,7 +98,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 latestVersionStatus = VersionStatus.COMMITTING
             )
 
-            val modelTransferResult = pipelineTemplateGenerator.transfer(
+            val transferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = PipelineStorageType.MODEL,
@@ -106,12 +108,13 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 params = emptyList(),
                 yaml = null
             )
+            pipelineTemplateModelInitializer.initTemplateModel(transferResult.templateModel)
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = newTemplateId,
                 type = type,
-                model = modelTransferResult.templateModel,
-                yaml = modelTransferResult.yamlWithVersion?.yamlStr,
+                model = transferResult.templateModel,
+                yaml = transferResult.yamlWithVersion?.yamlStr,
                 status = VersionStatus.COMMITTING,
                 sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT,
                 creator = userId,

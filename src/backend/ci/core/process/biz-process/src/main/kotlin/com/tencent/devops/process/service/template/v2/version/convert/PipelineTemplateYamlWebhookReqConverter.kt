@@ -32,11 +32,12 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.springframework.stereotype.Service
@@ -47,7 +48,8 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateYamlWebhookReqConverter(
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val pipelineTemplateModelInitializer: PipelineTemplateModelInitializer
 ) : PipelineTemplateVersionReqConverter {
     override fun support(request: PipelineTemplateVersionReq): Boolean {
         return request is PipelineTemplateYamlWebhookReq
@@ -62,7 +64,7 @@ class PipelineTemplateYamlWebhookReqConverter(
     ): PipelineTemplateVersionCreateContext {
         request as PipelineTemplateYamlWebhookReq
         with(request) {
-            val modelTransferResult = pipelineTemplateGenerator.transfer(
+            val transferResult = pipelineTemplateGenerator.transfer(
                 userId = userId,
                 projectId = projectId,
                 storageType = PipelineStorageType.YAML,
@@ -79,14 +81,14 @@ class PipelineTemplateYamlWebhookReqConverter(
             }
             val (newTemplateId, templateInfo) = if (templateId == null) {
                 val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
-                val templateSetting = modelTransferResult.templateSetting
+                val templateSetting = transferResult.templateSetting
                 val templateInfo = PipelineTemplateInfoV2(
                     id = newTemplateId,
                     projectId = projectId,
                     name = templateSetting.pipelineName,
                     desc = templateSetting.desc,
                     mode = TemplateType.CUSTOMIZE,
-                    type = modelTransferResult.templateType,
+                    type = transferResult.templateType,
                     enablePac = true,
                     creator = userId,
                     updater = userId,
@@ -100,19 +102,20 @@ class PipelineTemplateYamlWebhookReqConverter(
                 )
                 Pair(templateId, templateInfo)
             }
+            pipelineTemplateModelInitializer.initTemplateModel(transferResult.templateModel)
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = newTemplateId,
-                params = modelTransferResult.params,
-                type = modelTransferResult.templateType,
-                model = modelTransferResult.templateModel,
-                yaml = modelTransferResult.yamlWithVersion?.yamlStr,
+                params = transferResult.params,
+                type = transferResult.templateType,
+                model = transferResult.templateModel,
+                yaml = transferResult.yamlWithVersion?.yamlStr,
                 description = description,
                 status = status,
                 creator = userId,
                 updater = userId
             )
-            val pipelineTemplateSetting = modelTransferResult.templateSetting.copy(
+            val pipelineTemplateSetting = transferResult.templateSetting.copy(
                 projectId = projectId,
                 pipelineId = newTemplateId,
                 creator = userId,

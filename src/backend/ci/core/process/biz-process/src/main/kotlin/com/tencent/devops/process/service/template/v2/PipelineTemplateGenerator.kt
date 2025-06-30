@@ -45,17 +45,20 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.pojo.transfer.TransferMark
 import com.tencent.devops.common.pipeline.template.ITemplateModel
 import com.tencent.devops.common.pipeline.template.JobTemplateModel
+import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.StageTemplateModel
 import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.process.engine.cfg.ModelContainerIdGenerator
+import com.tencent.devops.process.engine.cfg.ModelTaskIdGenerator
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.notice_key
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.pipeline_key
@@ -225,7 +228,7 @@ class PipelineTemplateGenerator @Autowired constructor(
     ): Pair<VersionStatus, PTemplateResourceOnlyVersion> {
         val newResource = PTemplateResourceWithoutVersion(draftResource)
         return if (enablePac) {
-            generateReleaseDraftVersionWithPac(
+            generateDraftReleaseVersionWithPac(
                 projectId = projectId,
                 templateId = templateId,
                 draftResource = draftResource,
@@ -247,7 +250,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         }
     }
 
-    fun generateReleaseDraftVersionWithPac(
+    fun generateDraftReleaseVersionWithPac(
         projectId: String,
         templateId: String,
         draftResource: PipelineTemplateResource,

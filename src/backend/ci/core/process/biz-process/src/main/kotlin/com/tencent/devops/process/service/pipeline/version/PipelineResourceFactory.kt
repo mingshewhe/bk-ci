@@ -47,7 +47,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInf
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateRefType
 import com.tencent.devops.process.service.PipelineModelParser
-import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
@@ -57,7 +56,6 @@ import org.springframework.stereotype.Service
 class PipelineResourceFactory @Autowired constructor(
     private val client: Client,
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val stageTagService: StageTagService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineModelParser: PipelineModelParser
 ) {

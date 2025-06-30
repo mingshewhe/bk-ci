@@ -39,6 +39,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
+import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
 import org.slf4j.LoggerFactory
@@ -51,7 +52,8 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
     private val pipelineTemplateCommonService: PipelineTemplateCommonService,
-    private val pipelineTemplateGenerator: PipelineTemplateGenerator
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineTemplateModelInitializer: PipelineTemplateModelInitializer
 ) : PipelineTemplateVersionReqConverter {
 
     override fun support(request: PipelineTemplateVersionReq): Boolean {
@@ -100,7 +102,7 @@ class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
                 updater = userId,
                 latestVersionStatus = VersionStatus.RELEASED
             )
-
+            pipelineTemplateModelInitializer.initTemplateModel(transferResult.templateModel)
             val pTemplateResourceWithoutVersion = PTemplateResourceWithoutVersion(
                 projectId = projectId,
                 templateId = templateId,
