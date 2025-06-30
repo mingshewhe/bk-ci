@@ -40,6 +40,7 @@ import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.service.StageTagService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Pipeline模板模型初始化器
@@ -64,6 +65,8 @@ class PipelineTemplateModelInitializer @Autowired constructor(
     private fun initModel(templateModel: Model) {
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
         val defaultTagIds = defaultStageTagId?.let { listOf(it) }
+        // 初始化ID 该构建环境下的ID,旧流水引擎数据无法转换为String，仍然是序号的方式
+        val containerSeqId = AtomicInteger(0)
         templateModel.stages.forEachIndexed { index, stage ->
             stage.id = stage.id ?: VMUtils.genStageId(index + 1)
             if (stage.name.isNullOrBlank()) stage.name = stage.id
@@ -75,6 +78,8 @@ class PipelineTemplateModelInitializer @Autowired constructor(
                         PipelineUtils.cleanOptions(params = it)
                     }
                 }
+                container.id = containerSeqId.get().toString()
+                container.containerId = container.id
                 if (container.containerId.isNullOrBlank()) {
                     container.containerId = container.id
                 }
