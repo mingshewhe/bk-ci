@@ -245,6 +245,7 @@ class PipelineModelParser @Autowired constructor(
         }
 
         val templateModel = templateResource.model as Model
+        logger.info("templateModel:${JsonUtil.toJson(templateModel, false)}")
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
         return PipelineUtils.mergeModel(
             model = model,
