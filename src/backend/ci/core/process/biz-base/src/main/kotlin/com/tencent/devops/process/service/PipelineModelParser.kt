@@ -29,6 +29,7 @@ package com.tencent.devops.process.service
 
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
@@ -88,10 +89,12 @@ class PipelineModelParser @Autowired constructor(
                 repoHashId = pipelineYamlInfo?.repoHashId,
                 branchName = branchName
             )
-            instanceModel(
+            val instanceModel = instanceModel(
                 model = model,
                 templateResource = templateResource
             )
+            logger.info("parseModel:${JsonUtil.toJson(instanceModel, false)}")
+            instanceModel
         } else {
             model
         }
