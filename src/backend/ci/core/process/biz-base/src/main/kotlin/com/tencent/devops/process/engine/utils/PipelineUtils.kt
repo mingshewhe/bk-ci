@@ -35,8 +35,8 @@ import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamType
@@ -150,7 +150,7 @@ object PipelineUtils {
         fixedTriggerContainer: TriggerContainer,
         defaultStageTagId: String?
     ): List<Stage> {
-        val stages = ArrayList<Stage>()
+        val stages = mutableListOf<Stage>()
         val defaultTagIds = if (defaultStageTagId.isNullOrBlank()) emptyList() else listOf(defaultStageTagId)
         model.stages.forEachIndexed { index, stage ->
             stage.id = stage.id ?: VMUtils.genStageId(index + 1)
@@ -270,7 +270,7 @@ object PipelineUtils {
         val templateTrigger = templateModel.getTriggerContainer()
         val triggerElements = if (triggerConfigs != null) {
             configTriggerElements(
-                templateTrigger = templateTrigger,
+                templateTriggerContainer = templateTrigger,
                 triggerConfigs = triggerConfigs
             )
         } else {
@@ -305,28 +305,24 @@ object PipelineUtils {
         templateModel: Model,
         defaultStageTagId: String?
     ): Model {
-        val templateTrigger = templateModel.getTriggerContainer()
+        val templateTriggerContainer = templateModel.getTriggerContainer()
         val triggerConfigs = model.triggerConfigs
         val triggerElements = if (triggerConfigs != null) {
             configTriggerElements(
-                templateTrigger = templateTrigger,
+                templateTriggerContainer = templateTriggerContainer,
                 triggerConfigs = triggerConfigs
             )
         } else {
-            templateTrigger.elements
+            templateTriggerContainer.elements
         }
         val pipelineParams = mergeTemplateParams(
             templateParams = templateModel.getTriggerContainer().params,
             templateParameters = model.templateVariables,
         )
         val instanceParam = cleanOptions(pipelineParams)
-        val triggerContainer = TriggerContainer(
-            name = templateTrigger.name,
+        val triggerContainer = templateTriggerContainer.copy(
             elements = triggerElements,
-            params = instanceParam,
-            buildNo = null,
-            containerId = templateTrigger.containerId,
-            containerHashId = templateTrigger.containerHashId
+            params = instanceParam
         )
         return model.copy(
             stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId)
@@ -382,12 +378,12 @@ object PipelineUtils {
     }
 
     private fun configTriggerElements(
-        templateTrigger: TriggerContainer,
+        templateTriggerContainer: TriggerContainer,
         triggerConfigs: Map<String, TemplateTriggerConfig>
     ): MutableList<Element> {
         // 不存在的stepId列表
         val errorStepIds = triggerConfigs.filterNot { (stepId, _) ->
-            templateTrigger.elements.any { it.stepId == stepId }
+            templateTriggerContainer.elements.any { it.stepId == stepId }
         }.map { it.key }
         if (errorStepIds.isNotEmpty()) {
             throw ErrorCodeException(
@@ -397,7 +393,7 @@ object PipelineUtils {
         }
 
         val elements = mutableListOf<Element>()
-        templateTrigger.elements.forEach { element ->
+        templateTriggerContainer.elements.forEach { element ->
             val triggerConfig = triggerConfigs[element.stepId]
             if (triggerConfig != null) {
                 val instanceElement = configTriggerElement(
@@ -418,7 +414,7 @@ object PipelineUtils {
         triggerConfig.disabled?.let {
             triggerElement.additionalOptions?.enable = !triggerConfig.disabled!!
         }
-        val instanceElement = when (triggerElement) {
+        return when (triggerElement) {
             is TimerTriggerElement -> {
                 triggerConfig.cron?.let {
                     triggerElement.copy(
@@ -429,6 +425,5 @@ object PipelineUtils {
 
             else -> triggerElement
         }
-        return instanceElement
     }
 }

@@ -65,8 +65,11 @@ class PipelineTemplateModelInitializer @Autowired constructor(
     private fun initModel(templateModel: Model) {
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
         val defaultTagIds = defaultStageTagId?.let { listOf(it) }
+        // 去重id
+        val distinctIdSet = mutableSetOf<String>()
         // 初始化ID 该构建环境下的ID,旧流水引擎数据无法转换为String，仍然是序号的方式
         val containerSeqId = AtomicInteger(0)
+
         templateModel.stages.forEachIndexed { index, stage ->
             stage.id = VMUtils.genStageId(index + 1)
             if (stage.name.isNullOrBlank()) stage.name = stage.id
@@ -80,13 +83,17 @@ class PipelineTemplateModelInitializer @Autowired constructor(
                 }
                 container.id = containerSeqId.getAndIncrement().toString()
                 container.containerId = container.id
-                if (container.containerHashId.isNullOrBlank()) {
+                if (container.containerHashId.isNullOrBlank() ||
+                    distinctIdSet.contains(container.containerHashId)
+                ) {
                     container.containerHashId = modelContainerIdGenerator.getNextId()
                 }
+                distinctIdSet.add(container.containerHashId!!)
                 container.elements.forEach { e ->
-                    if (e.id.isNullOrBlank()) {
+                    if (e.id.isNullOrBlank() || distinctIdSet.contains(e.id)) {
                         e.id = modelTaskIdGenerator.getNextId()
                     }
+                    distinctIdSet.add(e.id!!)
                 }
             }
         }
