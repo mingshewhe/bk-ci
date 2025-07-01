@@ -36,6 +36,7 @@ import com.tencent.devops.environment.api.thirdpartyagent.ServiceThirdPartyAgent
 import com.tencent.devops.environment.pojo.AgentPipelineRefInfo
 import com.tencent.devops.environment.pojo.AgentPipelineRefRequest
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
+import com.tencent.devops.process.service.PipelineModelParser
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,7 +47,8 @@ class AgentPipelineRefService @Autowired constructor(
     private val client: Client,
     private val dslContext: DSLContext,
     private val objectMapper: ObjectMapper,
-    private val pipelineResourceDao: PipelineResourceDao
+    private val pipelineResourceDao: PipelineResourceDao,
+    private val pipelineModelParser: PipelineModelParser
 ) {
     fun updateAgentPipelineRef(userId: String, action: String, projectId: String, pipelineId: String) {
         logger.info("updateAgentPipelineRef, [$userId|$action|$projectId|$pipelineId]")
@@ -58,7 +60,11 @@ class AgentPipelineRefService @Autowired constructor(
                 return
             }
             try {
-                model = objectMapper.readValue(modelString, Model::class.java)
+                model = pipelineModelParser.parseModel(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    model = objectMapper.readValue(modelString, Model::class.java)
+                )
             } catch (ignored: Exception) {
                 logger.error("parse process($pipelineId) model fail", ignored)
                 return

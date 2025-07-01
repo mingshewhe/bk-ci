@@ -93,7 +93,6 @@ class PipelineModelParser @Autowired constructor(
                 model = model,
                 templateResource = templateResource
             )
-            logger.info("parseModel:${JsonUtil.toJson(instanceModel, false)}")
             instanceModel
         } else {
             model
@@ -245,7 +244,6 @@ class PipelineModelParser @Autowired constructor(
         }
 
         val templateModel = templateResource.model as Model
-        logger.info("templateModel:${JsonUtil.toJson(templateModel, false)}")
         val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
         return PipelineUtils.mergeModel(
             model = model,
@@ -273,7 +271,9 @@ class PipelineModelParser @Autowired constructor(
                             errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_VERSION_NAME_NOT_EMPTY,
                         )
                     }
-                    logger.info("parse template descriptor by id|$projectId|$templateId|$templateVersionName")
+                    logger.info(
+                        "parse template descriptor by version name|$projectId|$templateId|$templateVersionName"
+                    )
                     pipelineTemplateInfoDao.get(
                         dslContext = dslContext,
                         projectId = projectId,

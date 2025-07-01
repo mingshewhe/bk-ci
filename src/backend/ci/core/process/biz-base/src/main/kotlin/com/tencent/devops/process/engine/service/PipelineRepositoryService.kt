@@ -1364,7 +1364,11 @@ class PipelineRepositoryService constructor(
             dslContext = dslContext,
             projectId = projectId,
             pipelineIds = pipelineIds
-        ).map { it.key to str2model(it.value, it.key) }.toMap()
+        ).map {
+            it.key to str2model(
+                projectId = projectId, pipelineId = it.key, modelString = it.value
+            )
+        }.toMap()
     }
 
     fun getLatestVersionNames(projectId: String, pipelineIds: List<String>): Map<String, String> {
@@ -1655,10 +1659,15 @@ class PipelineRepositoryService constructor(
     }
 
     private fun str2model(
-        modelString: String,
-        pipelineId: String
+        projectId: String,
+        pipelineId: String,
+        modelString: String
     ) = try {
-        JsonUtil.to(modelString, Model::class.java)
+        pipelineModelParser.parseModel(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            model = JsonUtil.to(modelString, Model::class.java)
+        )
     } catch (ignore: Exception) {
         logger.warn("get process($pipelineId) model fail", ignore)
         null

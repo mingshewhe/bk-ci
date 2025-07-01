@@ -358,7 +358,7 @@ object PipelineUtils {
         return PIPELINE_ID_PATTERN.matcher(pipelineId).matches()
     }
 
-    fun mergeTemplateParams(
+    private fun mergeTemplateParams(
         templateParams: List<BuildFormProperty>,
         templateParameters: Map<String, TemplateParameter>?
     ): List<BuildFormProperty> {

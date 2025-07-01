@@ -51,6 +51,7 @@ import com.tencent.devops.common.pipeline.utils.RepositoryConfigUtils
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
+import com.tencent.devops.process.service.PipelineModelParser
 import com.tencent.devops.process.utils.PipelineVarUtil
 import com.tencent.devops.repository.api.ServiceRepositoryResource
 import com.tencent.devops.repository.pojo.RepoPipelineRefInfo
@@ -79,7 +80,8 @@ class RepoPipelineRefService @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val client: Client,
     private val modelTaskDao: PipelineModelTaskDao,
-    private val pipelineInfoDao: PipelineInfoDao
+    private val pipelineInfoDao: PipelineInfoDao,
+    private val pipelineModelParser: PipelineModelParser
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(RepoPipelineRefService::class.java)
@@ -111,7 +113,11 @@ class RepoPipelineRefService @Autowired constructor(
                 return
             }
             try {
-                model = objectMapper.readValue(modelString, Model::class.java)
+                model = pipelineModelParser.parseModel(
+                    projectId = projectId,
+                    pipelineId = pipelineId,
+                    model = objectMapper.readValue(modelString, Model::class.java)
+                )
             } catch (ignored: Exception) {
                 logger.warn("parse process($pipelineId) model fail", ignored)
                 return

@@ -16,6 +16,7 @@ import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.pojo.PipelineModelTask
 import com.tencent.devops.process.pojo.pipeline.SubPipelineRef
 import com.tencent.devops.process.pojo.pipeline.SubPipelineTaskParam
+import com.tencent.devops.process.service.PipelineModelParser
 import com.tencent.devops.process.utils.PipelineVarUtil
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
@@ -34,7 +35,8 @@ class SubPipelineTaskService @Autowired constructor(
     private val pipelineResDao: PipelineResourceDao,
     @Lazy
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val subPipelineRefService: SubPipelineRefService
+    private val subPipelineRefService: SubPipelineRefService,
+    private val pipelineModelParser: PipelineModelParser
 ) {
     /**
      * 支持的元素
@@ -215,7 +217,11 @@ class SubPipelineTaskService @Autowired constructor(
             return null
         }
         try {
-            model = objectMapper.readValue(modelString, Model::class.java)
+            model = pipelineModelParser.parseModel(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                model = objectMapper.readValue(modelString, Model::class.java)
+            )
         } catch (ignored: Exception) {
             logger.warn("parse process($pipelineId) model fail", ignored)
         }
