@@ -107,7 +107,8 @@ class PipelineModelParser @Autowired constructor(
     ): Model {
         return if (model.fromTemplate == true) {
             val parsedTemplateId = buildRecordModel.modelVar[Model::parsedTemplateId.name] as String
-            val parsedTemplateVersion = buildRecordModel.modelVar[Model::parsedTemplateVersion.name] as Long
+            val parsedTemplateVersion =
+                (buildRecordModel.modelVar[Model::parsedTemplateVersion.name] as Number).toLong()
             val templateResource = pipelineTemplateResourceDao.get(
                 dslContext = dslContext,
                 projectId = projectId,
