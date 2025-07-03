@@ -41,6 +41,7 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
@@ -134,7 +135,10 @@ class PipelineResourceFactory @Autowired constructor(
         )
     }
 
-    fun createPipelineModel(
+    /**
+     * 创建model引用
+     */
+    fun createPipelineModelRef(
         name: String,
         desc: String?,
         refType: TemplateRefType?,
@@ -202,7 +206,7 @@ class PipelineResourceFactory @Autowired constructor(
                 errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_INSTANCE_NEED_PIPELINE_TYPE,
             )
         }
-        val instanceModel = pipelineModelParser.instanceModel(
+        val instanceModel = PipelineUtils.instanceModelV2(
             model = model,
             templateResource = templateResource
         )

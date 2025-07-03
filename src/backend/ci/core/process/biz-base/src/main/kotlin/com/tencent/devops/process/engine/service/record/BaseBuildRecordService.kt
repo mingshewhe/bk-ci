@@ -191,10 +191,10 @@ open class BaseBuildRecordService(
         var recordMap: Map<String, Any>? = null
         return try {
             watcher.start("fillElementWhenNewBuild")
-            val fullModel = pipelineModelParser.parseModel(
+            val fullModel = pipelineModelParser.parseBuildRecordModel(
                 projectId = projectId,
-                pipelineId = pipelineId,
-                model = JsonUtil.to(resourceStr, Model::class.java)
+                model = JsonUtil.to(resourceStr, Model::class.java),
+                buildRecordModel = buildRecordModel
             )
             fullModel.stages.forEach {
                 PipelineUtils.transformUserIllegalReviewParams(it.checkIn?.reviewParams)

@@ -87,6 +87,10 @@ data class Model(
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
     override var templateVariables: Map<String, TemplateParameter>? = null,
+    @get:Schema(title = "解析后的模版ID", required = false)
+    override var parsedTemplateId: String? = null,
+    @get:Schema(title = "解析后的模版版本", required = false)
+    override var parsedTemplateVersion: Long? = null,
     /* 模版实例化时触发器变量 */
     @get:Schema(title = "触发器配置", required = false)
     var triggerConfigs: Map<String, TemplateTriggerConfig>? = null,

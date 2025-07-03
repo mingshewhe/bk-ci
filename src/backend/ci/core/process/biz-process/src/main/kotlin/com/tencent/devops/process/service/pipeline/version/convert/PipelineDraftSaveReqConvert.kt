@@ -148,7 +148,10 @@ class PipelineDraftSaveReqConvert(
             model.getTriggerContainer().params.associateBy({ it.id }, { TemplateParameter(it) })
         return if (model.fromTemplate == true) {
             // 前端把流水线变量放在触发器param中,如果是模版的,需要把param转换成模版变量
-            model.copy(templateVariables = templateVariables)
+            model.copy(
+                stages = emptyList(),
+                templateVariables = templateVariables
+            )
         } else {
             val pipelineTemplateRelated = pipelineId?.let {
                 pipelineTemplateRelatedService.get(projectId = projectId, pipelineId = pipelineId)
@@ -157,7 +160,7 @@ class PipelineDraftSaveReqConvert(
             if (pipelineTemplateRelated != null &&
                 pipelineTemplateRelated.instanceType == PipelineInstanceTypeEnum.CONSTRAINT
             ) {
-                pipelineResourceFactory.createPipelineModel(
+                pipelineResourceFactory.createPipelineModelRef(
                     name = model.name,
                     desc = model.desc,
                     refType = TemplateRefType.ID,

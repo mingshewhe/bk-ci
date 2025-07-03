@@ -29,7 +29,6 @@ package com.tencent.devops.process.service
 
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
@@ -43,6 +42,7 @@ import com.tencent.devops.process.engine.dao.PipelineYamlInfoDao
 import com.tencent.devops.process.engine.dao.PipelineYamlVersionDao
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
+import com.tencent.devops.process.pojo.pipeline.record.BuildRecordModel
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.repository.api.ServiceRepositoryResource
 import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
@@ -64,8 +64,7 @@ class PipelineModelParser @Autowired constructor(
     private val pipelineTemplateResourceDao: PipelineTemplateResourceDao,
     private val pipelineYamlInfoDao: PipelineYamlInfoDao,
     private val pipelineYamlVersionDao: PipelineYamlVersionDao,
-    private val client: Client,
-    private val stageTagService: StageTagService,
+    private val client: Client
 ) {
 
     /**
@@ -89,11 +88,39 @@ class PipelineModelParser @Autowired constructor(
                 repoHashId = pipelineYamlInfo?.repoHashId,
                 branchName = branchName
             )
-            val instanceModel = instanceModel(
+            PipelineUtils.instanceModelV2(
                 model = model,
                 templateResource = templateResource
             )
-            instanceModel
+        } else {
+            model
+        }
+    }
+
+    /**
+     * 解析构建记录编排
+     */
+    fun parseBuildRecordModel(
+        projectId: String,
+        model: Model,
+        buildRecordModel: BuildRecordModel
+    ): Model {
+        return if (model.fromTemplate == true) {
+            val parsedTemplateId = buildRecordModel.modelVar[Model::parsedTemplateId.name] as String
+            val parsedTemplateVersion = buildRecordModel.modelVar[Model::parsedTemplateVersion.name] as Long
+            val templateResource = pipelineTemplateResourceDao.get(
+                dslContext = dslContext,
+                projectId = projectId,
+                templateId = parsedTemplateId,
+                version = parsedTemplateVersion
+            ) ?: throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_VERSION_NOT_FOUND,
+                params = arrayOf(parsedTemplateId, parsedTemplateVersion.toString())
+            )
+            PipelineUtils.instanceModelV2(
+                model = model,
+                templateResource = templateResource
+            )
         } else {
             model
         }
@@ -232,25 +259,6 @@ class PipelineModelParser @Autowired constructor(
         }
         return templateModel.container.elements
     }*/
-
-    fun instanceModel(
-        model: Model,
-        templateResource: PipelineTemplateResource
-    ): Model {
-        if (templateResource.model !is Model) {
-            throw ErrorCodeException(
-                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
-            )
-        }
-
-        val templateModel = templateResource.model as Model
-        val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
-        return PipelineUtils.mergeModel(
-            model = model,
-            templateModel = templateModel,
-            defaultStageTagId = defaultStageTagId
-        )
-    }
 
     /**
      * @param repoHashId 仓库hashId,当通过模版路径引用时，必须传入

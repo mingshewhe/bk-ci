@@ -46,6 +46,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.common.VMUtils
 import com.tencent.devops.process.engine.compatibility.BuildPropertyCompatibilityTools
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.utils.PIPELINE_VARIABLES_STRING_LENGTH_MAX
 import jakarta.ws.rs.core.Response
 import org.slf4j.LoggerFactory
@@ -252,84 +253,6 @@ object PipelineUtils {
     }
 
     /**
-     * 通过流水线参数、模板编排和触发器控制生成新Model
-     */
-    @Suppress("ALL")
-    fun instanceModelV2(
-        templateModel: Model,
-        pipelineName: String,
-        buildNo: BuildNo?,
-        param: List<BuildFormProperty>?,
-        instanceFromTemplate: Boolean,
-        labels: List<String>? = null,
-        defaultStageTagId: String?,
-        templateId: String? = null,
-        staticViews: List<String> = emptyList(),
-        triggerConfigs: Map<String, TemplateTriggerConfig>? = null
-    ): Model {
-        val templateTrigger = templateModel.getTriggerContainer()
-        val triggerElements = if (triggerConfigs != null) {
-            configTriggerElements(
-                templateTriggerContainer = templateTrigger,
-                triggerConfigs = triggerConfigs
-            )
-        } else {
-            templateTrigger.elements
-        }
-        val instanceParam = param?.let { cleanOptions(it) } ?: emptyList()
-        val triggerContainer = TriggerContainer(
-            name = templateTrigger.name,
-            elements = triggerElements,
-            params = instanceParam,
-            buildNo = buildNo,
-            containerId = templateTrigger.containerId,
-            containerHashId = templateTrigger.containerHashId
-        )
-
-        return Model(
-            name = pipelineName,
-            desc = "",
-            stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId),
-            labels = labels ?: templateModel.labels,
-            instanceFromTemplate = instanceFromTemplate,
-            templateId = templateId,
-            staticViews = staticViews
-        )
-    }
-
-    /**
-     * 流水线编排与模版编排合并
-     */
-    fun mergeModel(
-        model: Model,
-        templateModel: Model,
-        defaultStageTagId: String?
-    ): Model {
-        val templateTriggerContainer = templateModel.getTriggerContainer()
-        val triggerConfigs = model.triggerConfigs
-        val triggerElements = if (triggerConfigs != null) {
-            configTriggerElements(
-                templateTriggerContainer = templateTriggerContainer,
-                triggerConfigs = triggerConfigs
-            )
-        } else {
-            templateTriggerContainer.elements
-        }
-        val pipelineParams = mergeTemplateParams(
-            templateParams = templateModel.getTriggerContainer().params,
-            templateParameters = model.templateVariables,
-        )
-        val instanceParam = cleanOptions(pipelineParams)
-        val triggerContainer = templateTriggerContainer.copy(
-            elements = triggerElements,
-            params = instanceParam
-        )
-        return model.copy(
-            stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId)
-        )
-    }
-
-    /**
      * 清空options
      *
      * 当参数类型为GIT/SNV分支、代码库、子流水线时,流水线保存、模板保存和模板实例化时,需要清空options参数,减少model大小.
@@ -358,26 +281,107 @@ object PipelineUtils {
         return PIPELINE_ID_PATTERN.matcher(pipelineId).matches()
     }
 
-    private fun mergeTemplateParams(
-        templateParams: List<BuildFormProperty>,
-        templateParameters: Map<String, TemplateParameter>?
-    ): List<BuildFormProperty> {
-        if (templateParameters == null) return templateParams
-        val pipelineParams = mutableListOf<BuildFormProperty>()
-        templateParams.forEach { param ->
-            val templateParameter = templateParameters[param.id]
-            templateParameter?.let {
-                val pipelineParam = param.copy(
-                    defaultValue = templateParameter.value,
-                    required = templateParameter.required ?: param.required
-                )
-                pipelineParams.add(pipelineParam)
-            }
+    /**
+     * 通过流水线参数、模板编排和触发器控制生成新Model
+     */
+    @Suppress("ALL")
+    fun instanceModelV2(
+        templateModel: Model,
+        pipelineName: String,
+        buildNo: BuildNo?,
+        param: List<BuildFormProperty>?,
+        instanceFromTemplate: Boolean,
+        labels: List<String>? = null,
+        defaultStageTagId: String?,
+        templateId: String? = null,
+        staticViews: List<String> = emptyList(),
+        triggerConfigs: Map<String, TemplateTriggerConfig>? = null
+    ): Model {
+        val templateTrigger = templateModel.getTriggerContainer()
+        val triggerElements = if (triggerConfigs != null) {
+            mergeTriggerElements(
+                templateTriggerContainer = templateTrigger,
+                triggerConfigs = triggerConfigs
+            )
+        } else {
+            templateTrigger.elements
         }
-        return pipelineParams
+        val instanceParam = param?.let { cleanOptions(it) } ?: emptyList()
+        val triggerContainer = TriggerContainer(
+            name = templateTrigger.name,
+            elements = triggerElements,
+            params = instanceParam,
+            buildNo = buildNo,
+            containerId = templateTrigger.containerId,
+            containerHashId = templateTrigger.containerHashId
+        )
+
+        return Model(
+            name = pipelineName,
+            desc = "",
+            stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId),
+            labels = labels ?: templateModel.labels,
+            instanceFromTemplate = instanceFromTemplate,
+            templateId = templateId,
+            staticViews = staticViews
+        )
     }
 
-    private fun configTriggerElements(
+    fun instanceModelV2(
+        model: Model,
+        templateResource: PipelineTemplateResource
+    ): Model {
+        if (templateResource.model !is Model) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+            )
+        }
+        val templateModel = templateResource.model as Model
+        val triggerContainer = mergeTriggerContainer(
+            model = model,
+            templateModel = templateModel
+        )
+        val stages = mutableListOf<Stage>()
+        templateModel.stages.forEachIndexed { index, stage ->
+            if (index == 0) {
+                stages.add(stage.copy(containers = listOf(triggerContainer)))
+            } else {
+                stages.add(stage)
+            }
+        }
+        return model.copy(
+            stages = stages,
+            parsedTemplateId = templateResource.templateId,
+            parsedTemplateVersion = templateResource.version
+        )
+    }
+
+    private fun mergeTriggerContainer(
+        model: Model,
+        templateModel: Model,
+    ): TriggerContainer {
+        val templateTriggerContainer = templateModel.getTriggerContainer()
+        val triggerConfigs = model.triggerConfigs
+        val triggerElements = if (triggerConfigs != null) {
+            mergeTriggerElements(
+                templateTriggerContainer = templateTriggerContainer,
+                triggerConfigs = triggerConfigs
+            )
+        } else {
+            templateTriggerContainer.elements
+        }
+        val pipelineParams = mergeTemplateParams(
+            templateParams = templateModel.getTriggerContainer().params,
+            templateParameters = model.templateVariables,
+        )
+        val instanceParam = cleanOptions(pipelineParams)
+        return templateTriggerContainer.copy(
+            elements = triggerElements,
+            params = instanceParam
+        )
+    }
+
+    private fun mergeTriggerElements(
         templateTriggerContainer: TriggerContainer,
         triggerConfigs: Map<String, TemplateTriggerConfig>
     ): MutableList<Element> {
@@ -396,7 +400,7 @@ object PipelineUtils {
         templateTriggerContainer.elements.forEach { element ->
             val triggerConfig = triggerConfigs[element.stepId]
             if (triggerConfig != null) {
-                val instanceElement = configTriggerElement(
+                val instanceElement = mergeTriggerElement(
                     triggerElement = element, triggerConfig = triggerConfig
                 )
                 elements.add(instanceElement)
@@ -407,7 +411,7 @@ object PipelineUtils {
         return elements
     }
 
-    private fun configTriggerElement(
+    private fun mergeTriggerElement(
         triggerElement: Element,
         triggerConfig: TemplateTriggerConfig
     ): Element {
@@ -425,5 +429,24 @@ object PipelineUtils {
 
             else -> triggerElement
         }
+    }
+
+    private fun mergeTemplateParams(
+        templateParams: List<BuildFormProperty>,
+        templateParameters: Map<String, TemplateParameter>?
+    ): List<BuildFormProperty> {
+        if (templateParameters == null) return templateParams
+        val pipelineParams = mutableListOf<BuildFormProperty>()
+        templateParams.forEach { param ->
+            val templateParameter = templateParameters[param.id]
+            templateParameter?.let {
+                val pipelineParam = param.copy(
+                    defaultValue = templateParameter.value,
+                    required = templateParameter.required ?: param.required
+                )
+                pipelineParams.add(pipelineParam)
+            }
+        }
+        return pipelineParams
     }
 }

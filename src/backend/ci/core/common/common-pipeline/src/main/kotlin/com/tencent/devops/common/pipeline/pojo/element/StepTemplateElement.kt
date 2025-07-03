@@ -23,7 +23,11 @@ data class StepTemplateElement(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, TemplateParameter>? = null
+    override var templateVariables: Map<String, TemplateParameter>? = null,
+    @get:Schema(title = "解析后的模版ID", required = false)
+    override var parsedTemplateId: String? = null,
+    @get:Schema(title = "解析后的模版版本", required = false)
+    override var parsedTemplateVersion: Long? = null,
 ) : Element(name, id, status), TemplateDescriptor {
     companion object {
         const val classType = "stepTemplate"

@@ -171,7 +171,7 @@ class PipelineTemplateInstanceReqConverter(
                 )
             }
             val templateParameters = params?.associateBy({ it.id }, { TemplateParameter(it) })
-            val pipelineModel = pipelineResourceFactory.createPipelineModel(
+            val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
                 name = pipelineName,
                 desc = null,
                 refType = templateRefType,

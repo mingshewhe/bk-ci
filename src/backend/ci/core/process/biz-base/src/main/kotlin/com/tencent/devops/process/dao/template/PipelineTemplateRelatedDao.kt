@@ -328,8 +328,12 @@ class PipelineTemplateRelatedDao {
             pipelineId = pipelineId,
             version = version,
             versionName = versionName,
-            buildNo = buildNo?.let { JsonUtil.to(it, object : TypeReference<BuildNo>() {}) },
-            params = param?.let { JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {}) },
+            buildNo = buildNo?.takeIf { it.isNotEmpty() }?.let {
+                JsonUtil.to(it, object : TypeReference<BuildNo>() {})
+            },
+            params = param?.takeIf { it.isNotEmpty() }?.let {
+                JsonUtil.to(it, object : TypeReference<List<BuildFormProperty>>() {})
+            },
             instanceType = PipelineInstanceTypeEnum.get(instanceType),
             rootTemplateId = rootTemplateId,
             deleted = deleted,

@@ -49,4 +49,10 @@ interface TemplateDescriptor {
 
     @get:Schema(title = "模板参数值", required = false)
     var templateVariables: Map<String, TemplateParameter>?
+
+    @get:Schema(title = "解析后的模版ID", required = false)
+    var parsedTemplateId: String?
+
+    @get:Schema(title = "解析后的模版版本", required = false)
+    var parsedTemplateVersion: Long?
 }
