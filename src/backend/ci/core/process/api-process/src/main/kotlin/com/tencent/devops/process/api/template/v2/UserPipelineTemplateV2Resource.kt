@@ -201,7 +201,7 @@ interface UserPipelineTemplateV2Resource {
         @PathParam("templateId")
         templateId: String,
         @Parameter(description = "模版引用,可以是分支/tag/commit", required = true)
-        @PathParam("ref")
+        @QueryParam("ref")
         ref: String
     ): Result<PipelineTemplateDetailsResponse>
 
