@@ -36,7 +36,7 @@ import com.tencent.devops.environment.api.thirdpartyagent.ServiceThirdPartyAgent
 import com.tencent.devops.environment.pojo.AgentPipelineRefInfo
 import com.tencent.devops.environment.pojo.AgentPipelineRefRequest
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

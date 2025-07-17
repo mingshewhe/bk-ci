@@ -51,7 +51,7 @@ import com.tencent.devops.common.pipeline.utils.RepositoryConfigUtils
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.utils.PipelineVarUtil
 import com.tencent.devops.repository.api.ServiceRepositoryResource
 import com.tencent.devops.repository.pojo.RepoPipelineRefInfo

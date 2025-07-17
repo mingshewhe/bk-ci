@@ -29,44 +29,31 @@ package com.tencent.devops.process.service.pipeline.version.processor
 
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
+import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
-import org.jooq.DSLContext
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 
-/**
- * 流水线版本创建后置处理器
- */
-interface PipelineVersionCreatePostProcessor {
-    /**
-     * 流水线创建前执行
-     */
-    fun postProcessBeforeVersionCreate(
+@Service
+class PipelineOperateLogVersionPostProcessor @Autowired constructor(
+    private val operationLogService: PipelineOperationLogService
+) : PipelineVersionCreatePostProcessor {
+
+    override fun postProcessAfterVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
-
-    }
-
-    /**
-     * 与流水线版本创建时事务保持一致
-     */
-    fun postProcessInTransactionVersionCreate(
-        transactionContext: DSLContext,
-        context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    ) {
-
-    }
-
-    /**
-     * 流水线版本创建后执行
-     */
-    fun postProcessAfterVersionCreate(
-        context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    ) {
-
+        with(context) {
+            operationLogService.addOperationLog(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = pipelineResourceVersion.version,
+                operationLogType = operationLogType,
+                params = operationLogParams,
+                description = null
+            )
+        }
     }
 }

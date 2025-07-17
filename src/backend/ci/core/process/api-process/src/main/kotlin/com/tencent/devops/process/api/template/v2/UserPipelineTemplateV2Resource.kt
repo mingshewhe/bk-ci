@@ -187,6 +187,24 @@ interface UserPipelineTemplateV2Resource {
         templateId: String
     ): Result<PipelineTemplateDetailsResponse>
 
+    @Operation(summary = "根据引用查看模版详情")
+    @GET
+    @Path("/{templateId}/ref/details/")
+    fun getRefTemplateDetails(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "模版引用,可以是分支/tag/commit", required = true)
+        @PathParam("ref")
+        ref: String
+    ): Result<PipelineTemplateDetailsResponse>
+
     @Operation(summary = "查看模板基本信息")
     @GET
     @Path("/{templateId}/info/")

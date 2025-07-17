@@ -67,6 +67,7 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
             val (modelAndSetting, yamlWithVersion) = pipelineVersionGenerator.yaml2model(
                 userId = userId,
                 projectId = projectId,
+                pipelineId = pipelineId,
                 yaml = yaml,
                 yamlFileName = yamlFileName
             )

@@ -34,6 +34,7 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,7 +44,8 @@ import org.springframework.stereotype.Service
 class PipelineVersionCommonConvert @Autowired constructor(
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineAsCodeService: PipelineAsCodeService,
-    private val pipelineInfoService: PipelineInfoService
+    private val pipelineInfoService: PipelineInfoService,
+    private val transferService: PipelineTransferYamlService
 ) {
 
     fun convert(
@@ -101,6 +103,9 @@ class PipelineVersionCommonConvert @Autowired constructor(
             channelCode = ChannelCode.BS,
             pipelineName = pipelineSettingWithoutVersion.pipelineName,
             pipelineDesc = pipelineSettingWithoutVersion.desc,
+            pipelineDisable = pipelineResourceWithoutVersion.yaml?.let {
+                transferService.loadYaml(it).disablePipeline == true
+            }
         )
 
         val pipelineDialect = pipelineAsCodeService.getPipelineDialect(

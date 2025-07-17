@@ -77,7 +77,7 @@ data class Stage(
     @get:Schema(title = "模板路径", required = false)
     override var templatePath: String? = null,
     @get:Schema(title = "模板版本引用,分支/tag/commit", required = false)
-    override  var templateRef: String? = null,
+    override var templateRef: String? = null,
     @get:Schema(title = "模板ID", required = false)
     override var templateId: String? = null,
     @get:Schema(title = "模版版本名称", required = false)

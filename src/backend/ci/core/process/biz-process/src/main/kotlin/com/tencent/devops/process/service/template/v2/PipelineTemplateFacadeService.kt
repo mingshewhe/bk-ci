@@ -17,6 +17,7 @@ import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
@@ -30,7 +31,6 @@ import com.tencent.devops.process.pojo.template.PipelineTemplateListSimpleRespon
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateTransferBody
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompareResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -46,10 +46,13 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateR
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketRelatedInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
+import com.tencent.devops.process.service.pipeline.PipelineYamlRefResolver
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
+import com.tencent.devops.process.yaml.PipelineYamlService
 import com.tencent.devops.process.yaml.transfer.PipelineTransferException
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -74,6 +77,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineOperationLogDao: PipelineOperationLogDao,
     private val dslContext: DSLContext,
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
+    private val pipelineYamlService: PipelineYamlService,
+    private val pipelineYamlRefResolver: PipelineYamlRefResolver,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val client: Client,
     private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService
@@ -534,6 +539,31 @@ class PipelineTemplateFacadeService @Autowired constructor(
             yamlSupported = yamlSupported,
             yamlPreview = yamlPreview,
             yamlInvalidMsg = msg
+        )
+    }
+
+    fun getRefTemplateDetails(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        ref: String
+    ): PipelineTemplateDetailsResponse {
+        val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
+            projectId = projectId,
+            pipelineId = templateId,
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_NOT_ENABLE_PAC
+        )
+        val pipelineYamlVersion = pipelineYamlRefResolver.resolvePipelineYamlVersion(
+            projectId = projectId,
+            repoHashId = pipelineYamlInfo.repoHashId,
+            filePath = pipelineYamlInfo.filePath,
+            ref = ref
+        )
+        return getTemplateDetails(
+            projectId = projectId,
+            templateId = templateId,
+            version = pipelineYamlVersion.version.toLong()
         )
     }
 

@@ -53,7 +53,7 @@ import com.tencent.devops.process.engine.service.detail.TaskBuildDetailService
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordTask
 import com.tencent.devops.process.pojo.task.TaskBuildEndParam
 import com.tencent.devops.process.service.BuildVariableService
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.record.PipelineRecordModelService
 import org.jooq.DSLContext

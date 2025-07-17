@@ -40,22 +40,22 @@ import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlWithVersion
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
-import com.tencent.devops.process.dao.PipelineSettingVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PrefetchReleaseResult
-import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInstancesRequest
 import com.tencent.devops.process.service.StageTagService
+import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.process.yaml.transfer.aspect.IPipelineTransferAspect
 import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
+import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -69,7 +69,7 @@ class PipelineVersionGenerator constructor(
     private val dslContext: DSLContext,
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineResourceDao: PipelineResourceDao,
-    private val pipelineSettingVersionDao: PipelineSettingVersionDao,
+    private val pipelineSettingVersionService: PipelineSettingVersionService,
     private val client: Client,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val stageTagService: StageTagService,
@@ -125,40 +125,35 @@ class PipelineVersionGenerator constructor(
         projectId: String,
         pipelineId: String
     ): PipelineResourceOnlyVersion {
+        val releaseResource = pipelineResourceDao.getReleaseVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            statusCode = Response.Status.NOT_FOUND.statusCode,
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+            params = arrayOf(pipelineId)
+        )
+        // PAC之前的历史流水线,T_PIPELINE_RESOURCE_VERSION和T_PIPELINE_SETTING_VERSION可能没有数据
         val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
         )
-        val latestSetting = pipelineSettingVersionDao.getLatestSettingVersion(
-            dslContext = dslContext,
+        val latestSetting = pipelineSettingVersionService.getLatestSettingVersion(
+            context = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
         )
         return PipelineResourceOnlyVersion(
-            version = latestResource.version + 1,
-            settingVersion = latestSetting.version + 1,
-            baseVersion = latestResource.version
+            version = (latestResource?.version ?: releaseResource.version) + 1,
+            settingVersion = latestSetting?.let { it.version + 1 } ?: 1,
+            baseVersion = releaseResource.version,
+            baseVersionName = releaseResource.versionName,
+            releaseVersion = releaseResource.version,
+            releaseVersionName = releaseResource.versionName
         )
     }
-
-    /**
-     * 生成分支版本
-     */
-    private fun generateBranchVersion(
-        latestResource: PipelineResourceVersion,
-        latestSetting: PipelineSettingVersion,
-        branchName: String
-    ) = PipelineResourceOnlyVersion(
-        version = latestResource.version + 1,
-        settingVersion = latestSetting.version + 1,
-        baseVersion = latestResource.version,
-        versionName = branchName
-    )
 
     /**
      * 生成分支版本
@@ -168,31 +163,48 @@ class PipelineVersionGenerator constructor(
         pipelineId: String,
         branchName: String
     ): PipelineResourceOnlyVersion {
+        val releaseResource = pipelineResourceDao.getReleaseVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            statusCode = Response.Status.NOT_FOUND.statusCode,
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+            params = arrayOf(pipelineId)
+        )
+        // PAC之前的历史流水线,T_PIPELINE_RESOURCE_VERSION和T_PIPELINE_SETTING_VERSION可能没有数据
         val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
         )
-        val latestSetting = pipelineSettingVersionDao.getLatestSettingVersion(
-            dslContext = dslContext,
+        val latestSetting = pipelineSettingVersionService.getLatestSettingVersion(
+            context = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessMessageCode.ERROR_NON_LATEST_RELEASE_VERSION
         )
-        return generateBranchVersion(
-            latestResource = latestResource,
-            latestSetting = latestSetting,
+        // 分支版本的基准版本,如果当前分支有分支版本,则取当前分支,否则取最新版本
+        val branchResource = pipelineResourceVersionDao.getBranchVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId,
             branchName = branchName
+        )
+        return PipelineResourceOnlyVersion(
+            version = (latestResource?.version ?: releaseResource.version) + 1,
+            settingVersion = latestSetting?.let { it.version + 1 } ?: 1,
+            baseVersion = branchResource?.version ?: releaseResource.version,
+            baseVersionName = branchResource?.versionName ?: releaseResource.versionName,
+            versionName = branchName,
+            releaseVersion = releaseResource.version,
+            releaseVersionName = releaseResource.versionName
         )
     }
 
     /**
      * 生成正式版本
      *
-     * @param draftResource 草稿版本编排
+     * @param draftResource 正式版本由草稿发布,否则直接创建的正式版本
      * @param newModel 新版编排
      */
     fun generateReleaseVersion(
@@ -201,27 +213,38 @@ class PipelineVersionGenerator constructor(
         draftResource: PipelineResourceVersion? = null,
         newModel: Model
     ): PipelineResourceOnlyVersion {
+        val releaseResource = pipelineResourceDao.getReleaseVersionResource(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            statusCode = Response.Status.NOT_FOUND.statusCode,
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+            params = arrayOf(pipelineId)
+        )
+        // PAC之前的历史流水线,T_PIPELINE_RESOURCE_VERSION和T_PIPELINE_SETTING_VERSION可能没有数据
         val latestResource = pipelineResourceVersionDao.getLatestVersionResource(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND
         )
-        val latestSetting = pipelineSettingVersionDao.getLatestSettingVersion(
-            dslContext = dslContext,
+        val latestSetting = pipelineSettingVersionService.getLatestSettingVersion(
+            context = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND
         )
+        // 这个正式版本需要从T_PIPELINE_RESOURCE_VERSION中获取,
+        // 不能从T_PIPELINE_RESOURCE中获取,因为T_PIPELINE_RESOURCE中可能是草稿或分支版本
         val latestReleaseResource = pipelineResourceVersionDao.getReleaseVersionRecord(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
         )
         val (version, settingVersion) = if (draftResource == null) {
-            Pair(latestResource.version + 1, latestSetting.version + 1)
+            Pair(
+                (latestResource?.version ?: releaseResource.version) + 1,
+                latestSetting?.let { it.version + 1 } ?: 1
+            )
         } else {
             Pair(draftResource.version, draftResource.settingVersion)
         }
@@ -243,7 +266,9 @@ class PipelineVersionGenerator constructor(
                 versionNum = versionNum,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,
-                settingVersion = settingVersion
+                settingVersion = settingVersion,
+                releaseVersion = version,
+                releaseVersionName = versionName
             )
         } else {
             val versionNum = latestReleaseResource.versionNum?.let { it + 1 } ?: INIT_VERSION
@@ -269,7 +294,11 @@ class PipelineVersionGenerator constructor(
                 versionNum = versionNum,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,
-                settingVersion = settingVersion
+                settingVersion = settingVersion,
+                baseVersion = latestReleaseResource.version,
+                baseVersionName = latestReleaseResource.versionName,
+                releaseVersion = version,
+                releaseVersionName = versionName
             )
         }
     }
@@ -654,15 +683,16 @@ class PipelineVersionGenerator constructor(
     fun yaml2model(
         userId: String,
         projectId: String,
+        pipelineId: String?,
         yaml: String,
         yamlFileName: String? = null,
         aspects: LinkedList<IPipelineTransferAspect>? = null
-    ): Pair<PipelineModelAndSetting, YamlWithVersion?>  {
+    ): Pair<PipelineModelAndSetting, YamlWithVersion?> {
         return try {
             val result = transferService.transfer(
                 userId = userId,
                 projectId = projectId,
-                pipelineId = null,
+                pipelineId = pipelineId,
                 actionType = TransferActionType.FULL_YAML2MODEL,
                 data = TransferBody(oldYaml = yaml, yamlFileName = yamlFileName),
                 aspects = aspects ?: LinkedList()

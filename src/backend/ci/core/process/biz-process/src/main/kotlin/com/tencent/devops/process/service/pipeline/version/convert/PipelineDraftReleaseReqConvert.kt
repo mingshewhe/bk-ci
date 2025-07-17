@@ -27,7 +27,9 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -41,7 +43,6 @@ import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
-import com.tencent.devops.process.yaml.PipelineYamlService
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -53,8 +54,7 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineVersionGenerator: PipelineVersionGenerator,
-    private val pipelineVersionCommonConvert: PipelineVersionCommonConvert,
-    private val pipelineYamlService: PipelineYamlService
+    private val pipelineVersionCommonConvert: PipelineVersionCommonConvert
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
         return request is PipelineVersionReleaseRequest
@@ -102,10 +102,23 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                     throw IllegalArgumentException("targetAction is null")
                 }
                 if (yamlInfo == null) {
-                    throw IllegalArgumentException("yamlInfo is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.ERROR_NEED_PARAM_,
+                        params = arrayOf(PipelineVersionReleaseRequest::yamlInfo.name)
+                    )
+                }
+                // 对前端的YAML信息进行校验
+                val filePath = yamlInfo!!.filePath
+                if (!filePath.endsWith(".yaml") || !filePath.endsWith(".yml")) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_PIPELINE_YAML_FILENAME,
+                        params = arrayOf(filePath)
+                    )
                 }
                 if (draftResource.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_YAML_CONTENT_IS_EMPTY
+                    )
                 }
             }
 
@@ -123,7 +136,7 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                 status = versionStatus
             )
 
-            val pipelineSettingWithoutVersion = draftResource.settingVersion?.let {
+            val draftSetting = draftResource.settingVersion?.let {
                 pipelineSettingFacadeService.userGetSetting(
                     userId = userId,
                     projectId = projectId,
@@ -135,11 +148,13 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId
             )
-            // 通过路径引用的方式,模版yaml文件所属的仓库ID应与流水线相同
-            val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
-                projectId = projectId,
-                pipelineId = pipelineId
-            )
+            val pipelineAsCodeSettings = if (enablePac) {
+                draftSetting.pipelineAsCodeSettings?.copy(enable = true) ?: PipelineAsCodeSettings(enable = true)
+            } else {
+                draftSetting.pipelineAsCodeSettings
+            }
+            val pipelineSettingWithoutVersion = draftSetting.copy(pipelineAsCodeSettings = pipelineAsCodeSettings)
+
             return pipelineVersionCommonConvert.convert(
                 userId = userId,
                 projectId = projectId,
@@ -149,7 +164,7 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 versionStatus = versionStatus,
                 versionAction = PipelineVersionAction.RELEASE_DRAFT,
-                repoHashId = pipelineYamlInfo?.repoHashId
+                repoHashId = yamlInfo?.repoHashId
             ).copy(
                 yamlFileInfo = yamlInfo?.let { PipelineYamlFileInfo(it) },
                 enablePac = enablePac,

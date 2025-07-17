@@ -74,7 +74,7 @@ import com.tencent.devops.process.pojo.pipeline.record.BuildRecordContainer
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordModel
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordStage
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordTask
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.record.PipelineRecordModelService
 import com.tencent.devops.process.util.BuildMsgUtils

@@ -133,7 +133,6 @@ class PipelineTemplateVersionManager @Autowired constructor(
         versionDeleteHandler.handle(context = context)
     }
 
-
     private fun getHandler(context: PipelineTemplateVersionCreateContext): PipelineTemplateVersionCreateHandler {
         return versionCreateHandlers.find { it.support(context) }
             ?: throw IllegalArgumentException("Unsupported version event: ${context.versionAction}")

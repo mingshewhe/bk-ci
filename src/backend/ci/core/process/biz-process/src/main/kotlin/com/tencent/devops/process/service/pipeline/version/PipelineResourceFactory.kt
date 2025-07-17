@@ -47,7 +47,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.template.TemplateRefType
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired

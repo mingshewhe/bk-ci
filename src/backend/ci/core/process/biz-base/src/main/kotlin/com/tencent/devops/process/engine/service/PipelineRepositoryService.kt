@@ -115,7 +115,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.TemplateInfo
 import com.tencent.devops.process.pojo.setting.PipelineModelVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService

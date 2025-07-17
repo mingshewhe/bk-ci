@@ -115,7 +115,6 @@ class UserTemplateResourceImpl @Autowired constructor(
         )
     }
 
-
     override fun installTemplate(
         userId: String,
         installTemplateReq: InstallTemplateReq

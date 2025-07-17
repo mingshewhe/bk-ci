@@ -55,11 +55,13 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
             createViewGroup(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
             )
         } else {
             updateViewGroup(
                 context = context,
-                pipelineResourceVersion = pipelineResourceVersion
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
             )
         }
     }
@@ -67,6 +69,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
     private fun createViewGroup(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
             if (pipelineResourceVersion.status == VersionStatus.RELEASED) {
@@ -74,7 +77,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
                     userId = userId,
                     projectId = projectId,
                     pipelineId = pipelineId,
-                    labelIds = pipelineResourceVersion.model.labels
+                    labelIds = pipelineSetting.labels
                 )
             }
             // 添加到静态分组
@@ -95,7 +98,8 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
 
     private fun updateViewGroup(
         context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion
+        pipelineResourceVersion: PipelineResourceVersion,
+        pipelineSetting: PipelineSetting
     ) {
         with(context) {
             if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
@@ -106,7 +110,7 @@ class PipelineViewGroupVersionPostProcessor @Autowired constructor(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
-                labelIds = pipelineResourceVersion.model.labels
+                labelIds = pipelineSetting.labels
             )
             // 添加到动态分组
             pipelineViewGroupService.updateGroupAfterPipelineUpdate(

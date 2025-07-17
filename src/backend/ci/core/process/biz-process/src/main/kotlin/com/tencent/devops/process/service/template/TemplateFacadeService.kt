@@ -155,7 +155,6 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.text.MessageFormat
 import java.time.LocalDateTime
-import java.util.concurrent.Executors
 
 @Suppress("ALL")
 @Service
@@ -1249,9 +1248,9 @@ class TemplateFacadeService @Autowired constructor(
             }
             versionNames.add(versionName)
         }
-        return if (ascSort){
+        return if (ascSort) {
             versions.sortedBy { templateVersion -> templateVersion.updateTime }
-        }else{
+        } else {
             versions.sortedByDescending { templateVersion -> templateVersion.updateTime }
         }
     }

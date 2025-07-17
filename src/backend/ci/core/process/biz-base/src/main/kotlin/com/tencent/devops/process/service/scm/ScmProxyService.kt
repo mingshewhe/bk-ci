@@ -47,7 +47,9 @@ import com.tencent.devops.repository.api.ServiceGithubResource
 import com.tencent.devops.repository.api.ServiceOauthResource
 import com.tencent.devops.repository.api.ServiceRepositoryResource
 import com.tencent.devops.repository.api.scm.ServiceGitResource
+import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
 import com.tencent.devops.repository.api.scm.ServiceScmOauthResource
+import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.repository.api.scm.ServiceScmResource
 import com.tencent.devops.repository.pojo.CodeGitRepository
 import com.tencent.devops.repository.pojo.CodeGitlabRepository
@@ -58,8 +60,13 @@ import com.tencent.devops.repository.pojo.GithubCheckRuns
 import com.tencent.devops.repository.pojo.GithubCheckRunsResponse
 import com.tencent.devops.repository.pojo.GithubRepository
 import com.tencent.devops.repository.pojo.Repository
+import com.tencent.devops.repository.pojo.credential.AuthRepository
 import com.tencent.devops.repository.pojo.enums.RepoAuthType
 import com.tencent.devops.repository.pojo.enums.TokenTypeEnum
+import com.tencent.devops.scm.api.enums.ContentKind
+import com.tencent.devops.scm.api.pojo.Content
+import com.tencent.devops.scm.api.pojo.Tree
+import com.tencent.devops.scm.api.pojo.repository.ScmServerRepository
 import com.tencent.devops.scm.code.git.CodeGitWebhookEvent
 import com.tencent.devops.scm.pojo.RepoSessionRequest
 import com.tencent.devops.scm.pojo.RevisionInfo
@@ -884,4 +891,43 @@ class ScmProxyService @Autowired constructor(private val client: Client) {
     fun tryGetSession(repository: Repository, credentialType: CredentialType) =
         (repository is CodeGitRepository || repository is CodeTGitRepository || repository is CodeSvnRepository) &&
                 (credentialType == CredentialType.USERNAME_PASSWORD)
+
+    // TODO PAC 需要补充异常情况
+    fun getServerRepository(projectId: String, authRepository: AuthRepository): ScmServerRepository {
+        return client.get(ServiceScmRepositoryApiResource::class).getServerRepository(
+            projectId = projectId,
+            authRepository = authRepository
+        ).data!!
+    }
+
+    // TODO PAC 需要补充异常情况
+    fun getFileContent(
+        projectId: String,
+        path: String,
+        ref: String,
+        authRepository: AuthRepository
+    ): Content {
+        return client.get(ServiceScmFileApiResource::class).getFileContent(
+            projectId = projectId,
+            path = path,
+            ref = ref,
+            authRepository = authRepository
+        ).data!!
+    }
+
+    fun listFileTree(
+        projectId: String,
+        path: String,
+        ref: String,
+        recursive: Boolean = false,
+        authRepository: AuthRepository
+    ): List<Tree>? {
+        return client.get(ServiceScmFileApiResource::class).listFileTree(
+            projectId = projectId,
+            path = path,
+            ref = ref,
+            recursive = recursive,
+            authRepository = authRepository
+        ).data
+    }
 }

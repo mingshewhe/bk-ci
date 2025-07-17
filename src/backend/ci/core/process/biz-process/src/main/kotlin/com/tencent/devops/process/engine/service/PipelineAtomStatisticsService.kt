@@ -35,7 +35,7 @@ import com.tencent.devops.common.pipeline.utils.ModelUtils
 import com.tencent.devops.common.redis.RedisLock
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
-import com.tencent.devops.process.service.PipelineModelParser
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.store.api.common.ServiceStoreStatisticResource
 import com.tencent.devops.store.pojo.common.statistic.StoreStatisticPipelineNumUpdate
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum

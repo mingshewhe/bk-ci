@@ -37,7 +37,7 @@ import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
 import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
-import com.tencent.devops.process.permission.PipelinePermissionService
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
@@ -67,7 +67,6 @@ class PipelineVersionPersistenceService @Autowired constructor(
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineSettingVersionDao: PipelineSettingVersionDao,
     private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
-    private val pipelinePermissionService: PipelinePermissionService,
     @Lazy
     private val pipelineYamlFacadeService: PipelineYamlFacadeService,
     private val versionCreateListeners: List<PipelineVersionCreatePostProcessor>
@@ -78,6 +77,10 @@ class PipelineVersionPersistenceService @Autowired constructor(
         resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            pipelineResourceWithoutVersion.model.latestVersion = resourceOnlyVersion.version
+            operationLogType = OperationLogType.fetchType(pipelineResourceWithoutVersion.status)
+            operationLogParams = resourceOnlyVersion.versionName ?: ""
+
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
@@ -93,7 +96,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     pipelineBasicInfo = pipelineBasicInfo,
                     pipelineModelBasicInfo = pipelineModelBasicInfo,
                     version = pipelineResourceVersion.version,
-                    latestVersionStatus = pipelineResourceVersion.status,
+                    latestVersionStatus = pipelineResourceVersion.status
                 )
                 createPipelineResource(
                     transactionContext = transactionContext,
@@ -140,12 +143,21 @@ class PipelineVersionPersistenceService @Autowired constructor(
         resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            pipelineResourceWithoutVersion.model.latestVersion = resourceOnlyVersion.version
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
+            operationLogParams = resourceOnlyVersion.versionName!!
+
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
             )
             val pipelineSetting = pipelineSettingWithoutVersion.copy(
                 version = resourceOnlyVersion.settingVersion!!
+            )
+            postProcessBeforeVersionCreate(
+                context = context,
+                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineSetting = pipelineSetting
             )
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
@@ -174,11 +186,6 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     transactionContext = transactionContext,
                     pipelineSetting = pipelineSetting
                 )
-                pipelinePermissionService.modifyResource(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    pipelineName = pipelineBasicInfo.pipelineName
-                )
                 postProcessInTransactionVersionCreate(
                     transactionContext = transactionContext,
                     context = context,
@@ -199,6 +206,9 @@ class PipelineVersionPersistenceService @Autowired constructor(
         resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            operationLogType = OperationLogType.CREATE_DRAFT_VERSION
+            operationLogParams = resourceOnlyVersion.baseVersionName ?: ""
+
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
@@ -226,6 +236,8 @@ class PipelineVersionPersistenceService @Autowired constructor(
         resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            operationLogType = OperationLogType.UPDATE_DRAFT_VERSION
+
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
@@ -263,7 +275,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
                 // 分支版本需要将同分支版本置为无效
-                pipelineResourceVersionDao.updateBranchVersion(
+                val cnt = pipelineResourceVersionDao.updateBranchVersion(
                     dslContext = transactionContext,
                     userId = userId,
                     projectId = projectId,
@@ -271,6 +283,13 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     branchName = branchName,
                     branchVersionAction = BranchVersionAction.INACTIVE
                 )
+                if (cnt > 0) {
+                    operationLogType = OperationLogType.UPDATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                } else {
+                    operationLogType = OperationLogType.CREATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                }
                 createPipelineResourceVersion(
                     transactionContext = transactionContext,
                     userId = userId,
@@ -303,6 +322,9 @@ class PipelineVersionPersistenceService @Autowired constructor(
         resourceOnlyVersion: PipelineResourceOnlyVersion
     ) {
         with(context) {
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
+            operationLogParams = resourceOnlyVersion.versionName!!
+
             val pipelineResourceVersion = PipelineResourceVersion(
                 pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
                 pipelineResourceOnlyVersion = resourceOnlyVersion
@@ -330,10 +352,9 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     userId = userId,
                     pipelineResourceVersion = pipelineResourceVersion
                 )
-                pipelinePermissionService.modifyResource(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    pipelineName = pipelineBasicInfo.pipelineName
+                pipelineSettingDao.saveSetting(
+                    dslContext = transactionContext,
+                    setting = pipelineSetting
                 )
                 postProcessInTransactionVersionCreate(
                     transactionContext = transactionContext,
@@ -368,7 +389,7 @@ class PipelineVersionPersistenceService @Autowired constructor(
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
                 // 分支版本需要将同分支版本置为无效
-                pipelineResourceVersionDao.updateBranchVersion(
+                val cnt = pipelineResourceVersionDao.updateBranchVersion(
                     dslContext = transactionContext,
                     userId = userId,
                     projectId = projectId,
@@ -376,6 +397,13 @@ class PipelineVersionPersistenceService @Autowired constructor(
                     branchName = branchName,
                     branchVersionAction = BranchVersionAction.INACTIVE
                 )
+                if (cnt > 0) {
+                    operationLogType = OperationLogType.UPDATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                } else {
+                    operationLogType = OperationLogType.CREATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                }
                 // 将草稿版本转换成分支版本
                 createPipelineResourceVersion(
                     transactionContext = transactionContext,
@@ -424,10 +452,6 @@ class PipelineVersionPersistenceService @Autowired constructor(
             )
             val yamlFileReleaseResult = pipelineYamlFacadeService.releaseYamlFile(
                 yamlFileReleaseReq = yamlFileReleaseReq
-            )
-            postProcessAfterVersionRelease(
-                context = context,
-                yamlFileReleaseResult = yamlFileReleaseResult
             )
             return yamlFileReleaseResult
         }
@@ -617,18 +641,6 @@ class PipelineVersionPersistenceService @Autowired constructor(
                 context = context,
                 pipelineResourceVersion = pipelineResourceVersion,
                 pipelineSetting = pipelineSetting
-            )
-        }
-    }
-
-    private fun postProcessAfterVersionRelease(
-        context: PipelineVersionCreateContext,
-        yamlFileReleaseResult: PipelineYamlFileReleaseResult
-    ) {
-        versionCreateListeners.forEach {
-            it.postProcessAfterVersionRelease(
-                context = context,
-                yamlFileReleaseResult = yamlFileReleaseResult
             )
         }
     }

@@ -31,6 +31,7 @@ import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.pojo.PipelineInfo
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
@@ -78,5 +79,10 @@ data class PipelineVersionCreateContext(
     @get:Schema(title = "分支名,代码库推送的分支", required = false)
     val branchName: String? = null,
     @get:Schema(title = "合并请求连接", required = false)
-    val pullRequestUrl: String? = null
+    val pullRequestUrl: String? = null,
+
+    @get:Schema(title = "操作日志类型", required = false)
+    var operationLogType: OperationLogType = OperationLogType.NORMAL_SAVE_OPERATION,
+    @get:Schema(title = "操作日志参数", required = false)
+    var operationLogParams: String = ""
 )

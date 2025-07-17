@@ -27,46 +27,51 @@
 
 package com.tencent.devops.process.service.pipeline.version.processor
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.extend.ModelCheckPlugin
+import com.tencent.devops.common.pipeline.pojo.element.atom.BeforeDeleteParam
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
-import org.jooq.DSLContext
+import jakarta.ws.rs.core.Response
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 
 /**
- * 流水线版本创建后置处理器
+ * 流水线版本创建前的后置处理器
  */
-interface PipelineVersionCreatePostProcessor {
-    /**
-     * 流水线创建前执行
-     */
-    fun postProcessBeforeVersionCreate(
+@Service
+class PipelineModelBeforeVersionPostProcessor @Autowired constructor(
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val modelCheckPlugin: ModelCheckPlugin
+) : PipelineVersionCreatePostProcessor {
+
+    override fun postProcessBeforeVersionCreate(
         context: PipelineVersionCreateContext,
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
-
-    }
-
-    /**
-     * 与流水线版本创建时事务保持一致
-     */
-    fun postProcessInTransactionVersionCreate(
-        transactionContext: DSLContext,
-        context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    ) {
-
-    }
-
-    /**
-     * 流水线版本创建后执行
-     */
-    fun postProcessAfterVersionCreate(
-        context: PipelineVersionCreateContext,
-        pipelineResourceVersion: PipelineResourceVersion,
-        pipelineSetting: PipelineSetting
-    ) {
-
+        with(context) {
+            if (pipelineResourceVersion.status != VersionStatus.RELEASED) {
+                return
+            }
+            val existModel = pipelineRepositoryService.getPipelineResourceVersion(
+                projectId = projectId,
+                pipelineId = pipelineId
+            )?.model ?: throw ErrorCodeException(
+                statusCode = Response.Status.NOT_FOUND.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NOT_EXISTS
+            )
+            // 对已经存在的模型做处理
+            val param = BeforeDeleteParam(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId
+            )
+            modelCheckPlugin.beforeDeleteElementInExistsModel(existModel, pipelineResourceVersion.model, param)
+        }
     }
 }

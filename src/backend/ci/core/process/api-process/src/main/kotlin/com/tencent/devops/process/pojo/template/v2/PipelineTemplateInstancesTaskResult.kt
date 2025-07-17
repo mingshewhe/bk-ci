@@ -50,8 +50,6 @@ data class PipelineTemplateInstancesTaskResult(
     val failItemNum: Int,
     @get:Schema(title = "失败原因", required = true)
     val errorMessages: Map<String, String>? = null,
-    @get:Schema(title = "合并请求Id")
-    val pullRequestId: Long? = null,
     @get:Schema(title = "合并请求链接")
     val pullRequestUrl: String? = null
 )

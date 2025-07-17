@@ -29,7 +29,6 @@ package com.tencent.devops.common.pipeline.pojo.transfer
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 
 /**
  * model

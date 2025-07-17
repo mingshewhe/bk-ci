@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version.handler
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -34,12 +35,15 @@ import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
+import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
+import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionPersistenceService
 import com.tencent.devops.process.yaml.PipelineYamlFacadeService
+import jakarta.ws.rs.core.Response
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
@@ -55,6 +59,7 @@ class PipelineDraftReleaseHandler @Autowired constructor(
     private val pipelineVersionPersistenceService: PipelineVersionPersistenceService,
     private val dslContext: DSLContext,
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
+    private val pipelineResourceDao: PipelineResourceDao,
     @Lazy
     private val pipelineYamlFacadeService: PipelineYamlFacadeService
 ) : PipelineVersionCreateHandler {
@@ -69,10 +74,15 @@ class PipelineDraftReleaseHandler @Autowired constructor(
                     throw IllegalArgumentException("targetAction is null")
                 }
                 if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.ERROR_NEED_PARAM_,
+                        params = arrayOf(PipelineVersionReleaseRequest::yamlInfo.name)
+                    )
                 }
                 if (pipelineResourceWithoutVersion.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_YAML_CONTENT_IS_EMPTY
+                    )
                 }
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
@@ -110,6 +120,31 @@ class PipelineDraftReleaseHandler @Autowired constructor(
             targetAction = targetAction,
             targetBranch = branchName
         )
+        val releaseResource = pipelineResourceDao.getReleaseVersionResource(
+            dslContext = dslContext, projectId = projectId, pipelineId = pipelineId
+        ) ?: throw ErrorCodeException(
+            statusCode = Response.Status.NOT_FOUND.statusCode,
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS,
+            params = arrayOf(pipelineId)
+        )
+        // 如果当前草稿和正式版本一致则拦截发布
+        if (
+            resourceOnlyVersion.pipelineVersion == releaseResource.pipelineVersion &&
+            resourceOnlyVersion.triggerVersion == releaseResource.triggerVersion &&
+            resourceOnlyVersion.settingVersion == releaseResource.settingVersion
+        ) throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_VERSION_IS_NOT_UPDATED
+        )
+
+        var updateBuildNo = false
+        draftResource.model.getTriggerContainer().buildNo?.let {
+            val releaseBuildNo = releaseResource.model.getTriggerContainer().buildNo
+            // [关闭变为开启]或[修改buildNo数值]，都属于更新行为，需要提示更新
+            if (releaseBuildNo == null || releaseBuildNo.buildNo != it.buildNo) {
+                updateBuildNo = true
+            }
+        }
+
         if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
             pipelineVersionPersistenceService.releaseDraft2ReleaseVersion(
                 context = this,
@@ -142,7 +177,8 @@ class PipelineDraftReleaseHandler @Autowired constructor(
             versionNum = resourceOnlyVersion.versionNum,
             versionName = resourceOnlyVersion.versionName,
             yamlInfo = yamlInfo,
-            targetUrl = yamlFileReleaseResult?.pullRequestUrl
+            targetUrl = yamlFileReleaseResult?.pullRequestUrl,
+            updateBuildNo = updateBuildNo
         )
     }
 }

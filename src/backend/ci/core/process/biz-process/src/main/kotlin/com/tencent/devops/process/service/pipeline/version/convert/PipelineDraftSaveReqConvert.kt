@@ -35,6 +35,7 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.version.PipelineDraftSaveReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
@@ -57,7 +58,8 @@ class PipelineDraftSaveReqConvert(
     private val pipelineVersionGenerator: PipelineVersionGenerator,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineVersionCommonConvert: PipelineVersionCommonConvert,
-    private val pipelineYamlService: PipelineYamlService
+    private val pipelineYamlService: PipelineYamlService,
+    private val pipelineRepositoryService: PipelineRepositoryService
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
         return request is PipelineDraftSaveReq
@@ -79,6 +81,7 @@ class PipelineDraftSaveReqConvert(
                 pipelineVersionGenerator.yaml2model(
                     userId = userId,
                     projectId = projectId,
+                    pipelineId = pipelineId,
                     yaml = yaml!!,
                 )
             } else {
@@ -95,7 +98,14 @@ class PipelineDraftSaveReqConvert(
                     projectId = projectId,
                     pipelineId = pipelineId,
                     modelAndSetting = newModelAndSetting,
-                    oldYaml = null
+                    oldYaml =  pipelineId?.let {
+                        pipelineRepositoryService.getPipelineResourceVersion(
+                            projectId = projectId,
+                            pipelineId = it,
+                            version = request.baseVersion,
+                            includeDraft = true
+                        )?.yaml
+                    } ?: ""
                 )
                 Pair(newModelAndSetting, newYaml)
             }

@@ -25,30 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service
+package com.tencent.devops.process.service.pipeline
 
-import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
-import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
 import com.tencent.devops.process.engine.dao.PipelineYamlInfoDao
 import com.tencent.devops.process.engine.dao.PipelineYamlVersionDao
 import com.tencent.devops.process.engine.utils.PipelineUtils
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordModel
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.repository.api.ServiceRepositoryResource
-import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
-import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
-import com.tencent.devops.repository.pojo.credential.AuthRepository
-import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -64,6 +55,7 @@ class PipelineModelParser @Autowired constructor(
     private val pipelineTemplateResourceDao: PipelineTemplateResourceDao,
     private val pipelineYamlInfoDao: PipelineYamlInfoDao,
     private val pipelineYamlVersionDao: PipelineYamlVersionDao,
+    private val pipelineYamlRefResolver: PipelineYamlRefResolver,
     private val client: Client
 ) {
 
@@ -288,7 +280,7 @@ class PipelineModelParser @Autowired constructor(
                         projectId = projectId,
                         templateId = templateId!!
                     ) ?: throw ErrorCodeException(
-                        errorCode = ERROR_TEMPLATE_NOT_EXISTS,
+                        errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS,
                         params = arrayOf(templateId!!)
                     )
                     pipelineTemplateResourceDao.getLatestRecord(
@@ -319,10 +311,16 @@ class PipelineModelParser @Autowired constructor(
                         params = arrayOf(templatePath!!)
                     )
                     // 2. 获取yaml文件对应的模版版本
-                    val pipelineYamlVersion = getPipelineYamlVersion(
+                    /**
+                     * 1. 如果指定分支，则使用指定分支
+                     * 2. 如果没有指定分支,当webhook触发时,使用触发的分支,否则使用默认分支
+                     */
+                    val ref = templateRef?.takeIf { it.isNotEmpty() } ?: branchName?.takeIf { it.isNotEmpty() }
+                    val pipelineYamlVersion = pipelineYamlRefResolver.resolvePipelineYamlVersion(
                         projectId = projectId,
                         repoHashId = repoHashId,
-                        branchName = branchName
+                        filePath = templatePath!!,
+                        ref = ref
                     )
                     logger.info(
                         "parse template descriptor result by path|$projectId|$repoHashId|" +
@@ -350,101 +348,6 @@ class PipelineModelParser @Autowired constructor(
                     )
                 }
             }
-        }
-    }
-
-    private fun TemplateDescriptor.getPipelineYamlVersion(
-        projectId: String,
-        repoHashId: String,
-        branchName: String?
-    ): PipelineYamlVersion {
-        val repository = client.get(ServiceRepositoryResource::class).get(
-            projectId = projectId,
-            repositoryId = repoHashId,
-            repositoryType = RepositoryType.ID
-        ).data ?: throw ErrorCodeException(
-            errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_YAML_REPOSITORY_NOT_FOUND
-        )
-
-        val authRepository = AuthRepository(repository)
-        val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepository(
-            projectId = projectId,
-            authRepository = authRepository
-        ).data
-        if (serverRepository !is GitScmServerRepository) {
-            throw ErrorCodeException(
-                errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
-            )
-        }
-        val defaultBranch = serverRepository.defaultBranch
-
-        /**
-         * 1. 如果指定分支，则使用指定分支
-         * 2. 如果没有指定分支,当webhook触发时,使用触发的分支,否则使用默认分支
-         */
-        val ref = templateRef?.takeIf { it.isNotEmpty() } ?: branchName?.takeIf { it.isNotEmpty() } ?: defaultBranch
-        // 这里后续看是否可以改成从T_PIPELINE_YAML_BRANCH_FILE表中获取
-        val fileContent = client.get(ServiceScmFileApiResource::class).getFileContent(
-            projectId = projectId,
-            path = templatePath!!,
-            ref = ref,
-            authRepository = authRepository
-        ).data!!
-        return getPipelineYamlVersion(
-            projectId = projectId,
-            repoHashId = repoHashId,
-            filePath = templatePath!!,
-            ref = ref,
-            blobId = fileContent.blobId,
-            defaultBranch = defaultBranch
-        ) ?: throw ErrorCodeException(
-            errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_YAML_VERSION_NOT_FOUND,
-            params = arrayOf(ref, templatePath!!)
-        )
-    }
-
-    /**
-     * 获取触发时版本
-     *
-     * 1. 查看触发分支有没有blobId对应的版本
-     * 2. 如果触发分支没有,则查看默认分支
-     * 3. 如果默认分支也没有,则查看其他分支是不是有对应的版本
-     */
-    private fun getPipelineYamlVersion(
-        projectId: String,
-        repoHashId: String,
-        filePath: String,
-        ref: String,
-        blobId: String,
-        defaultBranch: String
-    ): PipelineYamlVersion? {
-        val pipelineBranchVersion = pipelineYamlVersionDao.getPipelineYamlVersion(
-            dslContext = dslContext,
-            projectId = projectId,
-            repoHashId = repoHashId,
-            filePath = filePath,
-            ref = ref,
-            blobId = blobId,
-            branchAction = BranchVersionAction.ACTIVE.name
-        )
-        return if (ref == defaultBranch) {
-            pipelineBranchVersion
-        } else {
-            pipelineBranchVersion ?: pipelineYamlVersionDao.getPipelineYamlVersion(
-                dslContext = dslContext,
-                projectId = projectId,
-                repoHashId = repoHashId,
-                filePath = filePath,
-                ref = defaultBranch,
-                blobId = blobId,
-                branchAction = BranchVersionAction.ACTIVE.name
-            ) ?: pipelineYamlVersionDao.getPipelineYamlVersion(
-                dslContext = dslContext,
-                projectId = projectId,
-                repoHashId = repoHashId,
-                filePath = filePath,
-                blobId = blobId
-            )
         }
     }
 

@@ -223,6 +223,22 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    override fun getRefTemplateDetails(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        ref: String
+    ): Result<PipelineTemplateDetailsResponse> {
+        return Result(
+            templateFacadeService.getRefTemplateDetails(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                ref = ref
+            )
+        )
+    }
+
     override fun getTemplateInfo(
         userId: String,
         projectId: String,
