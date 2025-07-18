@@ -38,6 +38,7 @@ import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import jakarta.ws.rs.core.Response
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 /**
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PipelineModelBeforeVersionPostProcessor @Autowired constructor(
+    @Lazy
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val modelCheckPlugin: ModelCheckPlugin
 ) : PipelineVersionCreatePostProcessor {
