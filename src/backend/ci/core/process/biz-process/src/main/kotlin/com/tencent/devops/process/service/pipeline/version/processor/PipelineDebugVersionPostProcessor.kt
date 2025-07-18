@@ -38,6 +38,7 @@ import com.tencent.devops.process.service.builds.PipelineBuildFacadeService
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import org.jooq.DSLContext
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 /**
@@ -48,8 +49,9 @@ class PipelineDebugVersionPostProcessor @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineBuildDao: PipelineBuildDao,
     private val buildLogPrinter: BuildLogPrinter,
+    @Lazy
     private val pipelineBuildFacadeService: PipelineBuildFacadeService,
-    private val pipelineBuildSummaryDao: PipelineBuildSummaryDao,
+    private val pipelineBuildSummaryDao: PipelineBuildSummaryDao
 ) : PipelineVersionCreatePostProcessor {
 
     override fun postProcessAfterVersionCreate(
