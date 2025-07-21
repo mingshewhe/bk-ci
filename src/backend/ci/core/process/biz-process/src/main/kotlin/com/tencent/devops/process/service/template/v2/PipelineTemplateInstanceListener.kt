@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.PageUtil
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceBaseDao
@@ -228,9 +229,9 @@ class PipelineTemplateInstanceListener @Autowired constructor(
                 projectId = projectId,
                 userId = creator,
                 instanceItem = this,
-                exception = ignored,
-                failurePipelines = failurePipelines,
+                exception = ignored
             )
+            failurePipelines.add(pipelineId)
             null
         }
     }
@@ -301,11 +302,9 @@ class PipelineTemplateInstanceListener @Autowired constructor(
         projectId: String,
         userId: String,
         instanceItem: PipelineTemplateInstanceItem,
-        exception: Throwable,
-        failurePipelines: MutableList<String>
+        exception: Throwable
     ) {
-
-        val errorMessage = pipelineTemplateInstanceService.translateInstanceException(
+        val failedReason = pipelineTemplateInstanceService.translateInstanceException(
             userId = userId,
             projectId = projectId,
             pipelineId = instanceItem.pipelineId,
@@ -318,17 +317,16 @@ class PipelineTemplateInstanceListener @Autowired constructor(
                 projectId = projectId,
                 baseId = instanceItem.baseId,
                 pipelineId = instanceItem.pipelineId,
-                errorMessage = errorMessage
+                errorMessage = JsonUtil.toJson(failedReason, false)
             )
             pipelineTemplateRelatedService.updateStatus(
                 transactionContext = transactionContext,
                 projectId = projectId,
                 pipelineIds = listOf(instanceItem.pipelineId),
-                status = TemplatePipelineStatus.FAILED
+                status = TemplatePipelineStatus.FAILED,
+                instanceErrorInfo = JsonUtil.toJson(failedReason, false)
             )
         }
-
-        failurePipelines.add(errorMessage)
     }
 
     companion object {

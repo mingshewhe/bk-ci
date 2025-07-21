@@ -12,8 +12,12 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedErrors
+import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedMsg
+import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedReason
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
+import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_ELEMENT_CHECK_FAILED
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.dao.PipelineBuildSummaryDao
@@ -123,7 +127,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     exception = ignored,
                 )
                 failurePipelines.add(instance.pipelineName)
-                failureMessages[instance.pipelineName] = errorMessage
+                failureMessages[instance.pipelineName] = errorMessage.message
             }
         }
         return TemplateOperationRet(
@@ -283,24 +287,30 @@ class PipelineTemplateInstanceService @Autowired constructor(
         projectId: String,
         pipelineId: String,
         exception: Throwable
-    ): String {
+    ): PipelineCheckFailedReason {
         logger.warn("Failed to instance template|$userId|$projectId|$pipelineId|${exception.message}")
         return when (exception) {
             is DuplicateKeyException -> {
-                "duplicate!"
+                PipelineCheckFailedMsg("duplicate!")
             }
 
             is ErrorCodeException -> {
-                I18nUtil.generateResponseDataObject(
+                val message = I18nUtil.generateResponseDataObject(
                     messageCode = exception.errorCode,
                     params = exception.params,
                     data = null,
                     defaultMessage = exception.defaultMessage
                 ).message ?: exception.defaultMessage ?: "unknown!"
+                // ERROR_PIPELINE_ELEMENT_CHECK_FAILED输出的是一个json,需要格式化输出
+                if (exception.errorCode == ERROR_PIPELINE_ELEMENT_CHECK_FAILED) {
+                    JsonUtil.to(message, PipelineCheckFailedErrors::class.java)
+                } else {
+                    PipelineCheckFailedMsg(message)
+                }
             }
 
             else -> {
-                exception.message ?: "template instance fail"
+                PipelineCheckFailedMsg(exception.message ?: "template instance fail")
             }
         }
     }
@@ -451,6 +461,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     param = instanceParams,
                     repoHashId = yamlPipelineMap[pipelineId]?.repoHashId,
                     filePath = yamlPipelineMap[pipelineId]?.filePath,
+                    triggerConfigs = instanceModel.triggerConfigs
                 )
             }.toMap()
         } catch (ignored: Throwable) {

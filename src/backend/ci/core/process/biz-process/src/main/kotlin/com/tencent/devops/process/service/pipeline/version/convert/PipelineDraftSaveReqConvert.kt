@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
@@ -34,6 +35,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
@@ -44,6 +46,7 @@ import com.tencent.devops.process.service.pipeline.version.PipelineResourceFacto
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.yaml.PipelineYamlService
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -59,7 +62,8 @@ class PipelineDraftSaveReqConvert(
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineVersionCommonConvert: PipelineVersionCommonConvert,
     private val pipelineYamlService: PipelineYamlService,
-    private val pipelineRepositoryService: PipelineRepositoryService
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
         return request is PipelineDraftSaveReq
@@ -154,12 +158,20 @@ class PipelineDraftSaveReqConvert(
         projectId: String
     ): Model {
         val model = modelAndSetting!!.model
-        val templateVariables =
-            model.getTriggerContainer().params.associateBy({ it.id }, { TemplateParameter(it) })
         return if (model.fromTemplate == true) {
+            val triggerContainer = model.getTriggerContainer().copy(
+                elements = emptyList()
+            )
+            val stages = listOf(
+                model.stages[0].copy(containers = listOf(triggerContainer))
+            )
             // 前端把流水线变量放在触发器param中,如果是模版的,需要把param转换成模版变量
+
+            val templateVariables =
+                model.getTriggerContainer().params.associateBy({ it.id }, { TemplateParameter(it) })
+
             model.copy(
-                stages = emptyList(),
+                stages = stages,
                 templateVariables = templateVariables
             )
         } else {
@@ -170,13 +182,25 @@ class PipelineDraftSaveReqConvert(
             if (pipelineTemplateRelated != null &&
                 pipelineTemplateRelated.instanceType == PipelineInstanceTypeEnum.CONSTRAINT
             ) {
+                val templateResource = pipelineTemplateResourceService.get(
+                    projectId = projectId,
+                    templateId = pipelineTemplateRelated.templateId,
+                    version = pipelineTemplateRelated.version
+                )
+                val templateModel = templateResource.model
+                if (templateModel !is Model) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+                    )
+                }
                 pipelineResourceFactory.createPipelineModelRef(
                     name = model.name,
                     desc = model.desc,
                     refType = TemplateRefType.ID,
                     templateId = pipelineTemplateRelated.templateId,
                     templateVersionName = pipelineTemplateRelated.versionName,
-                    templateVariables = templateVariables,
+                    templateModel = templateResource.model as Model,
+                    params = model.getTriggerContainer().params,
                     triggerConfigs = model.triggerConfigs
                 )
             } else {

@@ -155,7 +155,8 @@ class PipelineTemplateInstanceReqConverter(
                 templateId = templateId,
                 version = templateVersion
             )
-            if (templateResource.model !is Model) {
+            val templateModel = templateResource.model
+            if (templateModel !is Model) {
                 throw ErrorCodeException(
                     errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
                 )
@@ -170,7 +171,6 @@ class PipelineTemplateInstanceReqConverter(
                     errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_TEMPLATE_NEED_PAC
                 )
             }
-            val templateParameters = params?.associateBy({ it.id }, { TemplateParameter(it) })
             val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
                 name = pipelineName,
                 desc = null,
@@ -179,7 +179,8 @@ class PipelineTemplateInstanceReqConverter(
                 templateVersionName = templateResource.versionName,
                 templatePath = templatePath,
                 templateRef = templateRef,
-                templateVariables = templateParameters,
+                templateModel = templateModel,
+                params = params,
                 triggerConfigs = triggerConfigs,
                 overrideTemplateSettingGroups = if (useTemplateSetting) {
                     emptyList()

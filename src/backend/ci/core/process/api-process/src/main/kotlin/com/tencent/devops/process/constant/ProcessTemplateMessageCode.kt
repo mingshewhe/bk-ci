@@ -47,7 +47,7 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_VERSION_BY_ID_NOT_FOUND = "2101296" // 模版$0对应的版本$1不存在
     const val ERROR_TEMPLATE_VERSION_BY_PATH_NOT_FOUND = "2101297" // 模版$0在分支$1对应的版本不存在
     const val ERROR_TEMPLATE_REF_TYPE = "2101298" // 模版引用templateId和templatePath不能同时为空
-    const val ERROR_TEMPLATE_VERSION_NAME_NOT_EMPTY = "2101298" // 模版版本名称不能为空
-    const val ERROR_TEMPLATE_VERSION_NOT_FOUND = "2101297" // 模版$0对应的版本$1不存在
-    const val ERROR_TEMPLATE_NOT_ENABLE_PAC = "2101298" // 模版没有开启PAC,不能通过路径引用查询
+    const val ERROR_TEMPLATE_VERSION_NAME_NOT_EMPTY = "2101299" // 模版版本名称不能为空
+    const val ERROR_TEMPLATE_VERSION_NOT_FOUND = "21012300" // 模版$0对应的版本$1不存在
+    const val ERROR_TEMPLATE_NOT_ENABLE_PAC = "2101301" // 模版没有开启PAC,不能通过路径引用查询
 }
