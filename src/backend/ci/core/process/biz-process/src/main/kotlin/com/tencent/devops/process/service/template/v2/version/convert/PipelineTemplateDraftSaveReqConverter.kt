@@ -128,7 +128,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 creator = userId,
                 updater = userId
             )
-            val pipelineTemplateSetting = transferResult.templateSetting.copy(
+            val pTemplateSettingWithoutVersion = transferResult.templateSetting.copy(
                 projectId = projectId,
                 pipelineId = templateInfo.id,
                 creator = userId,
@@ -142,7 +142,7 @@ class PipelineTemplateDraftSaveReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 pipelineTemplateInfo = templateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = pipelineTemplateSetting
+                pTemplateSettingWithoutVersion = pTemplateSettingWithoutVersion
             )
         }
     }

@@ -51,14 +51,11 @@ import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-import com.tencent.devops.process.engine.cfg.ModelContainerIdGenerator
-import com.tencent.devops.process.engine.cfg.ModelTaskIdGenerator
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
-import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.notice_key
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService.Companion.pipeline_key
@@ -187,31 +184,49 @@ class PipelineTemplateGenerator @Autowired constructor(
      * 生成草稿版本
      */
     fun generateDraftVersion(
-        latestResource: PipelineTemplateResource
-    ) = PTemplateResourceOnlyVersion(
-        version = generateTemplateVersion(),
-        number = latestResource.number + 1,
-        settingVersion = latestResource.settingVersion + 1,
-        baseVersion = latestResource.version,
-        baseVersionName = latestResource.versionName
-    )
+        projectId: String,
+        templateId: String
+    ): PTemplateResourceOnlyVersion {
+        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
+            projectId = projectId,
+            templateId = templateId
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        return PTemplateResourceOnlyVersion(
+            version = generateTemplateVersion(),
+            number = latestResource.number + 1,
+            settingVersion = latestResource.settingVersion + 1,
+            baseVersion = latestResource.version,
+            baseVersionName = latestResource.versionName
+        )
+    }
 
     /**
      * 生成分支版本
-     *
-     * @param latestResource 最新的版本
      */
     fun generateBranchVersion(
-        latestResource: PipelineTemplateResource,
+        projectId: String,
+        templateId: String,
         branchName: String
-    ) = PTemplateResourceOnlyVersion(
-        version = generateTemplateVersion(),
-        number = latestResource.number + 1,
-        versionName = branchName,
-        settingVersion = latestResource.settingVersion + 1,
-        baseVersion = latestResource.version,
-        baseVersionName = latestResource.versionName
-    )
+    ): PTemplateResourceOnlyVersion {
+        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
+            projectId = projectId,
+            templateId = templateId
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+        // 如果已经存在分支版本,则基准版本为分支版本
+        val branchResource = pipelineTemplateResourceService.getLatestBranchResource(
+            projectId = projectId,
+            templateId = templateId,
+            branchName = branchName
+        )
+        return PTemplateResourceOnlyVersion(
+            version = generateTemplateVersion(),
+            number = latestResource.number + 1,
+            versionName = branchName,
+            settingVersion = latestResource.settingVersion + 1,
+            baseVersion = branchResource?.version ?: latestResource.version,
+            baseVersionName = branchResource?.versionName ?: latestResource.versionName
+        )
+    }
 
 
     /**

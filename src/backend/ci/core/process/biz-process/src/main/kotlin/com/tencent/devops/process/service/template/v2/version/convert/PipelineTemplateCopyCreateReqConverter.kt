@@ -100,7 +100,6 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 (srcTemplateResource.model as Model).name = request.name
             }
 
-            logger.debug("copy convert model {}", srcTemplateResource.model)
             val setting = if (copySetting) {
                 val srcTemplateSetting = pipelineTemplateSettingService.get(
                     projectId = projectId,
@@ -169,7 +168,7 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = transferResult.templateSetting
+                pTemplateSettingWithoutVersion = transferResult.templateSetting
             )
         }
     }

@@ -27,6 +27,8 @@
 
 package com.tencent.devops.process.service.pipeline.version.handler
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
@@ -54,13 +56,22 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             }
             if (enablePac) {
                 if (targetAction == null) {
-                    throw IllegalArgumentException("targetAction is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("targetAction")
+                    )
                 }
                 if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yamlFileInfo")
+                    )
                 }
                 if (pipelineResourceWithoutVersion.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yaml content")
+                    )
                 }
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)

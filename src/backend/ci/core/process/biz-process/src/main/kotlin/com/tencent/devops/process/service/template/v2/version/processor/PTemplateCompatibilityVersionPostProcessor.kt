@@ -1,9 +1,10 @@
-package com.tencent.devops.process.service.template.v2.version.listener
+package com.tencent.devops.process.service.template.v2.version.processor
 
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
-import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service
  * 流水线模板版本创建兼容后置处理器
  */
 @Service
-class PTemplateVersionCreateCompatibilityPostProcessor(
+class PTemplateCompatibilityVersionPostProcessor(
     val v2TemplateInfoService: PipelineTemplateInfoService,
     val v2TemplateResourceService: PipelineTemplateResourceService,
     val v2TemplateSettingService: PipelineTemplateSettingService,
@@ -27,17 +28,22 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
     val v1TemplateSettingService: PipelineSettingDao,
     val dslContext: DSLContext
 ) : PTemplateVersionCreatePostProcessor {
+
     @Value("\${template.maxSaveVersionRecordNum:2}")
     private val maxSaveVersionRecordNum: Int = 2
-    override fun postProcessAfterCreation(
+
+    override fun postProcessAfterVersionCreate(
         context: PipelineTemplateVersionCreateContext,
-        deployTemplateResult: DeployTemplateResult
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
     ) {
-        with(deployTemplateResult) {
-            logger.info("post process after creation :$context|$deployTemplateResult")
+        with(context) {
             if (!versionAction.isCreateReleaseVersion()) {
                 return
             }
+            val version = pipelineTemplateResource.version
+            val versionName = pipelineTemplateResource.versionName
+
             val v1TemplateRecord = v1TemplateDao.getTemplate(
                 dslContext = dslContext,
                 projectId = projectId,
@@ -104,6 +110,6 @@ class PTemplateVersionCreateCompatibilityPostProcessor(
     }
 
     companion object {
-        val logger = LoggerFactory.getLogger(PTemplateVersionCreateCompatibilityPostProcessor::class.java)
+        val logger = LoggerFactory.getLogger(PTemplateCompatibilityVersionPostProcessor::class.java)
     }
 }

@@ -96,7 +96,7 @@ class PipelineTemplateDraftRollbackReqConverter @Autowired constructor(
             versionAction = PipelineVersionAction.SAVE_DRAFT,
             pipelineTemplateInfo = pipelineTemplateInfo,
             pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pipelineTemplateSetting = baseSetting
+            pTemplateSettingWithoutVersion = baseSetting
         )
     }
 }

@@ -1,11 +1,12 @@
-package com.tencent.devops.process.service.template.v2.version.listener
+package com.tencent.devops.process.service.template.v2.version.processor
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.ProcessMessageCode
-import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
@@ -17,16 +18,18 @@ import org.springframework.stereotype.Service
  * 流水线模板版本创建研发商店安装后置处理器
  */
 @Service
-class PTemplateVersionCreateMarketInstallPostProcessor(
+class PTemplateMarketInstallVersionPostProcessor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client
 ) : PTemplateVersionCreatePostProcessor {
-    override fun postProcessAfterCreation(
+
+    override fun postProcessAfterVersionCreate(
         context: PipelineTemplateVersionCreateContext,
-        deployTemplateResult: DeployTemplateResult
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
     ) {
-        with(deployTemplateResult) {
+        with(context) {
             if (versionAction != PipelineVersionAction.CREATE_RELEASE) {
                 return
             }

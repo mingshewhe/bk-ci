@@ -171,7 +171,7 @@ data class PreTemplateScriptBuildYamlV3Parser(
             res.add(PipelineSettingGroupType.CONCURRENCY)
         }
         if (customBuildNum != null) {
-            res.add(PipelineSettingGroupType.BUILD_NUM_RULE)
+            res.add(PipelineSettingGroupType.CUSTOM_BUILD_NUM)
         }
         if (notices != null) {
             res.add(PipelineSettingGroupType.NOTICES)

@@ -1,19 +1,17 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
-import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
-import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -24,11 +22,9 @@ import org.springframework.stereotype.Service
 @Service
 class PipelineTemplateBranchCreateHandler @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val pipelineTemplateGenerator: PipelineTemplateGenerator,
-    private val redisOperation: RedisOperation,
-    private val pipelineTemplateVersionCommonService: PipelineTemplateVersionCommonService
+    private val redisOperation: RedisOperation
 ) : PipelineTemplateVersionCreateHandler {
     override fun support(context: PipelineTemplateVersionCreateContext): Boolean {
         return context.versionAction == PipelineVersionAction.CREATE_BRANCH
@@ -38,22 +34,27 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         with(context) {
             if (!enablePac) {
                 throw ErrorCodeException(
-                    errorCode = ""
+                    errorCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                    params = arrayOf("enablePac")
                 )
             }
             if (yamlFileInfo == null) {
                 throw ErrorCodeException(
-                    errorCode = ""
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("yamlFileInfo")
                 )
             }
             if (branchName == null) {
                 throw ErrorCodeException(
-                    errorCode = ""
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("branchName")
                 )
             }
             if (pTemplateResourceWithoutVersion.status != VersionStatus.BRANCH) {
-                // TEMPLATE_NOT_RELEASED
-                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_STATUS_NOT_MATCHED,
+                    params = arrayOf(VersionStatus.BRANCH.name, pTemplateResourceWithoutVersion.status.name)
+                )
             }
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
             try {
@@ -71,9 +72,26 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
             templateId = templateId
         )
         val resourceOnlyVersion = if (templateInfo == null) {
-            pipelineTemplateVersionCommonService.initializeTemplate(context = this)
+            val resourceOnlyVersion = pipelineTemplateGenerator.getDefaultVersion(
+                versionStatus = pTemplateResourceWithoutVersion.status,
+                branchName = branchName
+            )
+            pipelineTemplatePersistenceService.initializeTemplate(
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
+            )
+            resourceOnlyVersion
         } else {
-            createBranchVersion()
+            val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
+                projectId = projectId,
+                templateId = templateId,
+                branchName = branchName!!
+            )
+            pipelineTemplatePersistenceService.createBranchVersion(
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
+            )
+            resourceOnlyVersion
         }
         return DeployTemplateResult(
             projectId = projectId,
@@ -87,28 +105,5 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
             versionAction = versionAction,
             operationLogType = OperationLogType.CREATE_BRANCH_VERSION
         )
-    }
-
-    private fun PipelineTemplateVersionCreateContext.createBranchVersion(): PTemplateResourceOnlyVersion {
-        val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
-            projectId = projectId,
-            templateId = templateId
-        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
-        val resourceOnlyVersion = pipelineTemplateGenerator.generateBranchVersion(
-            latestResource = latestResource,
-            branchName = branchName!!
-        )
-        val pipelineTemplateResource = PipelineTemplateResource(
-            pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-            pTemplateResourceOnlyVersion = resourceOnlyVersion
-        )
-
-        pipelineTemplatePersistenceService.createBranchVersion(
-            templateResource = pipelineTemplateResource,
-            templateSetting = pipelineTemplateSetting.copy(
-                version = resourceOnlyVersion.settingVersion
-            )
-        )
-        return resourceOnlyVersion
     }
 }

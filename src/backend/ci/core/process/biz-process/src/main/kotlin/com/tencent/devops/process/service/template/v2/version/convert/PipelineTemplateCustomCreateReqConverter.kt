@@ -72,7 +72,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 name = name
             )
             val newTemplateId = pipelineTemplateGenerator.generateTemplateId()
-            val setting = pipelineTemplateGenerator.getDefaultSetting(
+            val templateSettingWithoutVersion = pipelineTemplateGenerator.getDefaultSetting(
                 type = type,
                 projectId = projectId,
                 templateId = newTemplateId,
@@ -104,7 +104,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 storageType = PipelineStorageType.MODEL,
                 templateType = type,
                 templateModel = defaultTemplateModel,
-                templateSetting = setting,
+                templateSetting = templateSettingWithoutVersion,
                 params = emptyList(),
                 yaml = null
             )
@@ -127,7 +127,7 @@ class PipelineTemplateCustomCreateReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = setting
+                pTemplateSettingWithoutVersion = templateSettingWithoutVersion
             )
         }
     }

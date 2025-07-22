@@ -28,7 +28,6 @@
 package com.tencent.devops.process.service.template.v2.version.hander
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.redis.RedisOperation
@@ -43,7 +42,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenc
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionDeleteContext
-import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionDeletePostProcessor
+import com.tencent.devops.process.service.template.v2.version.processor.PTemplateVersionDeletePostProcessor
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory

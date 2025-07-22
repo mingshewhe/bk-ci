@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -38,7 +39,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelLock
 import com.tencent.devops.process.service.template.v2.PipelineTemplatePersistenceService
@@ -68,20 +68,35 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (version == null) {
-                throw IllegalArgumentException("version is null")
-            }
-            if (pTemplateResourceWithoutVersion.description == null) {
-                throw IllegalArgumentException("description is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("version")
+                )
             }
             if (enablePac) {
                 if (targetAction == null) {
-                    throw IllegalArgumentException("targetAction is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("targetAction")
+                    )
                 }
                 if (yamlFileInfo == null) {
-                    throw IllegalArgumentException("yamlFileInfo is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yamlFileInfo")
+                    )
                 }
                 if (pTemplateResourceWithoutVersion.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yaml content")
+                    )
+                }
+                if (pTemplateResourceWithoutVersion.description == null) {
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("description")
+                    )
                 }
             }
             val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
@@ -116,30 +131,14 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
         )
         validateReleaseYamlFile(resourceOnlyVersion = resourceOnlyVersion)
         if (versionStatus == VersionStatus.RELEASED) {
-            val templateResource = PipelineTemplateResource(
-                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion.copy(
-                    status = versionStatus
-                ),
-                pTemplateResourceOnlyVersion = resourceOnlyVersion
-            )
             pipelineTemplatePersistenceService.releaseDraft2ReleaseVersion(
-                userId = userId,
-                templateResource = templateResource,
-                templateSetting = pipelineTemplateSetting.copy(
-                    version = resourceOnlyVersion.settingVersion
-                ),
-                enablePac = enablePac,
-                description = pTemplateResourceWithoutVersion.description
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
             )
         } else {
             pipelineTemplatePersistenceService.releaseDraft2BranchVersion(
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                version = version,
-                needUpdateInfo = pipelineTemplateInfo.enablePac != enablePac,
-                versionName = resourceOnlyVersion.versionName!!,
-                description = pTemplateResourceWithoutVersion.description!!
+                context = this,
+                resourceOnlyVersion = resourceOnlyVersion
             )
         }
 

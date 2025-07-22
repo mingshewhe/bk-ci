@@ -34,17 +34,20 @@ import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.template.TemplateType
+import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoUpdateInfo
-import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
+import com.tencent.devops.process.service.template.v2.version.processor.PTemplateVersionCreatePostProcessor
 import com.tencent.devops.store.api.common.ServiceStoreResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
@@ -66,36 +69,123 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val client: Client,
-    private val templatePipelineDao: TemplatePipelineDao
+    private val templatePipelineDao: TemplatePipelineDao,
+    private val versionCreateListeners: List<PTemplateVersionCreatePostProcessor>
 ) {
 
     /**
      * 初始化创建流水线模版和权限（草稿/分支/正式）
      */
     fun initializeTemplate(
-        pipelineTemplateInfo: PipelineTemplateInfoV2,
-        pipelineTemplateResource: PipelineTemplateResource,
-        pipelineTemplateSetting: PipelineSetting
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineTemplateInfoService.createOrUpdate(
-                transactionContext = context,
-                pipelineTemplateInfo = pipelineTemplateInfo
+        with(context) {
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateResourceService.create(
-                transactionContext = context,
-                pipelineTemplateResource = pipelineTemplateResource
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
             )
-            pipelineTemplateSettingService.createOrUpdate(
-                transactionContext = context,
+            operationLogType = OperationLogType.fetchType(pipelineTemplateResource.status)
+            operationLogParams = resourceOnlyVersion.versionName ?: ""
+
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                pipelineTemplateInfoService.createOrUpdate(
+                    transactionContext = transactionContext,
+                    pipelineTemplateInfo = pipelineTemplateInfo
+                )
+                pipelineTemplateResourceService.create(
+                    transactionContext = transactionContext,
+                    pipelineTemplateResource = pipelineTemplateResource
+                )
+                pipelineTemplateSettingService.createOrUpdate(
+                    transactionContext = transactionContext,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+                pipelineTemplatePermissionService.createResource(
+                    userId = pipelineTemplateInfo.creator,
+                    projectId = pipelineTemplateInfo.projectId,
+                    templateId = pipelineTemplateInfo.id,
+                    templateName = pipelineTemplateInfo.name
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
                 pipelineTemplateSetting = pipelineTemplateSetting
             )
-            pipelineTemplatePermissionService.createResource(
-                userId = pipelineTemplateInfo.creator,
-                projectId = pipelineTemplateInfo.projectId,
-                templateId = pipelineTemplateInfo.id,
-                templateName = pipelineTemplateInfo.name
+        }
+    }
+
+    fun createReleaseVersion(
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
+    ) {
+        with(context) {
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
+            )
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
+            )
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
+            operationLogParams = resourceOnlyVersion.versionName!!
+
+            val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+                name = pipelineTemplateSetting.pipelineName,
+                desc = pipelineTemplateSetting.desc,
+                releasedVersion = resourceOnlyVersion.version,
+                releasedVersionName = resourceOnlyVersion.versionName,
+                releasedSettingVersion = resourceOnlyVersion.settingVersion,
+                latestVersionStatus = VersionStatus.RELEASED,
+                updater = userId
+            )
+            val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+                projectId = projectId,
+                templateId = templateId
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                pipelineTemplateInfoService.update(
+                    transactionContext = transactionContext,
+                    record = pipelineTemplateInfoUpdateInfo,
+                    commonCondition = pipelineTemplateCommonCondition
+                )
+                pipelineTemplateResourceService.create(
+                    transactionContext = transactionContext,
+                    pipelineTemplateResource = pipelineTemplateResource
+                )
+                pipelineTemplateSettingService.createOrUpdate(
+                    transactionContext = transactionContext,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+                pipelineTemplatePermissionService.modifyResource(
+                    userId = userId,
+                    projectId = projectId,
+                    templateId = templateId,
+                    templateName = pipelineTemplateSetting.pipelineName
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }
@@ -149,96 +239,145 @@ class PipelineTemplatePersistenceService @Autowired constructor(
     }
 
     fun createDraftVersion(
-        templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            pipelineTemplateResourceService.create(
-                transactionContext = transactionContext,
-                pipelineTemplateResource = templateResource
+        with(context) {
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateSettingService.createOrUpdate(
-                transactionContext = transactionContext,
-                pipelineTemplateSetting = templateSetting
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
             )
+            operationLogType = OperationLogType.CREATE_DRAFT_VERSION
+            operationLogParams = resourceOnlyVersion.baseVersionName ?: ""
+
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                pipelineTemplateResourceService.create(
+                    transactionContext = transactionContext,
+                    pipelineTemplateResource = pipelineTemplateResource
+                )
+                pipelineTemplateSettingService.createOrUpdate(
+                    transactionContext = transactionContext,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
         }
     }
 
     fun createBranchVersion(
-        templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            branchAction = BranchVersionAction.INACTIVE
-        )
-        val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
-            projectId = templateResource.projectId,
-            templateId = templateResource.templateId,
-            versionName = templateResource.versionName,
-            branchAction = BranchVersionAction.ACTIVE
-        )
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            // 创建分支版本,需要把原来的活跃的分支置为非活跃
-            pipelineTemplateResourceService.update(
-                transactionContext = transactionContext,
-                record = inactiveBranchUpdateInfo,
-                commonCondition = inactiveBranchCondition
+        with (context) {
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateResourceService.create(
-                transactionContext = transactionContext,
-                pipelineTemplateResource = templateResource.copy(
-                    branchAction = BranchVersionAction.ACTIVE
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
+            )
+            val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                branchAction = BranchVersionAction.INACTIVE
+            )
+            val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                versionName = pipelineTemplateResource.versionName,
+                branchAction = BranchVersionAction.ACTIVE
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                // 创建分支版本,需要把原来的活跃的分支置为非活跃
+                val cnt = pipelineTemplateResourceService.update(
+                    transactionContext = transactionContext,
+                    record = inactiveBranchUpdateInfo,
+                    commonCondition = inactiveBranchCondition
                 )
-            )
-            pipelineTemplateSettingService.createOrUpdate(
-                transactionContext = transactionContext,
-                pipelineTemplateSetting = templateSetting
+                if (cnt > 0) {
+                    operationLogType = OperationLogType.UPDATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                } else {
+                    operationLogType = OperationLogType.CREATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                }
+                pipelineTemplateResourceService.create(
+                    transactionContext = transactionContext,
+                    pipelineTemplateResource = pipelineTemplateResource.copy(
+                        branchAction = BranchVersionAction.ACTIVE
+                    )
+                )
+                pipelineTemplateSettingService.createOrUpdate(
+                    transactionContext = transactionContext,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }
 
     fun updateDraftVersion(
-        userId: String,
-        templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            params = templateResource.params,
-            model = templateResource.model,
-            yaml = templateResource.yaml,
-            baseVersion = templateResource.baseVersion,
-            baseVersionName = templateResource.baseVersionName,
-            updater = userId,
-            sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
-        )
-        val templateResourceCondition = PipelineTemplateResourceCommonCondition(
-            projectId = templateResource.projectId,
-            templateId = templateResource.templateId,
-            version = templateResource.version
-        )
-        val templateSettingUpdateInfo = PipelineTemplateSettingUpdateInfo(
-            userId = userId,
-            pipelineSetting = templateSetting
-        )
-        val templateSettingCondition = PipelineTemplateSettingCommonCondition(
-            projectId = templateResource.projectId,
-            templateId = templateResource.templateId,
-            settingVersion = templateResource.settingVersion
-        )
-        dslContext.transaction { configuration ->
-            val context = DSL.using(configuration)
-            pipelineTemplateResourceService.update(
-                transactionContext = context,
-                record = templateResourceUpdateInfo,
-                commonCondition = templateResourceCondition
+        with(context) {
+            operationLogType = OperationLogType.UPDATE_DRAFT_VERSION
+
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateSettingService.update(
-                transactionContext = context,
-                record = templateSettingUpdateInfo,
-                commonCondition = templateSettingCondition
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
             )
+            val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                params = pipelineTemplateResource.params,
+                model = pipelineTemplateResource.model,
+                yaml = pipelineTemplateResource.yaml,
+                baseVersion = pipelineTemplateResource.baseVersion,
+                baseVersionName = pipelineTemplateResource.baseVersionName,
+                updater = userId,
+                sortWeight = PipelineTemplateConstant.COMMITTING_STATUS_VERSION_SORT_WIGHT
+            )
+            val templateResourceCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                version = resourceOnlyVersion.version
+            )
+            val templateSettingUpdateInfo = PipelineTemplateSettingUpdateInfo(
+                userId = userId,
+                pipelineSetting = pipelineTemplateSetting
+            )
+            val templateSettingCondition = PipelineTemplateSettingCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                settingVersion = resourceOnlyVersion.settingVersion
+            )
+            dslContext.transaction { configuration ->
+                val context = DSL.using(configuration)
+                pipelineTemplateResourceService.update(
+                    transactionContext = context,
+                    record = templateResourceUpdateInfo,
+                    commonCondition = templateResourceCondition
+                )
+                pipelineTemplateSettingService.update(
+                    transactionContext = context,
+                    record = templateSettingUpdateInfo,
+                    commonCondition = templateSettingCondition
+                )
+            }
         }
     }
 
@@ -246,122 +385,164 @@ class PipelineTemplatePersistenceService @Autowired constructor(
      * 将草稿版本发布为正式版本
      */
     fun releaseDraft2ReleaseVersion(
-        userId: String,
-        templateResource: PipelineTemplateResource,
-        templateSetting: PipelineSetting,
-        enablePac: Boolean,
-        description: String?
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
-            name = templateSetting.pipelineName,
-            desc = templateSetting.desc,
-            releasedVersion = templateResource.version,
-            releasedVersionName = templateResource.versionName,
-            releasedSettingVersion = templateResource.settingVersion,
-            latestVersionStatus = VersionStatus.RELEASED,
-            enablePac = enablePac,
-            updater = userId
-        )
-        val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
-            projectId = templateResource.projectId,
-            templateId = templateResource.templateId
-        )
-        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            versionName = templateResource.versionName,
-            settingVersionNum = templateResource.settingVersionNum,
-            versionNum = templateResource.versionNum,
-            pipelineVersion = templateResource.pipelineVersion,
-            triggerVersion = templateResource.triggerVersion,
-            releaseTime = LocalDateTime.now(),
-            status = VersionStatus.RELEASED,
-            description = description,
-            sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT,
-            updater = userId
-        )
-        val templateResourceCondition = PipelineTemplateResourceCommonCondition(
-            projectId = templateResource.projectId,
-            templateId = templateResource.templateId,
-            version = templateResource.version
-        )
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            pipelineTemplateInfoService.update(
-                transactionContext = transactionContext,
-                record = pipelineTemplateInfoUpdateInfo,
-                commonCondition = pipelineTemplateCommonCondition
+        with(context) {
+            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
+            operationLogParams = resourceOnlyVersion.versionName!!
+
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
             )
-            pipelineTemplateResourceService.update(
-                transactionContext = transactionContext,
-                record = templateResourceUpdateInfo,
-                commonCondition = templateResourceCondition
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
             )
-            pipelineTemplatePermissionService.modifyResource(
-                userId = userId,
-                projectId = templateResource.projectId,
-                templateId = templateResource.templateId,
-                templateName = templateSetting.pipelineName
+            val templateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+                name = pipelineTemplateSetting.pipelineName,
+                desc = pipelineTemplateSetting.desc,
+                releasedVersion = resourceOnlyVersion.version,
+                releasedVersionName = resourceOnlyVersion.versionName,
+                releasedSettingVersion = resourceOnlyVersion.settingVersion,
+                latestVersionStatus = VersionStatus.RELEASED,
+                enablePac = enablePac,
+                updater = userId
+            )
+            val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+                projectId = projectId,
+                templateId = templateId
+            )
+            val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                versionName = resourceOnlyVersion.versionName,
+                settingVersionNum = resourceOnlyVersion.settingVersionNum,
+                versionNum = resourceOnlyVersion.versionNum,
+                pipelineVersion = resourceOnlyVersion.pipelineVersion,
+                triggerVersion = resourceOnlyVersion.triggerVersion,
+                releaseTime = LocalDateTime.now(),
+                status = VersionStatus.RELEASED,
+                description = pipelineTemplateResource.description,
+                sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT,
+                updater = userId
+            )
+            val templateResourceCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                version = resourceOnlyVersion.version
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                pipelineTemplateInfoService.update(
+                    transactionContext = transactionContext,
+                    record = templateInfoUpdateInfo,
+                    commonCondition = pipelineTemplateCommonCondition
+                )
+                pipelineTemplateResourceService.update(
+                    transactionContext = transactionContext,
+                    record = templateResourceUpdateInfo,
+                    commonCondition = templateResourceCondition
+                )
+                pipelineTemplatePermissionService.modifyResource(
+                    userId = userId,
+                    projectId = projectId,
+                    templateId = templateId,
+                    templateName = pipelineTemplateSetting.pipelineName
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
+            }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }
 
     fun releaseDraft2BranchVersion(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        version: Long,
-        needUpdateInfo: Boolean,
-        versionName: String,
-        description: String
+        context: PipelineTemplateVersionCreateContext,
+        resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
-            enablePac = true,
-            updater = userId
-        )
-        val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
-            projectId = projectId,
-            templateId = templateId
-        )
-        val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            branchAction = BranchVersionAction.INACTIVE
-        )
-        val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
-            projectId = projectId,
-            templateId = templateId,
-            versionName = versionName,
-            branchAction = BranchVersionAction.ACTIVE
-        )
-        val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
-            versionName = versionName,
-            status = VersionStatus.BRANCH,
-            branchAction = BranchVersionAction.ACTIVE,
-            description = description,
-            updater = userId,
-            sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT
-        )
-        val templateResourceCondition = PipelineTemplateResourceCommonCondition(
-            projectId = projectId,
-            templateId = templateId,
-            version = version
-        )
-        dslContext.transaction { configuration ->
-            val transactionContext = DSL.using(configuration)
-            if (needUpdateInfo) {
-                pipelineTemplateInfoService.update(
+        with (context) {
+            val pipelineTemplateResource = PipelineTemplateResource(
+                pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
+                pTemplateResourceOnlyVersion = resourceOnlyVersion
+            )
+            val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
+                version = resourceOnlyVersion.settingVersion
+            )
+            val pipelineTemplateInfoUpdateInfo = PipelineTemplateInfoUpdateInfo(
+                enablePac = true,
+                updater = userId
+            )
+            val pipelineTemplateCommonCondition = PipelineTemplateCommonCondition(
+                projectId = projectId,
+                templateId = templateId
+            )
+            val inactiveBranchUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                branchAction = BranchVersionAction.INACTIVE
+            )
+            val inactiveBranchCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                versionName = resourceOnlyVersion.versionName,
+                branchAction = BranchVersionAction.ACTIVE
+            )
+            val templateResourceUpdateInfo = PipelineTemplateResourceUpdateInfo(
+                versionName = resourceOnlyVersion.versionName,
+                status = VersionStatus.BRANCH,
+                branchAction = BranchVersionAction.ACTIVE,
+                description = pipelineTemplateResource.description,
+                updater = userId,
+                sortWeight = PipelineTemplateConstant.OTHER_STATUS_VERSION_SORT_WIGHT
+            )
+            val templateResourceCondition = PipelineTemplateResourceCommonCondition(
+                projectId = projectId,
+                templateId = templateId,
+                version = version
+            )
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+                if (pipelineTemplateInfo.enablePac != enablePac) {
+                    pipelineTemplateInfoService.update(
+                        transactionContext = transactionContext,
+                        record = pipelineTemplateInfoUpdateInfo,
+                        commonCondition = pipelineTemplateCommonCondition
+                    )
+                }
+                // 创建分支版本,需要把原来的活跃的分支置为非活跃
+                val cnt = pipelineTemplateResourceService.update(
                     transactionContext = transactionContext,
-                    record = pipelineTemplateInfoUpdateInfo,
-                    commonCondition = pipelineTemplateCommonCondition
+                    record = inactiveBranchUpdateInfo,
+                    commonCondition = inactiveBranchCondition
+                )
+                if (cnt > 0) {
+                    operationLogType = OperationLogType.UPDATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                } else {
+                    operationLogType = OperationLogType.CREATE_BRANCH_VERSION
+                    operationLogParams = resourceOnlyVersion.versionName ?: ""
+                }
+                pipelineTemplateResourceService.update(
+                    transactionContext = transactionContext,
+                    record = templateResourceUpdateInfo,
+                    commonCondition = templateResourceCondition
+                )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
                 )
             }
-            // 创建分支版本,需要把原来的活跃的分支置为非活跃
-            pipelineTemplateResourceService.update(
-                transactionContext = transactionContext,
-                record = inactiveBranchUpdateInfo,
-                commonCondition = inactiveBranchCondition
-            )
-            pipelineTemplateResourceService.update(
-                transactionContext = transactionContext,
-                record = templateResourceUpdateInfo,
-                commonCondition = templateResourceCondition
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }
@@ -509,6 +690,50 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 storeCode = templateInfo.srcTemplateId!!,
                 storeType = StoreTypeEnum.TEMPLATE,
                 projectCode = templateInfo.projectId
+            )
+        }
+    }
+
+    private fun postProcessBeforeVersionCreate(
+        context: PipelineTemplateVersionCreateContext,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessBeforeVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
+        }
+    }
+
+    private fun postProcessInTransactionVersionCreate(
+        transactionContext: DSLContext,
+        context: PipelineTemplateVersionCreateContext,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessInTransactionVersionCreate(
+                transactionContext = transactionContext,
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
+        }
+    }
+
+    private fun postProcessAfterVersionCreate(
+        context: PipelineTemplateVersionCreateContext,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+        versionCreateListeners.forEach {
+            it.postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
             )
         }
     }

@@ -122,8 +122,8 @@ class PipelineTemplateResourceDao {
         dslContext: DSLContext,
         record: PipelineTemplateResourceUpdateInfo,
         commonCondition: PipelineTemplateResourceCommonCondition
-    ) {
-        with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
+    ): Int {
+        return with(TPipelineTemplateResourceVersion.T_PIPELINE_TEMPLATE_RESOURCE_VERSION) {
             val now = LocalDateTime.now()
             dslContext.update(this)
                 .apply {

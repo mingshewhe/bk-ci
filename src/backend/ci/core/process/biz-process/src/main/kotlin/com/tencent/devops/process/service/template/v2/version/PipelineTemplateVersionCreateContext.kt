@@ -30,6 +30,7 @@ package com.tencent.devops.process.service.template.v2.version
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoV2
@@ -48,16 +49,21 @@ data class PipelineTemplateVersionCreateContext(
     val templateId: String,
     @get:Schema(title = "模版版本,发布时才有值", required = true)
     val version: Long? = null,
+
     @get:Schema(title = "模板名称，仅在兼容新老代码时使用", required = true)
     val fixVersionName: String? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
+
+    @get:Schema(title = "是否是新模版", required = true)
+    val newTemplate: Boolean = false,
     @get:Schema(title = "模版信息", required = true)
     val pipelineTemplateInfo: PipelineTemplateInfoV2,
     @get:Schema(title = "模版编排", required = true)
     val pTemplateResourceWithoutVersion: PTemplateResourceWithoutVersion,
     @get:Schema(title = "模版设置", required = true)
-    val pipelineTemplateSetting: PipelineSetting,
+    val pTemplateSettingWithoutVersion: PipelineSetting,
+
     @get:Schema(title = "是否开启PAC", required = true)
     val enablePac: Boolean = false,
     @get:Schema(title = "yaml文件分支信息", required = true)
@@ -65,5 +71,10 @@ data class PipelineTemplateVersionCreateContext(
     @get:Schema(title = "发布操作", required = false)
     val targetAction: CodeTargetAction? = null,
     @get:Schema(title = "分支名,发布时指定的分支或者代码库推送的分支", required = false)
-    val branchName: String? = null
+    val branchName: String? = null,
+
+    @get:Schema(title = "操作日志类型", required = false)
+    var operationLogType: OperationLogType = OperationLogType.NORMAL_SAVE_OPERATION,
+    @get:Schema(title = "操作日志参数", required = false)
+    var operationLogParams: String = ""
 )

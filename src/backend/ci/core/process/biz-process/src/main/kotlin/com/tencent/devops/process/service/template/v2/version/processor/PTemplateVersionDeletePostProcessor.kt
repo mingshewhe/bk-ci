@@ -1,4 +1,4 @@
-package com.tencent.devops.process.service.template.v2.version.listener
+package com.tencent.devops.process.service.template.v2.version.processor
 
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.dao.PipelineSettingDao

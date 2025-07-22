@@ -36,8 +36,6 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_PATH_REF_TEMPLATE_REF_NOT_EMPTY = "2101286" // 路径引用,模板分支不能为空
     const val ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH = "2101287" // 模版类型和编排类型不匹配
 
-    const val ERROR_PIPELINE_LATEST_VERSION_NOT_FOUND = "2101288" // 未找到流水线最新版本
-    const val ERROR_PIPELINE_LATEST_SETTING_VERSION_NOT_FOUND = "2101289" // 未找到流水线最新版本
     const val ERROR_PIPELINE_RELEASE_MUST_DRAFT_VERSION = "2101290" // 发布流水线时必须使用草稿版本
     const val ERROR_PIPELINE_VERSION_NOT_DRAFT_VERSION = "2101291" // 发布的版本不是草稿版本
     const val ERROR_PIPELINE_BASE_VERSION_NOT_FOUND = "2101292" // 未找到基线版本
@@ -50,4 +48,6 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_VERSION_NAME_NOT_EMPTY = "2101299" // 模版版本名称不能为空
     const val ERROR_TEMPLATE_VERSION_NOT_FOUND = "21012300" // 模版$0对应的版本$1不存在
     const val ERROR_TEMPLATE_NOT_ENABLE_PAC = "2101301" // 模版没有开启PAC,不能通过路径引用查询
+
+    const val ERROR_STATUS_NOT_MATCHED = "2101302" // 状态不匹配,预期状态为$0,实际状态为$1
 }

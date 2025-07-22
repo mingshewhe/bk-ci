@@ -172,7 +172,7 @@ class PipelineTemplateMarketCreateReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = setting
+                pTemplateSettingWithoutVersion = setting
             )
         }
     }

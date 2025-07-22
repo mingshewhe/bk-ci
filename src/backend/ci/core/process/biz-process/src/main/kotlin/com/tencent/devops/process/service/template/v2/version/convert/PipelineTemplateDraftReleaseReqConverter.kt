@@ -94,7 +94,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                     throw IllegalArgumentException("yaml is null")
                 }
             }
-            val pipelineTemplateSetting = pipelineTemplateSettingService.get(
+            val pTemplateSettingWithoutVersion = pipelineTemplateSettingService.get(
                 projectId = projectId,
                 templateId = templateId,
                 settingVersion = draftResource.settingVersion
@@ -110,7 +110,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.RELEASE_DRAFT,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = pipelineTemplateSetting,
+                pTemplateSettingWithoutVersion = pTemplateSettingWithoutVersion,
                 yamlFileInfo = yamlInfo,
                 enablePac = enablePac,
                 targetAction = targetAction,

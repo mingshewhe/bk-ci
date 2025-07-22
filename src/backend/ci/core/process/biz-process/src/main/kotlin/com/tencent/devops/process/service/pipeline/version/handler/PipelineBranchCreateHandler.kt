@@ -27,9 +27,12 @@
 
 package com.tencent.devops.process.service.pipeline.version.handler
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
+import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
@@ -54,16 +57,28 @@ class PipelineBranchCreateHandler @Autowired constructor(
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
             if (!enablePac) {
-                throw IllegalArgumentException("enablePac must be true")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_INVALID,
+                    params = arrayOf("enablePac")
+                )
             }
             if (yamlFileInfo == null) {
-                throw IllegalArgumentException("yamlFileInfo is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("yamlFileInfo")
+                )
             }
             if (branchName == null) {
-                throw IllegalArgumentException("branchName is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("branchName")
+                )
             }
             if (pipelineResourceWithoutVersion.status != VersionStatus.BRANCH) {
-                throw IllegalArgumentException("pipeline version status must be branch")
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_STATUS_NOT_MATCHED,
+                    params = arrayOf(VersionStatus.BRANCH.name, pipelineResourceWithoutVersion.status.name)
+                )
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {

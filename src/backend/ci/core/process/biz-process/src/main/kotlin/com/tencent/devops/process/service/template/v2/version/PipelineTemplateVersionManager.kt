@@ -31,11 +31,10 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
-import com.tencent.devops.process.service.template.v2.PipelineTemplateModelValidator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateVersionValidator
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionCreateHandler
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionDeleteHandler
-import com.tencent.devops.process.service.template.v2.version.listener.PTemplateVersionCreatePostProcessor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -46,9 +45,8 @@ import org.springframework.stereotype.Service
 class PipelineTemplateVersionManager @Autowired constructor(
     private val versionCreateHandlers: List<PipelineTemplateVersionCreateHandler>,
     private val versionReqConverters: List<PipelineTemplateVersionReqConverter>,
-    private val pipelineTemplateModelValidator: PipelineTemplateModelValidator,
+    private val pipelineTemplateVersionValidator: PipelineTemplateVersionValidator,
     private val versionDeleteHandler: PipelineTemplateVersionDeleteHandler,
-    private val versionCreatePostProcessor: List<PTemplateVersionCreatePostProcessor>,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) {
 
@@ -66,14 +64,8 @@ class PipelineTemplateVersionManager @Autowired constructor(
             version = version,
             request = request
         )
-        pipelineTemplateModelValidator.validate(
-            projectId = projectId,
-            pTemplateResourceWithoutVersion = context.pTemplateResourceWithoutVersion,
-            pipelineSetting = context.pipelineTemplateSetting
-        )
-        val result = getHandler(context).handle(context = context)
-        versionCreatePostProcessor.forEach { it.postProcessAfterCreation(context, result) }
-        return result
+        pipelineTemplateVersionValidator.validate(context = context)
+        return getHandler(context).handle(context = context)
     }
 
     fun deleteVersion(

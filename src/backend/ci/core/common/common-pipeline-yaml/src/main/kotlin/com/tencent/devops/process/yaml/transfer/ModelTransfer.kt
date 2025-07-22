@@ -395,7 +395,7 @@ class ModelTransfer @Autowired constructor(
 
     fun makeBuildNum(modelInput: ModelTransferInput): String? {
         if (modelInput.fromTemplate() &&
-            !modelInput.overrideTemplateSettingGroups(PipelineSettingGroupType.BUILD_NUM_RULE)
+            !modelInput.overrideTemplateSettingGroups(PipelineSettingGroupType.CUSTOM_BUILD_NUM)
         ) {
             return null
         }

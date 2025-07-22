@@ -126,7 +126,7 @@ class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
-                pipelineTemplateSetting = transferResult.templateSetting
+                pTemplateSettingWithoutVersion = transferResult.templateSetting
             )
         }
     }

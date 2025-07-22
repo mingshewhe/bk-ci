@@ -32,6 +32,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.control.lock.PipelineModelLock
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
@@ -56,7 +57,10 @@ class PipelineReleaseCreateHandler @Autowired constructor(
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
             if (pipelineResourceWithoutVersion.status != VersionStatus.RELEASED) {
-                throw IllegalArgumentException("pipeline version status must be released")
+                throw ErrorCodeException(
+                    errorCode = ProcessTemplateMessageCode.ERROR_STATUS_NOT_MATCHED,
+                    params = arrayOf(VersionStatus.RELEASED.name, pipelineResourceWithoutVersion.status.name)
+                )
             }
             val lock = PipelineModelLock(redisOperation, pipelineId)
             try {

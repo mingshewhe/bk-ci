@@ -25,18 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2.version.listener
+package com.tencent.devops.process.service.template.v2.version.processor
 
-import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
+import org.jooq.DSLContext
 
 /**
  * 流水线模板版本创建后置处理器
  */
 interface PTemplateVersionCreatePostProcessor {
 
-    fun postProcessAfterCreation(
+    /**
+     * 模版创建前执行
+     */
+    fun postProcessBeforeVersionCreate(
         context: PipelineTemplateVersionCreateContext,
-        deployTemplateResult: DeployTemplateResult
-    )
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+
+    }
+
+    /**
+     * 与模版版本创建时事务保持一致
+     */
+    fun postProcessInTransactionVersionCreate(
+        transactionContext: DSLContext,
+        context: PipelineTemplateVersionCreateContext,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+
+    }
+
+    /**
+     * 模版版本创建后执行
+     */
+    fun postProcessAfterVersionCreate(
+        context: PipelineTemplateVersionCreateContext,
+        pipelineTemplateResource: PipelineTemplateResource,
+        pipelineTemplateSetting: PipelineSetting
+    ) {
+
+    }
 }

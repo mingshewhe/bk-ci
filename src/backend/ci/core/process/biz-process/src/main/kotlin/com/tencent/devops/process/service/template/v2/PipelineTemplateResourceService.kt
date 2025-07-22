@@ -225,8 +225,8 @@ class PipelineTemplateResourceService @Autowired constructor(
         transactionContext: DSLContext? = null,
         record: PipelineTemplateResourceUpdateInfo,
         commonCondition: PipelineTemplateResourceCommonCondition
-    ) {
-        pipelineTemplateResourceDao.update(
+    ): Int {
+        return pipelineTemplateResourceDao.update(
             dslContext = transactionContext ?: dslContext,
             record = record,
             commonCondition = commonCondition
