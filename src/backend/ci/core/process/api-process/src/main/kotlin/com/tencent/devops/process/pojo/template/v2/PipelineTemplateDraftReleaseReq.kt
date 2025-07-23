@@ -28,6 +28,7 @@
 package com.tencent.devops.process.pojo.template.v2
 
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -35,10 +36,13 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class PipelineTemplateDraftReleaseReq(
     @get:Schema(title = "是否本次开启PAC", required = true)
     var enablePac: Boolean,
+    @get:Schema(title = "自定义模版版本名称", required = true)
+    @field:BkField(minLength = 0, maxLength = 64)
+    val customVersionName: String? = null,
     @get:Schema(title = "版本描述", required = false)
-    var description: String? = null,
+    val description: String? = null,
     @get:Schema(title = "分支操作", required = false)
-    var targetAction: CodeTargetAction?,
+    val targetAction: CodeTargetAction?,
     @get:Schema(title = "模版YAML文件信息", required = false)
     val yamlInfo: PipelineYamlFileInfo?,
     @get:Schema(title = "发布到指定分支", required = false)

@@ -237,6 +237,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         templateId: String,
         draftResource: PipelineTemplateResource,
         draftSetting: PipelineSetting,
+        customVersionName: String?,
         enablePac: Boolean,
         repoHashId: String?,
         targetAction: CodeTargetAction?,
@@ -260,7 +261,8 @@ class PipelineTemplateGenerator @Autowired constructor(
                 templateId = templateId,
                 draftResource = draftResource,
                 newResource = newResource,
-                newSetting = draftSetting
+                newSetting = draftSetting,
+                customVersionName = customVersionName
             )
             Pair(VersionStatus.RELEASED, resourceOnlyVersion)
         }
@@ -358,7 +360,7 @@ class PipelineTemplateGenerator @Autowired constructor(
         draftResource: PipelineTemplateResource? = null,
         newResource: PTemplateResourceWithoutVersion,
         newSetting: PipelineSetting,
-        fixVersionName: String? = null
+        customVersionName: String? = null
     ): PTemplateResourceOnlyVersion {
         val latestResource = pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId, templateId = templateId
@@ -439,7 +441,7 @@ class PipelineTemplateGenerator @Autowired constructor(
             PTemplateResourceOnlyVersion(
                 version = version,
                 number = number,
-                versionName = fixVersionName ?: versionName,
+                versionName = customVersionName ?: versionName,
                 versionNum = versionNum,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,

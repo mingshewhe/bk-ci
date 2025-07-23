@@ -37,7 +37,6 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH = "2101287" // 模版类型和编排类型不匹配
 
     const val ERROR_PIPELINE_RELEASE_MUST_DRAFT_VERSION = "2101290" // 发布流水线时必须使用草稿版本
-    const val ERROR_PIPELINE_VERSION_NOT_DRAFT_VERSION = "2101291" // 发布的版本不是草稿版本
     const val ERROR_PIPELINE_BASE_VERSION_NOT_FOUND = "2101292" // 未找到基线版本
     const val ERROR_TEMPLATE_YAML_REPOSITORY_NOT_FOUND = "2101293" // 模板YAML文件所属的代码仓库不存在
     const val ERROR_YAML_FOR_TEMPLATE_NOT_FOUND = "2101294" // YAML文件$0对应的模板不存在

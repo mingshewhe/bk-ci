@@ -50,8 +50,8 @@ data class PipelineTemplateVersionCreateContext(
     @get:Schema(title = "模版版本,发布时才有值", required = true)
     val version: Long? = null,
 
-    @get:Schema(title = "模板名称，仅在兼容新老代码时使用", required = true)
-    val fixVersionName: String? = null,
+    @get:Schema(title = "自定义版本名称,如果没有传,则用系统默认", required = true)
+    val customVersionName: String? = null,
     @get:Schema(title = "模版版本变更动作", required = true)
     val versionAction: PipelineVersionAction,
 

@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2.version.convert
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
@@ -65,13 +66,16 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
         request as PipelineTemplateDraftReleaseReq
         with(request) {
             if (templateId == null) {
-                throw IllegalArgumentException("templateId is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("templateId")
+                )
             }
             if (version == null) {
-                throw IllegalArgumentException("version is null")
-            }
-            if (description == null) {
-                throw IllegalArgumentException("description is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("version")
+                )
             }
             val pipelineTemplateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
@@ -85,13 +89,22 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
             }
             if (enablePac) {
                 if (targetAction == null) {
-                    throw IllegalArgumentException("targetAction is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("targetAction")
+                    )
                 }
                 if (yamlInfo == null) {
-                    throw IllegalArgumentException("yamlInfo is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yamlFileInfo")
+                    )
                 }
                 if (draftResource.yaml == null) {
-                    throw IllegalArgumentException("yaml is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("yaml content")
+                    )
                 }
             }
             val pTemplateSettingWithoutVersion = pipelineTemplateSettingService.get(
@@ -107,6 +120,7 @@ class PipelineTemplateDraftReleaseReqConverter @Autowired constructor(
                 projectId = projectId,
                 templateId = templateId,
                 version = version,
+                customVersionName = customVersionName,
                 versionAction = PipelineVersionAction.RELEASE_DRAFT,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

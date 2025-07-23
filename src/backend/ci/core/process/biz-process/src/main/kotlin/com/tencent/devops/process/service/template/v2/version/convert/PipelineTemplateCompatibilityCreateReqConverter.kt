@@ -122,7 +122,7 @@ class PipelineTemplateCompatibilityCreateReqConverter @Autowired constructor(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
-                fixVersionName = versionName ?: "init",
+                customVersionName = versionName ?: "init",
                 versionAction = PipelineVersionAction.CREATE_RELEASE,
                 pipelineTemplateInfo = pipelineTemplateInfo,
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,

@@ -113,7 +113,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             templateId = templateId,
             newResource = pTemplateResourceWithoutVersion,
             newSetting = pTemplateSettingWithoutVersion,
-            fixVersionName = fixVersionName
+            customVersionName = customVersionName
         )
         pipelineTemplatePersistenceService.createReleaseVersion(
             context = this,
