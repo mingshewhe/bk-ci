@@ -37,10 +37,9 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
 import com.tencent.devops.common.pipeline.template.ITemplateModel
@@ -86,25 +85,19 @@ data class Model(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, TemplateParameter>? = null,
+    override var templateVariables: List<TemplateVariable>? = null,
     @get:Schema(title = "解析后的模版ID", required = false)
     override var parsedTemplateId: String? = null,
     @get:Schema(title = "解析后的模版版本", required = false)
     override var parsedTemplateVersion: Long? = null,
     /* 模版实例化时触发器变量 */
     @get:Schema(title = "触发器配置", required = false)
-    var triggerConfigs: Map<String, TemplateTriggerConfig>? = null,
+    var triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
     /**
-     * 覆盖模版设置组
-     *
-     *  - 值为null时,使用流水线设置
-     *  - 值为空时,使用模版设置
-     *  - 值不为空时,使用流水线和模版设置的合并值,overrideTemplateSettingGroups组下的配置将使用流水线的设置,其他使用模版设置
-     *      示例: listOf(PipelineSettingGroupType.NOTICES),
-     *      那么通知组下successSubscriptionList、failSubscriptionList将使用流水线配置,其他的值使用模版配置
+     * 覆盖模版字段
      */
-    @get:Schema(title = "覆盖模版设置组", required = false)
-    var overrideTemplateSettingGroups: List<PipelineSettingGroupType>? = null
+    @get:Schema(title = "覆盖模版字段", required = false)
+    var overrideTemplateField: TemplateField? = null
 ) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0

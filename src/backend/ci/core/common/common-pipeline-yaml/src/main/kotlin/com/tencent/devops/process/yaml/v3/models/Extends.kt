@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 
 /**
  * model
@@ -61,7 +61,7 @@ data class ExtendsTemplate(
     @JsonProperty("version")
     override val templateVersionName: String? = null,
     @JsonProperty("variables")
-    override val variables: Map<String, TemplateVariable>? = null,
+    override val variables: Map<String, PreTemplateVariable>? = null,
     @JsonProperty("trigger-conf")
     val triggerConfig: Map<String, ExtendsTriggerConfig>? = null
 ) : CodeTemplate

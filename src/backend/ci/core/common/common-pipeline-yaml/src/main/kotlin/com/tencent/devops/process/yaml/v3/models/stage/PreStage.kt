@@ -28,9 +28,8 @@
 package com.tencent.devops.process.yaml.v3.models.stage
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.process.yaml.v3.check.PreStageCheck
 import com.tencent.devops.process.yaml.v3.models.job.IPreJob
 import io.swagger.v3.oas.annotations.media.Schema
@@ -68,5 +67,5 @@ data class PreStageTemplate(
     override val templateRef: String?,
     override val templateId: String?,
     override val templateVersionName: String?,
-    override val variables: Map<String, TemplateVariable>?
+    override val variables: Map<String, PreTemplateVariable>?
 ) : IPreStage, CodeTemplate

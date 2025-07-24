@@ -43,7 +43,7 @@ import com.tencent.devops.common.pipeline.option.StageControlOption
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.StagePauseCheck
 import com.tencent.devops.common.pipeline.pojo.StageReviewGroup
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamPair
@@ -260,11 +260,11 @@ class StageTransfer @Autowired(required = false) constructor(
                             templateRef = job.templateRef,
                             templateId = job.templateId,
                             templateVersionName = job.templateVersionName,
-                            templateVariables = job.variables?.mapValues {
-                                TemplateParameter(
+                            templateVariables = job.variables?.map {
+                                TemplateVariable(
                                     key = it.key,
                                     value = it.value.value,
-                                    required = it.value.allowModifyAtStartup ?: false
+                                    allowModifyAtStartup = it.value.allowModifyAtStartup ?: false
                                 )
                             }
                         )
@@ -343,11 +343,11 @@ class StageTransfer @Autowired(required = false) constructor(
             templateRef = stage.templateRef,
             templateId = stage.templateId,
             templateVersionName = stage.templateVersionName,
-            templateVariables = stage.variables?.mapValues {
-                TemplateParameter(
+            templateVariables = stage.variables?.map {
+                TemplateVariable(
                     key = it.key,
                     value = it.value.value,
-                    required = it.value.allowModifyAtStartup ?: false
+                    allowModifyAtStartup = it.value.allowModifyAtStartup ?: false
                 )
             }
         )

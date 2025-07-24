@@ -29,9 +29,8 @@ package com.tencent.devops.process.yaml.v3.models.job
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.common.pipeline.type.agent.DockerOptions
 import com.tencent.devops.common.pipeline.type.docker.ImageType
 import com.tencent.devops.process.yaml.v3.models.IfField
@@ -82,7 +81,7 @@ data class JobTemplate(
     override val templateRef: String?,
     override val templateId: String?,
     override val templateVersionName: String?,
-    override val variables: Map<String, TemplateVariable>?
+    override val variables: Map<String, PreTemplateVariable>?
 ) : IJob, CodeTemplate
 
 interface IContainer {

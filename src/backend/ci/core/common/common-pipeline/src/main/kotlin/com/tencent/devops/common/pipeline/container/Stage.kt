@@ -30,7 +30,7 @@ package com.tencent.devops.common.pipeline.container
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.option.StageControlOption
 import com.tencent.devops.common.pipeline.pojo.StagePauseCheck
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -83,7 +83,7 @@ data class Stage(
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
     @get:Schema(title = "模板参数构建", required = false)
-    override var templateVariables: Map<String, TemplateParameter>? = null,
+    override var templateVariables: List<TemplateVariable>? = null,
     @get:Schema(title = "解析后的模版ID", required = false)
     override var parsedTemplateId: String? = null,
     @get:Schema(title = "解析后的模版版本", required = false)

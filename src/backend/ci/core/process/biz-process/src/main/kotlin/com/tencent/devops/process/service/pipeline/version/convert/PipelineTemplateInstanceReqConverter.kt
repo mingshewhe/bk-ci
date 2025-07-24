@@ -36,9 +36,8 @@ import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
@@ -171,6 +170,12 @@ class PipelineTemplateInstanceReqConverter(
                     errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_PATH_REF_TEMPLATE_NEED_PAC
                 )
             }
+
+            val overrideParamKeys = overrideTemplateField?.paramKeys
+            val templateVariables = params?.filter {
+                overrideParamKeys?.contains(it.id) ?: false
+            }?.map { TemplateVariable(it) }
+
             val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
                 name = pipelineName,
                 desc = null,
@@ -179,14 +184,9 @@ class PipelineTemplateInstanceReqConverter(
                 templateVersionName = templateResource.versionName,
                 templatePath = templatePath,
                 templateRef = templateRef,
-                templateModel = templateModel,
-                params = params,
+                templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
-                overrideTemplateSettingGroups = if (useTemplateSetting) {
-                    emptyList()
-                } else {
-                    PipelineSettingGroupType.values().toList()
-                }
+                overrideTemplateField = overrideTemplateField
             )
             val pipelineSettingWithoutVersion = getPipelineSetting(
                 projectId = projectId,

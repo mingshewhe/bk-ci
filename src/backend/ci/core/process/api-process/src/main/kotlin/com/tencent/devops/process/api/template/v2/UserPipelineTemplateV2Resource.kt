@@ -300,6 +300,9 @@ interface UserPipelineTemplateV2Resource {
         @Parameter(description = "模版版本", required = true)
         @PathParam("version")
         version: Long,
+        @Parameter(description = "自定义版本名称", required = false)
+        @QueryParam("customVersionName")
+        customVersionName: String? = null,
         @Parameter(description = "是否开启PAC", required = false)
         @QueryParam("enablePac")
         enablePac: Boolean = false,

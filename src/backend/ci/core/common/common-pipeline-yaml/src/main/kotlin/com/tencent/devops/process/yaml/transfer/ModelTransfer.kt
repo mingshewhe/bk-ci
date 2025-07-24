@@ -31,18 +31,19 @@ import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.transfer.IfType
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_CONCURRENCY_GROUP_DEFAULT
 import com.tencent.devops.common.pipeline.utils.PIPELINE_SETTING_MAX_CON_QUEUE_SIZE_MAX
 import com.tencent.devops.process.yaml.pojo.YamlVersion
@@ -62,10 +63,10 @@ import com.tencent.devops.process.yaml.v3.models.on.IPreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOnV3
 import com.tencent.devops.process.yaml.v3.models.stage.PreStage
-import java.util.concurrent.atomic.AtomicInteger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicInteger
 
 @Component
 @Suppress("ComplexMethod")
@@ -196,21 +197,25 @@ class ModelTransfer @Autowired constructor(
     ) {
         val template = input.yaml.formatExtends()?.template
         if (template != null) {
-            model.overrideTemplateSettingGroups = input.yaml.settingGroups()
+            model.overrideTemplateField = TemplateField(
+                paramKeys = template.variables?.keys?.toList(),
+                triggerTaskIds = template.triggerConfig?.keys?.toList(),
+                settingGroups = input.yaml.settingGroups(),
+            )
             model.fromTemplate = true
             model.templatePath = template.templatePath
             model.templateRef = template.templateRef
             model.templateId = template.templateId
             model.templateVersionName = template.templateVersionName
-            model.templateVariables = template.variables?.mapValues {
-                TemplateParameter(
+            model.templateVariables = template.variables?.map {
+                TemplateVariable(
                     key = it.key,
                     value = it.value.value,
-                    required = it.value.allowModifyAtStartup ?: false
+                    allowModifyAtStartup = it.value.allowModifyAtStartup ?: false
                 )
             }
             model.triggerConfigs = template.triggerConfig?.mapValues {
-                TemplateTriggerConfig(
+                InstanceTriggerConfig(
                     disabled = it.value.disabled,
                     cron = it.value.cron,
                     variables = it.value.variables
@@ -346,12 +351,10 @@ class ModelTransfer @Autowired constructor(
                     templateRef = templateRef,
                     templateId = templateId,
                     templateVersionName = templateVersionName,
-                    variables = templateVariables?.mapValues {
-                        TemplateVariable(
-                            it.value.value,
-                            it.value.required
-                        )
-                    },
+                    variables = templateVariables?.associateBy(
+                        { it.key },
+                        { PreTemplateVariable(it.value, it.allowModifyAtStartup) }
+                    ),
                     triggerConfig = triggerConfigs?.mapValues {
                         ExtendsTriggerConfig(
                             disabled = it.value.disabled,

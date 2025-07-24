@@ -30,17 +30,17 @@ package com.tencent.devops.common.pipeline.pojo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模版-模版参数")
-data class TemplateParameter(
+data class TemplateVariable(
     @get:Schema(title = "元素值ID-标识符", required = true)
     val key: String,
     @get:Schema(title = "元素值名称-显示用", required = true)
     val value: Any,
-    @get:Schema(title = "是否必须（新前端的入参标识）", required = true)
-    var required: Boolean? = null
+    @get:Schema(title = "是否为入参", required = true)
+    var allowModifyAtStartup: Boolean? = null
 ) {
     constructor(buildFormProperty: BuildFormProperty) : this(
         key = buildFormProperty.id,
         value = buildFormProperty.defaultValue,
-        required = buildFormProperty.required
+        allowModifyAtStartup = buildFormProperty.required
     )
 }

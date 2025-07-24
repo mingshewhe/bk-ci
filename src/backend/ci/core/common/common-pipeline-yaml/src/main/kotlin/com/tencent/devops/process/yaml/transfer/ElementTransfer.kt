@@ -36,7 +36,7 @@ import com.tencent.devops.common.pipeline.NameAndValue
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.enums.BuildScriptType
 import com.tencent.devops.common.pipeline.enums.CharsetType
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.RunCondition
@@ -341,11 +341,11 @@ class ElementTransfer @Autowired(required = false) constructor(
                             templateRef = step.templateRef,
                             templateId = step.templateId,
                             templateVersionName = step.templateVersionName,
-                            templateVariables = step.variables?.mapValues {
-                                TemplateParameter(
+                            templateVariables = step.variables?.map {
+                                TemplateVariable(
                                     key = it.key,
                                     value = it.value.value,
-                                    required = it.value.allowModifyAtStartup ?: false
+                                    allowModifyAtStartup = it.value.allowModifyAtStartup ?: false
                                 )
                             }
                         )

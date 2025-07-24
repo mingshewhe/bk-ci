@@ -31,14 +31,13 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.constant.CommonMessageCode.ERROR_YAML_FORMAT_EXCEPTION_NEED_PARAM
 import com.tencent.devops.common.api.pojo.OS
 import com.tencent.devops.common.api.util.JsonUtil
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.MetaData
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.ResourcesPools
 import com.tencent.devops.common.pipeline.pojo.transfer.TemplateInfo
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.common.pipeline.type.BuildType
 import com.tencent.devops.common.pipeline.type.agent.DockerOptions
 import com.tencent.devops.common.web.utils.I18nUtil
@@ -46,7 +45,6 @@ import com.tencent.devops.process.yaml.pojo.TemplatePath
 import com.tencent.devops.process.yaml.v3.enums.TemplateType
 import com.tencent.devops.process.yaml.v3.exception.YamlFormatException
 import com.tencent.devops.process.yaml.v3.models.BuildContainerTypeYaml
-import com.tencent.devops.process.yaml.v3.models.ExtendsTemplate
 import com.tencent.devops.process.yaml.v3.models.GitNotices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
 import com.tencent.devops.process.yaml.v3.models.Variable
@@ -254,7 +252,7 @@ object YamlObjects {
             templateRef = step["ref"]?.toString(),
             templateId = step["template-id"]?.toString(),
             templateVersionName = step["version"]?.toString(),
-            variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
+            variables = YamlObjects.transValue<Map<String, PreTemplateVariable>>(
                 fromPath, TemplateType.STAGE.text, step["variables"]
             )
         )
@@ -520,7 +518,7 @@ fun <T> YamlTemplate<T>.getStageTemplate(
         templateRef = stage["ref"]?.toString(),
         templateId = stage["template-id"]?.toString(),
         templateVersionName = stage["version"]?.toString(),
-        variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
+        variables = YamlObjects.transValue<Map<String, PreTemplateVariable>>(
             fromPath, TemplateType.STAGE.text, stage["variables"]
         )
     )
@@ -587,7 +585,7 @@ fun <T> YamlTemplate<T>.getJobTemplate(
         templateRef = job["ref"]?.toString(),
         templateId = job["template-id"]?.toString(),
         templateVersionName = job["version"]?.toString(),
-        variables = YamlObjects.transValue<Map<String, TemplateVariable>>(
+        variables = YamlObjects.transValue<Map<String, PreTemplateVariable>>(
             fromPath, TemplateType.STAGE.text, job["variables"]
         )
     )

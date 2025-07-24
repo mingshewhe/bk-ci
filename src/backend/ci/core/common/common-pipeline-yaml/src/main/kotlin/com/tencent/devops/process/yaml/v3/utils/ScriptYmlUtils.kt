@@ -53,7 +53,7 @@ import com.tencent.devops.common.pipeline.pojo.transfer.ExtendsTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.PreStepTemplate
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.yaml.transfer.TransferMapper
 import com.tencent.devops.process.yaml.v3.check.Flow
@@ -401,18 +401,18 @@ object ScriptYmlUtils {
         }
     }
 
-    private fun getExtendsTemplateVariables(variables: Any?): Map<String, TemplateVariable>? {
+    private fun getExtendsTemplateVariables(variables: Any?): Map<String, PreTemplateVariable>? {
         if (variables == null) {
             return null
         }
         val map = YamlObjects.transValue<Map<String, Any?>>("Extends.template", "variables", variables)
         return map.mapValues {
             when (it.value) {
-                is String -> TemplateVariable(it.value as String)
+                is String -> PreTemplateVariable(it.value as String)
                 else -> {
                     val variable =
                         YamlObjects.transValue<Map<String, Any?>>("Extends.template.variables", it.key, it.value)
-                    TemplateVariable(
+                    PreTemplateVariable(
                         value = YamlObjects.getNotNullValue("value", it.key, variable),
                         allowModifyAtStartup = YamlObjects.getNullValue("allow-modify-at-startup", variable)
                             ?.toBoolean() ?: true

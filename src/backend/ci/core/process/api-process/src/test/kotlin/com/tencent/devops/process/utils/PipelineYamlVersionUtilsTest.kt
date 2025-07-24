@@ -38,8 +38,8 @@ import com.tencent.devops.common.pipeline.enums.BuildScriptType
 import com.tencent.devops.common.pipeline.enums.StageRunCondition
 import com.tencent.devops.common.pipeline.enums.VMBaseOS
 import com.tencent.devops.common.pipeline.option.StageControlOption
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.agent.LinuxScriptElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
@@ -313,8 +313,8 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            templateVariables = mapOf(
-                "key1" to TemplateParameter(
+            templateVariables = listOf(
+                TemplateVariable(
                     "key1",
                     value = "value1"
                 )
@@ -326,8 +326,8 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            templateVariables = mapOf(
-                "key1" to TemplateParameter(
+            templateVariables = listOf(
+                TemplateVariable(
                     "key1",
                     value = "value2"
                 )
@@ -340,7 +340,7 @@ class PipelineYamlVersionUtilsTest {
             stages = emptyList(),
             fromTemplate = true,
             triggerConfigs = mapOf(
-                "step1" to TemplateTriggerConfig(
+                "step1" to InstanceTriggerConfig(
                     disabled = false
                 )
             ),
@@ -352,7 +352,7 @@ class PipelineYamlVersionUtilsTest {
             stages = emptyList(),
             fromTemplate = true,
             triggerConfigs = mapOf(
-                "step1" to TemplateTriggerConfig(
+                "step1" to InstanceTriggerConfig(
                     disabled = true
                 )
             ),
@@ -363,14 +363,14 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            templateVariables = mapOf(
-                "key1" to TemplateParameter(
+            templateVariables = listOf(
+                TemplateVariable(
                     "key1",
                     value = "value1"
                 )
             ),
             triggerConfigs = mapOf(
-                "step1" to TemplateTriggerConfig(
+                "step1" to InstanceTriggerConfig(
                     disabled = true
                 )
             ),
@@ -381,14 +381,14 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            templateVariables = mapOf(
-                "key1" to TemplateParameter(
+            templateVariables = listOf(
+                TemplateVariable(
                     "key1",
                     value = "value1"
                 )
             ),
             triggerConfigs = mapOf(
-                "step1" to TemplateTriggerConfig(
+                "step1" to InstanceTriggerConfig(
                     disabled = true
                 )
             ),

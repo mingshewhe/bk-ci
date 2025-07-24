@@ -27,10 +27,11 @@
 
 package com.tencent.devops.process.pojo.pipeline.version
 
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.process.pojo.template.TemplateRefType
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -50,10 +51,12 @@ data class PipelineTemplateInstanceReq(
     val pipelineName: String,
     @get:Schema(title = "构建号（推荐版本号）", required = false)
     val buildNo: BuildNo?,
+    @get:Schema(title = "覆盖模板字段", required = false)
+    var overrideTemplateField: TemplateField? = null,
     @get:Schema(title = "流水线变量列表", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "流水线触发器配置", required = false)
-    val triggerConfigs: Map<String, TemplateTriggerConfig>? = null,
+    val triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
     @get:Schema(title = "是否使用模版设置", required = false)
     val useTemplateSetting: Boolean,
     @get:Schema(title = "是否开启PAC", required = true)

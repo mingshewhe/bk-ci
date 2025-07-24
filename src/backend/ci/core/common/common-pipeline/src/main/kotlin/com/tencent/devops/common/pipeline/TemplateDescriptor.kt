@@ -27,7 +27,7 @@
 
 package com.tencent.devops.common.pipeline
 
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线模版描述器")
@@ -48,7 +48,7 @@ interface TemplateDescriptor {
     var templateVersionName: String?
 
     @get:Schema(title = "模板参数值", required = false)
-    var templateVariables: Map<String, TemplateParameter>?
+    var templateVariables: List<TemplateVariable>?
 
     @get:Schema(title = "解析后的模版ID", required = false)
     var parsedTemplateId: String?

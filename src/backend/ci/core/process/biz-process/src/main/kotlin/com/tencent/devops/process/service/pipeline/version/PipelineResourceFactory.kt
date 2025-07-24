@@ -30,15 +30,14 @@ package com.tencent.devops.process.service.pipeline.version
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
-import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
@@ -147,20 +146,10 @@ class PipelineResourceFactory @Autowired constructor(
         templateVersionName: String? = null,
         templatePath: String? = null,
         templateRef: String? = null,
-        templateModel: Model,
-        params: List<BuildFormProperty>? = null,
-        triggerConfigs: Map<String, TemplateTriggerConfig>? = null,
-        overrideTemplateSettingGroups: List<PipelineSettingGroupType>? = null
+        templateVariables: List<TemplateVariable>? = null,
+        triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
+        overrideTemplateField: TemplateField? = null
     ): Model {
-        // 为了方便前端展示,存储时,将流水线变量保存到触发器参数中
-        val triggerContainer = templateModel.getTriggerContainer().copy(
-            elements = emptyList(),
-            params = params ?: emptyList()
-        )
-        val stages = listOf(
-            templateModel.stages[0].copy(containers = listOf(triggerContainer))
-        )
-        val templateVariables = params?.associateBy({ it.id }, { TemplateParameter(it) })
         return if (refType == TemplateRefType.PATH) {
             if (templatePath.isNullOrEmpty()) {
                 throw IllegalArgumentException("templatePath is empty")
@@ -168,14 +157,14 @@ class PipelineResourceFactory @Autowired constructor(
             Model(
                 name = name,
                 desc = desc,
-                stages = stages,
+                stages = emptyList(),
                 instanceFromTemplate = true,
                 fromTemplate = true,
                 templatePath = templatePath,
                 templateRef = templateRef,
                 templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
-                overrideTemplateSettingGroups = overrideTemplateSettingGroups
+                overrideTemplateField = overrideTemplateField
             )
 
         } else {
@@ -185,14 +174,14 @@ class PipelineResourceFactory @Autowired constructor(
             Model(
                 name = name,
                 desc = desc,
-                stages = stages,
+                stages = emptyList(),
                 instanceFromTemplate = true,
                 fromTemplate = true,
                 templateId = templateId,
                 templateVersionName = templateVersionName,
                 templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
-                overrideTemplateSettingGroups = overrideTemplateSettingGroups
+                overrideTemplateField = overrideTemplateField
             )
         }
     }

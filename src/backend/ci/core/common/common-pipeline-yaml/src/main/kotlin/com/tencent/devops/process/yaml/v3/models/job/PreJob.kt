@@ -29,11 +29,10 @@ package com.tencent.devops.process.yaml.v3.models.job
 
 import com.fasterxml.jackson.annotation.JsonFilter
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.transfer.CodeTemplate
 import com.tencent.devops.common.pipeline.pojo.transfer.IPreStep
 import com.tencent.devops.common.pipeline.pojo.transfer.MetaData
-import com.tencent.devops.common.pipeline.pojo.transfer.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.transfer.PreTemplateVariable
 import com.tencent.devops.common.pipeline.pojo.transfer.YAME_META_DATA_JSON_FILTER
 import com.tencent.devops.common.pipeline.pojo.transfer.YamlMetaData
 import io.swagger.v3.oas.annotations.media.Schema
@@ -87,5 +86,5 @@ data class PreJobTemplate(
     override val templateRef: String?,
     override val templateId: String?,
     override val templateVersionName: String?,
-    override val variables: Map<String, TemplateVariable>?
+    override val variables: Map<String, PreTemplateVariable>?
 ) : CodeTemplate

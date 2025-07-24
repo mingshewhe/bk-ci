@@ -34,7 +34,8 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
@@ -92,7 +93,7 @@ class PipelineDraftSaveReqConvert(
                 if (modelAndSetting == null) {
                     throw IllegalArgumentException("modelAndSetting can not be null")
                 }
-                val newModel = fixModel(pipelineId, projectId)
+                val newModel = createPipelineModel(pipelineId, projectId)
                 val newModelAndSetting = PipelineModelAndSetting(
                     model = newModel,
                     setting = modelAndSetting!!.setting
@@ -153,26 +154,43 @@ class PipelineDraftSaveReqConvert(
         }
     }
 
-    private fun PipelineDraftSaveReq.fixModel(
+    private fun PipelineDraftSaveReq.createPipelineModel(
         pipelineId: String?,
         projectId: String
     ): Model {
         val model = modelAndSetting!!.model
+
+        val overrideParamKeys = model.overrideTemplateField?.paramKeys
+        val templateVariables = model.getTriggerContainer().params.filter {
+            overrideParamKeys?.contains(it.id) ?: false
+        }.map { TemplateVariable(it) }
+
+        val overrideTriggerTaskIds = model.overrideTemplateField?.triggerTaskIds
+        val triggerConfigs = model.getTriggerContainer().elements.filter {
+            overrideTriggerTaskIds?.contains(it.id) ?: false
+        }.associateBy(
+            { it.stepId ?: it.getAtomCode() },
+            { InstanceTriggerConfig(it) }
+        )
+
         return if (model.fromTemplate == true) {
-            val triggerContainer = model.getTriggerContainer().copy(
-                elements = emptyList()
-            )
-            val stages = listOf(
-                model.stages[0].copy(containers = listOf(triggerContainer))
-            )
-            // 前端把流水线变量放在触发器param中,如果是模版的,需要把param转换成模版变量
+            val refType = when {
+                !model.templateId.isNullOrEmpty() -> TemplateRefType.ID
+                !model.templatePath.isNullOrEmpty() -> TemplateRefType.PATH
+                else -> TemplateRefType.ID
+            }
 
-            val templateVariables =
-                model.getTriggerContainer().params.associateBy({ it.id }, { TemplateParameter(it) })
-
-            model.copy(
-                stages = stages,
-                templateVariables = templateVariables
+            pipelineResourceFactory.createPipelineModelRef(
+                name = model.name,
+                desc = model.desc,
+                refType = refType,
+                templatePath = model.templatePath,
+                templateRef = model.templateRef,
+                templateId = model.templateId,
+                templateVersionName = model.templateVersionName,
+                templateVariables = templateVariables,
+                triggerConfigs = triggerConfigs,
+                overrideTemplateField = model.overrideTemplateField
             )
         } else {
             val pipelineTemplateRelated = pipelineId?.let {
@@ -199,9 +217,9 @@ class PipelineDraftSaveReqConvert(
                     refType = TemplateRefType.ID,
                     templateId = pipelineTemplateRelated.templateId,
                     templateVersionName = pipelineTemplateRelated.versionName,
-                    templateModel = templateResource.model as Model,
-                    params = model.getTriggerContainer().params,
-                    triggerConfigs = model.triggerConfigs
+                    templateVariables = templateVariables,
+                    triggerConfigs = triggerConfigs,
+                    overrideTemplateField = model.overrideTemplateField
                 )
             } else {
                 model

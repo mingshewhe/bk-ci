@@ -35,8 +35,8 @@ import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateParameter
-import com.tencent.devops.common.pipeline.pojo.TemplateTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParamType
@@ -295,7 +295,7 @@ object PipelineUtils {
         defaultStageTagId: String?,
         templateId: String? = null,
         staticViews: List<String> = emptyList(),
-        triggerConfigs: Map<String, TemplateTriggerConfig>? = null
+        triggerConfigs: Map<String, InstanceTriggerConfig>? = null
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
         val triggerElements = if (triggerConfigs != null) {
@@ -372,7 +372,7 @@ object PipelineUtils {
         }
         val pipelineParams = mergeTemplateParams(
             templateParams = templateModel.getTriggerContainer().params,
-            templateParameters = model.templateVariables,
+            templateVariables = model.templateVariables,
         )
         val instanceParam = cleanOptions(pipelineParams)
         return templateTriggerContainer.copy(
@@ -383,7 +383,7 @@ object PipelineUtils {
 
     private fun mergeTriggerElements(
         templateTriggerContainer: TriggerContainer,
-        triggerConfigs: Map<String, TemplateTriggerConfig>
+        triggerConfigs: Map<String, InstanceTriggerConfig>
     ): MutableList<Element> {
         // 不存在的stepId列表
         val errorStepIds = triggerConfigs.filterNot { (stepId, _) ->
@@ -413,7 +413,7 @@ object PipelineUtils {
 
     private fun mergeTriggerElement(
         triggerElement: Element,
-        triggerConfig: TemplateTriggerConfig
+        triggerConfig: InstanceTriggerConfig
     ): Element {
         triggerConfig.disabled?.let {
             triggerElement.additionalOptions?.enable = !triggerConfig.disabled!!
@@ -433,16 +433,17 @@ object PipelineUtils {
 
     private fun mergeTemplateParams(
         templateParams: List<BuildFormProperty>,
-        templateParameters: Map<String, TemplateParameter>?
+        templateVariables: List<TemplateVariable>?
     ): List<BuildFormProperty> {
-        if (templateParameters == null) return templateParams
+        if (templateVariables == null) return templateParams
         val pipelineParams = mutableListOf<BuildFormProperty>()
+        val templateVariableMap = templateVariables.associateBy { it.key }
         templateParams.forEach { param ->
-            val templateParameter = templateParameters[param.id]
-            templateParameter?.let {
+            val templateVariable = templateVariableMap[param.id]
+            templateVariable?.let {
                 val pipelineParam = param.copy(
-                    defaultValue = templateParameter.value,
-                    required = templateParameter.required ?: param.required
+                    defaultValue = templateVariable.value,
+                    required = templateVariable.allowModifyAtStartup ?: param.required
                 )
                 pipelineParams.add(pipelineParam)
             }
