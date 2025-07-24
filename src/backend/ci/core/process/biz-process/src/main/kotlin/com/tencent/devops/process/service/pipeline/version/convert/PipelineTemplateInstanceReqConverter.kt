@@ -184,7 +184,9 @@ class PipelineTemplateInstanceReqConverter(
 
             val overrideParamKeys = overrideTemplateField?.paramKeys
             val templateVariables = params?.filter {
-                logger.info("overrideParamKeys ${it.id}: ${overrideParamKeys?.contains(it.id) ?: false}")
+                logger.info(
+                    "overrideParamKeys ${it.id}| ${overrideParamKeys} |${overrideParamKeys?.contains(it.id) ?: false}"
+                )
                 overrideParamKeys?.contains(it.id) ?: false
             }?.map { TemplateVariable(it) }
 
