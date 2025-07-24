@@ -30,8 +30,8 @@ package com.tencent.devops.process.service.template.v2.version.convert
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
-import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCompatibilityCreateReq
@@ -41,7 +41,6 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateCommonServ
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
-import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateVersionReqConverter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
