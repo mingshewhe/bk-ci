@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
@@ -45,5 +46,7 @@ data class PipelineTemplateInstanceReleaseInfo(
     @get:Schema(title = "触发器配置", required = false)
     val triggerConfigs: Map<String,InstanceTriggerConfig>? = null,
     @get:Schema(title = "yaml文件路径", required = true)
-    val filePath: String? = null
+    val filePath: String? = null,
+    @get:Schema(title = "覆盖模版字段", required = false)
+    val overrideTemplateField: TemplateField? = null
 )

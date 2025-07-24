@@ -1,5 +1,6 @@
 package com.tencent.devops.process.pojo.template.v2
 
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
@@ -25,6 +26,8 @@ data class PipelineTemplateInstanceItem(
     val params: List<BuildFormProperty>?,
     @get:Schema(title = "流水线触发器配置", required = false)
     val triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
+    @get:Schema(title = "覆盖模版字段", required = false)
+    val overrideTemplateField: TemplateField? = null,
     @get:Schema(title = "yaml文件路径", required = true)
     val filePath: String?,
     @get:Schema(title = "实例化错误信息", required = true)

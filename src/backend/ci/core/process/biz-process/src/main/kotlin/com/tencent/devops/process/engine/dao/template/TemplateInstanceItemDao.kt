@@ -28,9 +28,11 @@
 package com.tencent.devops.process.engine.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.tencent.devops.common.api.constant.OR
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
@@ -128,7 +130,8 @@ class TemplateInstanceItemDao {
                     CREATOR,
                     MODIFIER,
                     FILE_PATH,
-                    TRIGGER_CONFIGS
+                    TRIGGER_CONFIGS,
+                    OVERRIDE_TEMPLATE_FIELD
                 ).values(
                     UUIDUtil.generate(),
                     projectId,
@@ -141,7 +144,8 @@ class TemplateInstanceItemDao {
                     userId,
                     userId,
                     it.filePath,
-                    it.triggerConfigs?.let { self -> JsonUtil.toJson(self, formatted = false) }
+                    it.triggerConfigs?.let { self -> JsonUtil.toJson(self, formatted = false) },
+                    it.overrideTemplateField?.let { self -> JsonUtil.toJson(self, formatted = false) }
                 ).onDuplicateKeyUpdate()
                     .set(PIPELINE_NAME, it.pipelineName)
                     .set(BUILD_NO_INFO, buildNo?.let { self -> JsonUtil.toJson(self, formatted = false) })
@@ -152,6 +156,9 @@ class TemplateInstanceItemDao {
                     .set(MODIFIER, userId)
                     .set(FILE_PATH, it.filePath)
                     .set(TRIGGER_CONFIGS, it.triggerConfigs?.let { self -> JsonUtil.toJson(self, formatted = false) })
+                    .set(
+                        OVERRIDE_TEMPLATE_FIELD,
+                        it.overrideTemplateField?.let { self -> JsonUtil.toJson(self, formatted = false) })
                     .execute()
             }
         }
@@ -369,6 +376,9 @@ class TemplateInstanceItemDao {
             params = params,
             triggerConfigs = triggerConfigs?.let {
                 JsonUtil.to(it, object : TypeReference<Map<String, InstanceTriggerConfig>>() {})
+            },
+            overrideTemplateField = overrideTemplateField?.let {
+                JsonUtil.to(it, TemplateField::class.java)
             },
             filePath = filePath,
             errorMessage = errorMessage,

@@ -52,7 +52,10 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
     override fun handle(context: PipelineVersionCreateContext): DeployPipelineResult {
         with(context) {
             if (templateInstanceBasicInfo == null) {
-                throw IllegalArgumentException("templateInstanceBasicInfo is null")
+                throw ErrorCodeException(
+                    errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                    params = arrayOf("templateInstanceBasicInfo")
+                )
             }
             if (enablePac) {
                 if (targetAction == null) {

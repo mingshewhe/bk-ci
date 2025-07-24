@@ -199,6 +199,7 @@ class PipelineTemplateInstanceListener @Autowired constructor(
             buildNo = buildNo,
             params = params,
             triggerConfigs = triggerConfigs,
+            overrideTemplateField = overrideTemplateField,
             useTemplateSetting = instanceBase.useTemplateSetting,
             enablePac = instanceBase.pac,
             repoHashId = instanceBase.repoHashId,

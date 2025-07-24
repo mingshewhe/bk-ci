@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.Model
@@ -95,13 +96,22 @@ class PipelineTemplateInstanceReqConverter(
         with(request) {
             if (enablePac) {
                 if (targetAction == null) {
-                    throw IllegalArgumentException("targetAction is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("targetAction")
+                    )
                 }
                 if (repoHashId == null) {
-                    throw IllegalArgumentException("repoHashId is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("repoHashId")
+                    )
                 }
                 if (filePath.isNullOrEmpty()) {
-                    throw IllegalArgumentException("filePath is null")
+                    throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("filePath")
+                    )
                 }
             }
             if (templateRefType == TemplateRefType.PATH) {

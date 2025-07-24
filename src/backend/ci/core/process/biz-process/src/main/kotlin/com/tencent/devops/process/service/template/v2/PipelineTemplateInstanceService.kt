@@ -105,6 +105,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     buildNo = instance.buildNo,
                     params = instance.param,
                     triggerConfigs = instance.triggerConfigs,
+                    overrideTemplateField = instance.overrideTemplateField,
                     useTemplateSetting = request.useTemplateSetting,
                     enablePac = request.enablePac,
                     repoHashId = request.repoHashId,
