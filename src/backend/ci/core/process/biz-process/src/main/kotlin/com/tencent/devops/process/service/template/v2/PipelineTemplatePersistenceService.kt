@@ -81,12 +81,29 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
         with(context) {
+            val versionStatus = pTemplateResourceWithoutVersion.status
+            val branchAction = versionStatus.takeIf {
+                it == VersionStatus.BRANCH
+            }?.let { BranchVersionAction.ACTIVE }
+            val releaseTime = versionStatus.takeIf {
+                it == VersionStatus.RELEASED
+            }?.let { LocalDateTime.now().timestampmilli() }
+
             val pipelineTemplateResource = PipelineTemplateResource(
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
+            ).copy(
+                branchAction = branchAction,
+                releaseTime = releaseTime
             )
             val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
                 version = resourceOnlyVersion.settingVersion
+            )
+            val newPipelineTemplateInfo = pipelineTemplateInfo.copy(
+                releasedVersion = resourceOnlyVersion.version,
+                releasedVersionName = resourceOnlyVersion.versionName,
+                releasedSettingVersion = resourceOnlyVersion.settingVersion,
+                latestVersionStatus = pTemplateResourceWithoutVersion.status
             )
             operationLogType = OperationLogType.fetchType(pipelineTemplateResource.status)
             operationLogParams = resourceOnlyVersion.versionName ?: ""
@@ -95,7 +112,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 val transactionContext = DSL.using(configuration)
                 pipelineTemplateInfoService.createOrUpdate(
                     transactionContext = transactionContext,
-                    pipelineTemplateInfo = pipelineTemplateInfo
+                    pipelineTemplateInfo = newPipelineTemplateInfo
                 )
                 pipelineTemplateResourceService.create(
                     transactionContext = transactionContext,
@@ -134,6 +151,8 @@ class PipelineTemplatePersistenceService @Autowired constructor(
             val pipelineTemplateResource = PipelineTemplateResource(
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
+            ).copy(
+                releaseTime = LocalDateTime.now().timestampmilli()
             )
             val pipelineTemplateSetting = pTemplateSettingWithoutVersion.copy(
                 version = resourceOnlyVersion.settingVersion
