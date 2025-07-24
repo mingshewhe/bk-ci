@@ -45,7 +45,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoServic
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateVersionReqConverter
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service

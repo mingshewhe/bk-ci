@@ -9,6 +9,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemp
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PTemplateMarketPublishedVersionPostProcessor(
+    @Lazy
     private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val client: Client

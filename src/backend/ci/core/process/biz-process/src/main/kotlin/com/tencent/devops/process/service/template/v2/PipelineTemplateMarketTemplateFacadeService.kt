@@ -21,13 +21,12 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingCommonCondition
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateSettingUpdateInfo
-import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateMarketCreateReqConverter
-import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateReleaseCreateHandler
+import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.store.api.image.ServiceStoreImageResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.image.enums.ImageStatusEnum
-import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -48,8 +47,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     private val pipelineSettingDao: PipelineSettingDao,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
-    private val pipelineTemplateReleaseCreateHandler: PipelineTemplateReleaseCreateHandler,
-    private val pipelineTemplateMarketCreateReqConverter: PipelineTemplateMarketCreateReqConverter
+    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
 ) {
 
     /**
@@ -333,14 +331,11 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             copySetting = isSyncSetting,
             name = templateInfo.name
         )
-        pipelineTemplateReleaseCreateHandler.handle(
-            pipelineTemplateMarketCreateReqConverter.convert(
-                userId = templateInfo.creator,
-                projectId = templateInfo.projectId,
-                templateId = templateInfo.id,
-                version = null,
-                request = pipelineTemplateMarketCreateReq
-            )
+        pipelineTemplateVersionManager.deployTemplate(
+            userId = templateInfo.creator,
+            projectId = templateInfo.projectId,
+            templateId = templateInfo.id,
+            request = pipelineTemplateMarketCreateReq
         )
         client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
             TemplateVersionInstallHistoryInfo(

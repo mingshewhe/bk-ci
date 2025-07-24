@@ -33,6 +33,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateVersionReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateVersionValidator
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateVersionReqConverter
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionCreateHandler
 import com.tencent.devops.process.service.template.v2.version.hander.PipelineTemplateVersionDeleteHandler
 import org.springframework.beans.factory.annotation.Autowired

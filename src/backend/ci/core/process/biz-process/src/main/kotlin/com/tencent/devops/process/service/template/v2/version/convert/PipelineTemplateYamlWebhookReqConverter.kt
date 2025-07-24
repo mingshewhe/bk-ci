@@ -39,7 +39,7 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateModelInitializer
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
-import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionReqConverter
+import com.tencent.devops.process.service.template.v2.version.convert.PipelineTemplateVersionReqConverter
 import org.springframework.stereotype.Service
 
 /**
