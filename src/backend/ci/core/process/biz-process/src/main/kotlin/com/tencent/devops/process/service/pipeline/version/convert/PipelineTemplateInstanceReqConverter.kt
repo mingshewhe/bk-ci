@@ -61,7 +61,6 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceSe
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
 import com.tencent.devops.process.yaml.PipelineYamlService
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -184,9 +183,6 @@ class PipelineTemplateInstanceReqConverter(
 
             val overrideParamKeys = overrideTemplateField?.paramKeys
             val templateVariables = params?.filter {
-                logger.info(
-                    "overrideParamKeys ${it.id}| ${overrideParamKeys} |${overrideParamKeys?.contains(it.id) ?: false}"
-                )
                 overrideParamKeys?.contains(it.id) ?: false
             }?.map { TemplateVariable(it) }
 
@@ -332,9 +328,5 @@ class PipelineTemplateInstanceReqConverter(
             pipelineSetting.copy(pipelineAsCodeSettings = pipelineAsCodeSettings)
         } ?: pipelineSetting
         return pacSetting
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PipelineTemplateInstanceReqConverter::class.java)
     }
 }

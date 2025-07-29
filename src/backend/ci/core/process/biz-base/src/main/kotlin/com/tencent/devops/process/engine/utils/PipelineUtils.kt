@@ -259,22 +259,22 @@ object PipelineUtils {
      * options需在运行时实时计算
      */
     fun cleanOptions(params: List<BuildFormProperty>): List<BuildFormProperty> {
-        val filterParams = mutableListOf<BuildFormProperty>()
-        params.forEach {
-            when (it.type) {
-                BuildFormPropertyType.SVN_TAG,
-                BuildFormPropertyType.GIT_REF,
-                BuildFormPropertyType.CODE_LIB,
-                BuildFormPropertyType.SUB_PIPELINE,
-                BuildFormPropertyType.CONTAINER_TYPE -> {
-                    filterParams.add(it.copy(options = emptyList(), replaceKey = null, searchUrl = null))
-                }
+        return params.map { cleanOptions(it) }
+    }
 
-                else ->
-                    filterParams.add(it)
+    private fun cleanOptions(param: BuildFormProperty): BuildFormProperty {
+        return when (param.type) {
+            BuildFormPropertyType.SVN_TAG,
+            BuildFormPropertyType.GIT_REF,
+            BuildFormPropertyType.CODE_LIB,
+            BuildFormPropertyType.SUB_PIPELINE,
+            BuildFormPropertyType.CONTAINER_TYPE -> {
+                param.copy(options = emptyList(), replaceKey = null, searchUrl = null)
             }
+
+            else ->
+                param
         }
-        return filterParams
     }
 
     fun isPipelineId(pipelineId: String): Boolean {
@@ -361,6 +361,7 @@ object PipelineUtils {
         templateModel: Model,
     ): TriggerContainer {
         val templateTriggerContainer = templateModel.getTriggerContainer()
+
         val triggerConfigs = model.triggerConfigs
         val triggerElements = if (triggerConfigs != null) {
             mergeTriggerElements(
@@ -371,8 +372,8 @@ object PipelineUtils {
             templateTriggerContainer.elements
         }
         val pipelineParams = mergeTemplateParams(
-            templateParams = templateModel.getTriggerContainer().params,
-            templateVariables = model.templateVariables,
+            model = model,
+            templateModel = templateModel,
         )
         val instanceParam = cleanOptions(pipelineParams)
         return templateTriggerContainer.copy(
@@ -432,22 +433,43 @@ object PipelineUtils {
     }
 
     private fun mergeTemplateParams(
-        templateParams: List<BuildFormProperty>,
-        templateVariables: List<TemplateVariable>?
+        model: Model,
+        templateModel: Model,
     ): List<BuildFormProperty> {
+        val templateParams = templateModel.getTriggerContainer().params
+        val templateVariables = model.templateVariables
+        val paramKeys = model.overrideTemplateField?.paramKeys
         if (templateVariables == null) return templateParams
-        val pipelineParams = mutableListOf<BuildFormProperty>()
+
         val templateVariableMap = templateVariables.associateBy { it.key }
-        templateParams.forEach { param ->
-            val templateVariable = templateVariableMap[param.id]
-            templateVariable?.let {
-                val pipelineParam = param.copy(
-                    defaultValue = templateVariable.value,
-                    required = templateVariable.allowModifyAtStartup ?: param.required
+        return templateParams.map { templateParam ->
+            val templateVariable = templateVariableMap[templateParam.id]
+            val overrideParam = overrideParam(
+                templateParam = templateParam,
+                paramKeys = paramKeys,
+                templateVariable = templateVariable
+            )
+            val pipelineParams = if (overrideParam) {
+                templateParam.copy(
+                    defaultValue = templateVariable!!.value,
+                    required = templateVariable.allowModifyAtStartup ?: templateParam.required
                 )
-                pipelineParams.add(pipelineParam)
+            } else {
+                templateParam
             }
+            cleanOptions(pipelineParams)
         }
-        return pipelineParams
+    }
+
+    private fun overrideParam(
+        templateParam: BuildFormProperty,
+        paramKeys: List<String>?,
+        templateVariable: TemplateVariable?,
+    ): Boolean {
+        // 覆盖的key存在且变量值类型与模板参数类型一致,则流水线的变量覆盖模版的
+        return paramKeys != null &&
+                paramKeys.contains(templateParam.id) &&
+                templateVariable != null &&
+                templateVariable.value.javaClass == templateParam.defaultValue.javaClass
     }
 }

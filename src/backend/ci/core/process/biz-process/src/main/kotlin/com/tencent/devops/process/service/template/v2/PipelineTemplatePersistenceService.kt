@@ -282,7 +282,18 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     transactionContext = transactionContext,
                     pipelineTemplateSetting = pipelineTemplateSetting
                 )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
             }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
         }
     }
 
@@ -385,18 +396,29 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                 settingVersion = resourceOnlyVersion.settingVersion
             )
             dslContext.transaction { configuration ->
-                val context = DSL.using(configuration)
+                val transactionContext = DSL.using(configuration)
                 pipelineTemplateResourceService.update(
-                    transactionContext = context,
+                    transactionContext = transactionContext,
                     record = templateResourceUpdateInfo,
                     commonCondition = templateResourceCondition
                 )
                 pipelineTemplateSettingService.update(
-                    transactionContext = context,
+                    transactionContext = transactionContext,
                     record = templateSettingUpdateInfo,
                     commonCondition = templateSettingCondition
                 )
+                postProcessInTransactionVersionCreate(
+                    transactionContext = transactionContext,
+                    context = context,
+                    pipelineTemplateResource = pipelineTemplateResource,
+                    pipelineTemplateSetting = pipelineTemplateSetting
+                )
             }
+            postProcessAfterVersionCreate(
+                context = context,
+                pipelineTemplateResource = pipelineTemplateResource,
+                pipelineTemplateSetting = pipelineTemplateSetting
+            )
         }
     }
 
