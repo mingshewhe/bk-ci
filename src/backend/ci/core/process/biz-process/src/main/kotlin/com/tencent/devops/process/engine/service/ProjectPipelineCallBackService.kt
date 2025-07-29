@@ -66,6 +66,7 @@ import com.tencent.devops.process.pojo.PipelineNotifyTemplateEnum
 import com.tencent.devops.process.pojo.ProjectPipelineCallBackHistory
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import com.tencent.devops.project.api.service.ServiceProjectResource
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -96,6 +97,10 @@ class ProjectPipelineCallBackService @Autowired constructor(
 
     @Value("\${project.callback.secretParam.aes-key:project_callback_aes_key}")
     private val aesKey = ""
+    // 黑名单端口,禁止注册黑名单端口,默认为空
+
+    @Value("\${project.callback.black-port:#{null}}")
+    private val blackPort: List<Int>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectPipelineCallBackService::class.java)
@@ -119,6 +124,13 @@ class ProjectPipelineCallBackService @Autowired constructor(
         if (!OkhttpUtils.validUrl(url)) {
             logger.warn("$projectId|callback url Invalid")
             throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_CALLBACK_URL_INVALID)
+        }
+        val httpUrl = url.toHttpUrl()
+        if (!blackPort.isNullOrEmpty() && blackPort.contains(httpUrl.port)) {
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_INVALID_CALLBACK_PORT,
+                params = arrayOf(blackPort.joinToString(","))
+            )
         }
         val callBackUrl = projectPipelineCallBackUrlGenerator.generateCallBackUrl(
             region = region,
