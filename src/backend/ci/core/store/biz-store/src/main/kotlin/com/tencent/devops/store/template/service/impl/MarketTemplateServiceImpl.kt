@@ -104,16 +104,13 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
-import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
-import com.tencent.devops.store.template.dao.TemplateVersionInstallHistoryDao
-import com.tencent.devops.store.template.dao.TemplateVersionReleasedRelDao
+import com.tencent.devops.store.template.service.MarketTemplatePublishedService
 import com.tencent.devops.store.template.service.MarketTemplateService
 import com.tencent.devops.store.template.service.TemplateCategoryService
 import com.tencent.devops.store.template.service.TemplateLabelService
@@ -200,10 +197,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
     lateinit var client: Client
 
     @Autowired
-    lateinit var templateVersionReleasedRelDao: TemplateVersionReleasedRelDao
-
-    @Autowired
-    lateinit var templateVersionInstallHistoryDao: TemplateVersionInstallHistoryDao
+    lateinit var marketTemplatePublishedService: MarketTemplatePublishedService
 
     @Autowired
     lateinit var storeVisibleDeptService: StoreVisibleDeptService
@@ -739,8 +733,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             } catch (ex: Exception) {
                 logger.warn("update Store Flag v2 failed | $ex")
             }
-            templateVersionReleasedRelDao.offlineTemplate(
-                dslContext = context,
+            marketTemplatePublishedService.offlineTemplate(
                 templateCode = templateCode,
                 templateVersion = null
             )
@@ -1412,8 +1405,7 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         ).data
 
         // 获取研发商店模板最新上架的版本
-        val latestMarketPublishedVersions = templateVersionReleasedRelDao.listLatestPublishedVersions(
-            dslContext = dslContext,
+        val latestMarketPublishedVersions = marketTemplatePublishedService.listLatestRecords(
             templateCodes = records.map { it[TTemplate.T_TEMPLATE.TEMPLATE_CODE] }
         )
 
@@ -1485,32 +1477,6 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
         )
     }
 
-    override fun listMarketTemplatePublishedHistory(
-        userId: String,
-        templateCode: String,
-        page: Int,
-        pageSize: Int
-    ): Page<TemplatePublishedVersionInfo> {
-        val record = templateVersionReleasedRelDao.listPublishedHistory(
-            dslContext = dslContext,
-            templateCode = templateCode,
-            page = page,
-            pageSize = pageSize
-        )
-        val count = templateVersionReleasedRelDao.countPublishedHistory(
-            dslContext = dslContext,
-            templateCode = templateCode
-        )
-        val totalPages = PageUtil.calTotalPage(pageSize, count)
-        return Page(
-            count = count,
-            page = page,
-            pageSize = pageSize,
-            totalPages = totalPages,
-            records = record
-        )
-    }
-
     /**
      * 根据模板ID和模板代码判断模板是否存在
      */
@@ -1526,65 +1492,5 @@ abstract class MarketTemplateServiceImpl @Autowired constructor() : MarketTempla
             )
         }
         return Result(true)
-    }
-
-    override fun createMarketTemplatePublishedVersion(templatePublishedVersionInfo: TemplatePublishedVersionInfo) {
-        logger.info("create Template Version Rel :$templatePublishedVersionInfo")
-        templateVersionReleasedRelDao.createOrUpdate(
-            dslContext = dslContext,
-            record = templatePublishedVersionInfo
-        )
-    }
-
-    override fun getLatestMarketTemplatePublishedVersion(templateCode: String): TemplatePublishedVersionInfo? {
-        return templateVersionReleasedRelDao.getLatestMarketPublishedVersion(
-            dslContext = dslContext,
-            templateCode = templateCode
-        )
-    }
-
-    override fun listLatestMarketTemplatePublishedVersions(templateCodes: List<String>): List<TemplatePublishedVersionInfo> {
-        return templateVersionReleasedRelDao.listLatestPublishedVersions(
-            dslContext = dslContext,
-            templateCodes = templateCodes
-        )
-    }
-
-    override fun createTemplateVersionInstallHistory(installHistoryInfo: TemplateVersionInstallHistoryInfo) {
-        logger.info("create template version install history:$installHistoryInfo")
-        templateVersionInstallHistoryDao.create(
-            dslContext = dslContext,
-            record = installHistoryInfo
-        )
-    }
-
-    override fun deleteTemplateVersionInstallHistory(templateCode: String) {
-        logger.info("delete template version install history:$templateCode")
-        templateVersionInstallHistoryDao.delete(
-            dslContext = dslContext,
-            templateCode = templateCode
-        )
-    }
-
-    override fun getRecentlyInstalledVersion(
-        templateCode: String
-    ): TemplateVersionInstallHistoryInfo? {
-        return templateVersionInstallHistoryDao.getRecentlyInstalledVersion(
-            dslContext = dslContext,
-            templateCode = templateCode
-        )
-    }
-
-    override fun getLatestInstalledVersion(
-        templateCode: String
-    ): TemplateVersionInstallHistoryInfo? {
-        return listLatestInstalledVersions(listOf(templateCode)).firstOrNull { it.templateCode == templateCode }
-    }
-
-    override fun listLatestInstalledVersions(templateCodes: List<String>): List<TemplateVersionInstallHistoryInfo> {
-        return templateVersionInstallHistoryDao.listLatestInstalledVersions(
-            dslContext = dslContext,
-            templateCodes = templateCodes
-        )
     }
 }

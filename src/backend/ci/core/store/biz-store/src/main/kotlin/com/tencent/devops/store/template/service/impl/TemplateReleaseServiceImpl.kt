@@ -70,7 +70,7 @@ import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import com.tencent.devops.store.template.dao.MarketTemplateDao
 import com.tencent.devops.store.template.dao.TemplateCategoryRelDao
 import com.tencent.devops.store.template.dao.TemplateLabelRelDao
-import com.tencent.devops.store.template.dao.TemplateVersionReleasedRelDao
+import com.tencent.devops.store.template.service.MarketTemplatePublishedService
 import com.tencent.devops.store.template.service.TemplateNotifyService
 import com.tencent.devops.store.template.service.TemplateReleaseService
 import org.jooq.DSLContext
@@ -120,7 +120,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
     lateinit var client: Client
 
     @Autowired
-    lateinit var templateVersionReleasedRelDao: TemplateVersionReleasedRelDao
+    lateinit var marketTemplatePublishedService: MarketTemplatePublishedService
 
     private val logger = LoggerFactory.getLogger(TemplateReleaseServiceImpl::class.java)
 
@@ -953,8 +953,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                     storeCode = templateCode,
                     storeType = StoreTypeEnum.TEMPLATE.type.toByte()
                 ) ?: throw ErrorCodeException(errorCode = CommonMessageCode.SYSTEM_ERROR)
-                templateVersionReleasedRelDao.offlineTemplate(
-                    dslContext = dslContext,
+                marketTemplatePublishedService.offlineTemplate(
                     templateCode = templateCode,
                     templateVersion = null
                 )
@@ -1013,8 +1012,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                     msg = "undercarriage"
                 )
 
-                templateVersionReleasedRelDao.offlineTemplate(
-                    dslContext = dslContext,
+                marketTemplatePublishedService.offlineTemplate(
                     templateCode = templateCode,
                     templateVersion = null
                 )
@@ -1027,8 +1025,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 )
             }
         } else {
-            templateVersionReleasedRelDao.offlineTemplate(
-                dslContext = dslContext,
+            marketTemplatePublishedService.offlineTemplate(
                 templateCode = templateCode,
                 templateVersion = templateVersion
             )

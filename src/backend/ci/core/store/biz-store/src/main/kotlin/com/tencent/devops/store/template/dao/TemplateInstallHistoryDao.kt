@@ -29,144 +29,111 @@ package com.tencent.devops.store.template.dao
 
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.api.util.toLocalDateTimeOrDefault
-import com.tencent.devops.model.store.tables.TTemplateVersionReleasedRel
-import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
+import com.tencent.devops.model.store.tables.TTemplateVersionInstallHistory
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 
+@Suppress("ALL")
 @Repository
-class TemplateVersionReleasedRelDao {
-    fun createOrUpdate(
+class TemplateInstallHistoryDao {
+    fun create(
         dslContext: DSLContext,
-        record: TemplatePublishedVersionInfo
+        record: TemplateVersionInstallHistoryInfo
     ) {
-        with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+        with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             dslContext.insertInto(
                 this,
+                SRC_MARKET_TEMPLATE_PROJECT_CODE,
+                SRC_MARKET_TEMPLATE_CODE,
                 PROJECT_CODE,
                 TEMPLATE_CODE,
                 VERSION,
-                NUMBER,
                 VERSION_NAME,
-                PUBLISHED,
+                NUMBER,
                 CREATOR,
-                UPDATER,
-                CREATE_TIME,
-                UPDATE_TIME
+                CREATE_TIME
             ).values(
+                record.srcMarketTemplateProjectCode,
+                record.srcMarketTemplateCode,
                 record.projectCode,
                 record.templateCode,
                 record.version,
-                record.number,
                 record.versionName,
-                record.published,
+                record.number,
                 record.creator,
-                record.updater,
-                record.createTime.toLocalDateTimeOrDefault(),
-                record.updateTime.toLocalDateTimeOrDefault(),
+                record.createTime.toLocalDateTimeOrDefault()
             ).onDuplicateKeyUpdate()
-                .set(PUBLISHED, record.published)
-                .set(NUMBER, record.number)
+                .set(CREATOR, record.creator)
+                .set(VERSION, record.version)
                 .set(VERSION_NAME, record.versionName)
-                .set(UPDATER, record.updater)
-                .set(UPDATE_TIME, record.updateTime.toLocalDateTimeOrDefault())
+                .set(NUMBER, record.number)
+                .set(CREATE_TIME, record.createTime.toLocalDateTimeOrDefault())
                 .execute()
         }
     }
 
-    fun offlineTemplate(
-        dslContext: DSLContext,
-        templateCode: String,
-        templateVersion: Long?
-    ) {
-        with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
-            dslContext.update(this)
-                .set(PUBLISHED, false)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .let { if (templateVersion != null) it.and(VERSION.eq(templateVersion)) else it }
-                .execute()
-        }
-    }
-
-    fun getLatestMarketPublishedVersion(
+    fun delete(
         dslContext: DSLContext,
         templateCode: String
-    ): TemplatePublishedVersionInfo? {
-        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+    ) {
+        with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
+            dslContext.deleteFrom(this)
+                .where(TEMPLATE_CODE.eq(templateCode))
+                .execute()
+        }
+    }
+
+    fun delete(
+        dslContext: DSLContext,
+        srcTemplateCode: String,
+        templateCode: String,
+        versions: List<Long>
+    ) {
+        with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
+            dslContext.deleteFrom(this)
+                .where(TEMPLATE_CODE.eq(templateCode))
+                .and(SRC_MARKET_TEMPLATE_CODE.eq(srcTemplateCode))
+                .and(VERSION.`in`(versions))
+                .execute()
+        }
+    }
+
+    fun getRecentlyInstalledVersion(
+        dslContext: DSLContext,
+        templateCode: String
+    ): TemplateVersionInstallHistoryInfo? {
+        return with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             dslContext.selectFrom(this)
                 .where(TEMPLATE_CODE.eq(templateCode))
-                .and(PUBLISHED.eq(true))
-                .orderBy(NUMBER.desc())
+                .orderBy(CREATE_TIME.desc())
                 .limit(1)
                 .fetchOne()?.let {
-                    TemplatePublishedVersionInfo(
+                    TemplateVersionInstallHistoryInfo(
+                        srcMarketTemplateProjectCode = it.srcMarketTemplateCode,
+                        srcMarketTemplateCode = it.srcMarketTemplateCode,
                         projectCode = it.projectCode,
                         templateCode = it.templateCode,
                         version = it.version,
-                        number = it.number,
                         versionName = it.versionName,
-                        published = it.published,
-                        createTime = it.createTime.timestampmilli(),
-                        updateTime = it.updateTime.timestampmilli(),
+                        number = it.number,
                         creator = it.creator,
-                        updater = it.updater
+                        createTime = it.createTime.timestampmilli()
                     )
                 }
         }
     }
 
-    fun listPublishedHistory(
-        dslContext: DSLContext,
-        templateCode: String,
-        page: Int,
-        pageSize: Int
-    ): List<TemplatePublishedVersionInfo> {
-        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
-            dslContext.selectFrom(this)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .orderBy(UPDATE_TIME.desc())
-                .limit((page - 1) * pageSize, pageSize)
-                .fetch().map {
-                    TemplatePublishedVersionInfo(
-                        projectCode = it.projectCode,
-                        templateCode = it.templateCode,
-                        version = it.version,
-                        number = it.number,
-                        versionName = it.versionName,
-                        published = it.published,
-                        createTime = it.createTime.timestampmilli(),
-                        updateTime = it.updateTime.timestampmilli(),
-                        creator = it.creator,
-                        updater = it.updater
-                    )
-                }
-        }
-    }
-
-    fun countPublishedHistory(
-        dslContext: DSLContext,
-        templateCode: String,
-    ): Long {
-        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
-            dslContext.selectCount()
-                .from(this)
-                .where(TEMPLATE_CODE.eq(templateCode))
-                .orderBy(UPDATE_TIME.desc())
-                .fetchOne(0, Long::class.java)!!
-        }
-    }
-
-    fun listLatestPublishedVersions(
+    fun listLatestInstalledVersions(
         dslContext: DSLContext,
         templateCodes: List<String>
-    ): List<TemplatePublishedVersionInfo> {
-        return with(TTemplateVersionReleasedRel.T_TEMPLATE_VERSION_RELEASED_REL) {
+    ): List<TemplateVersionInstallHistoryInfo> {
+        return with(TTemplateVersionInstallHistory.T_TEMPLATE_VERSION_INSTALL_HISTORY) {
             // 子查询获取每个模板的最大NUMBER
             val maxNumbers = dslContext.select(TEMPLATE_CODE, DSL.max(NUMBER).`as`("max_number"))
                 .from(this)
                 .where(TEMPLATE_CODE.`in`(templateCodes))
-                .and(PUBLISHED.eq(true))
                 .groupBy(TEMPLATE_CODE)
                 .asTable("m")
             // 主查询关联获取VERSION
@@ -178,17 +145,16 @@ class TemplateVersionReleasedRelDao {
                     NUMBER.eq(maxNumbers.field("max_number", Int::class.java))
                 )
                 .fetch().map {
-                    TemplatePublishedVersionInfo(
+                    TemplateVersionInstallHistoryInfo(
+                        srcMarketTemplateProjectCode = it[SRC_MARKET_TEMPLATE_PROJECT_CODE],
+                        srcMarketTemplateCode = it[SRC_MARKET_TEMPLATE_CODE],
                         projectCode = it[PROJECT_CODE],
                         templateCode = it[TEMPLATE_CODE],
                         version = it[VERSION],
-                        number = it[NUMBER],
                         versionName = it[VERSION_NAME],
-                        published = it[PUBLISHED],
-                        createTime = it[CREATE_TIME].timestampmilli(),
-                        updateTime = it[UPDATE_TIME]?.timestampmilli(),
+                        number = it[NUMBER],
                         creator = it[CREATOR],
-                        updater = it[UPDATER]
+                        createTime = it[CREATE_TIME].timestampmilli()
                     )
                 }
         }

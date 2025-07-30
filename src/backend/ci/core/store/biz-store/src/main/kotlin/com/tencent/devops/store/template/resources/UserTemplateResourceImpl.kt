@@ -49,6 +49,7 @@ import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
+import com.tencent.devops.store.template.service.MarketTemplatePublishedService
 import com.tencent.devops.store.template.service.MarketTemplateService
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -56,7 +57,8 @@ import org.springframework.beans.factory.annotation.Autowired
 class UserTemplateResourceImpl @Autowired constructor(
     private val marketTemplateService: MarketTemplateService,
     private val storeProjectService: StoreProjectService,
-    private val client: Client
+    private val client: Client,
+    private val marketTemplatePublishedService: MarketTemplatePublishedService
 ) : UserTemplateResource {
 
     override fun getInstalledProjects(
@@ -106,7 +108,7 @@ class UserTemplateResourceImpl @Autowired constructor(
         pageSize: Int
     ): Result<Page<TemplatePublishedVersionInfo>> {
         return Result(
-            marketTemplateService.listMarketTemplatePublishedHistory(
+            marketTemplatePublishedService.list(
                 userId = userId,
                 templateCode = templateCode,
                 page = page,

@@ -130,7 +130,7 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "创建模板上架研发商店记录")
     @POST
-    @Path("/createMarketTemplatePublishedVersion")
+    @Path("/published/create")
     fun createMarketTemplatePublishedVersion(
         @Parameter(description = "模板版本发布关联实体", required = true)
         templatePublishedVersionInfo: TemplatePublishedVersionInfo
@@ -138,33 +138,75 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "获取模板最新上架版本")
     @GET
-    @Path("{templateCode}/latest/released")
+    @Path("{templateCode}/published/latest")
     fun getLatestMarketPublishedVersion(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
     ): Result<TemplatePublishedVersionInfo?>
 
-    @Operation(summary = "记录模板版本安装历史")
-    @POST
-    @Path("/createTemplateVersionInstallHistory")
-    fun createTemplateVersionInstallHistory(
-        @Parameter(description = "模板版本安装历史实体", required = true)
-        installHistoryInfo: TemplateVersionInstallHistoryInfo
+    @Operation(summary = "删除模板发布历史版本")
+    @DELETE
+    @Path("/{templateCode}/published/versions/delete")
+    fun deleteMarketPublishedVersions(
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String,
+        @Parameter(description = "版本号列表", required = true)
+        versions: List<Long>
     ): Result<Boolean>
 
-    @Operation(summary = "山粗模板版本安装历史")
+    @Operation(summary = "删除模板发布历史")
     @DELETE
-    @Path("/{templateCode}/deleteTemplateVersionInstallHistory")
-    fun deleteTemplateVersionInstallHistory(
+    @Path("/{templateCode}/published/delete")
+    fun deleteMarketPublishedHistory(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
     ): Result<Boolean>
 
+    @Operation(summary = "批量获取模板最新发布版本")
+    @POST
+    @Path("/published/latest/list")
+    fun listLatestPublishedVersions(
+        @Parameter(description = "模板Code列表", required = true)
+        templateCodes: List<String>
+    ): Result<List<TemplatePublishedVersionInfo>>
+
+    @Operation(summary = "记录模板版本安装历史")
+    @POST
+    @Path("/install/create")
+    fun createTemplateInstallHistory(
+        @Parameter(description = "模板版本安装历史实体", required = true)
+        installHistoryInfo: TemplateVersionInstallHistoryInfo
+    ): Result<Boolean>
+
+    @Operation(summary = "删除模板版本安装历史")
+    @DELETE
+    @Path("/{templateCode}/install/delete")
+    fun deleteTemplateInstallHistory(
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String
+    ): Result<Boolean>
+
+    @Operation(summary = "删除模板版本安装历史版本")
+    @DELETE
+    @Path("/{srcTemplateCode}/{templateCode}/versions/delete")
+    fun deleteTemplateInstallHistoryVersions(
+        @Parameter(description = "父模板代码", required = true)
+        @PathParam("srcTemplateCode")
+        srcTemplateCode: String,
+        @Parameter(description = "模板代码", required = true)
+        @PathParam("templateCode")
+        templateCode: String,
+        @Parameter(description = "版本号列表", required = true)
+        versions: List<Long>
+    ): Result<Boolean>
+
     @Operation(summary = "获取模板最近安装历史")
     @GET
-    @Path("/{templateCode}/recently/install")
+    @Path("/{templateCode}/install/recently")
     fun getRecentlyInstalledVersion(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
@@ -173,24 +215,16 @@ interface ServiceTemplateResource {
 
     @Operation(summary = "获取最新安装版本")
     @GET
-    @Path("/{templateCode}/latest/install")
+    @Path("/{templateCode}/install/latest")
     fun getLatestInstalledVersion(
         @Parameter(description = "模板代码", required = true)
         @PathParam("templateCode")
         templateCode: String
     ): Result<TemplateVersionInstallHistoryInfo?>
 
-    @Operation(summary = "批量获取模板最新发布版本")
-    @POST
-    @Path("/listLatestPublishedVersions")
-    fun listLatestPublishedVersions(
-        @Parameter(description = "模板Code列表", required = true)
-        templateCodes: List<String>
-    ): Result<List<TemplatePublishedVersionInfo>>
-
     @Operation(summary = "批量获取模板最新安装版本")
     @POST
-    @Path("/listLatestInstalledVersions")
+    @Path("/install/latest/list")
     fun listLatestInstalledVersions(
         @Parameter(description = "模板Code列表", required = true)
         templateCodes: List<String>

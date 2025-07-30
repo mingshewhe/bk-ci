@@ -301,7 +301,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         context: PipelineTemplateVersionCreateContext,
         resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        with (context) {
+        with(context) {
             val pipelineTemplateResource = PipelineTemplateResource(
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
@@ -508,7 +508,7 @@ class PipelineTemplatePersistenceService @Autowired constructor(
         context: PipelineTemplateVersionCreateContext,
         resourceOnlyVersion: PTemplateResourceOnlyVersion
     ) {
-        with (context) {
+        with(context) {
             val pipelineTemplateResource = PipelineTemplateResource(
                 pTemplateResourceWithoutVersion = pTemplateResourceWithoutVersion,
                 pTemplateResourceOnlyVersion = resourceOnlyVersion
@@ -662,7 +662,9 @@ class PipelineTemplatePersistenceService @Autowired constructor(
                     storeType = StoreTypeEnum.TEMPLATE,
                     projectCode = templateInfo.projectId
                 )
-                client.get(ServiceTemplateResource::class).deleteTemplateVersionInstallHistory(templateId)
+                client.get(ServiceTemplateResource::class).deleteTemplateInstallHistory(templateId)
+            }else{
+                client.get(ServiceTemplateResource::class).deleteMarketPublishedHistory(templateId)
             }
             pipelineTemplatePermissionService.deleteResource(
                 projectId = projectId,

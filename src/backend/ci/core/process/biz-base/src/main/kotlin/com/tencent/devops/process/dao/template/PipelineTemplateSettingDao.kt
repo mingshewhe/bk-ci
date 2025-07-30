@@ -193,6 +193,24 @@ class PipelineTemplateSettingDao {
         }
     }
 
+    fun pruneLatestVersions(
+        dslContext: DSLContext,
+        projectId: String,
+        templateId: String,
+        limit: Int
+    ) {
+        if (limit <= 0) {
+            return
+        }
+        with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
+            dslContext.deleteFrom(this)
+                .where(PROJECT_ID.eq(projectId).and(TEMPLATE_ID.eq(templateId)))
+                .orderBy(SETTING_VERSION.desc()) // 按版本号降序
+                .limit(limit) // 限制数量
+                .execute()
+        }
+    }
+
     fun TPipelineTemplateSettingVersionRecord.convert(): PipelineSetting {
         val successSubscriptionList = this.successSubscription?.let {
             JsonUtil.to(it, object : TypeReference<List<Subscription>>() {})

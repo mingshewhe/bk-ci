@@ -79,7 +79,7 @@ class PTemplateCompatibilityVersionPostProcessor(
                             dslContext = transactionContext,
                             projectId = projectId,
                             templateId = templateId,
-                            versionName = versionName!!,
+                            versionName = versionName,
                             saveVersions = saveRecordVersions.map { it.value1() }
                         )
                     }

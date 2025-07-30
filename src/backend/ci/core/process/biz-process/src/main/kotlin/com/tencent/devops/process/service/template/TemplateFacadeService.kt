@@ -204,6 +204,9 @@ class TemplateFacadeService @Autowired constructor(
     @Value("\${template.maxErrorReasonLength:200}")
     private val maxErrorReasonLength: Int = 200
 
+    @Value("\${template.maxSaveVersionRecordNum:2}")
+    private val maxSaveVersionRecordNum: Int = 2
+
     @ActionAuditRecord(
         actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
         instance = AuditInstanceRecord(
@@ -495,6 +498,18 @@ class TemplateFacadeService @Autowired constructor(
         scopeId = "#projectId",
         content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
     )
+
+        /**
+         * 更新流水线模板
+         *
+         * @param projectId 项目ID
+         * @param userId 用户ID
+         * @param templateId 模板ID
+         * @param versionName 新版本名
+         * @param template 模板模型数据
+         * @param checkPermissionFlag 是否检查权限，默认为true
+         * @return 新生成的模板版本号
+         */
     fun updateTemplate(
         projectId: String,
         userId: String,
@@ -504,6 +519,8 @@ class TemplateFacadeService @Autowired constructor(
         checkPermissionFlag: Boolean = true
     ): Long {
         logger.info("Start to update the template $templateId by user $userId - ($template)")
+
+        // 1. 前置校验与准备
         if (checkPermissionFlag) {
             pipelineTemplatePermissionService.checkPipelineTemplatePermissionWithMessage(
                 userId = userId,
@@ -514,28 +531,130 @@ class TemplateFacadeService @Autowired constructor(
         }
         checkTemplate(template, projectId, userId)
         checkTemplateAtomsForExplicitVersion(template, userId)
-        val latestTemplate = templateDao.getLatestTemplate(dslContext, projectId, templateId)
-        if (latestTemplate.type == TemplateType.CONSTRAINT.name && latestTemplate.storeFlag == true) {
-            throw ErrorCodeException(
-                errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_UPDATE
-            )
+        templateCommonService.checkTemplateName(dslContext, template.name, projectId, templateId)
+
+        val v1LatestTemplate = templateDao.getLatestTemplate(dslContext, projectId, templateId)
+        if (v1LatestTemplate.type == TemplateType.CONSTRAINT.name && v1LatestTemplate.storeFlag == true) {
+            throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_UPDATE)
         }
+
         ActionAuditContext.current()
             .setInstanceId(templateId)
             .setInstanceName(template.name)
-        templateCommonService.checkTemplateName(dslContext, template.name, projectId, templateId)
+
+        // 注意：此方法会直接修改入参template对象
         updateModelParam(template)
-        val v2TemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(
-            projectId = projectId,
-            templateId = templateId
-        )
-        // 当在老版本界面更新时，若还未同步完时，需进行迁移，再进行更新。。
-        if (v2TemplateResource == null || v2TemplateResource.version != latestTemplate.version) {
-            pipelineTemplateMigrateService.migrateTemplate(
+
+        // 2. 决策：根据数据同步状态，选择更新路径
+        val v2LatestTemplateResource = pipelineTemplateResourceService.getLatestReleasedResource(projectId, templateId)
+        val needsMigration = v2LatestTemplateResource == null ||
+            v2LatestTemplateResource.version != v1LatestTemplate.version
+
+        val version = if (needsMigration) {
+            // 路径1: V1数据已过时或V2数据不存在，需更新V1并触发迁移
+            logger.info("Template $templateId is out of sync or new, using V1 compatibility update path.")
+            updateV1AndTriggerMigration(
+                userId = userId,
                 projectId = projectId,
-                templateId = templateId
+                templateId = templateId,
+                versionName = versionName,
+                template = template,
+                v1LatestTemplate = v1LatestTemplate,
+                checkPermissionFlag = checkPermissionFlag
+            )
+        } else {
+            // 路径2: 数据同步，直接走V2标准更新流程
+            logger.info("Template $templateId is in sync, using V2 standard update path.")
+            updateV2Standard(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                versionName = versionName,
+                template = template,
+                v1LatestTemplate = v1LatestTemplate
             )
         }
+        logger.info("Get the update template version $version")
+        return version
+    }
+
+    /**
+     * 兼容模式：更新V1表，并触发到V2的异步迁移
+     */
+    private fun updateV1AndTriggerMigration(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        versionName: String,
+        template: Model,
+        v1LatestTemplate: TTemplateRecord,
+        checkPermissionFlag: Boolean
+    ): Long {
+        var newVersion = 0L
+        dslContext.transaction { configuration ->
+            val context = DSL.using(configuration)
+            pipelineSettingDao.updateSetting(
+                dslContext = context,
+                projectId = projectId,
+                pipelineId = templateId,
+                name = template.name,
+                desc = template.desc ?: ""
+            )
+
+            // 清理超出数量限制的旧版本记录
+            val saveRecordVersions = templateDao.listSaveRecordVersions(
+                context, projectId, templateId, versionName, maxSaveVersionRecordNum
+            )
+            if (saveRecordVersions?.isNotEmpty == true) {
+                templateDao.deleteSpecVersion(
+                    dslContext = context,
+                    projectId = projectId,
+                    templateId = templateId,
+                    versionName = versionName,
+                    saveVersions = saveRecordVersions.map { it.value1() }
+                )
+            }
+
+            // 在v1表中创建新版本
+            newVersion = templateDao.createTemplate(
+                dslContext = context,
+                projectId = projectId,
+                templateId = templateId,
+                templateName = template.name,
+                versionName = versionName,
+                userId = userId,
+                template = JsonUtil.toJson(template, formatted = false),
+                type = v1LatestTemplate.type,
+                category = v1LatestTemplate.category,
+                logoUrl = v1LatestTemplate.logoUrl,
+                srcTemplateId = v1LatestTemplate.srcTemplateId,
+                storeFlag = v1LatestTemplate.storeFlag,
+                weight = v1LatestTemplate.weight,
+                version = client.get(ServiceAllocIdResource::class).generateSegmentId(TEMPLATE_BIZ_TAG_NAME).data,
+                desc = template.desc
+            )
+
+            if (checkPermissionFlag) {
+                pipelineTemplatePermissionService.modifyResource(userId, projectId, templateId, template.name)
+            }
+        }
+
+        // 触发异步迁移
+        pipelineTemplateMigrateService.asyncMigrateTemplate(projectId = projectId, templateId = templateId)
+        return newVersion
+    }
+
+    /**
+     * 标准模式：直接使用V2管理器更新模板
+     */
+    private fun updateV2Standard(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        versionName: String,
+        template: Model,
+        v1LatestTemplate: TTemplateRecord
+    ): Long {
         val request = PipelineTemplateCompatibilityCreateReq(
             model = template,
             setting = PipelineSetting(
@@ -544,8 +663,8 @@ class TemplateFacadeService @Autowired constructor(
                 pipelineAsCodeSettings = null
             ),
             versionName = versionName,
-            category = latestTemplate.category,
-            logoUrl = latestTemplate.logoUrl
+            category = v1LatestTemplate.category,
+            logoUrl = v1LatestTemplate.logoUrl
         )
         pipelineTemplateVersionManager.deployTemplate(
             userId = userId,
@@ -553,11 +672,8 @@ class TemplateFacadeService @Autowired constructor(
             templateId = templateId,
             request = request
         )
-        val latestVersion = pipelineTemplateResourceService.getLatestReleasedResource(
-            projectId = projectId,
-            templateId = templateId
-        )!!.version
-        return latestVersion
+        // 部署后，重新获取最新的版本信息
+        return pipelineTemplateResourceService.getLatestReleasedResource(projectId, templateId)!!.version
     }
 
     fun listTemplate(
@@ -2314,9 +2430,7 @@ class TemplateFacadeService @Autowired constructor(
             stage.containers.forEach { container ->
                 if (container is TriggerContainer) {
                     container.params = PipelineUtils.cleanOptions(params = container.params)
-                    container.templateParams = container.templateParams?.let {
-                        PipelineUtils.cleanOptions(params = it)
-                    }
+                    container.templateParams = container.templateParams?.let { PipelineUtils.cleanOptions(params = it) }
                 }
                 if (container.containerId.isNullOrBlank()) {
                     container.containerId = container.id

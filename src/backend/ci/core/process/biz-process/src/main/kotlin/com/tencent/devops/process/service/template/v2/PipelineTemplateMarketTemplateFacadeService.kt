@@ -337,7 +337,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             templateId = templateInfo.id,
             request = pipelineTemplateMarketCreateReq
         )
-        client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+        client.get(ServiceTemplateResource::class).createTemplateInstallHistory(
             TemplateVersionInstallHistoryInfo(
                 srcMarketTemplateProjectCode = srcTemplateProjectId,
                 srcMarketTemplateCode = srcTemplateId,

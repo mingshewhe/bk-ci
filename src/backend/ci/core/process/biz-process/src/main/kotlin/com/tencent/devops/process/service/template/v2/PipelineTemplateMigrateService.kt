@@ -56,10 +56,11 @@ import com.tencent.devops.process.service.template.TemplateFacadeService
 import com.tencent.devops.process.utils.PipelineVersionUtils
 import com.tencent.devops.project.api.service.ServiceProjectResource
 import com.tencent.devops.store.api.template.ServiceTemplateResource
-import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
+import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 import org.jooq.DSLContext
+import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.stereotype.Service
@@ -74,6 +75,7 @@ class PipelineTemplateMigrateService(
     val pipelineSettingDao: PipelineSettingDao,
     val pipelineTemplateGenerator: PipelineTemplateGenerator,
     val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    val pipelineTemplateSettingService: PipelineTemplateSettingService,
     val pipelineTemplateInfoService: PipelineTemplateInfoService,
     val templatePipelineDao: TemplatePipelineDao,
     val redisOperation: RedisOperation,
@@ -193,6 +195,9 @@ class PipelineTemplateMigrateService(
             var pipelineVersion = 0
             var triggerVersion = 0
 
+            val hasBeenPublished = latestTemplate.type == TemplateType.CUSTOMIZE.name &&
+                (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
+                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)
             templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
                 versionSequence += 1
                 val currentSetting = setting.copy(
@@ -210,7 +215,6 @@ class PipelineTemplateMigrateService(
                 ) ?: throw ErrorCodeException(
                     errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
                 )
-
                 val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
                 val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
 
@@ -298,7 +302,7 @@ class PipelineTemplateMigrateService(
                         errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
                     )
 
-                    client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+                    client.get(ServiceTemplateResource::class).createTemplateInstallHistory(
                         TemplateVersionInstallHistoryInfo(
                             srcMarketTemplateProjectCode = srcTemplateProjectId,
                             srcMarketTemplateCode = pipelineTemplateResource.srcTemplateId!!,
@@ -311,11 +315,8 @@ class PipelineTemplateMigrateService(
                         )
                     )
                 }
-
                 // 如果该模板已经上架过研发商店，需要记录发布的版本历史
-                if (latestTemplate.type == TemplateType.CUSTOMIZE.name &&
-                    (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
-                        marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)) {
+                if (hasBeenPublished) {
                     client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
                         TemplatePublishedVersionInfo(
                             projectCode = pipelineTemplateResource.projectId,
@@ -349,21 +350,43 @@ class PipelineTemplateMigrateService(
                     status = VersionStatus.RELEASED
                 )
             )
-            val deletedRecords = v2TemplateVersions.mapNotNull { resource ->
+            val deletedVersions = v2TemplateVersions.mapNotNull { resource ->
                 (if (isConstraint) resource.srcTemplateVersion else resource.version)?.toLong()
             }.filterNot { it in v1TemplateVersions }.takeIf { it.isNotEmpty() }
 
-            deletedRecords?.let {
+            deletedVersions?.let {
                 logger.info("template versions need to be deleted :$it")
-                pipelineTemplateResourceService.delete(
-                    commonCondition = PipelineTemplateResourceCommonCondition(
+                dslContext.transaction { configuration ->
+                    val transactionContext = DSL.using(configuration)
+                    pipelineTemplateResourceService.delete(
+                        transactionContext = transactionContext,
+                        commonCondition = PipelineTemplateResourceCommonCondition(
+                            projectId = projectId,
+                            templateId = templateId,
+                            srcTemplateVersions = if (isConstraint) it else null,
+                            versions = if (isConstraint) null else it,
+                            status = VersionStatus.RELEASED
+                        )
+                    )
+                    pipelineTemplateSettingService.pruneLatestVersions(
+                        transactionContext = transactionContext,
                         projectId = projectId,
                         templateId = templateId,
-                        srcTemplateVersions = if (isConstraint) it else null,
-                        versions = if (isConstraint) null else it,
-                        status = VersionStatus.RELEASED
+                        limit = deletedVersions.size
                     )
-                )
+                    if (isConstraint) {
+                        client.get(ServiceTemplateResource::class).deleteTemplateInstallHistoryVersions(
+                            srcTemplateCode = latestTemplate.srcTemplateId!!,
+                            templateCode = latestTemplate.id,
+                            versions = deletedVersions
+                        )
+                    } else if (hasBeenPublished) {
+                        client.get(ServiceTemplateResource::class).deleteMarketPublishedVersions(
+                            templateCode = latestTemplate.id,
+                            versions = deletedVersions
+                        )
+                    }
+                }
             }
         } finally {
             lock.unlock()

@@ -38,8 +38,6 @@ import com.tencent.devops.store.pojo.template.MarketTemplateResp
 import com.tencent.devops.store.pojo.template.MyTemplateItem
 import com.tencent.devops.store.pojo.template.MyTemplateItemResponse
 import com.tencent.devops.store.pojo.template.TemplateDetail
-import com.tencent.devops.store.pojo.template.TemplateVersionInstallHistoryInfo
-import com.tencent.devops.store.pojo.template.TemplatePublishedVersionInfo
 import com.tencent.devops.store.pojo.template.enums.MarketTemplateSortTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateRdTypeEnum
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -167,64 +165,4 @@ interface MarketTemplateService {
         templateId: String,
         templateCode: String
     ): Result<Boolean>
-
-    /**
-     *  创建模板发布历史
-     * */
-    fun createMarketTemplatePublishedVersion(
-        templatePublishedVersionInfo: TemplatePublishedVersionInfo
-    )
-
-    /**
-     * 获取模板最新上架版本
-     * */
-    fun getLatestMarketTemplatePublishedVersion(
-        templateCode: String
-    ): TemplatePublishedVersionInfo?
-
-    /**
-     * 获取模板最新上架版本历史
-     * */
-    fun listMarketTemplatePublishedHistory(
-        userId: String,
-        templateCode: String,
-        page: Int,
-        pageSize: Int
-    ): Page<TemplatePublishedVersionInfo>
-
-    /**
-     * 批量获取模板最新上架版本
-     * */
-    fun listLatestMarketTemplatePublishedVersions(
-        templateCodes: List<String>
-    ): List<TemplatePublishedVersionInfo>
-
-    /**
-     * 创建模板安装历史
-     * */
-    fun createTemplateVersionInstallHistory(
-        installHistoryInfo: TemplateVersionInstallHistoryInfo
-    )
-
-    /**
-     * 删除模板安装历史
-     * */
-    fun deleteTemplateVersionInstallHistory(templateCode: String)
-
-    /**
-     * 获取模板最近安装版本
-     * */
-    fun getRecentlyInstalledVersion(templateCode: String): TemplateVersionInstallHistoryInfo?
-
-    /**
-     * 获取模板最新安装版本
-     * */
-    fun getLatestInstalledVersion(templateCode: String): TemplateVersionInstallHistoryInfo?
-
-    /**
-     * 批量获取模板最新安装版本
-     * */
-    fun listLatestInstalledVersions(
-        templateCodes: List<String>
-    ): List<TemplateVersionInstallHistoryInfo>
 }

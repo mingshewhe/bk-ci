@@ -52,7 +52,7 @@ class PTemplateMarketInstallVersionPostProcessor(
                 templateId = srcTemplateId,
                 version = srcTemplateVersion
             )
-            client.get(ServiceTemplateResource::class).createTemplateVersionInstallHistory(
+            client.get(ServiceTemplateResource::class).createTemplateInstallHistory(
                 installHistoryInfo = TemplateVersionInstallHistoryInfo(
                     srcMarketTemplateProjectCode = srcTemplateProjectId,
                     srcMarketTemplateCode = srcTemplateId,

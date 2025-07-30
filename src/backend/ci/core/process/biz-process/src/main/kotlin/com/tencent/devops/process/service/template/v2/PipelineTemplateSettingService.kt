@@ -78,6 +78,21 @@ class PipelineTemplateSettingService @Autowired constructor(
         )
     }
 
+    // 修剪最新的版本记录。
+    fun pruneLatestVersions(
+        transactionContext: DSLContext? = null,
+        projectId: String,
+        templateId: String,
+        limit: Int
+    ) {
+        pipelineTemplateSettingDao.pruneLatestVersions(
+            dslContext = transactionContext ?: dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            limit = limit
+        )
+    }
+
     fun list(commonCondition: PipelineTemplateSettingCommonCondition): List<PipelineSetting> {
         return pipelineTemplateSettingDao.list(
             dslContext = dslContext,
