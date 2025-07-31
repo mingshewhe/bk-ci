@@ -2058,16 +2058,6 @@ class PipelineRepositoryService constructor(
             )
             // #4012 还原与模板的绑定关系
             templatePipelineDao.restore(dslContext = transactionContext, projectId = projectId, pipelineId = pipelineId)
-            templatePipelineDao.get(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = pipelineId
-            )?.let {
-                updateInstancePipelineCount(
-                    projectId = it.projectId,
-                    templateId = it.templateId
-                )
-            }
 
             // 只初始化相关信息
             val tasks = initModel(
@@ -2088,7 +2078,16 @@ class PipelineRepositoryService constructor(
                 modelTasks = tasks
             )
         }
-
+        templatePipelineDao.get(
+            dslContext = dslContext,
+            projectId = projectId,
+            pipelineId = pipelineId
+        )?.let {
+            updateInstancePipelineCount(
+                projectId = it.projectId,
+                templateId = it.templateId
+            )
+        }
         val version = pipelineInfoDao.getPipelineVersion(
             dslContext = dslContext,
             projectId = projectId,
