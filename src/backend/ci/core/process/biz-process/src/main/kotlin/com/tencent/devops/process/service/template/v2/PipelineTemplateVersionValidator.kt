@@ -28,6 +28,7 @@
 package com.tencent.devops.process.service.template.v2
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.extend.ModelCheckPlugin
@@ -55,7 +56,12 @@ class PipelineTemplateVersionValidator @Autowired constructor(
     fun validate(context: PipelineTemplateVersionCreateContext) {
         with(context) {
             validateBasicInfo()
-            validateModelInfo()
+            validateModelInfo(
+                userId = userId,
+                projectId = projectId,
+                templateModel = pTemplateResourceWithoutVersion.model,
+                pipelineAsCodeSettings = pTemplateSettingWithoutVersion.pipelineAsCodeSettings
+            )
         }
     }
 
@@ -73,12 +79,16 @@ class PipelineTemplateVersionValidator @Autowired constructor(
         }
     }
 
-    private fun PipelineTemplateVersionCreateContext.validateModelInfo() {
-        val templateModel = pTemplateResourceWithoutVersion.model
+    fun validateModelInfo(
+        userId: String,
+        projectId: String,
+        templateModel: ITemplateModel,
+        pipelineAsCodeSettings: PipelineAsCodeSettings?
+    ) {
         if (templateModel is Model) {
             val pipelineDialect = pipelineAsCodeService.getPipelineDialect(
                 projectId = projectId,
-                asCodeSettings = pTemplateSettingWithoutVersion.pipelineAsCodeSettings
+                asCodeSettings = pipelineAsCodeSettings
             )
             modelCheckPlugin.checkModelIntegrity(
                 model = templateModel,

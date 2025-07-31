@@ -161,10 +161,10 @@ interface ServicePipelineTemplateV2Resource {
         version: Long
     ): Result<Boolean>
 
-    @Operation(summary = "检查模板是否合法")
+    @Operation(summary = "上架研发商店-校验")
     @GET
-    @Path("/projects/{projectId}/templates/{templateId}/check")
-    fun checkTemplate(
+    @Path("/projects/{projectId}/templates/{templateId}/published/check")
+    fun checkWhenPublishedTemplate(
         @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @HeaderParam(AUTH_HEADER_USER_ID)
         userId: String,

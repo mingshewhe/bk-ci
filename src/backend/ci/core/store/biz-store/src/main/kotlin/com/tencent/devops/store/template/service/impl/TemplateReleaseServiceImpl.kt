@@ -556,7 +556,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
 
             // 校验模板是否合法
             if (templateVersion != null) {
-                val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkTemplate(
+                val checkResult = client.get(ServicePipelineTemplateV2Resource::class).checkWhenPublishedTemplate(
                     userId = userId,
                     projectId = projectCode,
                     templateId = templateCode,

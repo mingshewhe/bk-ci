@@ -87,7 +87,8 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineYamlRefResolver: PipelineYamlRefResolver,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val client: Client,
-    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService
+    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
+    private val pipelineTemplateVersionValidator: PipelineTemplateVersionValidator
 ) {
     fun create(
         userId: String,
@@ -993,7 +994,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
-    fun checkTemplate(
+    fun checkWhenPublishedTemplate(
         projectId: String,
         userId: String,
         templateId: String,
@@ -1004,10 +1005,20 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             version = version
         )
-        // todo 检查是否已经上架过
-        if (templateResource.storeStatus == TemplateStatusEnum.RELEASED)
+        val setting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = templateResource.settingVersion
+        )
+        if (templateResource.storeStatus == TemplateStatusEnum.RELEASED) {
             throw ErrorCodeException(errorCode = "该版本已经发布")
-        // todo 检查模型
+        }
+        pipelineTemplateVersionValidator.validateModelInfo(
+            userId = userId,
+            projectId = projectId,
+            templateModel = templateResource.model,
+            pipelineAsCodeSettings = setting.pipelineAsCodeSettings
+        )
         return true
     }
 

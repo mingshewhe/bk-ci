@@ -132,14 +132,14 @@ class ServicePipelineTemplateV2ResourceImpl(
         return Result(true)
     }
 
-    override fun checkTemplate(
+    override fun checkWhenPublishedTemplate(
         userId: String,
         projectId: String,
         templateId: String,
         version: Long
     ): Result<Boolean> {
         return Result(
-            pipelineTemplateFacadeService.checkTemplate(
+            pipelineTemplateFacadeService.checkWhenPublishedTemplate(
                 projectId = projectId,
                 userId = userId,
                 templateId = templateId,
