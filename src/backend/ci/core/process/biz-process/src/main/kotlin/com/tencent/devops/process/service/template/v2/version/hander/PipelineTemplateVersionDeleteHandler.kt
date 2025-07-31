@@ -27,7 +27,13 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.audit.ActionAuditContent
+import com.tencent.devops.common.auth.api.ActionId
+import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.redis.RedisOperation
@@ -63,7 +69,17 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val templatePipelineDao: TemplatePipelineDao,
     private val dslContext: DSLContext
 ) {
-
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_DELETE,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceNames = "#context?.templateId",
+            instanceIds = "#context?.templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
+    )
     fun handle(context: PipelineTemplateVersionDeleteContext) {
         with(context) {
             logger.info(

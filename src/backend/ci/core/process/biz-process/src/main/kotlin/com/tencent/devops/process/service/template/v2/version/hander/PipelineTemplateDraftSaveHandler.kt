@@ -27,7 +27,14 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.audit.ActionAuditContent
+import com.tencent.devops.common.auth.api.ActionId
+import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
@@ -60,6 +67,15 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (pTemplateResourceWithoutVersion.status != VersionStatus.COMMITTING) {
@@ -103,6 +119,9 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 Pair(updateDraftVersion(draftResource), OperationLogType.UPDATE_DRAFT_VERSION)
             }
         }
+        ActionAuditContext.current()
+            .setInstanceId(templateId)
+            .setInstanceName(pipelineTemplateInfo.name)
         return DeployTemplateResult(
             projectId = projectId,
             userId = userId,

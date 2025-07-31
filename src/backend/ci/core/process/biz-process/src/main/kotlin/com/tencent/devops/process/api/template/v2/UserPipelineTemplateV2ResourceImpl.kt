@@ -27,9 +27,11 @@
 
 package com.tencent.devops.process.api.template.v2
 
+import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.auth.api.ActionId
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
@@ -68,6 +70,7 @@ class UserPipelineTemplateV2ResourceImpl(
     private val templateInfoService: PipelineTemplateInfoService,
     private val pipelineOperationLogService: PipelineOperationLogService
 ) : UserPipelineTemplateV2Resource {
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_CREATE)
     override fun create(
         userId: String,
         projectId: String,
@@ -81,6 +84,7 @@ class UserPipelineTemplateV2ResourceImpl(
         return Result(templateFacadeService.create(userId = userId, projectId = projectId, request = request))
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_CREATE)
     override fun createByMarket(
         userId: String,
         projectId: String,
@@ -102,6 +106,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun copy(
         userId: String,
         projectId: String,
@@ -127,6 +132,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_DELETE)
     override fun delete(
         userId: String,
         projectId: String,
@@ -148,6 +154,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun saveDraft(
         userId: String,
         projectId: String,
@@ -186,6 +193,7 @@ class UserPipelineTemplateV2ResourceImpl(
         return Result(templateFacadeService.listTemplateSimpleInfos(userId, request))
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getTemplateDetails(
         userId: String,
         projectId: String,
@@ -208,12 +216,19 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getLatestTemplateDetails(
         userId: String,
         projectId: String,
         templateId: String
     ): Result<PipelineTemplateDetailsResponse> {
         logger.info("get latest template details {}|{}|{}", userId, projectId, templateId)
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
         return Result(
             templateFacadeService.getTemplateDetails(
                 projectId = projectId,
@@ -223,12 +238,19 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getRefTemplateDetails(
         userId: String,
         projectId: String,
         templateId: String,
         ref: String
     ): Result<PipelineTemplateDetailsResponse> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
         return Result(
             templateFacadeService.getRefTemplateDetails(
                 userId = userId,
@@ -239,6 +261,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getTemplateInfo(
         userId: String,
         projectId: String,
@@ -279,6 +302,12 @@ class UserPipelineTemplateV2ResourceImpl(
         request: PipelineTemplateResourceCommonCondition
     ): Result<Page<PipelineVersionSimple>> {
         logger.info("get template versions {}|{}|{}|{}", userId, projectId, templateId, request)
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
         return Result(templateFacadeService.getTemplateVersions(request))
     }
 
@@ -337,6 +366,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun releaseDraftVersion(
         userId: String,
         projectId: String,
@@ -361,6 +391,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getPipelineOperationLogs(
         userId: String,
         projectId: String,
@@ -369,6 +400,12 @@ class UserPipelineTemplateV2ResourceImpl(
         page: Int?,
         pageSize: Int?
     ): Result<Page<PipelineOperationDetail>> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
         return Result(
             templateFacadeService.getOperationLogsInPage(
                 userId = userId,
@@ -381,11 +418,18 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun operatorList(
         userId: String,
         projectId: String,
         templateId: String
     ): Result<List<String>> {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
         return Result(
             pipelineOperationLogService.getOperatorInPage(
                 projectId = projectId,
@@ -393,7 +437,7 @@ class UserPipelineTemplateV2ResourceImpl(
             )
         )
     }
-
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun rollbackDraftFromVersion(
         userId: String,
         projectId: String,
@@ -416,6 +460,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_DELETE)
     override fun deleteVersion(userId: String, projectId: String, templateId: String, version: Long): Result<Boolean> {
         permissionService.checkPipelineTemplatePermissionWithMessage(
             userId = userId,
@@ -470,13 +515,19 @@ class UserPipelineTemplateV2ResourceImpl(
             )
         )
     }
-
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun exportTemplate(
         userId: String,
         projectId: String,
         templateId: String,
         version: Long?
     ): Response {
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.EDIT,
+            templateId = templateId
+        )
         return templateFacadeService.exportTemplate(
             userId = userId,
             projectId = projectId,
@@ -485,6 +536,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun transformTemplateToCustom(
         userId: String,
         projectId: String,
@@ -505,6 +557,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
     override fun updateUpgradeStrategy(
         userId: String,
         projectId: String,

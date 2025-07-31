@@ -1,12 +1,18 @@
 package com.tencent.devops.process.service.template.v2
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLLimit
 import com.tencent.devops.common.api.model.SQLPage
 import com.tencent.devops.common.api.pojo.Page
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.PageUtil
+import com.tencent.devops.common.audit.ActionAuditContent
+import com.tencent.devops.common.auth.api.ActionId
 import com.tencent.devops.common.auth.api.AuthPermission
+import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
@@ -481,6 +487,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         takeIf { it.isNotEmpty() }?.let { fetch(it.map { t -> t.id }) } ?: emptyList()
 
     // 查看模板详情
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_VIEW,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_VIEW_CONTENT
+    )
     fun getTemplateDetails(
         projectId: String,
         templateId: String,
@@ -544,6 +561,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_VIEW,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_VIEW_CONTENT
+    )
     fun getRefTemplateDetails(
         userId: String,
         projectId: String,
@@ -569,6 +597,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_VIEW,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_VIEW_CONTENT
+    )
     fun getTemplateInfo(
         userId: String,
         projectId: String,
@@ -792,6 +831,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EXPORT_CONTENT
+    )
     fun exportTemplate(
         userId: String,
         projectId: String,
@@ -837,6 +887,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun transformTemplateToCustom(
         userId: String,
         projectId: String,
@@ -857,6 +918,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_VIEW,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_VIEW_CONTENT
+    )
     fun getOperationLogsInPage(
         userId: String,
         projectId: String,
@@ -939,6 +1011,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
         return true
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_VIEW,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceIds = "#templateId",
+            instanceNames = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun updateUpgradeStrategy(
         userId: String,
         projectId: String,
