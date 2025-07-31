@@ -67,13 +67,7 @@ class PipelineTemplateVersionManager @Autowired constructor(
             request = request
         )
         pipelineTemplateVersionValidator.validate(context = context)
-        return getHandler(context)
-            .handle(context = context)
-            .also {
-                ActionAuditContext.current()
-                    .setInstanceId(it.templateId)
-                    .setInstanceName(it.templateName)
-            }
+        return getHandler(context).handle(context = context)
     }
 
     fun deleteVersion(

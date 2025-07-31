@@ -4,6 +4,7 @@ import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.devops.common.api.constant.CommonMessageCode
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLLimit
 import com.tencent.devops.common.api.model.SQLPage
@@ -113,7 +114,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     @ActionAuditRecord(
@@ -135,7 +140,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     @ActionAuditRecord(
@@ -155,7 +164,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     /**
@@ -179,7 +192,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     @ActionAuditRecord(
@@ -211,7 +228,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             userId = userId,
             projectId = projectId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     @ActionAuditRecord(
@@ -245,7 +266,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             projectId = projectId,
             templateId = templateId,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     fun preFetchDraftVersion(
@@ -312,7 +337,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             version = version,
             request = request
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     /**
@@ -337,7 +366,11 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId,
             version = version,
             request = PipelineTemplateDraftRollbackReq()
-        )
+        ).also {
+            ActionAuditContext.current()
+                .setInstanceId(it.templateId)
+                .setInstanceName(it.templateName)
+        }
     }
 
     /**
