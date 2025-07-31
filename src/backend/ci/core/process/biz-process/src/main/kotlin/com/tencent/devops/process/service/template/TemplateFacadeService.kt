@@ -129,7 +129,7 @@ import com.tencent.devops.process.service.PipelineRemoteAuthService
 import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMigrateService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
@@ -187,7 +187,7 @@ class TemplateFacadeService @Autowired constructor(
     private val templateSettingService: TemplateSettingService,
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
-    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
+    private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
     private val pipelineTemplateMigrateService: PipelineTemplateMigrateService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) {
@@ -2537,7 +2537,7 @@ class TemplateFacadeService @Autowired constructor(
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
     ): Boolean {
-        pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReferenceBasicInfo(
+        pipelineTemplateMarketFacadeService.updateMarketTemplateReferenceBasicInfo(
             userId = userId,
             projectId = projectId,
             updateMarketTemplateRequest = updateMarketTemplateRequest

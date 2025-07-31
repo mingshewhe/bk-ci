@@ -27,7 +27,9 @@
 
 package com.tencent.devops.process.api.template.v2
 
+import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.auth.api.ActionId
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
@@ -38,19 +40,19 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateInfoResponse
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateMarketCreateReq
 import com.tencent.devops.process.service.template.v2.PipelineTemplateFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
 
 @RestResource
 class ServicePipelineTemplateV2ResourceImpl(
-    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
+    private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService
 ) : ServicePipelineTemplateV2Resource {
     override fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Result<Boolean> {
-        return Result(pipelineTemplateMarketTemplateFacadeService.updateMarketTemplateReferenceV2(request))
+        return Result(pipelineTemplateMarketFacadeService.updateMarketTemplateReferenceV2(request))
     }
 
     override fun getTemplateDetails(
@@ -73,7 +75,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         templateId: String,
         version: Long
     ): Result<String?> {
-        return pipelineTemplateMarketTemplateFacadeService.checkImageReleaseStatus(
+        return pipelineTemplateMarketFacadeService.checkImageReleaseStatus(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
@@ -93,7 +95,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         version: Long?
     ): Result<Boolean> {
         return Result(
-            pipelineTemplateMarketTemplateFacadeService.updateStoreStatus(
+            pipelineTemplateMarketFacadeService.updateStoreStatus(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,
@@ -109,7 +111,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         strategy: UpgradeStrategyEnum
     ): Result<Boolean> {
         return Result(
-            pipelineTemplateMarketTemplateFacadeService.updatePublishStrategy(
+            pipelineTemplateMarketFacadeService.updatePublishStrategy(
                 userId = userId,
                 templateId = templateId,
                 strategy = strategy
@@ -123,7 +125,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         templateId: String,
         version: Long
     ): Result<Boolean> {
-        pipelineTemplateMarketTemplateFacadeService.releaseTemplateVersionPostProcess(
+        pipelineTemplateMarketFacadeService.releaseTemplateVersionPostProcess(
             userId = userId,
             projectId = projectId,
             templateId = templateId,
@@ -176,6 +178,7 @@ class ServicePipelineTemplateV2ResourceImpl(
         )
     }
 
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_CREATE)
     override fun createByMarket(
         userId: String,
         projectId: String,

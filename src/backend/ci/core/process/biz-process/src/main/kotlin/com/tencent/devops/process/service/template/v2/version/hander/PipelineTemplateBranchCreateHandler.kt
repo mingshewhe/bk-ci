@@ -37,15 +37,6 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
         return context.versionAction == PipelineVersionAction.CREATE_BRANCH
     }
 
-    @ActionAuditRecord(
-        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
-        instance = AuditInstanceRecord(
-            resourceType = ResourceTypeId.PIPELINE_TEMPLATE
-        ),
-        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
-        scopeId = "#projectId",
-        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
-    )
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (!enablePac) {
@@ -109,9 +100,6 @@ class PipelineTemplateBranchCreateHandler @Autowired constructor(
             )
             resourceOnlyVersion
         }
-        ActionAuditContext.current()
-            .setInstanceId(templateId)
-            .setInstanceName(pipelineTemplateInfo.name)
         return DeployTemplateResult(
             projectId = projectId,
             userId = userId,

@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.template.v2.version
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommonCondition
@@ -66,7 +67,13 @@ class PipelineTemplateVersionManager @Autowired constructor(
             request = request
         )
         pipelineTemplateVersionValidator.validate(context = context)
-        return getHandler(context).handle(context = context)
+        return getHandler(context)
+            .handle(context = context)
+            .also {
+                ActionAuditContext.current()
+                    .setInstanceId(it.templateId)
+                    .setInstanceName(it.templateName)
+            }
     }
 
     fun deleteVersion(

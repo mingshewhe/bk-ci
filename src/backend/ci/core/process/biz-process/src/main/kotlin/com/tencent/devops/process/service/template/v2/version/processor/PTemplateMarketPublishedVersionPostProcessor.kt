@@ -5,7 +5,7 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketTemplateFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
 import com.tencent.devops.store.api.template.ServiceTemplateResource
 import com.tencent.devops.store.pojo.template.enums.TemplateStatusEnum
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 @Service
 class PTemplateMarketPublishedVersionPostProcessor(
     @Lazy
-    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
+    private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val client: Client
 ) : PTemplateVersionCreatePostProcessor {
@@ -43,7 +43,7 @@ class PTemplateMarketPublishedVersionPostProcessor(
             if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
 
-            pipelineTemplateMarketTemplateFacadeService.releaseTemplateVersionPostProcess(
+            pipelineTemplateMarketFacadeService.releaseTemplateVersionPostProcess(
                 userId = userId,
                 projectId = projectId,
                 templateId = templateId,

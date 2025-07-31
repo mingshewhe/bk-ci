@@ -39,7 +39,7 @@ import java.util.concurrent.Executors
  * 流水线市场模版门面类
  */
 @Service
-class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
+class PipelineTemplateMarketFacadeService @Autowired constructor(
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val dslContext: DSLContext,
@@ -363,7 +363,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
             version = version
         )
         // todo 二期，局部模板需要进行改造
-        if (template.type == PipelineTemplateType.PIPELINE)
+        if (template.type != PipelineTemplateType.PIPELINE)
             return Result(null)
         val templateModel = template as Model
         var code: String? = null
@@ -404,7 +404,7 @@ class PipelineTemplateMarketTemplateFacadeService @Autowired constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PipelineTemplateMarketTemplateFacadeService::class.java)
+        private val logger = LoggerFactory.getLogger(PipelineTemplateMarketFacadeService::class.java)
         private val updateMarketTemplateExecutorService = Executors.newFixedThreadPool(3)
     }
 }

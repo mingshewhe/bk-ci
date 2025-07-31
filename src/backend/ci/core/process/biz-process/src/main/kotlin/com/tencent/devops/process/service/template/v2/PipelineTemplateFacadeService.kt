@@ -87,9 +87,16 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineYamlRefResolver: PipelineYamlRefResolver,
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val client: Client,
-    private val pipelineTemplateMarketTemplateFacadeService: PipelineTemplateMarketTemplateFacadeService,
+    private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
     private val pipelineTemplateVersionValidator: PipelineTemplateVersionValidator
 ) {
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_CREATE_CONTENT
+    )
     fun create(
         userId: String,
         projectId: String,
@@ -103,6 +110,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_CREATE_CONTENT
+    )
     fun createByMarket(
         userId: String,
         projectId: String,
@@ -118,6 +132,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_COPY_CONTENT
+    )
     fun copy(
         userId: String,
         projectId: String,
@@ -134,6 +155,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 保存草稿
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun saveDraft(
         userId: String,
         projectId: String,
@@ -148,6 +176,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_CREATE_CONTENT
+    )
     fun createYamlTemplate(
         userId: String,
         projectId: String,
@@ -173,6 +208,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
         )
     }
 
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun updateYamlTemplate(
         userId: String,
         projectId: String,
@@ -243,6 +285,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 发布草稿
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun releaseDraft(
         userId: String,
         projectId: String,
@@ -263,6 +312,13 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 回滚草稿到指定版本
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
+        instance = AuditInstanceRecord(resourceType = ResourceTypeId.PIPELINE_TEMPLATE),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
+    )
     fun rollbackDraft(
         userId: String,
         projectId: String,
@@ -281,6 +337,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 删除模版版本
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_DELETE,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceNames = "#templateId",
+            instanceIds = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
+    )
     fun deleteVersion(
         userId: String,
         projectId: String,
@@ -299,6 +366,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 删除模版所有版本
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_DELETE,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceNames = "#templateId",
+            instanceIds = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
+    )
     fun deleteTemplate(
         userId: String,
         projectId: String,
@@ -315,6 +393,17 @@ class PipelineTemplateFacadeService @Autowired constructor(
     /**
      * 将分支版本置为不活跃
      */
+    @ActionAuditRecord(
+        actionId = ActionId.PIPELINE_TEMPLATE_DELETE,
+        instance = AuditInstanceRecord(
+            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
+            instanceNames = "#templateId",
+            instanceIds = "#templateId"
+        ),
+        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
+        scopeId = "#projectId",
+        content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
+    )
     fun inactiveBranch(
         userId: String,
         projectId: String,
@@ -1060,7 +1149,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
                 projectId = templateInfo.srcTemplateProjectId!!,
                 templateId = templateInfo.srcTemplateId!!
             )!!
-            pipelineTemplateMarketTemplateFacadeService.installNewVersion(
+            pipelineTemplateMarketFacadeService.installNewVersion(
                 templateInfo = templateInfo,
                 srcTemplateProjectId = srcTemplateResource.projectId,
                 srcTemplateId = srcTemplateResource.templateId,

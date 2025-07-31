@@ -67,15 +67,6 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
         return context.versionAction == PipelineVersionAction.SAVE_DRAFT
     }
 
-    @ActionAuditRecord(
-        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
-        instance = AuditInstanceRecord(
-            resourceType = ResourceTypeId.PIPELINE_TEMPLATE
-        ),
-        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
-        scopeId = "#projectId",
-        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
-    )
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (pTemplateResourceWithoutVersion.status != VersionStatus.COMMITTING) {
@@ -119,9 +110,6 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 Pair(updateDraftVersion(draftResource), OperationLogType.UPDATE_DRAFT_VERSION)
             }
         }
-        ActionAuditContext.current()
-            .setInstanceId(templateId)
-            .setInstanceName(pipelineTemplateInfo.name)
         return DeployTemplateResult(
             projectId = projectId,
             userId = userId,

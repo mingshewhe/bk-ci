@@ -72,15 +72,6 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
     override fun support(context: PipelineTemplateVersionCreateContext) =
         context.versionAction == PipelineVersionAction.RELEASE_DRAFT
 
-    @ActionAuditRecord(
-        actionId = ActionId.PIPELINE_TEMPLATE_EDIT,
-        instance = AuditInstanceRecord(
-            resourceType = ResourceTypeId.PIPELINE_TEMPLATE
-        ),
-        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
-        scopeId = "#projectId",
-        content = ActionAuditContent.PIPELINE_TEMPLATE_EDIT_CONTENT
-    )
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (version == null) {
@@ -161,9 +152,6 @@ class PipelineTemplateDraftReleaseHandler @Autowired constructor(
 
         // 发布yaml文件
         val yamlFileReleaseResult = releaseYamlFile(resourceOnlyVersion = resourceOnlyVersion)
-        ActionAuditContext.current()
-            .setInstanceId(templateId)
-            .setInstanceName(pipelineTemplateInfo.name)
         return DeployTemplateResult(
             projectId = projectId,
             userId = userId,

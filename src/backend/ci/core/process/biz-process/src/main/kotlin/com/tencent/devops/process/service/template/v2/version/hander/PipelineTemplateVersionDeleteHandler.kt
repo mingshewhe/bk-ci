@@ -69,17 +69,6 @@ class PipelineTemplateVersionDeleteHandler @Autowired constructor(
     private val templatePipelineDao: TemplatePipelineDao,
     private val dslContext: DSLContext
 ) {
-    @ActionAuditRecord(
-        actionId = ActionId.PIPELINE_TEMPLATE_DELETE,
-        instance = AuditInstanceRecord(
-            resourceType = ResourceTypeId.PIPELINE_TEMPLATE,
-            instanceNames = "#context?.templateId",
-            instanceIds = "#context?.templateId"
-        ),
-        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
-        scopeId = "#projectId",
-        content = ActionAuditContent.PIPELINE_TEMPLATE_DELETE_CONTENT
-    )
     fun handle(context: PipelineTemplateVersionDeleteContext) {
         with(context) {
             logger.info(

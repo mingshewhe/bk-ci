@@ -65,15 +65,6 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         return context.versionAction == PipelineVersionAction.CREATE_RELEASE
     }
 
-    @ActionAuditRecord(
-        actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
-        instance = AuditInstanceRecord(
-            resourceType = ResourceTypeId.PIPELINE_TEMPLATE
-        ),
-        attributes = [AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId")],
-        scopeId = "#projectId",
-        content = ActionAuditContent.PIPELINE_TEMPLATE_CREATE_CONTENT
-    )
     override fun handle(context: PipelineTemplateVersionCreateContext): DeployTemplateResult {
         with(context) {
             if (pTemplateResourceWithoutVersion.status != VersionStatus.RELEASED) {
@@ -109,9 +100,6 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
         } else {
             createReleaseVersion()
         }
-        ActionAuditContext.current()
-            .setInstanceId(templateId)
-            .setInstanceName(pipelineTemplateInfo.name)
         return DeployTemplateResult(
             projectId = projectId,
             userId = userId,

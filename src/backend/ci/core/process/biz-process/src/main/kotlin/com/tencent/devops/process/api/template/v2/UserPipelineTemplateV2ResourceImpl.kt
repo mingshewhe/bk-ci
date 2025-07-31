@@ -106,7 +106,7 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
-    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_EDIT)
+    @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_CREATE)
     override fun copy(
         userId: String,
         projectId: String,
