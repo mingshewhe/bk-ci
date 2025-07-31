@@ -35,7 +35,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
@@ -93,7 +93,7 @@ class PipelineDraftSaveReqConvert(
                 if (modelAndSetting == null) {
                     throw IllegalArgumentException("modelAndSetting can not be null")
                 }
-                val newModel = createPipelineModel(pipelineId, projectId)
+                val newModel = createPipelineModel(projectId = projectId, pipelineId = pipelineId)
                 val newModelAndSetting = PipelineModelAndSetting(
                     model = newModel,
                     setting = modelAndSetting!!.setting
@@ -155,23 +155,21 @@ class PipelineDraftSaveReqConvert(
     }
 
     private fun PipelineDraftSaveReq.createPipelineModel(
-        pipelineId: String?,
-        projectId: String
+        projectId: String,
+        pipelineId: String?
     ): Model {
+        // 前端传过来的model是完整的model,如果是模版实例化的,需要转换成引用的方式
         val model = modelAndSetting!!.model
 
-        val overrideParamKeys = model.overrideTemplateField?.paramKeys
+        val overrideParamIds = model.overrideTemplateField?.paramIds
         val templateVariables = model.getTriggerContainer().params.filter {
-            overrideParamKeys?.contains(it.id) ?: false
+            overrideParamIds?.contains(it.id) ?: false
         }.map { TemplateVariable(it) }
 
-        val overrideTriggerTaskIds = model.overrideTemplateField?.triggerTaskIds
-        val triggerConfigs = model.getTriggerContainer().elements.filter {
-            overrideTriggerTaskIds?.contains(it.id) ?: false
-        }.associateBy(
-            { it.stepId ?: it.getAtomCode() },
-            { InstanceTriggerConfig(it) }
-        )
+        val overrideTriggerStepIds = model.overrideTemplateField?.triggerStepIds
+        val triggerConfigs = model.getTriggerContainer().elements.filter { element ->
+            element.stepId?.let { overrideTriggerStepIds?.contains(it) } ?: false
+        }.map { TemplateInstanceTriggerConfig(it) }
 
         return if (model.fromTemplate == true) {
             val refType = when {

@@ -261,6 +261,22 @@ class UserPipelineTemplateV2ResourceImpl(
         )
     }
 
+    override fun getPipelineRelatedTemplateDetails(
+        userId: String,
+        projectId: String,
+        pipelineId: String,
+        version: Int
+    ): Result<PipelineTemplateDetailsResponse> {
+        return Result(
+            templateFacadeService.getPipelineRelatedTemplateDetails(
+                userId = userId,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = version
+            )
+        )
+    }
+
     @AuditEntry(actionId = ActionId.PIPELINE_TEMPLATE_VIEW)
     override fun getTemplateInfo(
         userId: String,

@@ -25,6 +25,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
+import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
@@ -54,6 +55,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResourceCommo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdateInfo
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
+import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.pipeline.PipelineYamlRefResolver
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
@@ -88,7 +90,9 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplatePersistenceService: PipelineTemplatePersistenceService,
     private val client: Client,
     private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
-    private val pipelineTemplateVersionValidator: PipelineTemplateVersionValidator
+    private val pipelineTemplateVersionValidator: PipelineTemplateVersionValidator,
+    private val pipelineRepositoryService: PipelineRepositoryService,
+    private val pipelineModelParser: PipelineModelParser
 ) {
     @ActionAuditRecord(
         actionId = ActionId.PIPELINE_TEMPLATE_CREATE,
@@ -698,6 +702,54 @@ class PipelineTemplateFacadeService @Autowired constructor(
         scopeId = "#projectId",
         content = ActionAuditContent.PIPELINE_TEMPLATE_VIEW_CONTENT
     )
+    fun getPipelineRelatedTemplateDetails(
+        userId: String,
+        projectId: String,
+        pipelineId: String,
+        version: Int
+    ): PipelineTemplateDetailsResponse {
+        val permission = AuthPermission.VIEW
+        pipelinePermissionService.validPipelinePermission(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            permission = permission,
+            message = MessageUtil.getMessageByLocale(
+                CommonMessageCode.USER_NOT_PERMISSIONS_OPERATE_PIPELINE,
+                I18nUtil.getLanguage(userId),
+                arrayOf(
+                    userId,
+                    projectId,
+                    permission.getI18n(I18nUtil.getLanguage(userId)),
+                    pipelineId
+                )
+            )
+        )
+        val resource = pipelineRepositoryService.getPipelineResourceVersion(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            version = version,
+            includeDraft = true
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_VERSION_EXISTS_BY_ID,
+            params = arrayOf(version.toString())
+        )
+        if (resource.model.fromTemplate != true) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_NOT_RELATED_TEMPLATE
+            )
+        }
+        val templateResource = pipelineModelParser.parseTemplateDescriptor(
+            projectId = projectId,
+            descriptor = resource.model
+        )
+        return getTemplateDetails(
+            projectId = projectId,
+            templateId = templateResource.templateId,
+            version = templateResource.version
+        )
+    }
+
     fun getTemplateInfo(
         userId: String,
         projectId: String,

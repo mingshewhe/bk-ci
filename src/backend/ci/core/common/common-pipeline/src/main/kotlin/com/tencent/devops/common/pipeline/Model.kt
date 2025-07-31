@@ -38,7 +38,7 @@ import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
@@ -92,9 +92,9 @@ data class Model(
     override var parsedTemplateVersion: Long? = null,
     /* 模版实例化时触发器变量 */
     @get:Schema(title = "触发器配置", required = false)
-    var triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
+    var triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
     /**
-     * 覆盖模版字段
+     * 流水线覆盖模版字段
      */
     @get:Schema(title = "覆盖模版字段", required = false)
     var overrideTemplateField: TemplateField? = null

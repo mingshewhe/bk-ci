@@ -28,14 +28,13 @@
 package com.tencent.devops.process.engine.dao.template
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.tencent.devops.common.api.constant.OR
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.UUIDUtil
 import com.tencent.devops.common.api.util.timestampmilli
 import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.model.process.tables.TTemplateInstanceItem
 import com.tencent.devops.model.process.tables.records.TTemplateInstanceItemRecord
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
@@ -375,7 +374,7 @@ class TemplateInstanceItemDao {
             status = TemplateInstanceStatus.valueOf(status),
             params = params,
             triggerConfigs = triggerConfigs?.let {
-                JsonUtil.to(it, object : TypeReference<Map<String, InstanceTriggerConfig>>() {})
+                JsonUtil.to(it, object : TypeReference<List<TemplateInstanceTriggerConfig>>() {})
             },
             overrideTemplateField = overrideTemplateField?.let {
                 JsonUtil.to(it, TemplateField::class.java)

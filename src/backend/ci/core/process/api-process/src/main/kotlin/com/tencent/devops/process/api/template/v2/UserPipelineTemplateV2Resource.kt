@@ -205,6 +205,24 @@ interface UserPipelineTemplateV2Resource {
         ref: String
     ): Result<PipelineTemplateDetailsResponse>
 
+    @Operation(summary = "根据流水线版本查看关联的模版详情,用户流水线参数、触发器和设置改自定义时,查看模版的值")
+    @GET
+    @Path("/pipelines/{pipelineId}/versions/{version}/related/details")
+    fun getPipelineRelatedTemplateDetails(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "流水线ID", required = true)
+        @PathParam("pipelineId")
+        pipelineId: String,
+        @Parameter(description = "流水线编排版本", required = true)
+        @PathParam("version")
+        version: Int
+    ): Result<PipelineTemplateDetailsResponse>
+
     @Operation(summary = "查看模板基本信息")
     @GET
     @Path("/{templateId}/info/")

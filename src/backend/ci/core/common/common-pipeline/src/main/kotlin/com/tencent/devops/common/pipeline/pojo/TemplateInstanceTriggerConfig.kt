@@ -32,7 +32,9 @@ import com.tencent.devops.common.pipeline.pojo.element.trigger.TimerTriggerEleme
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "实例化-触发器配置")
-data class InstanceTriggerConfig(
+data class TemplateInstanceTriggerConfig(
+    @get:Schema(title = "插件stepId")
+    val stepId: String? = null,
     @get:Schema(title = "启用或禁用")
     val disabled: Boolean? = null,
 
@@ -41,6 +43,7 @@ data class InstanceTriggerConfig(
     val variables: Map<String, Any>? = null,
 ) {
     constructor(element: Element) : this(
+        stepId = element.stepId,
         disabled = element.elementEnabled(),
         cron = if (element is TimerTriggerElement) {
             element.advanceExpression?.firstOrNull()

@@ -35,7 +35,7 @@ import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -198,8 +198,8 @@ class ModelTransfer @Autowired constructor(
         val template = input.yaml.formatExtends()?.template
         if (template != null) {
             model.overrideTemplateField = TemplateField(
-                paramKeys = template.variables?.keys?.toList(),
-                triggerTaskIds = template.triggerConfig?.keys?.toList(),
+                paramIds = template.variables?.keys?.toList(),
+                triggerStepIds = template.triggerConfig?.keys?.toList(),
                 settingGroups = input.yaml.settingGroups(),
             )
             model.fromTemplate = true
@@ -214,8 +214,9 @@ class ModelTransfer @Autowired constructor(
                     allowModifyAtStartup = it.value.allowModifyAtStartup ?: false
                 )
             }
-            model.triggerConfigs = template.triggerConfig?.mapValues {
-                InstanceTriggerConfig(
+            model.triggerConfigs = template.triggerConfig?.map {
+                TemplateInstanceTriggerConfig(
+                    stepId = it.key,
                     disabled = it.value.disabled,
                     cron = it.value.cron,
                     variables = it.value.variables
@@ -355,13 +356,16 @@ class ModelTransfer @Autowired constructor(
                         { it.key },
                         { PreTemplateVariable(it.value, it.allowModifyAtStartup) }
                     ),
-                    triggerConfig = triggerConfigs?.mapValues {
-                        ExtendsTriggerConfig(
-                            disabled = it.value.disabled,
-                            cron = it.value.cron,
-                            variables = it.value.variables
-                        )
-                    }
+                    triggerConfig = triggerConfigs?.filter { it.stepId != null }?.associateBy(
+                        { it.stepId!! },
+                        {
+                            ExtendsTriggerConfig(
+                                disabled = it.disabled,
+                                cron = it.cron,
+                                variables = it.variables
+                            )
+                        }
+                    )
                 )
             )
         }

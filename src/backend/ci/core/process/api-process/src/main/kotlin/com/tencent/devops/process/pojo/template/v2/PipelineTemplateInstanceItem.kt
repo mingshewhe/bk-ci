@@ -3,7 +3,7 @@ package com.tencent.devops.process.pojo.template.v2
 import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.process.pojo.template.TemplateInstanceStatus
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -25,7 +25,7 @@ data class PipelineTemplateInstanceItem(
     @get:Schema(title = "实例化参数", required = true)
     val params: List<BuildFormProperty>?,
     @get:Schema(title = "流水线触发器配置", required = false)
-    val triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
+    val triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
     @get:Schema(title = "覆盖模版字段", required = false)
     val overrideTemplateField: TemplateField? = null,
     @get:Schema(title = "yaml文件路径", required = true)

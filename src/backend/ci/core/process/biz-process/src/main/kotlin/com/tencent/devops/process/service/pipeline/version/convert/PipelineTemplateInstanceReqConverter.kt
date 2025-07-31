@@ -181,10 +181,17 @@ class PipelineTemplateInstanceReqConverter(
                 )
             }
 
-            val overrideParamKeys = overrideTemplateField?.paramKeys
+            // 前端会把所有的参数都传过来，这里只需要保留流水线自定义的参数
+            val overrideParamKeys = overrideTemplateField?.paramIds
             val templateVariables = params?.filter {
                 overrideParamKeys?.contains(it.id) ?: false
             }?.map { TemplateVariable(it) }
+
+            // 前端会把所有的触发器都传过来,这里只需要保留流水线自定义的触发器
+            val overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
+            val filterTriggerConfigs = triggerConfigs?.filter {
+                it.stepId != null && overrideTriggerStepIds?.contains(it.stepId) ?: false
+            }
 
             val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
                 name = pipelineName,
@@ -195,7 +202,7 @@ class PipelineTemplateInstanceReqConverter(
                 templatePath = templatePath,
                 templateRef = templateRef,
                 templateVariables = templateVariables,
-                triggerConfigs = triggerConfigs,
+                triggerConfigs = filterTriggerConfigs,
                 overrideTemplateField = overrideTemplateField
             )
             val pipelineSettingWithoutVersion = getPipelineSetting(
@@ -218,15 +225,16 @@ class PipelineTemplateInstanceReqConverter(
 
             // 生成实例化model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
+
             val instanceModel = PipelineUtils.instanceModelV2(
                 templateModel = templateResource.model as Model,
                 pipelineName = pipelineName,
                 buildNo = buildNo,
-                param = params,
+                templateVariables = templateVariables,
                 instanceFromTemplate = true,
                 defaultStageTagId = defaultStageTagId,
                 templateId = templateId,
-                triggerConfigs = triggerConfigs
+                triggerConfigs = filterTriggerConfigs
             )
 
             val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(

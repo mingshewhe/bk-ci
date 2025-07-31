@@ -36,7 +36,7 @@ import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
@@ -147,7 +147,7 @@ class PipelineResourceFactory @Autowired constructor(
         templatePath: String? = null,
         templateRef: String? = null,
         templateVariables: List<TemplateVariable>? = null,
-        triggerConfigs: Map<String, InstanceTriggerConfig>? = null,
+        triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
         overrideTemplateField: TemplateField? = null
     ): Model {
         return if (refType == TemplateRefType.PATH) {

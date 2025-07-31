@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
@@ -260,6 +261,7 @@ class PipelineModelParser @Autowired constructor(
     fun parseTemplateDescriptor(
         projectId: String,
         descriptor: TemplateDescriptor,
+        pipelineId: String? = null,
         repoHashId: String? = null,
         branchName: String? = null
     ): PipelineTemplateResource {
@@ -296,15 +298,29 @@ class PipelineModelParser @Autowired constructor(
 
                 // 通过模版路径方式引用
                 !templatePath.isNullOrEmpty() -> {
-                    if (repoHashId.isNullOrEmpty()) {
-                        throw IllegalArgumentException("repoHashId is required")
-                    }
-                    logger.info("parse template descriptor by path|$projectId|$repoHashId|$templatePath|$templateRef")
+                    val finalRepoHashId = when {
+                        !repoHashId.isNullOrEmpty() -> repoHashId
+                        !pipelineId.isNullOrEmpty() -> {
+                            pipelineYamlInfoDao.get(
+                                dslContext = dslContext,
+                                projectId = projectId,
+                                pipelineId = pipelineId,
+                            )?.repoHashId
+                        }
+
+                        else -> null
+                    } ?: throw ErrorCodeException(
+                        errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+                        params = arrayOf("repoHashId")
+                    )
+                    logger.info(
+                        "parse template descriptor by path|$projectId|$finalRepoHashId|$templatePath|$templateRef"
+                    )
                     // 1. 获取yaml文件绑定的模版
                     val pipelineYamlInfo = pipelineYamlInfoDao.get(
                         dslContext = dslContext,
                         projectId = projectId,
-                        repoHashId = repoHashId,
+                        repoHashId = finalRepoHashId,
                         filePath = templatePath!!
                     ) ?: throw ErrorCodeException(
                         errorCode = ProcessTemplateMessageCode.ERROR_YAML_FOR_TEMPLATE_NOT_FOUND,
@@ -318,12 +334,12 @@ class PipelineModelParser @Autowired constructor(
                     val ref = templateRef?.takeIf { it.isNotEmpty() } ?: branchName?.takeIf { it.isNotEmpty() }
                     val pipelineYamlVersion = pipelineYamlRefResolver.resolvePipelineYamlVersion(
                         projectId = projectId,
-                        repoHashId = repoHashId,
+                        repoHashId = finalRepoHashId,
                         filePath = templatePath!!,
                         ref = ref
                     )
                     logger.info(
-                        "parse template descriptor result by path|$projectId|$repoHashId|" +
+                        "parse template descriptor result by path|$projectId|$finalRepoHashId|" +
                                 "${pipelineYamlInfo.pipelineId}|${pipelineYamlVersion.version}"
                     )
 

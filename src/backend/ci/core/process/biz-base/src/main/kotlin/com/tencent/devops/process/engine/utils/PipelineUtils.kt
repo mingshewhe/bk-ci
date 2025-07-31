@@ -30,12 +30,13 @@ package com.tencent.devops.process.engine.utils
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.exception.OperationException
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.atom.ManualReviewParam
@@ -289,31 +290,30 @@ object PipelineUtils {
         templateModel: Model,
         pipelineName: String,
         buildNo: BuildNo?,
-        param: List<BuildFormProperty>?,
+        templateVariables: List<TemplateVariable>?,
         instanceFromTemplate: Boolean,
         labels: List<String>? = null,
         defaultStageTagId: String?,
         templateId: String? = null,
         staticViews: List<String> = emptyList(),
-        triggerConfigs: Map<String, InstanceTriggerConfig>? = null
+        triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
+        overrideTemplateField: TemplateField? = null,
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
-        val triggerElements = if (triggerConfigs != null) {
-            mergeTriggerElements(
-                templateTriggerContainer = templateTrigger,
-                triggerConfigs = triggerConfigs
-            )
-        } else {
-            templateTrigger.elements
-        }
-        val instanceParam = param?.let { cleanOptions(it) } ?: emptyList()
-        val triggerContainer = TriggerContainer(
-            name = templateTrigger.name,
+        val triggerElements = mergeTriggerElements(
+            templateTriggerElements = templateTrigger.elements,
+            triggerConfigs = triggerConfigs,
+            overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
+        )
+        val instanceParam = mergeParams(
+            templateParams = templateTrigger.params,
+            templateVariables = templateVariables,
+            overrideParamIds = overrideTemplateField?.paramIds
+        )
+        val triggerContainer = templateTrigger.copy(
+            buildNo = buildNo,
             elements = triggerElements,
             params = instanceParam,
-            buildNo = buildNo,
-            containerId = templateTrigger.containerId,
-            containerHashId = templateTrigger.containerHashId
         )
 
         return Model(
@@ -360,61 +360,108 @@ object PipelineUtils {
         model: Model,
         templateModel: Model,
     ): TriggerContainer {
-        val templateTriggerContainer = templateModel.getTriggerContainer()
-
-        val triggerConfigs = model.triggerConfigs
-        val triggerElements = if (triggerConfigs != null) {
-            mergeTriggerElements(
-                templateTriggerContainer = templateTriggerContainer,
-                triggerConfigs = triggerConfigs
-            )
-        } else {
-            templateTriggerContainer.elements
-        }
-        val pipelineParams = mergeTemplateParams(
-            model = model,
-            templateModel = templateModel,
+        val triggerElements = mergeTriggerElements(
+            templateTriggerElements = templateModel.getTriggerContainer().elements,
+            triggerConfigs = model.triggerConfigs,
+            overrideTriggerStepIds = model.overrideTemplateField?.triggerStepIds
         )
-        val instanceParam = cleanOptions(pipelineParams)
-        return templateTriggerContainer.copy(
+        val pipelineParams = mergeParams(
+            templateParams = templateModel.getTriggerContainer().params,
+            templateVariables = model.templateVariables,
+            overrideParamIds = model.overrideTemplateField?.paramIds
+        )
+        return templateModel.getTriggerContainer().copy(
             elements = triggerElements,
-            params = instanceParam
+            params = pipelineParams
         )
     }
 
+    /**
+     * 合并触发器
+     */
     private fun mergeTriggerElements(
-        templateTriggerContainer: TriggerContainer,
-        triggerConfigs: Map<String, InstanceTriggerConfig>
-    ): MutableList<Element> {
-        // 不存在的stepId列表
-        val errorStepIds = triggerConfigs.filterNot { (stepId, _) ->
-            templateTriggerContainer.elements.any { it.stepId == stepId }
-        }.map { it.key }
-        if (errorStepIds.isNotEmpty()) {
-            throw ErrorCodeException(
-                errorCode = ProcessTemplateMessageCode.ERROR_PIPELINE_TRIGGER_CONFIG_STEP_ID_NOT_FOUND,
-                params = arrayOf(errorStepIds.joinToString(","))
-            )
-        }
+        templateTriggerElements: List<Element>,
+        triggerConfigs: List<TemplateInstanceTriggerConfig>?,
+        overrideTriggerStepIds: List<String>?
+    ): List<Element> {
+        if (triggerConfigs == null) return templateTriggerElements
 
-        val elements = mutableListOf<Element>()
-        templateTriggerContainer.elements.forEach { element ->
-            val triggerConfig = triggerConfigs[element.stepId]
-            if (triggerConfig != null) {
-                val instanceElement = mergeTriggerElement(
-                    triggerElement = element, triggerConfig = triggerConfig
-                )
-                elements.add(instanceElement)
+        val triggerConfigMap = triggerConfigs.filter { it.stepId != null }.associateBy { it.stepId }
+        return templateTriggerElements.map { templateTriggerElement ->
+            if (templateTriggerElement.stepId.isNullOrEmpty()) {
+                templateTriggerElement
             } else {
-                elements.add(element)
+                val triggerConfig = triggerConfigMap[templateTriggerElement.stepId]
+                val overrideTrigger = overrideTrigger(
+                    templateTriggerElement = templateTriggerElement,
+                    overrideTriggerStepIds = overrideTriggerStepIds,
+                    triggerConfig = triggerConfig
+                )
+                if (overrideTrigger) {
+                    copyTriggerElement(
+                        triggerElement = templateTriggerElement,
+                        triggerConfig = triggerConfig!!
+                    )
+                } else {
+                    templateTriggerElement
+                }
             }
         }
-        return elements
     }
 
-    private fun mergeTriggerElement(
+    private fun mergeParams(
+        templateParams: List<BuildFormProperty>,
+        templateVariables: List<TemplateVariable>?,
+        overrideParamIds: List<String>?
+    ): List<BuildFormProperty> {
+        if (templateVariables == null) return templateParams
+
+        val templateVariableMap = templateVariables.associateBy { it.key }
+        return templateParams.map { templateParam ->
+            val templateVariable = templateVariableMap[templateParam.id]
+            val overrideParam = overrideParam(
+                templateParam = templateParam,
+                overrideParamIds = overrideParamIds,
+                templateVariable = templateVariable
+            )
+            val pipelineParams = if (overrideParam) {
+                templateParam.copy(
+                    defaultValue = templateVariable!!.value,
+                    required = templateVariable.allowModifyAtStartup ?: templateParam.required
+                )
+            } else {
+                templateParam
+            }
+            cleanOptions(pipelineParams)
+        }
+    }
+
+    private fun overrideParam(
+        templateParam: BuildFormProperty,
+        overrideParamIds: List<String>?,
+        templateVariable: TemplateVariable?,
+    ): Boolean {
+        // 覆盖的key存在且变量值类型与模板参数类型一致,则流水线的变量覆盖模版的
+        return overrideParamIds != null &&
+                overrideParamIds.contains(templateParam.id) &&
+                templateVariable != null &&
+                templateVariable.value.javaClass == templateParam.defaultValue.javaClass
+    }
+
+    private fun overrideTrigger(
+        templateTriggerElement: Element,
+        overrideTriggerStepIds: List<String>?,
+        triggerConfig: TemplateInstanceTriggerConfig?
+    ): Boolean {
+        return !templateTriggerElement.stepId.isNullOrEmpty() &&
+                overrideTriggerStepIds != null &&
+                overrideTriggerStepIds.contains(templateTriggerElement.stepId) &&
+                triggerConfig != null
+    }
+
+    private fun copyTriggerElement(
         triggerElement: Element,
-        triggerConfig: InstanceTriggerConfig
+        triggerConfig: TemplateInstanceTriggerConfig
     ): Element {
         triggerConfig.disabled?.let {
             triggerElement.additionalOptions?.enable = !triggerConfig.disabled!!
@@ -432,44 +479,4 @@ object PipelineUtils {
         }
     }
 
-    private fun mergeTemplateParams(
-        model: Model,
-        templateModel: Model,
-    ): List<BuildFormProperty> {
-        val templateParams = templateModel.getTriggerContainer().params
-        val templateVariables = model.templateVariables
-        val paramKeys = model.overrideTemplateField?.paramKeys
-        if (templateVariables == null) return templateParams
-
-        val templateVariableMap = templateVariables.associateBy { it.key }
-        return templateParams.map { templateParam ->
-            val templateVariable = templateVariableMap[templateParam.id]
-            val overrideParam = overrideParam(
-                templateParam = templateParam,
-                paramKeys = paramKeys,
-                templateVariable = templateVariable
-            )
-            val pipelineParams = if (overrideParam) {
-                templateParam.copy(
-                    defaultValue = templateVariable!!.value,
-                    required = templateVariable.allowModifyAtStartup ?: templateParam.required
-                )
-            } else {
-                templateParam
-            }
-            cleanOptions(pipelineParams)
-        }
-    }
-
-    private fun overrideParam(
-        templateParam: BuildFormProperty,
-        paramKeys: List<String>?,
-        templateVariable: TemplateVariable?,
-    ): Boolean {
-        // 覆盖的key存在且变量值类型与模板参数类型一致,则流水线的变量覆盖模版的
-        return paramKeys != null &&
-                paramKeys.contains(templateParam.id) &&
-                templateVariable != null &&
-                templateVariable.value.javaClass == templateParam.defaultValue.javaClass
-    }
 }

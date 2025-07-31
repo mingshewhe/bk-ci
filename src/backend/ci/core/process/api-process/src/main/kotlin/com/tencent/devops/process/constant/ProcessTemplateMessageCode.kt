@@ -49,4 +49,6 @@ object ProcessTemplateMessageCode {
     const val ERROR_TEMPLATE_NOT_ENABLE_PAC = "2101301" // 模版没有开启PAC,不能通过路径引用查询
 
     const val ERROR_STATUS_NOT_MATCHED = "2101302" // 状态不匹配,预期状态为$0,实际状态为$1
+
+    const val ERROR_PIPELINE_NOT_RELATED_TEMPLATE = "2101303" // 流水线没有关联模板
 }

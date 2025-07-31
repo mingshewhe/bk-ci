@@ -38,8 +38,8 @@ import com.tencent.devops.common.pipeline.enums.BuildScriptType
 import com.tencent.devops.common.pipeline.enums.StageRunCondition
 import com.tencent.devops.common.pipeline.enums.VMBaseOS
 import com.tencent.devops.common.pipeline.option.StageControlOption
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
-import com.tencent.devops.common.pipeline.pojo.InstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.ElementAdditionalOptions
 import com.tencent.devops.common.pipeline.pojo.element.agent.LinuxScriptElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
@@ -339,8 +339,9 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            triggerConfigs = mapOf(
-                "step1" to InstanceTriggerConfig(
+            triggerConfigs = listOf(
+                TemplateInstanceTriggerConfig(
+                    stepId = "step1",
                     disabled = false
                 )
             ),
@@ -351,8 +352,9 @@ class PipelineYamlVersionUtilsTest {
             desc = "",
             stages = emptyList(),
             fromTemplate = true,
-            triggerConfigs = mapOf(
-                "step1" to InstanceTriggerConfig(
+            triggerConfigs = listOf(
+                TemplateInstanceTriggerConfig(
+                    stepId = "step1",
                     disabled = true
                 )
             ),
@@ -369,8 +371,9 @@ class PipelineYamlVersionUtilsTest {
                     value = "value1"
                 )
             ),
-            triggerConfigs = mapOf(
-                "step1" to InstanceTriggerConfig(
+            triggerConfigs = listOf(
+                TemplateInstanceTriggerConfig(
+                    stepId = "step1",
                     disabled = true
                 )
             ),
@@ -387,8 +390,9 @@ class PipelineYamlVersionUtilsTest {
                     value = "value1"
                 )
             ),
-            triggerConfigs = mapOf(
-                "step1" to InstanceTriggerConfig(
+            triggerConfigs = listOf(
+                TemplateInstanceTriggerConfig(
+                    stepId = "step1",
                     disabled = true
                 )
             ),
