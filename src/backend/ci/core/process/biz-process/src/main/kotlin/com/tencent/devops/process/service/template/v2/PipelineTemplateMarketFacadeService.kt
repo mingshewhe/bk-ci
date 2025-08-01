@@ -3,6 +3,7 @@ package com.tencent.devops.process.service.template.v2
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
@@ -10,6 +11,7 @@ import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
@@ -47,13 +49,14 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
     private val pipelineSettingDao: PipelineSettingDao,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
-    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager
+    private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
+    private val pipelineEventDispatcher: PipelineEventDispatcher
 ) {
 
     /**
-     * 更新关联模板的基本信息
+     * 传播研发商店模板事件至依赖模板
      * */
-    fun updateMarketTemplateReferenceBasicInfo(
+    fun propagateTemplateUpdateToDependents(
         userId: String,
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
@@ -62,7 +65,6 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
         with(updateMarketTemplateRequest) {
             val srcTemplateId = templateCode
             val category = JsonUtil.toJson(categoryCodeList ?: emptyList<String>(), false)
-            // todo 待上线后稳定后，从新表获取。
             val projectId2TemplateIdOfReference = templateDao.listTemplateReferenceId(
                 dslContext = dslContext,
                 templateId = srcTemplateId
@@ -120,7 +122,7 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
      * （4）记录模板版本上架记录
      * （5）将关联并且自动升级的模板进行自动升级版本
      * */
-    fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Boolean {
+    fun handleMarketTemplatePublished(request: MarketTemplateV2Request): Boolean {
         with(request) {
             // 更新老表 研发商店关联标识
             templateDao.updateStoreFlag(
@@ -143,19 +145,23 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
                     templateId = templateCode
                 )
             )
-            // 更新关联的模板，基本信息
-            updateMarketTemplateReferenceBasicInfo(
+            // 传播模板更新事件至依赖模板
+            propagateTemplateUpdateToDependents(
                 userId = publisher,
                 projectId = projectId,
                 updateMarketTemplateRequest = MarketTemplateRequest(request)
             )
-            // 升级关联模板的版本。
+            // 触发关联模板自动升级
             if (templateVersion != null) {
-                releaseTemplateVersionPostProcess(
-                    userId = publisher,
-                    projectId = projectId,
-                    templateId = templateCode,
-                    version = templateVersion!!
+                pipelineEventDispatcher.dispatch(
+                    PipelineTemplateTriggerUpgradesEvent(
+                        projectId = projectId,
+                        source = "PIPELINE_TEMPLATE_TRIGGER_UPGRADES",
+                        pipelineId = "",
+                        userId = publisher,
+                        templateId = templateCode,
+                        version = templateVersion!!
+                    )
                 )
             }
         }
@@ -242,64 +248,57 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
         return true
     }
 
-    fun releaseTemplateVersionPostProcess(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        version: Long
-    ) {
-        val srcTemplateResource = pipelineTemplateResourceService.get(
-            projectId = projectId,
-            templateId = templateId,
-            version = version
-        )
-
-        val srcTemplateSetting = pipelineTemplateSettingService.get(
-            projectId = projectId,
-            templateId = templateId,
-            settingVersion = srcTemplateResource.settingVersion
-        )
-        // 同步上传当前版本至研发商店
-        pipelineTemplateResourceService.update(
-            record = PipelineTemplateResourceUpdateInfo(
-                storeStatus = TemplateStatusEnum.RELEASED
-            ),
-            commonCondition = PipelineTemplateResourceCommonCondition(
+    // 发布模板版本后触发自动升级事件
+    fun releaseTemplateVersionAndTriggerUpgrades(event: PipelineTemplateTriggerUpgradesEvent) {
+        with(event) {
+            val templateResource = pipelineTemplateResourceService.get(
                 projectId = projectId,
                 templateId = templateId,
                 version = version
             )
-        )
-        client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
-            TemplatePublishedVersionInfo(
-                projectCode = projectId,
-                templateCode = templateId,
-                version = version,
-                versionName = srcTemplateResource.versionName!!,
-                number = srcTemplateResource.number,
-                published = true,
-                creator = userId,
-                updater = userId
+            pipelineTemplateResourceService.update(
+                record = PipelineTemplateResourceUpdateInfo(
+                    storeStatus = TemplateStatusEnum.RELEASED
+                ),
+                commonCondition = PipelineTemplateResourceCommonCondition(
+                    projectId = projectId,
+                    templateId = templateId,
+                    version = version
+                )
             )
-        )
-        val templatesOfAutoUpgrade = pipelineTemplateInfoService.list(
-            commonCondition = PipelineTemplateCommonCondition(
-                mode = TemplateType.CONSTRAINT,
-                srcTemplateProjectId = projectId,
-                srcTemplateId = templateId,
-                upgradeStrategy = UpgradeStrategyEnum.AUTO
+            // 同步上传当前版本至研发商店
+            client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
+                TemplatePublishedVersionInfo(
+                    projectCode = projectId,
+                    templateCode = templateId,
+                    version = version,
+                    versionName = templateResource.versionName!!,
+                    number = templateResource.number,
+                    published = true,
+                    creator = userId,
+                    updater = userId
+                )
             )
-        )
 
-        templatesOfAutoUpgrade.forEach { templateInfo ->
-            installNewVersion(
-                templateInfo = templateInfo,
-                srcTemplateProjectId = srcTemplateResource.projectId,
-                srcTemplateId = srcTemplateResource.templateId,
-                srcTemplateVersion = srcTemplateResource.version,
-                srcTemplateNumber = srcTemplateResource.number,
-                srcTemplateVersionName = srcTemplateResource.versionName!!
+            val templatesOfNeedToUpgrade = pipelineTemplateInfoService.list(
+                commonCondition = PipelineTemplateCommonCondition(
+                    mode = TemplateType.CONSTRAINT,
+                    srcTemplateProjectId = projectId,
+                    srcTemplateId = templateId,
+                    upgradeStrategy = UpgradeStrategyEnum.AUTO
+                )
             )
+
+            templatesOfNeedToUpgrade.forEach { templateInfo ->
+                installNewVersion(
+                    templateInfo = templateInfo,
+                    srcTemplateProjectId = templateResource.projectId,
+                    srcTemplateId = templateResource.templateId,
+                    srcTemplateVersion = templateResource.version,
+                    srcTemplateNumber = templateResource.number,
+                    srcTemplateVersionName = templateResource.versionName!!
+                )
+            }
         }
     }
 

@@ -38,7 +38,9 @@ import com.tencent.devops.process.engine.pojo.event.PipelineCreateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineDeleteEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineRestoreEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineUpdateEvent
+import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 
@@ -87,4 +89,14 @@ class PipelineBaseConfiguration {
     fun pipelineTemplateInstanceConsumer(
         @Autowired listener: PipelineTemplateInstanceListener
     ) = ScsConsumerBuilder.build<PipelineTemplateInstanceEvent> { listener.handle(it) }
+
+    /**
+     * 流水线模板触发升级--- 并发一般
+     */
+    @EventConsumer
+    fun pipelineTemplateTriggerUpgradesConsumer(
+        @Autowired listener: PipelineTemplateMarketFacadeService
+    ) = ScsConsumerBuilder.build<PipelineTemplateTriggerUpgradesEvent> {
+        listener.releaseTemplateVersionAndTriggerUpgrades(it)
+    }
 }

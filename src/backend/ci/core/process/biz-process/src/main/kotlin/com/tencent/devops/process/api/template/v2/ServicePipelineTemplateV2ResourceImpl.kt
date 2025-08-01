@@ -30,8 +30,10 @@ package com.tencent.devops.process.api.template.v2
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.auth.api.ActionId
+import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.setting.PipelineVersionSimple
 import com.tencent.devops.process.pojo.template.v2.MarketTemplateV2Request
@@ -49,10 +51,30 @@ class ServicePipelineTemplateV2ResourceImpl(
     private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
     private val pipelineTemplateInfoService: PipelineTemplateInfoService,
     private val pipelineTemplateFacadeService: PipelineTemplateFacadeService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineEventDispatcher: PipelineEventDispatcher
 ) : ServicePipelineTemplateV2Resource {
-    override fun updateMarketTemplateReferenceV2(request: MarketTemplateV2Request): Result<Boolean> {
-        return Result(pipelineTemplateMarketFacadeService.updateMarketTemplateReferenceV2(request))
+    override fun handleMarketTemplatePublished(request: MarketTemplateV2Request): Result<Boolean> {
+        return Result(pipelineTemplateMarketFacadeService.handleMarketTemplatePublished(request))
+    }
+
+    override fun handleMarketTemplateVersionPublished(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        version: Long
+    ): Result<Boolean> {
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateTriggerUpgradesEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_TRIGGER_UPGRADES",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+                version = version
+            )
+        )
+        return Result(true)
     }
 
     override fun getTemplateDetails(
@@ -117,21 +139,6 @@ class ServicePipelineTemplateV2ResourceImpl(
                 strategy = strategy
             )
         )
-    }
-
-    override fun releaseTemplateVersionPostProcess(
-        userId: String,
-        projectId: String,
-        templateId: String,
-        version: Long
-    ): Result<Boolean> {
-        pipelineTemplateMarketFacadeService.releaseTemplateVersionPostProcess(
-            userId = userId,
-            projectId = projectId,
-            templateId = templateId,
-            version = version
-        )
-        return Result(true)
     }
 
     override fun checkWhenPublishedTemplate(

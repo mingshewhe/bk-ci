@@ -58,12 +58,30 @@ import jakarta.ws.rs.core.MediaType
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 interface ServicePipelineTemplateV2Resource {
-    @Operation(summary = "更新研发商店模板")
+    @Operation(summary = "研发商店上架事件处理")
     @POST
     @Path("/store/update")
-    fun updateMarketTemplateReferenceV2(
+    fun handleMarketTemplatePublished(
         @Parameter(description = "安装模板请求报文体", required = true)
         request: MarketTemplateV2Request
+    ): Result<Boolean>
+
+    @Operation(summary = "研发商店模板版本上架处理")
+    @PUT
+    @Path("/{templateId}/{version}/market/published/template/version/")
+    fun handleMarketTemplateVersionPublished(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @HeaderParam(AUTH_HEADER_PROJECT_ID)
+        projectId: String,
+        @Parameter(description = "模版ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "上架版本", required = true)
+        @PathParam("version")
+        version: Long
     ): Result<Boolean>
 
     @Operation(summary = "查看模板详情")
@@ -141,24 +159,6 @@ interface ServicePipelineTemplateV2Resource {
         templateId: String,
         @Parameter(description = "发布策略", required = true)
         strategy: UpgradeStrategyEnum
-    ): Result<Boolean>
-
-    @Operation(summary = "发布版本后置处理")
-    @PUT
-    @Path("/{templateId}/{version}/store/release/template/version/post/process")
-    fun releaseTemplateVersionPostProcess(
-        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-        @HeaderParam(AUTH_HEADER_USER_ID)
-        userId: String,
-        @Parameter(description = "项目ID", required = true)
-        @HeaderParam(AUTH_HEADER_PROJECT_ID)
-        projectId: String,
-        @Parameter(description = "模版ID", required = true)
-        @PathParam("templateId")
-        templateId: String,
-        @Parameter(description = "上架版本", required = true)
-        @PathParam("version")
-        version: Long
     ): Result<Boolean>
 
     @Operation(summary = "上架研发商店-校验")

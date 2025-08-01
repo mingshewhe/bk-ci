@@ -499,7 +499,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
             // 更新引用
             val categoryCodeList = templateCategoryRelDao.getCategorysByTemplateId(dslContext, marketTemplateId)
                 ?.map { it[KEY_CATEGORY_CODE].toString() }
-            client.get(ServicePipelineTemplateV2Resource::class).updateMarketTemplateReferenceV2(
+            client.get(ServicePipelineTemplateV2Resource::class).handleMarketTemplatePublished(
                 MarketTemplateV2Request(
                     projectId = projectCode,
                     marketTemplateId = marketTemplateId,
@@ -611,7 +611,7 @@ abstract class TemplateReleaseServiceImpl : TemplateReleaseService {
                 storeCode = templateCode,
                 storeType = StoreTypeEnum.TEMPLATE.type.toByte()
             ) ?: throw ErrorCodeException(errorCode = CommonMessageCode.SYSTEM_ERROR)
-            client.get(ServicePipelineTemplateV2Resource::class).releaseTemplateVersionPostProcess(
+            client.get(ServicePipelineTemplateV2Resource::class).handleMarketTemplateVersionPublished(
                 userId = userId,
                 projectId = projectCode,
                 templateId = templateCode,

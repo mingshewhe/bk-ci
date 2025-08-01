@@ -2537,7 +2537,7 @@ class TemplateFacadeService @Autowired constructor(
         projectId: String,
         updateMarketTemplateRequest: MarketTemplateRequest
     ): Boolean {
-        pipelineTemplateMarketFacadeService.updateMarketTemplateReferenceBasicInfo(
+        pipelineTemplateMarketFacadeService.propagateTemplateUpdateToDependents(
             userId = userId,
             projectId = projectId,
             updateMarketTemplateRequest = updateMarketTemplateRequest

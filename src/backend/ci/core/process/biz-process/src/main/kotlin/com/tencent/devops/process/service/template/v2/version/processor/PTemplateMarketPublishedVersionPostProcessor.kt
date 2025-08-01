@@ -1,8 +1,10 @@
 package com.tencent.devops.process.service.template.v2.version.processor
 
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
@@ -17,10 +19,9 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PTemplateMarketPublishedVersionPostProcessor(
-    @Lazy
-    private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val client: Client
+   private val pipelineTemplateInfoService: PipelineTemplateInfoService,
+    private val client: Client,
+    private val pipelineEventDispatcher: PipelineEventDispatcher
 ) : PTemplateVersionCreatePostProcessor {
 
     override fun postProcessAfterVersionCreate(
@@ -32,7 +33,7 @@ class PTemplateMarketPublishedVersionPostProcessor(
             if (!versionAction.isCreateReleaseVersion()) {
                 return
             }
-            val srcTemplateInfo = pipelineTemplateInfoService.get(
+            val templateInfo = pipelineTemplateInfoService.get(
                 projectId = projectId,
                 templateId = templateId
             )
@@ -40,14 +41,18 @@ class PTemplateMarketPublishedVersionPostProcessor(
             val isTemplatePublishedToMarket = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
                 templateCode = templateId
             ).data == TemplateStatusEnum.RELEASED
-            if (!isTemplatePublishedToMarket || srcTemplateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
+            if (!isTemplatePublishedToMarket || templateInfo.publishStrategy != UpgradeStrategyEnum.AUTO)
                 return
-
-            pipelineTemplateMarketFacadeService.releaseTemplateVersionPostProcess(
-                userId = userId,
-                projectId = projectId,
-                templateId = templateId,
-                version = pipelineTemplateResource.version
+            // 触发关联模板的自动升级
+            pipelineEventDispatcher.dispatch(
+                PipelineTemplateTriggerUpgradesEvent(
+                    projectId = projectId,
+                    source = "PIPELINE_TEMPLATE_TRIGGER_UPGRADES",
+                    pipelineId = "",
+                    userId = userId,
+                    templateId = templateId,
+                    version = pipelineTemplateResource.version
+                )
             )
         }
     }
