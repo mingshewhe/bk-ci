@@ -145,6 +145,21 @@ class PipelineTemplateSettingDao {
 
     fun get(
         dslContext: DSLContext,
+        projectId: String,
+        templateId: String,
+        settingVersion: Int
+    ): PipelineSetting? {
+        return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
+            dslContext.selectFrom(this)
+                .where(PROJECT_ID.eq(projectId))
+                .and(TEMPLATE_ID.eq(templateId))
+                .and(SETTING_VERSION.eq(settingVersion))
+                .fetchOne()?.convert()
+        }
+    }
+
+    fun get(
+        dslContext: DSLContext,
         commonCondition: PipelineTemplateSettingCommonCondition
     ): PipelineSetting? {
         return with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {

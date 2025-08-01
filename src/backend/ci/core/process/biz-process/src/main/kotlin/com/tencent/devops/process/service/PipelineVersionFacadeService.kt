@@ -474,13 +474,14 @@ class PipelineVersionFacadeService @Autowired constructor(
             pipelineId = pipelineId,
             version = resource.settingVersion ?: 0 // 历史没有关联过setting版本应该取正式版本
         )
-        val fullModel = pipelineModelParser.parseModel(
+        val instanceModelAndSetting = pipelineModelParser.parseModelAndSetting(
             projectId = projectId,
             pipelineId = pipelineId,
-            model = resource.model
+            model = resource.model,
+            setting = setting
         )
         val model = pipelineInfoFacadeService.getFixedModel(
-            model = fullModel,
+            model = instanceModelAndSetting.model,
             projectId = projectId,
             pipelineId = pipelineId,
             userId = userId,
@@ -490,7 +491,7 @@ class PipelineVersionFacadeService @Autowired constructor(
         model.desc = setting.desc
         // 后端主动填充前端展示的标签名称
         val modelAndSetting = PipelineModelAndSetting(
-            setting = setting,
+            setting = instanceModelAndSetting.setting,
             model = model
         )
         val baseResource = resource.baseVersion?.let {

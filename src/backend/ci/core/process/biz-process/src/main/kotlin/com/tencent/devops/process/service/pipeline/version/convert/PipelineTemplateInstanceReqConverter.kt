@@ -44,7 +44,7 @@ import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.engine.utils.PipelineUtils
+import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
@@ -226,7 +226,7 @@ class PipelineTemplateInstanceReqConverter(
             // 生成实例化model
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
 
-            val instanceModel = PipelineUtils.instanceModelV2(
+            val instanceModel = TemplateInstanceUtil.instanceModel(
                 templateModel = templateResource.model as Model,
                 pipelineName = pipelineName,
                 buildNo = buildNo,

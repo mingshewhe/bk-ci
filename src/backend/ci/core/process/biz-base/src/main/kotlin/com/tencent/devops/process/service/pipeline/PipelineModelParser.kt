@@ -29,16 +29,17 @@ package com.tencent.devops.process.service.pipeline
 
 import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.TemplateDescriptor
+import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.dao.template.PipelineTemplateInfoDao
 import com.tencent.devops.process.dao.template.PipelineTemplateResourceDao
+import com.tencent.devops.process.dao.template.PipelineTemplateSettingDao
 import com.tencent.devops.process.engine.dao.PipelineYamlInfoDao
-import com.tencent.devops.process.engine.dao.PipelineYamlVersionDao
-import com.tencent.devops.process.engine.utils.PipelineUtils
+import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordModel
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
 import org.jooq.DSLContext
@@ -54,10 +55,9 @@ class PipelineModelParser @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineTemplateInfoDao: PipelineTemplateInfoDao,
     private val pipelineTemplateResourceDao: PipelineTemplateResourceDao,
+    private val pipelineTemplateSettingDao: PipelineTemplateSettingDao,
     private val pipelineYamlInfoDao: PipelineYamlInfoDao,
-    private val pipelineYamlVersionDao: PipelineYamlVersionDao,
-    private val pipelineYamlRefResolver: PipelineYamlRefResolver,
-    private val client: Client
+    private val pipelineYamlRefResolver: PipelineYamlRefResolver
 ) {
 
     /**
@@ -70,23 +70,61 @@ class PipelineModelParser @Autowired constructor(
         branchName: String? = null
     ): Model {
         return if (model.fromTemplate == true) {
-            val pipelineYamlInfo = pipelineYamlInfoDao.get(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = pipelineId,
-            )
             val templateResource = parseTemplateDescriptor(
                 projectId = projectId,
                 descriptor = model,
-                repoHashId = pipelineYamlInfo?.repoHashId,
+                pipelineId = pipelineId,
                 branchName = branchName
             )
-            PipelineUtils.instanceModelV2(
+            TemplateInstanceUtil.instanceModel(
                 model = model,
                 templateResource = templateResource
             )
         } else {
             model
+        }
+    }
+
+    fun parseModelAndSetting(
+        projectId: String,
+        pipelineId: String,
+        model: Model,
+        setting: PipelineSetting,
+        branchName: String? = null
+    ): PipelineModelAndSetting {
+        return if (model.fromTemplate == true) {
+            val templateResource = parseTemplateDescriptor(
+                projectId = projectId,
+                descriptor = model,
+                pipelineId = pipelineId,
+                branchName = branchName
+            )
+            val templateSetting = pipelineTemplateSettingDao.get(
+                dslContext = dslContext,
+                projectId = projectId,
+                templateId = templateResource.templateId,
+                settingVersion = templateResource.settingVersion
+            ) ?: throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+            )
+            val instanceModel = TemplateInstanceUtil.instanceModel(
+                model = model,
+                templateResource = templateResource
+            )
+            val instanceSetting = TemplateInstanceUtil.instanceSetting(
+                setting = setting,
+                templateSetting = templateSetting,
+                settingGroups = model.overrideTemplateField?.settingGroups
+            )
+            PipelineModelAndSetting(
+                model = instanceModel,
+                setting = instanceSetting
+            )
+        } else {
+            PipelineModelAndSetting(
+                model = model,
+                setting = setting
+            )
         }
     }
 
@@ -111,7 +149,7 @@ class PipelineModelParser @Autowired constructor(
                 errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_VERSION_NOT_FOUND,
                 params = arrayOf(parsedTemplateId, parsedTemplateVersion.toString())
             )
-            PipelineUtils.instanceModelV2(
+            TemplateInstanceUtil.instanceModel(
                 model = model,
                 templateResource = templateResource
             )
@@ -258,6 +296,7 @@ class PipelineModelParser @Autowired constructor(
      * @param repoHashId 仓库hashId,当通过模版路径引用时，必须传入
      * @param branchName 触发分支名称,当webhook触发时才有值
      */
+    @Suppress("CyclomaticComplexMethod")
     fun parseTemplateDescriptor(
         projectId: String,
         descriptor: TemplateDescriptor,
