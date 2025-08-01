@@ -9,6 +9,7 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
+import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.dao.PipelineSettingDao
 import com.tencent.devops.process.engine.control.lock.PipelineTemplateTriggerUpgradesLock
 import com.tencent.devops.process.engine.dao.template.TemplateDao
