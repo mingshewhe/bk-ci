@@ -10,6 +10,7 @@ import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.pipeline.type.StoreDispatchType
 import com.tencent.devops.process.dao.PipelineSettingDao
+import com.tencent.devops.process.engine.control.lock.PipelineTemplateTriggerUpgradesLock
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.pojo.template.MarketTemplateRequest
@@ -50,7 +51,8 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
-    private val pipelineEventDispatcher: PipelineEventDispatcher
+    private val pipelineEventDispatcher: PipelineEventDispatcher,
+    private val redisOperation: RedisOperation
 ) {
 
     /**
@@ -65,18 +67,19 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
         with(updateMarketTemplateRequest) {
             val srcTemplateId = templateCode
             val category = JsonUtil.toJson(categoryCodeList ?: emptyList<String>(), false)
-            val projectId2TemplateIdOfReference = templateDao.listTemplateReferenceId(
+            val projectId2TemplateIdOfDependent = templateDao.listTemplateReferenceId(
                 dslContext = dslContext,
                 templateId = srcTemplateId
             )
-            val referenceTemplateList = projectId2TemplateIdOfReference.keys.toList()
-            if (referenceTemplateList.isEmpty()) return true
+            val dependentTemplateList = projectId2TemplateIdOfDependent.keys.toList()
+            if (dependentTemplateList.isEmpty()) return true
+
             dslContext.transaction { configuration ->
                 val transactionContext = DSL.using(configuration)
                 // 修改老表
                 pipelineSettingDao.updateSettingName(
                     dslContext = transactionContext,
-                    pipelineIdList = referenceTemplateList,
+                    pipelineIdList = dependentTemplateList,
                     name = templateName
                 )
                 templateDao.updateTemplateReference(
@@ -88,7 +91,7 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
                 )
             }
             // 同步新表，将关联的数据表，进行批量刷数据
-            projectId2TemplateIdOfReference.forEach { (projectId, templateId) ->
+            projectId2TemplateIdOfDependent.forEach { (projectId, templateId) ->
                 pipelineTemplateInfoService.update(
                     record = PipelineTemplateInfoUpdateInfo(
                         name = templateName,
@@ -251,53 +254,56 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
     // 发布模板版本后触发自动升级事件
     fun releaseTemplateVersionAndTriggerUpgrades(event: PipelineTemplateTriggerUpgradesEvent) {
         with(event) {
-            val templateResource = pipelineTemplateResourceService.get(
-                projectId = projectId,
-                templateId = templateId,
-                version = version
-            )
-            pipelineTemplateResourceService.update(
-                record = PipelineTemplateResourceUpdateInfo(
-                    storeStatus = TemplateStatusEnum.RELEASED
-                ),
-                commonCondition = PipelineTemplateResourceCommonCondition(
+            PipelineTemplateTriggerUpgradesLock(redisOperation = redisOperation, templateId = templateId).use {
+                it.lock()
+                val templateResource = pipelineTemplateResourceService.get(
                     projectId = projectId,
                     templateId = templateId,
                     version = version
                 )
-            )
-            // 同步上传当前版本至研发商店
-            client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
-                TemplatePublishedVersionInfo(
-                    projectCode = projectId,
-                    templateCode = templateId,
-                    version = version,
-                    versionName = templateResource.versionName!!,
-                    number = templateResource.number,
-                    published = true,
-                    creator = userId,
-                    updater = userId
+                pipelineTemplateResourceService.update(
+                    record = PipelineTemplateResourceUpdateInfo(
+                        storeStatus = TemplateStatusEnum.RELEASED
+                    ),
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = projectId,
+                        templateId = templateId,
+                        version = version
+                    )
                 )
-            )
+                // 同步上传当前版本至研发商店
+                client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
+                    TemplatePublishedVersionInfo(
+                        projectCode = projectId,
+                        templateCode = templateId,
+                        version = version,
+                        versionName = templateResource.versionName!!,
+                        number = templateResource.number,
+                        published = true,
+                        creator = userId,
+                        updater = userId
+                    )
+                )
 
-            val templatesOfNeedToUpgrade = pipelineTemplateInfoService.list(
-                commonCondition = PipelineTemplateCommonCondition(
-                    mode = TemplateType.CONSTRAINT,
-                    srcTemplateProjectId = projectId,
-                    srcTemplateId = templateId,
-                    upgradeStrategy = UpgradeStrategyEnum.AUTO
+                val templatesOfNeedToUpgrade = pipelineTemplateInfoService.list(
+                    commonCondition = PipelineTemplateCommonCondition(
+                        mode = TemplateType.CONSTRAINT,
+                        srcTemplateProjectId = projectId,
+                        srcTemplateId = templateId,
+                        upgradeStrategy = UpgradeStrategyEnum.AUTO
+                    )
                 )
-            )
 
-            templatesOfNeedToUpgrade.forEach { templateInfo ->
-                installNewVersion(
-                    templateInfo = templateInfo,
-                    srcTemplateProjectId = templateResource.projectId,
-                    srcTemplateId = templateResource.templateId,
-                    srcTemplateVersion = templateResource.version,
-                    srcTemplateNumber = templateResource.number,
-                    srcTemplateVersionName = templateResource.versionName!!
-                )
+                templatesOfNeedToUpgrade.forEach { templateInfo ->
+                    installNewVersion(
+                        templateInfo = templateInfo,
+                        srcTemplateProjectId = templateResource.projectId,
+                        srcTemplateId = templateResource.templateId,
+                        srcTemplateVersion = templateResource.version,
+                        srcTemplateNumber = templateResource.number,
+                        srcTemplateVersionName = templateResource.versionName!!
+                    )
+                }
             }
         }
     }
