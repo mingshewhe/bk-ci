@@ -33,6 +33,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "实例化-触发器配置")
 data class TemplateInstanceTriggerConfig(
+    @get:Schema(title = "插件标识,用于前端实例化时渲染")
+    val atomCode: String? = null,
     @get:Schema(title = "插件stepId")
     val stepId: String? = null,
     @get:Schema(title = "启用或禁用")
@@ -44,7 +46,7 @@ data class TemplateInstanceTriggerConfig(
 ) {
     constructor(element: Element) : this(
         stepId = element.stepId,
-        disabled = element.elementEnabled(),
+        disabled = !element.elementEnabled(),
         cron = if (element is TimerTriggerElement) {
             element.advanceExpression?.firstOrNull()
         } else {

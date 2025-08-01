@@ -56,7 +56,5 @@ data class DeployTemplateResult(
     @get:Schema(title = "是否更新了推荐版本号基准值", required = false)
     val updateBuildNo: Boolean? = null,
     @get:Schema(title = "版本动作", required = true)
-    val versionAction: PipelineVersionAction,
-    @get:Schema(title = "操作类型", required = true)
-    val operationLogType: OperationLogType
+    val versionAction: PipelineVersionAction
 )

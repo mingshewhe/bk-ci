@@ -126,6 +126,7 @@ class PipelineTemplateSettingDao {
                 }
                 .set(UPDATE_TIME, now)
                 .where(buildQueryCondition(commonCondition))
+                .execute()
         }
     }
 

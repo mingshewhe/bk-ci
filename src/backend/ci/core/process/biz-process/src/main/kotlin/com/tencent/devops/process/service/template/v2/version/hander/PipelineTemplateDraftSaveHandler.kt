@@ -27,19 +27,11 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
-import com.tencent.bk.audit.annotations.ActionAuditRecord
-import com.tencent.bk.audit.annotations.AuditAttribute
-import com.tencent.bk.audit.annotations.AuditInstanceRecord
-import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.audit.ActionAuditContent
-import com.tencent.devops.common.auth.api.ActionId
-import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
-import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
@@ -90,7 +82,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             projectId = projectId,
             templateId = templateId
         )
-        val (pTemplateResourceOnlyVersion, operationLogType) = if (templateInfo == null) {
+        val pTemplateResourceOnlyVersion = if (templateInfo == null) {
             val resourceOnlyVersion = pipelineTemplateGenerator.getDefaultVersion(
                 versionStatus = pTemplateResourceWithoutVersion.status
             )
@@ -98,16 +90,16 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
                 context = this,
                 resourceOnlyVersion = resourceOnlyVersion
             )
-            Pair(resourceOnlyVersion, OperationLogType.CREATE_PIPELINE_AND_DRAFT)
+            resourceOnlyVersion
         } else {
             val draftResource = pipelineTemplateResourceService.getDraftVersionResource(
                 projectId = projectId,
                 templateId = templateId
             )
             if (draftResource == null) {
-                Pair(createDraftVersion(), OperationLogType.CREATE_DRAFT_VERSION)
+                createDraftVersion()
             } else {
-                Pair(updateDraftVersion(draftResource), OperationLogType.UPDATE_DRAFT_VERSION)
+                updateDraftVersion(draftResource)
             }
         }
         return DeployTemplateResult(
@@ -119,8 +111,7 @@ class PipelineTemplateDraftSaveHandler @Autowired constructor(
             number = pTemplateResourceOnlyVersion.number,
             versionNum = pTemplateResourceOnlyVersion.versionNum,
             versionName = pTemplateResourceOnlyVersion.versionName,
-            versionAction = versionAction,
-            operationLogType = operationLogType
+            versionAction = versionAction
         )
     }
 

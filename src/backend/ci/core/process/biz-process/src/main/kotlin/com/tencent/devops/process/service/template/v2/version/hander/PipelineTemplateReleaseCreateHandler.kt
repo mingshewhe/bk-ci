@@ -27,19 +27,11 @@
 
 package com.tencent.devops.process.service.template.v2.version.hander
 
-import com.tencent.bk.audit.annotations.ActionAuditRecord
-import com.tencent.bk.audit.annotations.AuditAttribute
-import com.tencent.bk.audit.annotations.AuditInstanceRecord
-import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.devops.common.api.exception.ErrorCodeException
-import com.tencent.devops.common.audit.ActionAuditContent
-import com.tencent.devops.common.auth.api.ActionId
-import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
-import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.pojo.pipeline.DeployTemplateResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.service.template.v2.PipelineTemplateGenerator
@@ -109,8 +101,7 @@ class PipelineTemplateReleaseCreateHandler @Autowired constructor(
             number = resourceOnlyVersion.number,
             versionNum = resourceOnlyVersion.versionNum,
             versionName = resourceOnlyVersion.versionName,
-            versionAction = versionAction,
-            operationLogType = OperationLogType.RELEASE_MASTER_VERSION
+            versionAction = versionAction
         )
     }
 
