@@ -365,7 +365,7 @@ class PipelineTemplateMarketFacadeService @Autowired constructor(
         // todo 二期，局部模板需要进行改造
         if (template.type != PipelineTemplateType.PIPELINE)
             return Result(null)
-        val templateModel = template as Model
+        val templateModel = template.model as Model
         var code: String? = null
         val images = mutableSetOf<String>()
         run releaseStatus@{
