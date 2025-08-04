@@ -63,5 +63,7 @@ data class ExtendsTemplate(
     @JsonProperty("variables")
     override val variables: Map<String, PreTemplateVariable>? = null,
     @JsonProperty("trigger-conf")
-    val triggerConfig: Map<String, ExtendsTriggerConfig>? = null
+    val triggerConfig: Map<String, ExtendsTriggerConfig>? = null,
+    @JsonProperty("recommended-version")
+    val recommendedVersion: RecommendedVersion? = null
 ) : CodeTemplate

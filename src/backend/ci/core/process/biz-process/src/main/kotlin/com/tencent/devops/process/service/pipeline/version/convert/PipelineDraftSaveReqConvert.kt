@@ -34,11 +34,12 @@ import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
-import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.version.PipelineDraftSaveReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
@@ -161,15 +162,23 @@ class PipelineDraftSaveReqConvert(
         // 前端传过来的model是完整的model,如果是模版实例化的,需要转换成引用的方式
         val model = modelAndSetting!!.model
 
+        // 前端传过来的参数是模版+流水线自定义的,templateVariables只需要流水线自定义的值
         val overrideParamIds = model.overrideTemplateField?.paramIds
         val templateVariables = model.getTriggerContainer().params.filter {
             overrideParamIds?.contains(it.id) ?: false
         }.map { TemplateVariable(it) }
 
+        // 前端传过来的是所有的触发器,triggerConfigs只需要流水线自定义的
         val overrideTriggerStepIds = model.overrideTemplateField?.triggerStepIds
         val triggerConfigs = model.getTriggerContainer().elements.filter { element ->
             element.stepId?.let { overrideTriggerStepIds?.contains(it) } ?: false
         }.map { TemplateInstanceTriggerConfig(it) }
+
+        val recommendedVersion = TemplateInstanceUtil.getRecommendedVersion(
+            buildNo = model.getTriggerContainer().buildNo,
+            params = model.getTriggerContainer().params,
+            overrideReCommendedVersion = model.overrideTemplateField?.recommendedVersion
+        )
 
         return if (model.fromTemplate == true) {
             val refType = when {
@@ -188,6 +197,7 @@ class PipelineDraftSaveReqConvert(
                 templateVersionName = model.templateVersionName,
                 templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
+                recommendedVersion = recommendedVersion,
                 overrideTemplateField = model.overrideTemplateField
             )
         } else {
@@ -217,6 +227,7 @@ class PipelineDraftSaveReqConvert(
                     templateVersionName = pipelineTemplateRelated.versionName,
                     templateVariables = templateVariables,
                     triggerConfigs = triggerConfigs,
+                    recommendedVersion = recommendedVersion,
                     overrideTemplateField = model.overrideTemplateField
                 )
             } else {

@@ -35,6 +35,8 @@ import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
+import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
@@ -59,6 +61,7 @@ import com.tencent.devops.process.yaml.v3.models.Notices
 import com.tencent.devops.process.yaml.v3.models.PacNotices
 import com.tencent.devops.process.yaml.v3.models.PreExtends
 import com.tencent.devops.process.yaml.v3.models.PreTemplateScriptBuildYamlV3Parser
+import com.tencent.devops.process.yaml.v3.models.RecommendedVersion
 import com.tencent.devops.process.yaml.v3.models.on.IPreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOn
 import com.tencent.devops.process.yaml.v3.models.on.PreTriggerOnV3
@@ -222,6 +225,19 @@ class ModelTransfer @Autowired constructor(
                     variables = it.value.variables
                 )
             }
+            model.recommendedVersion = template.recommendedVersion?.let {
+                TemplateInstanceRecommendedVersion(
+                    enabled = it.enabled,
+                    major = it.major,
+                    minor = it.minor,
+                    fix = it.fix,
+                    buildNo = BuildNo(
+                        it.buildNo.initialValue,
+                        RecommendedVersion.Strategy.parse(it.buildNo.strategy).toBuildNoType(),
+                        required = it.allowModifyAtStartup
+                    )
+                )
+            }
         }
     }
 
@@ -365,7 +381,19 @@ class ModelTransfer @Autowired constructor(
                                 variables = it.variables
                             )
                         }
-                    )
+                    ),
+                    recommendedVersion = recommendedVersion?.let {
+                        RecommendedVersion(
+                            enabled = it.enabled,
+                            major = it.major,
+                            minor = it.minor,
+                            fix = it.fix,
+                            buildNo = RecommendedVersion.BuildNo(
+                                it.buildNo.buildNo,
+                                RecommendedVersion.Strategy.parse(it.buildNo.buildNoType).alis
+                            )
+                        )
+                    }
                 )
             )
         }

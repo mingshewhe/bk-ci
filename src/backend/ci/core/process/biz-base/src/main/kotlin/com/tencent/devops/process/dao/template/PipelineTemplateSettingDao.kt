@@ -27,7 +27,7 @@ class PipelineTemplateSettingDao {
         val failSubscriptionList = record.failSubscriptionList ?: emptyList()
         val waitQueueTimeSecond = DateTimeUtil.minuteToSecond(record.waitQueueTimeMinute)
         val labelStr = JsonUtil.toJson(record.labels)
-        val pipelineAsCodeSettings = record.pipelineAsCodeSettings?.let { self -> JsonUtil.toJson(self) }
+        val pipelineAsCodeSettings = record.pipelineAsCodeSettings?.let { self -> JsonUtil.toJson(self, false) }
         with(TPipelineTemplateSettingVersion.T_PIPELINE_TEMPLATE_SETTING_VERSION) {
             dslContext.insertInto(
                 this,
@@ -82,8 +82,8 @@ class PipelineTemplateSettingDao {
                 .set(CONCURRENCY_GROUP, record.concurrencyGroup)
                 .set(CONCURRENCY_CANCEL_IN_PROGRESS, record.concurrencyCancelInProgress)
                 .set(PIPELINE_AS_CODE_SETTINGS, pipelineAsCodeSettings)
-                .set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(successSubscriptionList))
-                .set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(failSubscriptionList))
+                .set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(successSubscriptionList, false))
+                .set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(failSubscriptionList, false))
                 .set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType))
                 .set(MAX_CON_RUNNING_QUEUE_SIZE, record.maxConRunningQueueSize)
                 .set(UPDATER, record.updater)
@@ -111,10 +111,10 @@ class PipelineTemplateSettingDao {
                     record.runLockType?.let { set(RUN_LOCK_TYPE, PipelineRunLockType.toValue(record.runLockType)) }
                     record.maxConRunningQueueSize?.let { set(MAX_CON_RUNNING_QUEUE_SIZE, it) }
                     if (!record.successSubscriptionList.isNullOrEmpty()) {
-                        set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(record.successSubscriptionList!!))
+                        set(SUCCESS_SUBSCRIPTION, JsonUtil.toJson(record.successSubscriptionList!!, false))
                     }
                     if (!record.failSubscriptionList.isNullOrEmpty()) {
-                        set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(record.failSubscriptionList!!))
+                        set(FAILURE_SUBSCRIPTION, JsonUtil.toJson(record.failSubscriptionList!!, false))
                     }
                     if (!record.name.isNullOrBlank()) {
                         set(NAME, record.name)

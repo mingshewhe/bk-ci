@@ -35,6 +35,7 @@ import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
@@ -148,6 +149,7 @@ class PipelineResourceFactory @Autowired constructor(
         templateRef: String? = null,
         templateVariables: List<TemplateVariable>? = null,
         triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
+        recommendedVersion: TemplateInstanceRecommendedVersion? = null,
         overrideTemplateField: TemplateField? = null
     ): Model {
         return if (refType == TemplateRefType.PATH) {
@@ -164,6 +166,7 @@ class PipelineResourceFactory @Autowired constructor(
                 templateRef = templateRef,
                 templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
+                recommendedVersion = recommendedVersion,
                 overrideTemplateField = overrideTemplateField
             )
 
@@ -181,6 +184,7 @@ class PipelineResourceFactory @Autowired constructor(
                 templateVersionName = templateVersionName,
                 templateVariables = templateVariables,
                 triggerConfigs = triggerConfigs,
+                recommendedVersion = recommendedVersion,
                 overrideTemplateField = overrideTemplateField
             )
         }

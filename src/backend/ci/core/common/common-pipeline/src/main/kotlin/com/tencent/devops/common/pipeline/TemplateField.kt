@@ -9,6 +9,8 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 data class TemplateField(
     // 覆盖的参数Id列表
     val paramIds: List<String>? = null,
+    // 覆盖推荐版本号
+    val recommendedVersion: Boolean? = null,
     // 覆盖的触发器
     val triggerStepIds: List<String>? = null,
     // 覆盖的设置组

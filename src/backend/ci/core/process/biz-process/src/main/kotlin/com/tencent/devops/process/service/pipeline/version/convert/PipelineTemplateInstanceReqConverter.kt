@@ -189,9 +189,15 @@ class PipelineTemplateInstanceReqConverter(
 
             // 前端会把所有的触发器都传过来,这里只需要保留流水线自定义的触发器
             val overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
-            val filterTriggerConfigs = triggerConfigs?.filter {
+            val finalTriggerConfigs = triggerConfigs?.filter {
                 it.stepId != null && overrideTriggerStepIds?.contains(it.stepId) ?: false
             }
+
+            val recommendedVersion = TemplateInstanceUtil.getRecommendedVersion(
+                buildNo = buildNo,
+                params = params ?: emptyList(),
+                overrideReCommendedVersion = overrideTemplateField?.recommendedVersion
+            )
 
             val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
                 name = pipelineName,
@@ -202,7 +208,8 @@ class PipelineTemplateInstanceReqConverter(
                 templatePath = templatePath,
                 templateRef = templateRef,
                 templateVariables = templateVariables,
-                triggerConfigs = filterTriggerConfigs,
+                triggerConfigs = finalTriggerConfigs,
+                recommendedVersion = recommendedVersion,
                 overrideTemplateField = overrideTemplateField
             )
             val pipelineSettingWithoutVersion = getPipelineSetting(
@@ -229,12 +236,13 @@ class PipelineTemplateInstanceReqConverter(
             val instanceModel = TemplateInstanceUtil.instanceModel(
                 templateModel = templateResource.model as Model,
                 pipelineName = pipelineName,
-                buildNo = buildNo,
                 templateVariables = templateVariables,
                 instanceFromTemplate = true,
                 defaultStageTagId = defaultStageTagId,
                 templateId = templateId,
-                triggerConfigs = filterTriggerConfigs
+                triggerConfigs = finalTriggerConfigs,
+                recommendedVersion = recommendedVersion,
+                overrideTemplateField = overrideTemplateField
             )
 
             val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(

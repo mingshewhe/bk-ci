@@ -70,6 +70,7 @@ import com.tencent.devops.process.yaml.v3.models.IfField
 import com.tencent.devops.process.yaml.v3.models.PreExtends
 import com.tencent.devops.process.yaml.v3.models.PreRepositoryHook
 import com.tencent.devops.process.yaml.v3.models.PreScriptBuildYamlIParser
+import com.tencent.devops.process.yaml.v3.models.RecommendedVersion
 import com.tencent.devops.process.yaml.v3.models.RepositoryHook
 import com.tencent.devops.process.yaml.v3.models.YamlTransferData
 import com.tencent.devops.process.yaml.v3.models.YmlName
@@ -114,12 +115,12 @@ import com.tencent.devops.process.yaml.v3.models.step.Step
 import com.tencent.devops.process.yaml.v3.models.step.StepTemplate
 import com.tencent.devops.process.yaml.v3.parameter.ParametersType
 import com.tencent.devops.process.yaml.v3.parsers.template.YamlObjects
+import org.apache.commons.text.StringEscapeUtils
+import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.StringReader
 import java.util.Random
 import java.util.regex.Pattern
-import org.apache.commons.text.StringEscapeUtils
-import org.slf4j.LoggerFactory
 
 @Suppress("MaximumLineLength", "ComplexCondition", "ComplexMethod")
 object ScriptYmlUtils {
@@ -377,7 +378,8 @@ object ScriptYmlUtils {
             templateId = YamlObjects.getNullValue("template-id", map),
             templateVersionName = YamlObjects.getNullValue("version", map),
             variables = getExtendsTemplateVariables(map["variables"]),
-            triggerConfig = getExtendsTriggerConfig(map["trigger-conf"])
+            triggerConfig = getExtendsTriggerConfig(map["trigger-conf"]),
+            recommendedVersion = getRecommendedVersion(map["recommended-version"])
         )
     }
 
@@ -399,6 +401,13 @@ object ScriptYmlUtils {
                 )
             )
         }
+    }
+
+    private fun getRecommendedVersion(recommendedVersion: Any?): RecommendedVersion? {
+        if (recommendedVersion == null) {
+            return null
+        }
+        return JsonUtil.anyTo(recommendedVersion, object : TypeReference<RecommendedVersion>() {})
     }
 
     private fun getExtendsTemplateVariables(variables: Any?): Map<String, PreTemplateVariable>? {

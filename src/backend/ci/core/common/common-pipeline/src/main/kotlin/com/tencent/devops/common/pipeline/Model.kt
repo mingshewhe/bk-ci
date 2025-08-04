@@ -37,8 +37,9 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
-import com.tencent.devops.common.pipeline.pojo.TemplateVariable
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
 import com.tencent.devops.common.pipeline.pojo.transfer.Resources
@@ -84,20 +85,22 @@ data class Model(
     override var templateId: String? = null,
     @get:Schema(title = "模版版本名称", required = false)
     override var templateVersionName: String? = null,
-    @get:Schema(title = "模板参数构建", required = false)
+    @get:Schema(title = "实例化-流水线自定义-流水线参数", required = false)
     override var templateVariables: List<TemplateVariable>? = null,
-    @get:Schema(title = "解析后的模版ID", required = false)
-    override var parsedTemplateId: String? = null,
-    @get:Schema(title = "解析后的模版版本", required = false)
-    override var parsedTemplateVersion: Long? = null,
     /* 模版实例化时触发器变量 */
-    @get:Schema(title = "触发器配置", required = false)
+    @get:Schema(title = "实例化-流水线自定义-触发器配置", required = false)
     var triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
+    @get:Schema(title = "实例化-流水线自定义-推荐版本号", required = false)
+    var recommendedVersion: TemplateInstanceRecommendedVersion? = null,
     /**
      * 流水线覆盖模版字段
      */
     @get:Schema(title = "覆盖模版字段", required = false)
-    var overrideTemplateField: TemplateField? = null
+    var overrideTemplateField: TemplateField? = null,
+    @get:Schema(title = "解析后的模版ID", required = false)
+    override var parsedTemplateId: String? = null,
+    @get:Schema(title = "解析后的模版版本", required = false)
+    override var parsedTemplateVersion: Long? = null,
 ) : ITemplateModel, TemplateDescriptor {
     @get:Schema(title = "提交时流水线最新版本号", required = false)
     var latestVersion: Int = 0

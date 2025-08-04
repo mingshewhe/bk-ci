@@ -7,6 +7,7 @@ import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.element.Element
@@ -16,6 +17,9 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.utils.PipelineUtils.getFixedStages
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateResource
+import com.tencent.devops.process.utils.FIXVERSION
+import com.tencent.devops.process.utils.MAJORVERSION
+import com.tencent.devops.process.utils.MINORVERSION
 
 /**
  *  模板实例工具类
@@ -28,7 +32,6 @@ object TemplateInstanceUtil {
     fun instanceModel(
         templateModel: Model,
         pipelineName: String,
-        buildNo: BuildNo?,
         templateVariables: List<TemplateVariable>?,
         instanceFromTemplate: Boolean,
         labels: List<String>? = null,
@@ -36,6 +39,7 @@ object TemplateInstanceUtil {
         templateId: String? = null,
         staticViews: List<String> = emptyList(),
         triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
+        recommendedVersion: TemplateInstanceRecommendedVersion? = null,
         overrideTemplateField: TemplateField? = null
     ): Model {
         val templateTrigger = templateModel.getTriggerContainer()
@@ -44,15 +48,21 @@ object TemplateInstanceUtil {
             triggerConfigs = triggerConfigs,
             overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
         )
-        val instanceParam = mergeParams(
+        val pipelineParam = mergeParams(
             templateParams = templateTrigger.params,
             templateVariables = templateVariables,
             overrideParamIds = overrideTemplateField?.paramIds
         )
+        val buildNo = mergeRecommendedVersion(
+            pipelineParams = pipelineParam,
+            templateBuildNo = templateModel.getTriggerContainer().buildNo,
+            recommendedVersion = recommendedVersion,
+            overrideReCommendedVersion = overrideTemplateField?.recommendedVersion
+        )
         val triggerContainer = templateTrigger.copy(
             buildNo = buildNo,
             elements = triggerElements,
-            params = instanceParam,
+            params = pipelineParam,
         )
 
         return Model(
@@ -125,6 +135,26 @@ object TemplateInstanceUtil {
         return instanceSetting
     }
 
+    fun getRecommendedVersion(
+        buildNo: BuildNo?,
+        params: List<BuildFormProperty>,
+        overrideReCommendedVersion: Boolean?
+    ): TemplateInstanceRecommendedVersion? {
+        if (overrideReCommendedVersion != true || buildNo == null) return null
+        val recommendedVersion = TemplateInstanceRecommendedVersion(
+            enabled = true,
+            buildNo = buildNo
+        )
+        params.forEach { param ->
+            when (param.id) {
+                MAJORVERSION -> recommendedVersion.major = param.defaultValue.toString().toIntOrNull() ?: 0
+                MINORVERSION -> recommendedVersion.minor = param.defaultValue.toString().toIntOrNull() ?: 0
+                FIXVERSION -> recommendedVersion.fix = param.defaultValue.toString().toIntOrNull() ?: 0
+            }
+        }
+        return recommendedVersion
+    }
+
     private fun mergeTriggerContainer(
         model: Model,
         templateModel: Model,
@@ -139,7 +169,14 @@ object TemplateInstanceUtil {
             templateVariables = model.templateVariables,
             overrideParamIds = model.overrideTemplateField?.paramIds
         )
+        val buildNo = mergeRecommendedVersion(
+            pipelineParams = pipelineParams,
+            templateBuildNo = templateModel.getTriggerContainer().buildNo,
+            recommendedVersion = model.recommendedVersion,
+            overrideReCommendedVersion = model.overrideTemplateField?.recommendedVersion
+        )
         return templateModel.getTriggerContainer().copy(
+            buildNo = buildNo,
             elements = triggerElements,
             params = pipelineParams
         )
@@ -291,5 +328,22 @@ object TemplateInstanceUtil {
         setting.concurrencyGroup = templateSetting.concurrencyGroup
         setting.concurrencyCancelInProgress = templateSetting.concurrencyCancelInProgress
         setting.maxConRunningQueueSize = templateSetting.maxConRunningQueueSize
+    }
+
+    private fun mergeRecommendedVersion(
+        pipelineParams: List<BuildFormProperty>,
+        templateBuildNo: BuildNo?,
+        recommendedVersion: TemplateInstanceRecommendedVersion?,
+        overrideReCommendedVersion: Boolean?
+    ): BuildNo? {
+        if (overrideReCommendedVersion != true) return templateBuildNo
+        pipelineParams.forEach { param ->
+            when (param.id) {
+                MAJORVERSION -> param.defaultValue = recommendedVersion?.major ?: 0
+                MINORVERSION -> param.defaultValue = recommendedVersion?.minor ?: 0
+                FIXVERSION -> param.defaultValue = recommendedVersion?.fix ?: 0
+            }
+        }
+        return recommendedVersion?.buildNo
     }
 }
