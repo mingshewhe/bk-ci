@@ -370,7 +370,7 @@ class PipelineTemplateMigrateService(
             versionInfo = versionInfo,
             latestTemplate = context.latestTemplate,
             currentTemplate = currentTemplate,
-            seq = counters.pipelineVersion, // 使用 pipelineVersion 作为序列
+            seq = index + 1,
             pipelineVersion = counters.pipelineVersion,
             triggerVersion = counters.triggerVersion,
             params = currentTemplateModel.getTriggerContainer().params,
