@@ -181,17 +181,6 @@ class PipelineSettingVersionDao {
         }
     }
 
-    fun getSettingByPipelineIds(
-        dslContext: DSLContext,
-        pipelineIds: List<String>
-    ): List<PipelineSettingVersion> {
-        with(TPipelineSettingVersion.T_PIPELINE_SETTING_VERSION) {
-            return dslContext.selectFrom(this)
-                .where(PIPELINE_ID.`in`(pipelineIds))
-                .fetch(mapper)
-        }
-    }
-
     fun batchUpdate(dslContext: DSLContext, tPipelineSettingVersionRecords: List<TPipelineSettingVersionRecord>) {
         dslContext.batchUpdate(tPipelineSettingVersionRecords).execute()
     }
@@ -228,26 +217,6 @@ class PipelineSettingVersionDao {
                 .and(VERSION.le(currentVersion - maxPipelineResNum))
                 .and(PROJECT_ID.eq(projectId))
                 .execute()
-        }
-    }
-
-    fun listPacSettings(
-        dslContext: DSLContext,
-        projectId: String,
-        pipelineIds: List<String>
-    ): Map<String, PipelineAsCodeSettings> {
-        val result = mutableMapOf<String, PipelineAsCodeSettings>()
-        with(TPipelineSettingVersion.T_PIPELINE_SETTING_VERSION) {
-            dslContext.select(PIPELINE_ID, PIPELINE_AS_CODE_SETTINGS)
-                .from(this)
-                .where(PROJECT_ID.eq(projectId))
-                .and(PIPELINE_ID.`in`(pipelineIds))
-                .fetch().forEach {
-                    if (it.value2() != null) {
-                        result[it.value1()] = JsonUtil.to(it.value2(), PipelineAsCodeSettings::class.java)
-                    }
-                }
-            return result
         }
     }
 

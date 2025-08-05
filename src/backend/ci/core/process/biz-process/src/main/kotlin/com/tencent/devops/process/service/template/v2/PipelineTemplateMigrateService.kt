@@ -399,13 +399,13 @@ class PipelineTemplateMigrateService(
                 dslContext = dslContext,
                 templateId = latestTemplate.srcTemplateId
             )
-            templateFacadeService.listTemplateVersions(
+            templateFacadeService.listTemplateAllVersions(
                 projectId = srcLatestTemplate.projectId,
                 templateId = srcLatestTemplate.id,
                 ascSort = true
             )
         } else {
-            templateFacadeService.listTemplateVersions(
+            templateFacadeService.listTemplateAllVersions(
                 projectId = latestTemplate.projectId,
                 templateId = latestTemplate.id,
                 ascSort = true

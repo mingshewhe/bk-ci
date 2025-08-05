@@ -1345,7 +1345,12 @@ class TemplateFacadeService @Autowired constructor(
         templateId: String,
         ascSort: Boolean = false
     ): List<TemplateVersion> {
-        val versionInfos = templateDao.getTemplateVersionInfos(dslContext, projectId, templateId, ascSort)
+        val versionInfos = templateDao.getTemplateVersionInfos(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            ascSort = ascSort
+        )
         val tTemplate = TTemplate.T_TEMPLATE
         val versions = mutableListOf<TemplateVersion>()
         val versionNames = mutableListOf<String>()
@@ -1368,6 +1373,75 @@ class TemplateFacadeService @Autowired constructor(
             versions.sortedBy { templateVersion -> templateVersion.updateTime }
         } else {
             versions.sortedByDescending { templateVersion -> templateVersion.updateTime }
+        }
+    }
+
+    /**
+     * 获取模板所有的版本
+     *
+     * @param projectId 项目ID
+     * @param templateId 模板ID
+     * @param ascSort 是否按更新时间升序排序
+     * @return 模板版本列表，重复的 versionName 会被添加后缀（如: "-1", "-2"）
+     */
+    fun listTemplateAllVersions(
+        projectId: String,
+        templateId: String,
+        ascSort: Boolean = false
+    ): List<TemplateVersion> {
+        val versionInfos = templateDao.getTemplateVersionInfos(
+            dslContext = dslContext,
+            projectId = projectId,
+            templateId = templateId,
+            ascSort = ascSort
+        ) ?: return emptyList()
+
+        val tTemplate = TTemplate.T_TEMPLATE
+
+        // --- 步骤 1: 准备数据并排序 ---
+        // 先将所有记录转换为 TemplateVersion 对象，并确保按 updateTime 排序。
+        // 排序是必须的，以保证后缀（-1, -2）是按时间顺序应用的。
+        val sortedVersions = versionInfos.map { versionInfo ->
+            TemplateVersion(
+                version = versionInfo[tTemplate.VERSION],
+                versionName = versionInfo[tTemplate.VERSION_NAME],
+                updateTime = versionInfo[tTemplate.UPDATE_TIME].timestampmilli(),
+                creator = versionInfo[tTemplate.CREATOR]
+            )
+        }.let { versions ->
+            // 使用 let 块来应用排序，代码更清晰
+            if (ascSort) {
+                versions.sortedBy { it.updateTime }
+            } else {
+                versions.sortedByDescending { it.updateTime }
+            }
+        }
+
+        // --- 步骤 2: 预计算每个 versionName 的总数 ---
+        // 使用 groupingBy().eachCount() 是最高效、最Kotlin风格的方式。
+        val totalNameCounts = sortedVersions.groupingBy { it.versionName }.eachCount()
+
+        // --- 步骤 3: 最终转换，根据预计算结果进行重命名 ---
+        // 用于为重复项生成递增后缀（如：-1, -2, ...）
+        val runningDuplicateCounters = mutableMapOf<String, Int>()
+
+        return sortedVersions.map { version ->
+            val originalName = version.versionName
+            val totalCount = totalNameCounts[originalName] ?: 1
+
+            // 如果总数大于1，说明它是重复项，需要重命名
+            if (totalCount > 1) {
+                // 获取当前名称的后缀计数，从 1 开始
+                val suffixIndex = runningDuplicateCounters.getOrDefault(originalName, 0) + 1
+                // 更新计数器，为下一个同名项做准备
+                runningDuplicateCounters[originalName] = suffixIndex
+
+                // 使用 copy 创建一个带有新名称的新实例
+                version.copy(versionName = "$originalName-$suffixIndex")
+            } else {
+                // 如果总数不大于1，说明它是唯一的，保持原样
+                version
+            }
         }
     }
 
