@@ -114,6 +114,7 @@ data class PipelineTemplateListResponse(
         creator = pipelineTemplateInfo.creator,
         updater = pipelineTemplateInfo.updater,
         createdTime = pipelineTemplateInfo.createdTime,
+        updateTime = pipelineTemplateInfo.updateTime,
         canView = permission.canView,
         canDelete = permission.canDelete,
         canEdit = permission.canEdit,
