@@ -49,6 +49,7 @@ import com.tencent.devops.common.auth.api.ActionId
 import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.auth.api.ResourceTypeId
 import com.tencent.devops.common.client.Client
+import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Container
 import com.tencent.devops.common.pipeline.container.TriggerContainer
@@ -89,6 +90,7 @@ import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceBaseDao
 import com.tencent.devops.process.engine.dao.template.TemplateInstanceItemDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateMigrateEvent
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
@@ -130,7 +132,6 @@ import com.tencent.devops.process.service.StageTagService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMigrateService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.TempNotifyTemplateUtils
@@ -188,8 +189,8 @@ class TemplateFacadeService @Autowired constructor(
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineTemplateVersionManager: PipelineTemplateVersionManager,
     private val pipelineTemplateMarketFacadeService: PipelineTemplateMarketFacadeService,
-    private val pipelineTemplateMigrateService: PipelineTemplateMigrateService,
-    private val pipelineTemplateResourceService: PipelineTemplateResourceService
+    private val pipelineTemplateResourceService: PipelineTemplateResourceService,
+    private val pipelineEventDispatcher: PipelineEventDispatcher
 ) {
 
     @Value("\${template.maxSyncInstanceNum:10}")
@@ -640,7 +641,15 @@ class TemplateFacadeService @Autowired constructor(
         }
 
         // 触发异步迁移
-        pipelineTemplateMigrateService.asyncMigrateTemplate(projectId = projectId, templateId = templateId)
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateMigrateEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_MIGRATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+            )
+        )
         return newVersion
     }
 
@@ -2599,9 +2608,15 @@ class TemplateFacadeService @Autowired constructor(
             projectTemplateMap[projectId] = templateId
         }
         // 安装研发商店的模板，需后台进行迁移数据。
-        pipelineTemplateMigrateService.asyncMigrateTemplate(
-            projectId = projectId,
-            templateId = templateId
+        // 同步数据
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateMigrateEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_MIGRATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+            )
         )
         return projectTemplateMap
     }
@@ -2616,10 +2631,15 @@ class TemplateFacadeService @Autowired constructor(
             projectId = projectId,
             updateMarketTemplateRequest = updateMarketTemplateRequest
         )
-        // 异步迁移数据
-        pipelineTemplateMigrateService.asyncMigrateTemplate(
-            projectId = projectId,
-            templateId = updateMarketTemplateRequest.templateCode
+        // 同步数据
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateMigrateEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_MIGRATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = updateMarketTemplateRequest.templateCode,
+            )
         )
         return true
     }

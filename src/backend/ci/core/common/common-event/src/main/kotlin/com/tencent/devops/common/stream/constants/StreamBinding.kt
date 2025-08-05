@@ -71,6 +71,8 @@ object StreamBinding {
 
     const val PIPELINE_TEMPLATE_TRIGGER_UPDATES = "engine.pipeline.template.trigger.updates"
 
+    const val PIPELINE_TEMPLATE_MIGRATE = "engine.pipeline.template.migrate"
+
     // 监控相关的队列
     const val PIPELINE_BUILD_MONITOR = "engine.pipeline.listener.monitor"
     const val PIPELINE_BUILD_HEART_BEAT = "engine.pipeline.build.hb"

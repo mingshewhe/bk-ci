@@ -24,20 +24,10 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+package com.tencent.devops.common.pipeline.template
 
-package com.tencent.devops.process.service.template.v2
-
-import com.tencent.devops.common.redis.RedisLock
-import com.tencent.devops.common.redis.RedisOperation
-
-class PipelineTemplateModelLock(redisOperation: RedisOperation, templateId: String) :
-    RedisLock(
-        redisOperation = redisOperation,
-        lockKey = "pipeline:template:model.lock.$templateId",
-        expiredTimeInSeconds = 300L
-    ) {
-    override fun decorateKey(key: String): String {
-        // templateId在各集群唯一，key无需加上集群信息前缀来区分
-        return key
-    }
+enum class MigrationStatus(val value: String) {
+    SUCCESS("迁移成功"),
+    FAILED("迁移失败"),
+    IN_PROGRESS("迁移中")
 }

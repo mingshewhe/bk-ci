@@ -25,19 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.service.template.v2
+package com.tencent.devops.process.engine.pojo.event
 
-import com.tencent.devops.common.redis.RedisLock
-import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.common.event.annotation.Event
+import com.tencent.devops.common.event.enums.ActionType
+import com.tencent.devops.common.event.pojo.pipeline.IPipelineEvent
+import com.tencent.devops.common.stream.constants.StreamBinding
 
-class PipelineTemplateModelLock(redisOperation: RedisOperation, templateId: String) :
-    RedisLock(
-        redisOperation = redisOperation,
-        lockKey = "pipeline:template:model.lock.$templateId",
-        expiredTimeInSeconds = 300L
-    ) {
-    override fun decorateKey(key: String): String {
-        // templateId在各集群唯一，key无需加上集群信息前缀来区分
-        return key
-    }
-}
+/**
+ * 流水线模板迁移事件
+ *
+ * @version 1.0
+ */
+@Event(StreamBinding.PIPELINE_TEMPLATE_MIGRATE)
+data class PipelineTemplateMigrateEvent(
+    override val source: String,
+    override val projectId: String,
+    override val pipelineId: String,
+    override val userId: String,
+    val templateId: String,
+    override var actionType: ActionType = ActionType.START,
+    override var delayMills: Int = 0
+) : IPipelineEvent(actionType, source, projectId, pipelineId, userId, delayMills)

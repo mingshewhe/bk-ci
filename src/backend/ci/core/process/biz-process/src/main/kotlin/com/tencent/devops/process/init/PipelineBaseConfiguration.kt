@@ -32,15 +32,17 @@ import com.tencent.devops.common.stream.ScsConsumerBuilder
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineCreateListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineDeleteListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineRestoreListener
-import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceListener
 import com.tencent.devops.process.engine.listener.pipeline.MQPipelineUpdateListener
+import com.tencent.devops.process.engine.listener.template.MQTemplateMigrateListener
+import com.tencent.devops.process.engine.listener.template.MQTemplateTriggerUpgradesListener
 import com.tencent.devops.process.engine.pojo.event.PipelineCreateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineDeleteEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineRestoreEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateMigrateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateTriggerUpgradesEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineUpdateEvent
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMarketFacadeService
+import com.tencent.devops.process.service.template.v2.PipelineTemplateInstanceListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 
@@ -95,8 +97,14 @@ class PipelineBaseConfiguration {
      */
     @EventConsumer
     fun pipelineTemplateTriggerUpgradesConsumer(
-        @Autowired listener: PipelineTemplateMarketFacadeService
-    ) = ScsConsumerBuilder.build<PipelineTemplateTriggerUpgradesEvent> {
-        listener.releaseTemplateVersionAndTriggerUpgrades(it)
-    }
+        @Autowired listener: MQTemplateTriggerUpgradesListener
+    ) = ScsConsumerBuilder.build<PipelineTemplateTriggerUpgradesEvent> { listener.run(it) }
+
+    /**
+     * 流水线模板迁移--- 并发一般
+     */
+    @EventConsumer
+    fun pipelineTemplateMigrateConsumer(
+        @Autowired listener: MQTemplateMigrateListener
+    ) = ScsConsumerBuilder.build<PipelineTemplateMigrateEvent> { listener.run(it) }
 }

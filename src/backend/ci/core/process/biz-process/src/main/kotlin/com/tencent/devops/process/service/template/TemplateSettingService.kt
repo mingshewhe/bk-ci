@@ -1,17 +1,18 @@
 package com.tencent.devops.process.service.template
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
+import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.extend.ModelCheckPlugin
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.engine.dao.template.TemplateDao
+import com.tencent.devops.process.engine.pojo.event.PipelineTemplateMigrateEvent
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
-import com.tencent.devops.process.service.template.v2.PipelineTemplateMigrateService
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
@@ -32,7 +33,7 @@ class TemplateSettingService @Autowired constructor(
     private val pipelineSettingVersionService: PipelineSettingVersionService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelineAsCodeService: PipelineAsCodeService,
-    private val pipelineTemplateMigrateService: PipelineTemplateMigrateService
+    private val pipelineEventDispatcher: PipelineEventDispatcher
 ) {
     fun updateTemplateSetting(
         projectId: String,
@@ -74,15 +75,15 @@ class TemplateSettingService @Autowired constructor(
         setting: PipelineSetting
     ): PipelineSetting {
         val projectId = setting.projectId
-        val pipelineId = setting.pipelineId
+        val templateId = setting.pipelineId
         // 对齐新旧通知配置，统一根据新list数据保存
         val settingVersion = pipelineSettingVersionService.getSettingVersionAfterUpdate(
             projectId = projectId,
-            pipelineId = pipelineId,
+            pipelineId = templateId,
             updateVersion = true,
             setting = setting
         )
-        logger.info("Save the template pipeline setting|$pipelineId|settingVersion=$settingVersion|setting=\n$setting")
+        logger.info("Save the template pipeline setting|$templateId|settingVersion=$settingVersion|setting=\n$setting")
         val templateName = pipelineRepositoryService.saveSetting(
             context = context,
             userId = userId,
@@ -107,9 +108,14 @@ class TemplateSettingService @Autowired constructor(
             labelIds = setting.labels
         )
         // 同步数据
-        pipelineTemplateMigrateService.asyncMigrateTemplate(
-            projectId = projectId,
-            templateId = setting.pipelineId
+        pipelineEventDispatcher.dispatch(
+            PipelineTemplateMigrateEvent(
+                projectId = projectId,
+                source = "PIPELINE_TEMPLATE_MIGRATE",
+                pipelineId = "",
+                userId = userId,
+                templateId = templateId,
+            )
         )
         return setting.copy(version = settingVersion)
     }

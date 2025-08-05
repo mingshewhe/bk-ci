@@ -37,6 +37,8 @@ import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.template.MigrationStatus
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.redis.RedisOperation
@@ -44,6 +46,7 @@ import com.tencent.devops.common.service.trace.TraceTag
 import com.tencent.devops.model.process.tables.records.TTemplateRecord
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
+import com.tencent.devops.process.dao.template.PipelineTemplateMigrationDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
 import com.tencent.devops.process.pojo.template.TemplateType
@@ -64,6 +67,7 @@ import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import java.util.concurrent.Executors
 
 @Service
@@ -79,7 +83,8 @@ class PipelineTemplateMigrateService(
     val pipelineTemplateInfoService: PipelineTemplateInfoService,
     val templatePipelineDao: TemplatePipelineDao,
     val redisOperation: RedisOperation,
-    val client: Client
+    val client: Client,
+    val pipelineTemplateMigrationDao: PipelineTemplateMigrationDao
 ) {
     fun migrateTemplatesByCondition(projectConditionDTO: ProjectConditionDTO) {
         logger.info("start to migrate Templates by condition|$projectConditionDTO")
@@ -103,50 +108,153 @@ class PipelineTemplateMigrateService(
     }
 
 
+    /**
+     * 迁移一个项目下的所有模板（协调函数）。
+     *
+     * 主要职责：
+     * 1. 控制迁移任务的生命周期（开始、进行中、结束）。
+     * 2. 协调核心迁移、数据清理和结果上报的流程。
+     * 3. 通过顶层 try-catch 保证任务状态最终会被更新，避免卡在“进行中”。
+     */
     fun migrateTemplates(projectId: String) {
-        logger.info("start to migrate project templates,{}", projectId)
+        logger.info("Start to migrate project templates for projectId: {}", projectId)
+
+        // 1. 前置检查：如果任务已在进行中，则直接返回
+        val migrationRecord = pipelineTemplateMigrationDao.get(dslContext, projectId)
+        if (migrationRecord?.status == MigrationStatus.IN_PROGRESS.name) {
+            logger.warn("Migration for projectId {} is already in progress. Skipping.", projectId)
+            return
+        }
+
+        val startTime = LocalDateTime.now()
+        // 2. 标记任务开始
+        pipelineTemplateMigrationDao.create(
+            dslContext = dslContext,
+            projectId = projectId,
+            status = MigrationStatus.IN_PROGRESS
+        )
+
+        var result: MigrationResult? = null
+        var cleanupStats: CleanupStats? = null
+
+        try {
+            // 3. 执行核心迁移逻辑
+            result = runTemplateMigration(projectId)
+
+            // 4. 清理孤立数据
+            cleanupStats = cleanupOrphanedTemplates(projectId, result.allTemplateIds)
+
+        } catch (ex: Exception) {
+            // 捕获迁移或清理过程中的任何意外异常，确保能记录失败状态
+            logger.error(
+                "A critical error occurred during migration for projectId: {}. Error: {}",
+                projectId, ex.message, ex
+            )
+        } finally {
+            // 5. 记录最终结果，无论成功、部分失败还是严重失败
+            recordFinalMigrationStatus(projectId, startTime, result, cleanupStats)
+        }
+    }
+
+    /**
+     * [辅助函数 1] - 执行实际的模板迁移循环。
+     * @return 返回一个包含所有迁移结果的 MigrationResult 对象。
+     */
+    private fun runTemplateMigration(projectId: String): MigrationResult {
+        val allTemplateIds = mutableSetOf<String>()
+        val successfulIds = mutableListOf<String>()
+        val failedItems = mutableListOf<FailedMigrationItem>()
+
         var offset = 0
         val limit = PageUtil.MAX_PAGE_SIZE / 2
-        val v1AllTemplateIds = mutableListOf<String>()
         do {
-            val templateIds = templateDao.list(
+            val templateIdsBatch = templateDao.list(
                 dslContext = dslContext,
                 projectId = projectId,
                 limit = limit,
                 offset = offset
             )
-            logger.info("migrate project templates->{}", templateIds)
-            templateIds.forEach { templateId ->
+            logger.info("Processing batch of {} templates for projectId: {}", templateIdsBatch.size, projectId)
+
+            templateIdsBatch.forEach { templateId ->
                 try {
-                    migrateTemplate(
-                        templateId = templateId,
-                        projectId = projectId
-                    )
+                    migrateTemplate(templateId = templateId, projectId = projectId)
+                    successfulIds.add(templateId)
                 } catch (ex: Exception) {
-                    logger.warn("migrate template failed $projectId|$templateId|$ex")
+                    logger.warn("Failed to migrate templateId {} in projectId {}: {}", templateId, projectId, ex.message)
+                    failedItems.add(FailedMigrationItem(templateId, ex.message))
                 }
             }
-            v1AllTemplateIds.addAll(templateIds)
+            allTemplateIds.addAll(templateIdsBatch)
             offset += limit
-        } while (templateIds.size == limit)
-        migratePostProcess(
-            projectId = projectId,
-            v1AllTemplateIds = v1AllTemplateIds
-        )
+        } while (templateIdsBatch.size == limit)
+
+        return MigrationResult(allTemplateIds, successfulIds, failedItems)
     }
 
-    private fun migratePostProcess(
-        projectId: String,
-        v1AllTemplateIds: List<String>
-    ) {
+    /**
+     * [辅助函数 2] - 清理在新表中存在但在旧表中不存在的孤立模板。
+     * @param v1AllTemplateIds 从旧表中获取的所有模板ID。
+     * @return 返回清理前后的数量统计。
+     */
+    private fun cleanupOrphanedTemplates(projectId: String, v1AllTemplateIds: Set<String>): CleanupStats {
         val v2AllTemplateIds = pipelineTemplateInfoService.listAllIds(projectId)
         val deleteRecords = v2AllTemplateIds.filterNot { it in v1AllTemplateIds }
-        deleteRecords.forEach {
-            pipelineTemplatePersistenceService.deleteTemplateAllVersions(
-                projectId = projectId,
-                templateId = it
-            )
+
+        if (deleteRecords.isNotEmpty()) {
+            logger.warn("Found {} orphaned templates to delete for projectId: {}", deleteRecords.size, projectId)
+            deleteRecords.forEach { templateId ->
+                try {
+                    pipelineTemplatePersistenceService.deleteTemplateAllVersions(
+                        projectId = projectId,
+                        templateId = templateId
+                    )
+                } catch (ex: Exception) {
+                    logger.error(
+                        "Failed to delete orphaned templateId {} for projectId {}: {}",
+                        templateId, projectId, ex.message
+                    )
+                }
+            }
         }
+
+        return CleanupStats(v2AllTemplateIds.size, v2AllTemplateIds.size - deleteRecords.size)
+    }
+
+    /**
+     * [辅助函数 3] - 将最终的迁移结果更新到数据库。
+     */
+    private fun recordFinalMigrationStatus(
+        projectId: String,
+        startTime: LocalDateTime,
+        result: MigrationResult?,
+        cleanupStats: CleanupStats?
+    ) {
+        val totalTime = LocalDateTime.now().timestampmilli() - startTime.timestampmilli()
+
+        // 如果 result 为 null，说明在核心流程中发生了严重错误
+        val isSuccess = result != null && result.failedItems.isEmpty()
+        val status = if (isSuccess) MigrationStatus.SUCCESS else MigrationStatus.FAILED
+
+        val errorMessage = result?.failedItems?.takeIf { it.isNotEmpty() }?.let { JsonUtil.toJson(it) }
+
+        val beforeCount = result?.allTemplateIds?.size ?: 0
+        val afterCount = cleanupStats?.countAfterCleanup
+            ?: pipelineTemplateInfoService.listAllIds(projectId).size // 降级方案
+
+        pipelineTemplateMigrationDao.update(
+            dslContext = dslContext,
+            projectId = projectId,
+            status = status,
+            errorMessage = errorMessage,
+            totalTime = totalTime,
+            beforeTemplateCount = beforeCount,
+            afterTemplateCount = afterCount
+        )
+        logger.info(
+            "Migration for projectId {} finished with status: {}. Total time: {}ms. Before: {}, After: {}",
+            projectId, status, totalTime, beforeCount, afterCount
+        )
     }
 
     fun asyncMigrateTemplate(templateId: String, projectId: String) {
@@ -158,238 +266,338 @@ class PipelineTemplateMigrateService(
         }
     }
 
-    fun migrateTemplate(templateId: String, projectId: String) {
+    /**
+     * 主协调函数，负责迁移单个模板的所有版本。
+     * 原始的 migrateTemplate 函数被重构为这个更高阶的协调者。
+     */
+    fun migrateTemplate(projectId: String, templateId: String) {
         val lock = PipelineTemplateModelLock(redisOperation = redisOperation, templateId = templateId)
         try {
             lock.lock()
-            logger.info("migrate template,{}|{}", projectId, templateId)
-            val latestTemplate = templateDao.getLatestTemplate(
-                dslContext = dslContext,
-                projectId = projectId,
-                templateId = templateId
-            )
-            logger.debug("migrate template latestTemplate {}", latestTemplate)
-            val setting = pipelineSettingDao.getSetting(
-                dslContext = dslContext,
-                projectId = projectId,
-                pipelineId = latestTemplate.id
-            ) ?: throw ErrorCodeException(
-                errorCode = ProcessMessageCode.PIPELINE_SETTING_NOT_EXISTS
-            )
-            logger.debug("migrate template setting {}", setting)
+            logger.info("Migrate template started, projectId={}, templateId={}", projectId, templateId)
 
-            // 若是自定义模板，获取当前模板的版本历史，约束模板（安装来源于研发商店）获取其父模板的版本历史
-            val templateVersionInfos = getTemplateVersions(latestTemplate)
-            val srcTemplateProjectId = getSrcTemplateProjectId(latestTemplate)
+            // 步骤 1: 准备所有需要的数据，并创建上下文对象
+            val context = setupMigrationContext(projectId, templateId)
 
-            logger.info(
-                "migrate template versions templateId {} srcTemplateProjectId {},templateVersionInfos{}",
-                templateId, srcTemplateProjectId, templateVersionInfos
-            )
-            // 获取模板在研发商店的发布情况
-            val marketTemplateStatus = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(
-                templateCode = templateId
-            ).data!!
+            // 步骤 2: 遍历所有旧版本，并逐一迁移
+            migrateAllTemplateVersions(context)
 
-            var versionSequence = 0
-            var pipelineVersion = 0
-            var triggerVersion = 0
+            // 步骤 3: 迁移完成后，创建最终的 info 记录并清理可能存在的脏数据
+            finalizeMigration(context)
 
-            val hasBeenPublished = latestTemplate.type == TemplateType.CUSTOMIZE.name &&
-                (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
-                    marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)
-            templateVersionInfos.forEachIndexed { index, templateVersionInfo ->
-                versionSequence += 1
-                val currentSetting = setting.copy(
-                    version = versionSequence,
-                    creator = templateVersionInfo.creator,
-                    createdTime = latestTemplate.createdTime.timestampmilli(),
-                    updateTime = latestTemplate.updateTime.timestampmilli()
-                )
-                val currentProjectId = srcTemplateProjectId ?: projectId
-                // 当前实际模板，可能为当前模板的版本或父模板版本
-                val currentTemplate = templateDao.getTemplate(
-                    dslContext = dslContext,
-                    projectId = currentProjectId,
-                    version = templateVersionInfo.version
-                ) ?: throw ErrorCodeException(
-                    errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-                )
-                val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
-                val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
+            logger.info("Migrate template finished successfully, projectId={}, templateId={}", projectId, templateId)
 
-                // 计算获取获取版本信息
-                if (index == 0) {
-                    pipelineVersion = 1
-                    triggerVersion = 1
-                } else {
-                    // 上一个版本的模板
-                    val previousVersionTemplate = templateDao.getTemplate(
-                        dslContext = dslContext,
-                        projectId = currentProjectId,
-                        version = templateVersionInfos[index - 1].version
-                    ) ?: throw ErrorCodeException(
-                        errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-                    )
-
-                    val previousVersionTemplateModel = JsonUtil.to(previousVersionTemplate.template, Model::class.java)
-                    val previousVersionTemplateParams = previousVersionTemplateModel.getTriggerContainer().params
-
-                    pipelineVersion = PipelineVersionUtils.getPipelineVersion(
-                        currVersion = pipelineVersion,
-                        originTemplateModel = previousVersionTemplateModel,
-                        newTemplateModel = currentTemplateModel,
-                        originParams = previousVersionTemplateParams,
-                        newParams = currentTemplateParams
-                    )
-
-                    triggerVersion = PipelineVersionUtils.getTriggerVersion(
-                        currVersion = triggerVersion,
-                        originModel = previousVersionTemplateModel,
-                        newModel = currentTemplateModel
-                    )
-                }
-
-                logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
-                logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
-                val modelTransferResult = try {
-                    pipelineTemplateGenerator.transfer(
-                        userId = latestTemplate.creator,
-                        projectId = latestTemplate.projectId,
-                        storageType = PipelineStorageType.MODEL,
-                        templateType = PipelineTemplateType.PIPELINE,
-                        templateModel = currentTemplateModel,
-                        templateSetting = currentSetting,
-                        params = currentTemplateParams,
-                        yaml = null
-                    )
-                } catch (ex: Exception) {
-                    logger.warn("model Transfer failed:{}", ex.toString())
-                    PTemplateModelTransferResult(
-                        templateType = PipelineTemplateType.PIPELINE,
-                        templateModel = currentTemplateModel,
-                        templateSetting = currentSetting,
-                        yamlWithVersion = null
-                    )
-                }
-
-                val pipelineTemplateResource = createPipelineTemplateResource(
-                    latestTemplate = latestTemplate,
-                    currentTemplate = currentTemplate,
-                    seq = versionSequence,
-                    pipelineVersion = pipelineVersion,
-                    triggerVersion = triggerVersion,
-                    params = currentTemplateParams,
-                    modelTransferResult = modelTransferResult,
-                    marketTemplateStatus = marketTemplateStatus
-                )
-
-                pipelineTemplatePersistenceService.createReleaseVersion(
-                    userId = templateVersionInfo.creator,
-                    templateResource = pipelineTemplateResource,
-                    templateSetting = currentSetting,
-                    syncPermission = false
-                )
-
-                // 如果该模板是从研发商店安装的，需要记录其安装的版本历史
-                if (latestTemplate.type == TemplateType.CONSTRAINT.name) {
-                    val srcTemplateVersion = pipelineTemplateResource.srcTemplateVersion!!
-                    val srcTemplateResource = templateDao.getTemplate(
-                        dslContext = dslContext,
-                        projectId = srcTemplateProjectId!!,
-                        version = srcTemplateVersion
-                    ) ?: throw ErrorCodeException(
-                        errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
-                    )
-
-                    client.get(ServiceTemplateResource::class).createTemplateInstallHistory(
-                        TemplateVersionInstallHistoryInfo(
-                            srcMarketTemplateProjectCode = srcTemplateProjectId,
-                            srcMarketTemplateCode = pipelineTemplateResource.srcTemplateId!!,
-                            projectCode = pipelineTemplateResource.projectId,
-                            templateCode = pipelineTemplateResource.templateId,
-                            version = srcTemplateResource.version,
-                            versionName = srcTemplateResource.versionName,
-                            number = pipelineTemplateResource.number,
-                            createTime = pipelineTemplateResource.releaseTime
-                        )
-                    )
-                }
-                // 如果该模板已经上架过研发商店，需要记录发布的版本历史
-                if (hasBeenPublished) {
-                    client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
-                        TemplatePublishedVersionInfo(
-                            projectCode = pipelineTemplateResource.projectId,
-                            templateCode = templateId,
-                            version = pipelineTemplateResource.version,
-                            versionName = pipelineTemplateResource.versionName!!,
-                            number = pipelineTemplateResource.number,
-                            published = marketTemplateStatus == TemplateStatusEnum.RELEASED,
-                            creator = templateVersionInfo.creator,
-                            updater = templateVersionInfo.creator,
-                            createTime = pipelineTemplateResource.createdTime,
-                            updateTime = pipelineTemplateResource.updateTime
-                        )
-                    )
-                }
-            }
-            pipelineTemplateInfoService.createOrUpdate(
-                pipelineTemplateInfo = createPipelineTemplateInfo(
-                    marketTemplateStatus = marketTemplateStatus,
-                    latestTemplate = latestTemplate
-                )
-            )
-
-            val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
-            // 防止生产已经删除版本，但新数据库表还未删除，导致的脏数据
-            val v1TemplateVersions = templateVersionInfos.map { it.version }
-            val v2TemplateVersions = pipelineTemplateResourceService.getTemplateVersions(
-                PipelineTemplateResourceCommonCondition(
-                    projectId = projectId,
-                    templateId = templateId,
-                    status = VersionStatus.RELEASED
-                )
-            )
-            val deletedVersions = v2TemplateVersions.mapNotNull { resource ->
-                (if (isConstraint) resource.srcTemplateVersion else resource.version)?.toLong()
-            }.filterNot { it in v1TemplateVersions }.takeIf { it.isNotEmpty() }
-
-            deletedVersions?.let {
-                logger.info("template versions need to be deleted :$it")
-                dslContext.transaction { configuration ->
-                    val transactionContext = DSL.using(configuration)
-                    pipelineTemplateResourceService.delete(
-                        transactionContext = transactionContext,
-                        commonCondition = PipelineTemplateResourceCommonCondition(
-                            projectId = projectId,
-                            templateId = templateId,
-                            srcTemplateVersions = if (isConstraint) it else null,
-                            versions = if (isConstraint) null else it,
-                            status = VersionStatus.RELEASED
-                        )
-                    )
-                    pipelineTemplateSettingService.pruneLatestVersions(
-                        transactionContext = transactionContext,
-                        projectId = projectId,
-                        templateId = templateId,
-                        limit = deletedVersions.size
-                    )
-                    if (isConstraint) {
-                        client.get(ServiceTemplateResource::class).deleteTemplateInstallHistoryVersions(
-                            srcTemplateCode = latestTemplate.srcTemplateId!!,
-                            templateCode = latestTemplate.id,
-                            versions = deletedVersions
-                        )
-                    } else if (hasBeenPublished) {
-                        client.get(ServiceTemplateResource::class).deleteMarketPublishedVersions(
-                            templateCode = latestTemplate.id,
-                            versions = deletedVersions
-                        )
-                    }
-                }
-            }
         } finally {
             lock.unlock()
+        }
+    }
+
+    /**
+     * [辅助函数 1] - 准备工作：获取所有必要数据并组装成上下文对象。
+     */
+    private fun setupMigrationContext(projectId: String, templateId: String): MigrationContext {
+        val latestTemplate = templateDao.getLatestTemplate(dslContext, projectId, templateId)
+        val setting = pipelineSettingDao.getSetting(dslContext, projectId, latestTemplate.id)
+            ?: throw ErrorCodeException(errorCode = ProcessMessageCode.PIPELINE_SETTING_NOT_EXISTS)
+
+        val templateVersionInfos = getTemplateVersions(latestTemplate)
+        val srcTemplateProjectId = getSrcTemplateProjectId(latestTemplate)
+
+        val marketTemplateStatus = client.get(ServiceTemplateResource::class).getMarketTemplateStatus(templateId).data!!
+
+        val isConstraint = latestTemplate.type == TemplateType.CONSTRAINT.name
+        val hasBeenPublished = !isConstraint &&
+            (marketTemplateStatus == TemplateStatusEnum.RELEASED ||
+                marketTemplateStatus == TemplateStatusEnum.UNDERCARRIAGED)
+
+        logger.info(
+            "Migration context setup complete for templateId={}: isConstraint={}, hasBeenPublished={}," +
+                " versionsToMigrate={}", templateId, isConstraint, hasBeenPublished, templateVersionInfos.size
+        )
+
+        return MigrationContext(
+            projectId = projectId,
+            templateId = templateId,
+            latestTemplate = latestTemplate,
+            setting = setting,
+            templateVersionInfos = templateVersionInfos,
+            srcTemplateProjectId = srcTemplateProjectId,
+            marketTemplateStatus = marketTemplateStatus,
+            hasBeenPublished = hasBeenPublished,
+            isConstraint = isConstraint
+        )
+    }
+
+    /**
+     * [辅助函数 2] - 核心执行：遍历所有版本并调用单个版本的迁移逻辑。
+     */
+    private fun migrateAllTemplateVersions(context: MigrationContext) {
+        val versionCounters = VersionCounters(pipelineVersion = 0, triggerVersion = 0)
+
+        context.templateVersionInfos.forEachIndexed { index, versionInfo ->
+            migrateSingleVersion(context, versionInfo, index, versionCounters)
+        }
+    }
+
+    /**
+     * [辅助函数 3] - 迁移单个版本（原循环体内的主要逻辑）。
+     */
+    private fun migrateSingleVersion(
+        context: MigrationContext,
+        versionInfo: TemplateVersion,
+        index: Int,
+        counters: VersionCounters
+    ) {
+        val currentProjectId = context.srcTemplateProjectId ?: context.projectId
+        val currentTemplate = templateDao.getTemplate(dslContext, currentProjectId, versionInfo.version)
+            ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
+
+        // 步骤 3.1: 计算新版本的 pipelineVersion 和 triggerVersion
+        calculateNextVersions(context, currentTemplate, currentProjectId, index, counters)
+
+        // 步骤 3.2: 执行模型转换
+        val modelTransferResult = performModelTransfer(context, currentTemplate, counters.pipelineVersion, versionInfo)
+
+        // 步骤 3.3: 根据转换结果创建新的 PipelineTemplateResource
+        val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
+        val pipelineTemplateResource = createPipelineTemplateResource(
+            latestTemplate = context.latestTemplate,
+            currentTemplate = currentTemplate,
+            seq = counters.pipelineVersion, // 使用 pipelineVersion 作为序列
+            pipelineVersion = counters.pipelineVersion,
+            triggerVersion = counters.triggerVersion,
+            params = currentTemplateModel.getTriggerContainer().params,
+            modelTransferResult = modelTransferResult,
+            marketTemplateStatus = context.marketTemplateStatus
+        )
+
+        // 步骤 3.4: 持久化新创建的版本
+        pipelineTemplatePersistenceService.createReleaseVersion(
+            userId = versionInfo.creator,
+            templateResource = pipelineTemplateResource,
+            templateSetting = modelTransferResult.templateSetting,
+            syncPermission = false
+        )
+
+        // 步骤 3.5: 根据模板类型记录安装或发布历史
+        recordHistoryIfApplicable(context, pipelineTemplateResource, versionInfo)
+    }
+
+    /**
+     * [辅助函数 3.1] - 计算版本号。
+     */
+    private fun calculateNextVersions(
+        context: MigrationContext,
+        currentTemplate: TTemplateRecord,
+        currentProjectId: String,
+        index: Int,
+        counters: VersionCounters
+    ) {
+        if (index == 0) {
+            counters.pipelineVersion = 1
+            counters.triggerVersion = 1
+        } else {
+            val previousVersionInfo = context.templateVersionInfos[index - 1]
+            val previousTemplate = templateDao.getTemplate(dslContext, currentProjectId, previousVersionInfo.version)
+                ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
+
+            val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
+            val previousTemplateModel = JsonUtil.to(previousTemplate.template, Model::class.java)
+
+            counters.pipelineVersion = PipelineVersionUtils.getPipelineVersion(
+                currVersion = counters.pipelineVersion,
+                originTemplateModel = previousTemplateModel,
+                newTemplateModel = currentTemplateModel,
+                originParams = previousTemplateModel.getTriggerContainer().params,
+                newParams = currentTemplateModel.getTriggerContainer().params
+            )
+            counters.triggerVersion = PipelineVersionUtils.getTriggerVersion(
+                currVersion = counters.triggerVersion,
+                originModel = previousTemplateModel,
+                newModel = currentTemplateModel
+            )
+        }
+    }
+
+    /**
+     * [辅助函数 3.2] - 执行模型转换，失败则抛出异常。
+     */
+    private fun performModelTransfer(
+        context: MigrationContext,
+        currentTemplate: TTemplateRecord,
+        versionSequence: Int,
+        versionInfo: TemplateVersion
+    ): PTemplateModelTransferResult {
+        val currentSetting = context.setting.copy(
+            version = versionSequence,
+            creator = versionInfo.creator,
+            createdTime = context.latestTemplate.createdTime.timestampmilli(),
+            updateTime = context.latestTemplate.updateTime.timestampmilli()
+        )
+        val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
+        val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
+
+        try {
+            logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
+            logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
+            return pipelineTemplateGenerator.transfer(
+                userId = context.latestTemplate.creator,
+                projectId = context.latestTemplate.projectId,
+                storageType = PipelineStorageType.MODEL,
+                templateType = PipelineTemplateType.PIPELINE,
+                templateModel = currentTemplateModel,
+                templateSetting = currentSetting,
+                params = currentTemplateParams,
+                yaml = null
+            )
+        } catch (ex: Exception) {
+            logger.error(
+                "Model transfer failed for templateId={}, version={}: {}",
+                context.templateId, currentTemplate.version, ex.message, ex
+            )
+            // 关键改动：直接抛出异常，让上层捕获，中断整个模板的迁移
+            throw IllegalStateException("Model transfer failed during migration", ex)
+        }
+    }
+
+    /**
+     * [辅助函数 3.5] - 根据条件记录历史。
+     */
+    private fun recordHistoryIfApplicable(
+        context: MigrationContext,
+        resource: PipelineTemplateResource,
+        versionInfo: TemplateVersion
+    ) {
+        // 如果是约束模板（从研发商店安装），记录安装历史
+        if (context.isConstraint) {
+            val srcTemplateVersion = resource.srcTemplateVersion!!
+            val srcTemplateResource = templateDao.getTemplate(
+                dslContext = dslContext,
+                projectId = context.srcTemplateProjectId!!,
+                version = srcTemplateVersion
+            ) ?: throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS)
+
+            client.get(ServiceTemplateResource::class).createTemplateInstallHistory(
+                TemplateVersionInstallHistoryInfo(
+                    srcMarketTemplateProjectCode = context.srcTemplateProjectId,
+                    srcMarketTemplateCode = resource.srcTemplateId!!,
+                    projectCode = resource.projectId,
+                    templateCode = resource.templateId,
+                    version = srcTemplateResource.version,
+                    versionName = srcTemplateResource.versionName,
+                    number = resource.number,
+                    createTime = resource.releaseTime
+                )
+            )
+        }
+
+        // 如果是自定义模板且已上架过，记录发布的版本历史
+        if (context.hasBeenPublished) {
+            client.get(ServiceTemplateResource::class).createMarketTemplatePublishedVersion(
+                TemplatePublishedVersionInfo(
+                    projectCode = resource.projectId,
+                    templateCode = context.templateId,
+                    version = resource.version,
+                    versionName = resource.versionName!!,
+                    number = resource.number,
+                    published = context.marketTemplateStatus == TemplateStatusEnum.RELEASED,
+                    creator = versionInfo.creator,
+                    updater = versionInfo.creator,
+                    createTime = resource.createdTime,
+                    updateTime = resource.updateTime
+                )
+            )
+        }
+    }
+
+
+    /**
+     * [辅助函数 4] - 收尾工作：创建最终的Info记录并清理脏数据。
+     */
+    private fun finalizeMigration(context: MigrationContext) {
+        pipelineTemplateInfoService.createOrUpdate(
+            pipelineTemplateInfo = createPipelineTemplateInfo(
+                marketTemplateStatus = context.marketTemplateStatus,
+                latestTemplate = context.latestTemplate
+            )
+        )
+        cleanupOrphanedVersions(context)
+    }
+
+    /**
+     * [辅助函数 4.1] - 清理在新表中存在但在旧表中不存在的“脏”版本。
+     */
+    private fun cleanupOrphanedVersions(context: MigrationContext) {
+        // 使用 Set 以获得 O(1) 的平均查找复杂度，性能更优
+        val v1TemplateVersions = context.templateVersionInfos.map { it.version }.toSet()
+
+        val v2TemplateVersions = pipelineTemplateResourceService.getTemplateVersions(
+            PipelineTemplateResourceCommonCondition(
+                projectId = context.projectId,
+                templateId = context.templateId,
+                status = VersionStatus.RELEASED
+            )
+        )
+
+        val deletedVersions = v2TemplateVersions.mapNotNull { resource ->
+            (if (context.isConstraint) resource.srcTemplateVersion else resource.version)?.toLong()
+        }.filterNot { it in v1TemplateVersions }.takeIf { it.isNotEmpty() }
+
+        deletedVersions?.let { versionsToDelete ->
+            logger.warn("Found orphaned versions to delete for templateId={}: {}", context.templateId, versionsToDelete)
+
+            // 警告：下面的 client 调用在 DB 事务中，如果 client 调用失败，DB 事务不会回滚。
+            // 理想情况下，应先执行 DB 事务，成功后再执行 client 调用，并处理 client 调用失败的情况（如记录日志或放入重试队列）。
+            // 这里暂时保持原逻辑，但加上日志警告。
+            dslContext.transaction { configuration ->
+                val transactionContext = DSL.using(configuration)
+
+                pipelineTemplateResourceService.delete(
+                    transactionContext = transactionContext,
+                    commonCondition = PipelineTemplateResourceCommonCondition(
+                        projectId = context.projectId,
+                        templateId = context.templateId,
+                        srcTemplateVersions = if (context.isConstraint) versionsToDelete else null,
+                        versions = if (context.isConstraint) null else versionsToDelete,
+                        status = VersionStatus.RELEASED
+                    )
+                )
+
+                pipelineTemplateSettingService.pruneLatestVersions(
+                    transactionContext = transactionContext,
+                    projectId = context.projectId,
+                    templateId = context.templateId,
+                    limit = versionsToDelete.size
+                )
+            }
+
+            // 将 Client 调用移出 DB 事务，以避免分布式事务问题
+            try {
+                when {
+                    context.isConstraint -> {
+                        client.get(ServiceTemplateResource::class).deleteTemplateInstallHistoryVersions(
+                            srcTemplateCode = context.latestTemplate.srcTemplateId!!,
+                            templateCode = context.latestTemplate.id,
+                            versions = versionsToDelete
+                        )
+                    }
+
+                    context.hasBeenPublished -> {
+                        client.get(ServiceTemplateResource::class).deleteMarketPublishedVersions(
+                            templateCode = context.latestTemplate.id,
+                            versions = versionsToDelete
+                        )
+                    }
+
+                    else -> {}
+                }
+            } catch (ex: Exception) {
+                // 外部服务调用失败，只记录日志，不影响主流程成功状态
+                logger.error(
+                    "Failed to delete history from remote service for templateId={}, versions={}. " +
+                        "This might require manual cleanup. Error: {}", context.templateId, versionsToDelete, ex.message
+                )
+            }
         }
     }
 
@@ -530,6 +738,51 @@ class PipelineTemplateMigrateService(
             updateTime = latestTemplate.updateTime.timestampmilli()
         )
     }
+
+
+    // 数据类 1: 用于在迁移流程中传递共享的上下文信息
+    private data class MigrationContext(
+        val projectId: String,
+        val templateId: String,
+        val latestTemplate: TTemplateRecord,
+        val setting: PipelineSetting,
+        val templateVersionInfos: List<TemplateVersion>,
+        val srcTemplateProjectId: String?,
+        val marketTemplateStatus: TemplateStatusEnum,
+        val hasBeenPublished: Boolean,
+        val isConstraint: Boolean
+    )
+
+    // 数据类 2: 用于在循环中跟踪和更新版本号
+    private data class VersionCounters(
+        var pipelineVersion: Int,
+        var triggerVersion: Int
+    )
+
+    /**
+     * 封装迁移结果的数据类。
+     */
+    private data class MigrationResult(
+        val allTemplateIds: Set<String>,
+        val successfulIds: List<String>,
+        val failedItems: List<FailedMigrationItem>
+    )
+
+    /**
+     * 封装失败项信息的数据类，比简单的字符串更具结构性。
+     */
+    private data class FailedMigrationItem(
+        val templateId: String,
+        val errorMessage: String?
+    )
+
+    /**
+     * 封装清理结果的数据类。
+     */
+    private data class CleanupStats(
+        val countBeforeCleanup: Int,
+        val countAfterCleanup: Int
+    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineTemplateMigrateService::class.java)
