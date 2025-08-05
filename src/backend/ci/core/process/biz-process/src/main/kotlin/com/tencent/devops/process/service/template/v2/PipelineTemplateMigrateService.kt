@@ -43,6 +43,7 @@ import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.common.pipeline.template.UpgradeStrategyEnum
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.service.trace.TraceTag
+import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.model.process.tables.records.TTemplateRecord
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.dao.PipelineSettingDao
@@ -180,8 +181,22 @@ class PipelineTemplateMigrateService(
                 try {
                     migrateTemplate(templateId = templateId, projectId = projectId)
                     successfulIds.add(templateId)
+                } catch (errorCodeException: ErrorCodeException) {
+                    val errorMessage = I18nUtil.getCodeLanMessage(
+                        messageCode = errorCodeException.errorCode,
+                        params = errorCodeException.params,
+                        defaultMessage = errorCodeException.defaultMessage
+                    )
+                    logger.warn(
+                        "Failed to migrate templateId {} in projectId {}: {}",
+                        templateId, projectId, errorMessage
+                    )
+                    failedItems.add(FailedMigrationItem(templateId, errorMessage))
                 } catch (ex: Exception) {
-                    logger.warn("Failed to migrate templateId {} in projectId {}: {}", templateId, projectId, ex.message)
+                    logger.warn(
+                        "Failed to migrate templateId {} in projectId {}: {}",
+                        templateId, projectId, ex.message
+                    )
                     failedItems.add(FailedMigrationItem(templateId, ex.message))
                 }
             }
@@ -352,6 +367,7 @@ class PipelineTemplateMigrateService(
         // 步骤 3.3: 根据转换结果创建新的 PipelineTemplateResource
         val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
         val pipelineTemplateResource = createPipelineTemplateResource(
+            versionInfo = versionInfo,
             latestTemplate = context.latestTemplate,
             currentTemplate = currentTemplate,
             seq = counters.pipelineVersion, // 使用 pipelineVersion 作为序列
@@ -428,10 +444,10 @@ class PipelineTemplateMigrateService(
         val currentTemplateModel = JsonUtil.to(currentTemplate.template, Model::class.java)
         val currentTemplateParams = currentTemplateModel.getTriggerContainer().params
 
-        try {
+        return try {
             logger.debug("model Transfer model: {} ", JsonUtil.toJson(currentTemplateModel))
             logger.debug("model Transfer setting: {}", JsonUtil.toJson(currentSetting))
-            return pipelineTemplateGenerator.transfer(
+            pipelineTemplateGenerator.transfer(
                 userId = context.latestTemplate.creator,
                 projectId = context.latestTemplate.projectId,
                 storageType = PipelineStorageType.MODEL,
@@ -442,12 +458,16 @@ class PipelineTemplateMigrateService(
                 yaml = null
             )
         } catch (ex: Exception) {
-            logger.error(
+            logger.warn(
                 "Model transfer failed for templateId={}, version={}: {}",
                 context.templateId, currentTemplate.version, ex.message, ex
             )
-            // 关键改动：直接抛出异常，让上层捕获，中断整个模板的迁移
-            throw IllegalStateException("Model transfer failed during migration", ex)
+            PTemplateModelTransferResult(
+                templateType = PipelineTemplateType.PIPELINE,
+                templateModel = currentTemplateModel,
+                templateSetting = currentSetting,
+                yamlWithVersion = null
+            )
         }
     }
 
@@ -475,7 +495,7 @@ class PipelineTemplateMigrateService(
                     projectCode = resource.projectId,
                     templateCode = resource.templateId,
                     version = srcTemplateResource.version,
-                    versionName = srcTemplateResource.versionName,
+                    versionName = versionInfo.versionName,
                     number = resource.number,
                     createTime = resource.releaseTime
                 )
@@ -489,7 +509,7 @@ class PipelineTemplateMigrateService(
                     projectCode = resource.projectId,
                     templateCode = context.templateId,
                     version = resource.version,
-                    versionName = resource.versionName!!,
+                    versionName = versionInfo.versionName,
                     number = resource.number,
                     published = context.marketTemplateStatus == TemplateStatusEnum.RELEASED,
                     creator = versionInfo.creator,
@@ -622,6 +642,7 @@ class PipelineTemplateMigrateService(
     }
 
     fun createPipelineTemplateResource(
+        versionInfo: TemplateVersion,
         latestTemplate: TTemplateRecord,
         currentTemplate: TTemplateRecord,
         params: List<BuildFormProperty>,
@@ -657,7 +678,7 @@ class PipelineTemplateMigrateService(
             version = version,
             storeStatus = marketTemplateStatus,
             number = seq,
-            versionName = currentTemplate.versionName,
+            versionName = versionInfo.versionName,
             versionNum = seq,
             settingVersionNum = seq,
             pipelineVersion = pipelineVersion,
