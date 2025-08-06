@@ -27,10 +27,10 @@
 
 package com.tencent.devops.process.pojo.template
 
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
+import com.tencent.devops.common.pipeline.pojo.element.Element
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
@@ -53,8 +53,8 @@ data class TemplateInstanceParams(
     val repoHashId: String? = null,
     @get:Schema(title = "yaml文件路径", required = false)
     val filePath: String? = null,
-    @get:Schema(title = "触发器配置", required = false)
-    val triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
+    @get:Schema(title = "触发器", required = false)
+    val triggerElements: List<Element>? = null,
     /**
      * 流水线覆盖模版字段
      */

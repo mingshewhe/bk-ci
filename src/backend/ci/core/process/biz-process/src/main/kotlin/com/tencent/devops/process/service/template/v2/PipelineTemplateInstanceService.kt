@@ -462,7 +462,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     param = instanceParams,
                     repoHashId = yamlPipelineMap[pipelineId]?.repoHashId,
                     filePath = yamlPipelineMap[pipelineId]?.filePath,
-                    triggerConfigs = instanceModel.triggerConfigs,
+                    triggerElements = instanceModel.getTriggerContainer().elements,
                     overrideTemplateField = instanceModel.overrideTemplateField
                 )
             }.toMap()

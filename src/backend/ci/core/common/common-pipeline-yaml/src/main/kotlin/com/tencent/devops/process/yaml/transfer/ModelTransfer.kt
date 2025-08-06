@@ -31,11 +31,11 @@ import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
-import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.dialect.PipelineDialectType
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
@@ -201,10 +201,9 @@ class ModelTransfer @Autowired constructor(
         val template = input.yaml.formatExtends()?.template
         if (template != null) {
             model.overrideTemplateField = TemplateInstanceField(
-                overrideAllParam = false,
+                overrideAllParamAndSetting = false,
                 excludeParamIds = template.variables?.keys?.toList(),
                 triggerStepIds = template.triggerConfig?.keys?.toList(),
-                overrideAllSettingGroup = false,
                 excludeSettingGroups = input.yaml.settingGroups(),
             )
             model.fromTemplate = true

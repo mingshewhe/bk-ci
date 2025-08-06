@@ -441,7 +441,7 @@ class PipelineTemplateGenerator @Autowired constructor(
             PTemplateResourceOnlyVersion(
                 version = version,
                 number = number,
-                versionName = customVersionName ?: versionName,
+                versionName = customVersionName?.takeIf { it.isNotEmpty() } ?: versionName,
                 versionNum = versionNum,
                 pipelineVersion = pipelineVersion,
                 triggerVersion = triggerVersion,
