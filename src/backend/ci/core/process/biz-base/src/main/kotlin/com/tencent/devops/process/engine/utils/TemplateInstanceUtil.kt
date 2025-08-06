@@ -2,11 +2,11 @@ package com.tencent.devops.process.engine.utils
 
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.Model
-import com.tencent.devops.common.pipeline.TemplateField
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
@@ -30,34 +30,35 @@ object TemplateInstanceUtil {
      */
     @Suppress("ALL")
     fun instanceModel(
-        templateModel: Model,
+        templateResource: PipelineTemplateResource,
         pipelineName: String,
-        templateVariables: List<TemplateVariable>?,
-        instanceFromTemplate: Boolean,
         labels: List<String>? = null,
         defaultStageTagId: String?,
-        templateId: String? = null,
         staticViews: List<String> = emptyList(),
+        templateVariables: List<TemplateVariable>? = null,
         triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
         recommendedVersion: TemplateInstanceRecommendedVersion? = null,
-        overrideTemplateField: TemplateField? = null
+        overrideTemplateField: TemplateInstanceField? = null
     ): Model {
+        if (templateResource.model !is Model) {
+            throw ErrorCodeException(
+                errorCode = ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_MODEL_TYPE_NOT_MATCH
+            )
+        }
+        val templateModel = templateResource.model as Model
         val templateTrigger = templateModel.getTriggerContainer()
         val triggerElements = mergeTriggerElements(
             templateTriggerElements = templateTrigger.elements,
-            triggerConfigs = triggerConfigs,
-            overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
+            triggerConfigs = triggerConfigs
         )
         val pipelineParam = mergeParams(
             templateParams = templateTrigger.params,
-            templateVariables = templateVariables,
-            overrideParamIds = overrideTemplateField?.paramIds
+            templateVariables = templateVariables
         )
         val buildNo = mergeRecommendedVersion(
             pipelineParams = pipelineParam,
             templateBuildNo = templateModel.getTriggerContainer().buildNo,
-            recommendedVersion = recommendedVersion,
-            overrideReCommendedVersion = overrideTemplateField?.recommendedVersion
+            recommendedVersion = recommendedVersion
         )
         val triggerContainer = templateTrigger.copy(
             buildNo = buildNo,
@@ -70,9 +71,12 @@ object TemplateInstanceUtil {
             desc = "",
             stages = getFixedStages(templateModel, triggerContainer, defaultStageTagId),
             labels = labels ?: templateModel.labels,
-            instanceFromTemplate = instanceFromTemplate,
-            templateId = templateId,
-            staticViews = staticViews
+            instanceFromTemplate = true,
+            fromTemplate = true,
+            templateId = templateResource.templateId,
+            templateVersionName = templateResource.versionName,
+            staticViews = staticViews,
+            overrideTemplateField = overrideTemplateField
         )
     }
 
@@ -108,29 +112,30 @@ object TemplateInstanceUtil {
     fun instanceSetting(
         setting: PipelineSetting,
         templateSetting: PipelineSetting,
-        settingGroups: List<PipelineSettingGroupType>? = null
+        overrideTemplateField: TemplateInstanceField? = null
     ): PipelineSetting {
-        if (settingGroups == null) return templateSetting
+        // 历史数据,直接使用流水线设置
+        if (overrideTemplateField == null) return setting
         val instanceSetting = setting.copy()
         mergeBuildNumRule(
             setting = instanceSetting,
             templateSetting = templateSetting,
-            settingGroups = settingGroups
+            overrideTemplateField = overrideTemplateField
         )
         mergeLabel(
             setting = instanceSetting,
             templateSetting = templateSetting,
-            settingGroups = settingGroups
+            overrideTemplateField = overrideTemplateField
         )
         mergeNotices(
             setting = instanceSetting,
             templateSetting = templateSetting,
-            settingGroups = settingGroups
+            overrideTemplateField = overrideTemplateField
         )
         mergeConcurrency(
             setting = instanceSetting,
             templateSetting = templateSetting,
-            settingGroups = settingGroups
+            overrideTemplateField = overrideTemplateField
         )
         return instanceSetting
     }
@@ -138,9 +143,12 @@ object TemplateInstanceUtil {
     fun getRecommendedVersion(
         buildNo: BuildNo?,
         params: List<BuildFormProperty>,
-        overrideReCommendedVersion: Boolean?
+        overrideTemplateField: TemplateInstanceField?
     ): TemplateInstanceRecommendedVersion? {
-        if (overrideReCommendedVersion != true || buildNo == null) return null
+        if (overrideTemplateField == null ||
+            !overrideTemplateField.overrideRecommendedVersion() ||
+            buildNo == null
+        ) return null
         val recommendedVersion = TemplateInstanceRecommendedVersion(
             enabled = true,
             buildNo = buildNo
@@ -161,19 +169,16 @@ object TemplateInstanceUtil {
     ): TriggerContainer {
         val triggerElements = mergeTriggerElements(
             templateTriggerElements = templateModel.getTriggerContainer().elements,
-            triggerConfigs = model.triggerConfigs,
-            overrideTriggerStepIds = model.overrideTemplateField?.triggerStepIds
+            triggerConfigs = model.triggerConfigs
         )
         val pipelineParams = mergeParams(
             templateParams = templateModel.getTriggerContainer().params,
-            templateVariables = model.templateVariables,
-            overrideParamIds = model.overrideTemplateField?.paramIds
+            templateVariables = model.templateVariables
         )
         val buildNo = mergeRecommendedVersion(
             pipelineParams = pipelineParams,
             templateBuildNo = templateModel.getTriggerContainer().buildNo,
-            recommendedVersion = model.recommendedVersion,
-            overrideReCommendedVersion = model.overrideTemplateField?.recommendedVersion
+            recommendedVersion = model.recommendedVersion
         )
         return templateModel.getTriggerContainer().copy(
             buildNo = buildNo,
@@ -187,8 +192,7 @@ object TemplateInstanceUtil {
      */
     private fun mergeTriggerElements(
         templateTriggerElements: List<Element>,
-        triggerConfigs: List<TemplateInstanceTriggerConfig>?,
-        overrideTriggerStepIds: List<String>?
+        triggerConfigs: List<TemplateInstanceTriggerConfig>?
     ): List<Element> {
         if (triggerConfigs == null) return templateTriggerElements
 
@@ -198,15 +202,10 @@ object TemplateInstanceUtil {
                 templateTriggerElement
             } else {
                 val triggerConfig = triggerConfigMap[templateTriggerElement.stepId]
-                val overrideTrigger = overrideTrigger(
-                    templateTriggerElement = templateTriggerElement,
-                    overrideTriggerStepIds = overrideTriggerStepIds,
-                    triggerConfig = triggerConfig
-                )
-                if (overrideTrigger) {
+                if (triggerConfig != null) {
                     copyTriggerElement(
                         triggerElement = templateTriggerElement,
-                        triggerConfig = triggerConfig!!
+                        triggerConfig = triggerConfig
                     )
                 } else {
                     templateTriggerElement
@@ -217,22 +216,16 @@ object TemplateInstanceUtil {
 
     private fun mergeParams(
         templateParams: List<BuildFormProperty>,
-        templateVariables: List<TemplateVariable>?,
-        overrideParamIds: List<String>?
+        templateVariables: List<TemplateVariable>?
     ): List<BuildFormProperty> {
         if (templateVariables == null) return templateParams
 
         val templateVariableMap = templateVariables.associateBy { it.key }
         return templateParams.map { templateParam ->
             val templateVariable = templateVariableMap[templateParam.id]
-            val overrideParam = overrideParam(
-                templateParam = templateParam,
-                overrideParamIds = overrideParamIds,
-                templateVariable = templateVariable
-            )
-            val pipelineParams = if (overrideParam) {
+            val pipelineParams = if (templateVariable != null) {
                 templateParam.copy(
-                    defaultValue = templateVariable!!.value,
+                    defaultValue = templateVariable.value,
                     required = templateVariable.allowModifyAtStartup ?: templateParam.required
                 )
             } else {
@@ -288,18 +281,18 @@ object TemplateInstanceUtil {
     private fun mergeBuildNumRule(
         setting: PipelineSetting,
         templateSetting: PipelineSetting,
-        settingGroups: List<PipelineSettingGroupType>
+        overrideTemplateField: TemplateInstanceField
     ) {
-        if (settingGroups.contains(PipelineSettingGroupType.CUSTOM_BUILD_NUM)) return
+        if (overrideTemplateField.overrideSetting(PipelineSettingGroupType.CUSTOM_BUILD_NUM)) return
         setting.buildNumRule = templateSetting.buildNumRule
     }
 
     private fun mergeLabel(
         setting: PipelineSetting,
         templateSetting: PipelineSetting,
-        settingGroups: List<PipelineSettingGroupType>
+        overrideTemplateField: TemplateInstanceField
     ) {
-        if (settingGroups.contains(PipelineSettingGroupType.LABEL)) return
+        if (overrideTemplateField.overrideSetting(PipelineSettingGroupType.LABEL)) return
         setting.labels = templateSetting.labels
         setting.labelNames = templateSetting.labelNames
     }
@@ -307,9 +300,9 @@ object TemplateInstanceUtil {
     private fun mergeNotices(
         setting: PipelineSetting,
         templateSetting: PipelineSetting,
-        settingGroups: List<PipelineSettingGroupType>
+        overrideTemplateField: TemplateInstanceField
     ) {
-        if (settingGroups.contains(PipelineSettingGroupType.NOTICES)) return
+        if (overrideTemplateField.overrideSetting(PipelineSettingGroupType.NOTICES)) return
         setting.successSubscription = templateSetting.successSubscription
         setting.failSubscription = templateSetting.failSubscription
         setting.successSubscriptionList = templateSetting.successSubscriptionList
@@ -319,9 +312,9 @@ object TemplateInstanceUtil {
     private fun mergeConcurrency(
         setting: PipelineSetting,
         templateSetting: PipelineSetting,
-        settingGroups: List<PipelineSettingGroupType>
+        overrideTemplateField: TemplateInstanceField
     ) {
-        if (settingGroups.contains(PipelineSettingGroupType.CONCURRENCY)) return
+        if (overrideTemplateField.overrideSetting(PipelineSettingGroupType.CONCURRENCY)) return
         setting.runLockType = templateSetting.runLockType
         setting.waitQueueTimeMinute = templateSetting.waitQueueTimeMinute
         setting.maxQueueSize = templateSetting.maxQueueSize
@@ -333,17 +326,16 @@ object TemplateInstanceUtil {
     private fun mergeRecommendedVersion(
         pipelineParams: List<BuildFormProperty>,
         templateBuildNo: BuildNo?,
-        recommendedVersion: TemplateInstanceRecommendedVersion?,
-        overrideReCommendedVersion: Boolean?
+        recommendedVersion: TemplateInstanceRecommendedVersion?
     ): BuildNo? {
-        if (overrideReCommendedVersion != true) return templateBuildNo
+        if (recommendedVersion == null) return templateBuildNo
         pipelineParams.forEach { param ->
             when (param.id) {
-                MAJORVERSION -> param.defaultValue = recommendedVersion?.major ?: 0
-                MINORVERSION -> param.defaultValue = recommendedVersion?.minor ?: 0
-                FIXVERSION -> param.defaultValue = recommendedVersion?.fix ?: 0
+                MAJORVERSION -> param.defaultValue = recommendedVersion.major
+                MINORVERSION -> param.defaultValue = recommendedVersion.minor
+                FIXVERSION -> param.defaultValue = recommendedVersion.fix
             }
         }
-        return recommendedVersion?.buildNo
+        return recommendedVersion.buildNo
     }
 }

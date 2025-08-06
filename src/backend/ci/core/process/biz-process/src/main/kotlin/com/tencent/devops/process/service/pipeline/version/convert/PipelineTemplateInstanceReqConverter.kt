@@ -37,6 +37,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
@@ -181,22 +182,21 @@ class PipelineTemplateInstanceReqConverter(
                 )
             }
 
-            // 前端会把所有的参数都传过来，这里只需要保留流水线自定义的参数
-            val overrideParamKeys = overrideTemplateField?.paramIds
+            // 前端会把所有的参数都传过来，这里只需要保留流水线自定义的参数,ui方式实例化,参数默认都是自定义
             val templateVariables = params?.filter {
-                overrideParamKeys?.contains(it.id) ?: false
+                overrideTemplateField?.overrideParam(it.id) ?: true
             }?.map { TemplateVariable(it) }
 
-            // 前端会把所有的触发器都传过来,这里只需要保留流水线自定义的触发器
-            val overrideTriggerStepIds = overrideTemplateField?.triggerStepIds
+            // 前端会把所有的触发器都传过来,这里只需要保留流水线自定义的触发器,ui方式实例化,触发器默认继承模版
             val finalTriggerConfigs = triggerConfigs?.filter {
-                it.stepId != null && overrideTriggerStepIds?.contains(it.stepId) ?: false
+                it.stepId != null && overrideTemplateField?.overrideTrigger(it.stepId!!) ?: false
             }
 
+            // 是否覆盖推荐版本号
             val recommendedVersion = TemplateInstanceUtil.getRecommendedVersion(
                 buildNo = buildNo,
                 params = params ?: emptyList(),
-                overrideReCommendedVersion = overrideTemplateField?.recommendedVersion
+                overrideTemplateField = overrideTemplateField
             )
 
             val pipelineModel = pipelineResourceFactory.createPipelineModelRef(
@@ -216,7 +216,8 @@ class PipelineTemplateInstanceReqConverter(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 templateSettingVersion = templateResource.settingVersion,
-                enablePac = enablePac
+                enablePac = enablePac,
+                overrideTemplateField = overrideTemplateField
             )
             // 转换成yaml
             val newYaml = pipelineVersionGenerator.model2yaml(
@@ -234,13 +235,11 @@ class PipelineTemplateInstanceReqConverter(
             val defaultStageTagId = stageTagService.getDefaultStageTag().data?.id
 
             val instanceModel = TemplateInstanceUtil.instanceModel(
-                templateModel = templateResource.model as Model,
+                templateResource = templateResource,
                 pipelineName = pipelineName,
-                templateVariables = templateVariables,
-                instanceFromTemplate = true,
                 defaultStageTagId = defaultStageTagId,
-                templateId = templateId,
-                triggerConfigs = finalTriggerConfigs,
+                templateVariables = templateVariables,
+                triggerConfigs = triggerConfigs,
                 recommendedVersion = recommendedVersion,
                 overrideTemplateField = overrideTemplateField
             )
@@ -248,7 +247,7 @@ class PipelineTemplateInstanceReqConverter(
             val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
                 projectId = projectId,
                 pipelineId = newPipelineId,
-                model = pipelineModel,
+                model = instanceModel,
                 yaml = newYaml?.yamlStr,
                 yamlVersion = newYaml?.versionTag,
                 creator = userId,
@@ -282,6 +281,7 @@ class PipelineTemplateInstanceReqConverter(
                 templateName = templateInfo.name,
                 templateVersion = templateVersion,
                 templateVersionName = templateResource.versionName,
+                templateSettingVersion = templateResource.settingVersion,
                 instanceModel = instanceModel,
                 instanceType = PipelineInstanceTypeEnum.CONSTRAINT
             )
@@ -315,19 +315,20 @@ class PipelineTemplateInstanceReqConverter(
         pipelineId: String,
         templateSettingVersion: Int,
         enablePac: Boolean,
+        overrideTemplateField: TemplateInstanceField? = null
     ): PipelineSetting {
+        val templateSetting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateId,
+            settingVersion = templateSettingVersion
+        )
         val pipelineSetting = if (useTemplateSetting) {
-            val templateSetting = pipelineTemplateSettingService.get(
-                projectId = projectId,
-                templateId = templateId,
-                settingVersion = templateSettingVersion
-            )
             templateSetting.copy(
                 pipelineId = pipelineId,
                 pipelineName = pipelineName
             )
         } else {
-            pipelineRepositoryService.getSetting(
+            val setting = pipelineRepositoryService.getSetting(
                 projectId = projectId,
                 pipelineId = pipelineId
             )?.copy(
@@ -336,6 +337,11 @@ class PipelineTemplateInstanceReqConverter(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 pipelineName = pipelineName
+            )
+            TemplateInstanceUtil.instanceSetting(
+                templateSetting = templateSetting,
+                setting = setting,
+                overrideTemplateField = overrideTemplateField
             )
         }
         val pacSetting = enablePac.takeIf { it }?.let {

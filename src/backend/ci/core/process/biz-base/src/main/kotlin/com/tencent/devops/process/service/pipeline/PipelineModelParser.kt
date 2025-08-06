@@ -114,7 +114,7 @@ class PipelineModelParser @Autowired constructor(
             val instanceSetting = TemplateInstanceUtil.instanceSetting(
                 setting = setting,
                 templateSetting = templateSetting,
-                settingGroups = model.overrideTemplateField?.settingGroups
+                overrideTemplateField = model.overrideTemplateField
             )
             PipelineModelAndSetting(
                 model = instanceModel,

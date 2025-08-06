@@ -19,6 +19,6 @@ data class ModelTransferInput(
 ) {
     fun fromTemplate() = model.fromTemplate == true
 
-    fun overrideTemplateSettingGroups(type: PipelineSettingGroupType) = model.overrideTemplateField == null ||
-            model.overrideTemplateField!!.settingGroups?.contains(type) == true
+    fun overrideTemplateSettingGroups(type: PipelineSettingGroupType) =
+        model.overrideTemplateField?.overrideSetting(type) ?: true
 }

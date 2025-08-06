@@ -28,18 +28,15 @@
 package com.tencent.devops.process.service.pipeline.version.convert
 
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
-import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineYamlWebhookReq
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class PipelineYamlWebhookReqConvert @Autowired constructor(
@@ -97,31 +94,16 @@ class PipelineYamlWebhookReqConvert @Autowired constructor(
                 pipelineAsCodeSettings = pipelineAsCodeSettings
             )
 
-            val model = modelAndSetting.model.copy(
-                name = pipelineName
-            )
-            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
-                projectId = projectId,
-                pipelineId = newPipelineId,
-                model = model,
-                yaml = yamlWithVersion?.yamlStr,
-                yamlVersion = yamlWithVersion?.versionTag,
-                creator = userId,
-                createTime = LocalDateTime.now(),
-                updater = userId,
-                updateTime = LocalDateTime.now(),
-                status = versionStatus,
-                branchAction = BranchVersionAction.ACTIVE.takeIf {
-                    versionStatus == VersionStatus.BRANCH
-                },
-                description = description,
-            )
             return pipelineVersionCommonConvert.convert(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 version = version,
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                model = modelAndSetting.model.copy(
+                    name = pipelineName
+                ),
+                yaml = yamlWithVersion?.yamlStr,
+                description = description,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 versionStatus = versionStatus,
                 versionAction = versionAction,

@@ -35,10 +35,9 @@ import com.tencent.devops.common.pipeline.utils.ModelUtils
 import com.tencent.devops.common.redis.RedisLock
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.store.api.common.ServiceStoreStatisticResource
-import com.tencent.devops.store.pojo.common.statistic.StoreStatisticPipelineNumUpdate
 import com.tencent.devops.store.pojo.common.enums.StoreTypeEnum
+import com.tencent.devops.store.pojo.common.statistic.StoreStatisticPipelineNumUpdate
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -53,8 +52,7 @@ class PipelineAtomStatisticsService @Autowired constructor(
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val dslContext: DSLContext,
     private val client: Client,
-    private val redisOperation: RedisOperation,
-    private val pipelineModelParser: PipelineModelParser
+    private val redisOperation: RedisOperation
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineAtomStatisticsService::class.java)
@@ -72,11 +70,7 @@ class PipelineAtomStatisticsService @Autowired constructor(
     ) {
         val pipelineNumUpdateList = mutableListOf<StoreStatisticPipelineNumUpdate>()
         val currentVersionModelStr = getVersionModelString(projectId, pipelineId, version) ?: return
-        val currentVersionModel = pipelineModelParser.parseModel(
-            projectId = projectId,
-            pipelineId = pipelineId,
-            model = JsonUtil.to(currentVersionModelStr, Model::class.java)
-        )
+        val currentVersionModel = JsonUtil.to(currentVersionModelStr, Model::class.java)
         // 获取当前流水线版本模型中插件的集合（去掉重复插件）
         val currentVersionAtomSet = ModelUtils.getModelAtoms(currentVersionModel)
         val lock = RedisLock(redisOperation, "$pipelineId:updateAtomPipelineNum", 60)

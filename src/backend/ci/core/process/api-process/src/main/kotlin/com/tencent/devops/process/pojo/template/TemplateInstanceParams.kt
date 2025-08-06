@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.pojo.template
 
-import com.tencent.devops.common.pipeline.TemplateField
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
@@ -59,5 +59,5 @@ data class TemplateInstanceParams(
      * 流水线覆盖模版字段
      */
     @get:Schema(title = "覆盖模版字段", required = false)
-    var overrideTemplateField: TemplateField? = null
+    var overrideTemplateField: TemplateInstanceField? = null
 )

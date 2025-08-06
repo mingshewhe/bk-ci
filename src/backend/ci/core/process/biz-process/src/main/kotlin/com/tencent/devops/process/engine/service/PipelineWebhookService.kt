@@ -55,7 +55,6 @@ import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.PipelineNotifyTemplateEnum
 import com.tencent.devops.process.pojo.webhook.PipelineWebhook
 import com.tencent.devops.process.pojo.webhook.WebhookTriggerPipeline
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.scm.ScmProxyService
 import com.tencent.devops.process.utils.PipelineVarUtil
 import com.tencent.devops.repository.api.ServiceRepositoryResource
@@ -79,8 +78,7 @@ class PipelineWebhookService @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val client: Client,
     private val pipelinePermissionService: PipelinePermissionService,
-    private val redisOperation: RedisOperation,
-    private val pipelineModelParser: PipelineModelParser
+    private val redisOperation: RedisOperation
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PipelineWebhookService::class.java)
@@ -295,11 +293,7 @@ class PipelineWebhookService @Autowired constructor(
         val modelString =
             pipelineResourceDao.getVersionModelString(dslContext, projectId, pipelineId, version) ?: return null
         return try {
-            pipelineModelParser.parseModel(
-                projectId = projectId,
-                pipelineId = pipelineId,
-                model = objectMapper.readValue(modelString, Model::class.java)
-            )
+            objectMapper.readValue(modelString, Model::class.java)
         } catch (e: Exception) {
             logger.warn("get process($pipelineId) model fail", e)
             null

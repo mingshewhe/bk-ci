@@ -115,7 +115,6 @@ import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.TemplateInfo
 import com.tencent.devops.process.pojo.setting.PipelineModelVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.PipelineOperationLogService
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
@@ -178,8 +177,7 @@ class PipelineRepositoryService constructor(
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineCallbackDao: PipelineCallbackDao,
     private val subPipelineTaskService: SubPipelineTaskService,
-    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao,
-    private val pipelineModelParser: PipelineModelParser
+    private val pipelineTemplateInfoDao: PipelineTemplateInfoDao
 ) {
 
     companion object {
@@ -1364,11 +1362,7 @@ class PipelineRepositoryService constructor(
             dslContext = dslContext,
             projectId = projectId,
             pipelineIds = pipelineIds
-        ).map {
-            it.key to str2model(
-                projectId = projectId, pipelineId = it.key, modelString = it.value
-            )
-        }.toMap()
+        ).map { it.key to str2model(it.value, it.key) }.toMap()
     }
 
     fun getLatestVersionNames(projectId: String, pipelineIds: List<String>): Map<String, String> {
@@ -1406,15 +1400,10 @@ class PipelineRepositoryService constructor(
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_EXISTS_BY_ID,
                     params = arrayOf(pipelineId)
                 )
-                val fullModel = pipelineModelParser.parseModel(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    model = defaultVersion.model
-                )
                 // 正式执行时，当前最新版本可能是草稿，则作为调试执行
                 return Triple(
                     pipelineInfo,
-                    defaultVersion.copy(model = fullModel),
+                    defaultVersion,
                     defaultVersion.status == VersionStatus.COMMITTING
                 )
             } else {
@@ -1427,19 +1416,13 @@ class PipelineRepositoryService constructor(
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_VERSION_EXISTS_BY_ID,
                     params = arrayOf(version.toString())
                 )
-                val fullModel = pipelineModelParser.parseModel(
-                    projectId = projectId,
-                    pipelineId = pipelineId,
-                    model = targetResource.model
-                )
-                val finalResource = targetResource.copy(model = fullModel)
                 return when (targetResource.status) {
                     VersionStatus.COMMITTING -> {
-                        Triple(pipelineInfo, finalResource, true)
+                        Triple(pipelineInfo, targetResource, true)
                     }
 
                     else -> {
-                        Triple(pipelineInfo, finalResource, false)
+                        Triple(pipelineInfo, targetResource, false)
                     }
                 }
             }
@@ -1659,15 +1642,10 @@ class PipelineRepositoryService constructor(
     }
 
     private fun str2model(
-        projectId: String,
-        pipelineId: String,
-        modelString: String
+        modelString: String,
+        pipelineId: String
     ) = try {
-        pipelineModelParser.parseModel(
-            projectId = projectId,
-            pipelineId = pipelineId,
-            model = JsonUtil.to(modelString, Model::class.java)
-        )
+        JsonUtil.to(modelString, Model::class.java)
     } catch (ignore: Exception) {
         logger.warn("get process($pipelineId) model fail", ignore)
         null

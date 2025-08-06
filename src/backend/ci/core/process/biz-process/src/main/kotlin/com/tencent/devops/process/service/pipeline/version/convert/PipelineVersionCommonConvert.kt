@@ -27,25 +27,32 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
 import com.tencent.devops.process.engine.service.PipelineInfoService
+import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
+import com.tencent.devops.process.service.template.v2.PipelineTemplateSettingService
+import com.tencent.devops.process.yaml.pojo.YamlVersion
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class PipelineVersionCommonConvert @Autowired constructor(
     private val pipelineResourceFactory: PipelineResourceFactory,
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineInfoService: PipelineInfoService,
-    private val transferService: PipelineTransferYamlService
+    private val transferService: PipelineTransferYamlService,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) {
 
     fun convert(
@@ -53,20 +60,26 @@ class PipelineVersionCommonConvert @Autowired constructor(
         projectId: String,
         pipelineId: String,
         version: Int?,
-        pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,
+        model: Model,
+        yaml: String?,
+        baseVersion: Int? = null,
+        description: String? = null,
         pipelineSettingWithoutVersion: PipelineSetting,
         versionStatus: VersionStatus,
         versionAction: PipelineVersionAction,
         repoHashId: String? = null,
         branchName: String? = null
     ): PipelineVersionCreateContext {
-        return if (pipelineResourceWithoutVersion.model.fromTemplate == true) {
+        return if (model.fromTemplate == true) {
             convertFromTemplate(
                 userId = userId,
                 projectId = projectId,
                 pipelineId = pipelineId,
                 version = version,
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                model = model,
+                yaml = yaml,
+                baseVersion = baseVersion,
+                description = description,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 versionStatus = versionStatus,
                 versionAction = versionAction,
@@ -79,7 +92,10 @@ class PipelineVersionCommonConvert @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 version = version,
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                model = model,
+                yaml = yaml,
+                baseVersion = baseVersion,
+                description = description,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 versionStatus = versionStatus,
                 versionAction = versionAction
@@ -92,18 +108,39 @@ class PipelineVersionCommonConvert @Autowired constructor(
         projectId: String,
         pipelineId: String,
         version: Int?,
-        pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,
+        model: Model,
+        yaml: String?,
+        baseVersion: Int?,
+        description: String?,
         pipelineSettingWithoutVersion: PipelineSetting,
         versionStatus: VersionStatus,
         versionAction: PipelineVersionAction
     ): PipelineVersionCreateContext {
+        val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            model = model,
+            yaml = yaml,
+            yamlVersion = YamlVersion.V3_0.tag,
+            creator = userId,
+            createTime = LocalDateTime.now(),
+            updater = userId,
+            updateTime = LocalDateTime.now(),
+            status = versionStatus,
+            baseVersion = baseVersion,
+            branchAction = BranchVersionAction.ACTIVE.takeIf {
+                versionStatus == VersionStatus.BRANCH
+            },
+            description = description
+        )
+
         val pipelineBasicInfo = pipelineResourceFactory.createPipelineBasicInfo(
             projectId = projectId,
             pipelineId = pipelineId,
             channelCode = ChannelCode.BS,
             pipelineName = pipelineSettingWithoutVersion.pipelineName,
             pipelineDesc = pipelineSettingWithoutVersion.desc,
-            pipelineDisable = pipelineResourceWithoutVersion.yaml?.let {
+            pipelineDisable = yaml?.let {
                 transferService.loadYaml(it).disablePipeline == true
             }
         )
@@ -114,7 +151,7 @@ class PipelineVersionCommonConvert @Autowired constructor(
         )
         val pipelineInfo = pipelineInfoService.getPipelineInfo(projectId = projectId, pipelineId = pipelineId)
         val pipelineModelBasicInfo = pipelineResourceFactory.createPipelineModelBasicInfo(
-            model = pipelineResourceWithoutVersion.model,
+            model = model,
             projectId = projectId,
             pipelineId = pipelineId,
             userId = userId,
@@ -142,7 +179,10 @@ class PipelineVersionCommonConvert @Autowired constructor(
         projectId: String,
         pipelineId: String,
         version: Int?,
-        pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,
+        model: Model,
+        yaml: String?,
+        baseVersion: Int?,
+        description: String?,
         pipelineSettingWithoutVersion: PipelineSetting,
         versionStatus: VersionStatus,
         versionAction: PipelineVersionAction,
@@ -155,13 +195,34 @@ class PipelineVersionCommonConvert @Autowired constructor(
             channelCode = ChannelCode.BS,
             pipelineName = pipelineSettingWithoutVersion.pipelineName,
             pipelineDesc = pipelineSettingWithoutVersion.desc,
+            pipelineDisable = yaml?.let {
+                transferService.loadYaml(it).disablePipeline == true
+            }
         )
 
         val templateInstanceBasicInfo = pipelineResourceFactory.createTemplateInstanceBasicInfo(
             projectId = projectId,
-            model = pipelineResourceWithoutVersion.model,
+            model = model,
             repoHashId = repoHashId,
             branchName = branchName
+        )
+
+        val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
+            projectId = projectId,
+            pipelineId = pipelineId,
+            model = templateInstanceBasicInfo.instanceModel,
+            yaml = yaml,
+            yamlVersion = YamlVersion.V3_0.tag,
+            creator = userId,
+            createTime = LocalDateTime.now(),
+            updater = userId,
+            updateTime = LocalDateTime.now(),
+            status = versionStatus,
+            baseVersion = baseVersion,
+            branchAction = BranchVersionAction.ACTIVE.takeIf {
+                versionStatus == VersionStatus.BRANCH
+            },
+            description = description
         )
 
         val pipelineDialect = pipelineAsCodeService.getPipelineDialect(
@@ -179,6 +240,18 @@ class PipelineVersionCommonConvert @Autowired constructor(
             channelCode = ChannelCode.BS,
             pipelineDialect = pipelineDialect
         )
+
+        val templateSetting = pipelineTemplateSettingService.get(
+            projectId = projectId,
+            templateId = templateInstanceBasicInfo.templateId,
+            settingVersion = templateInstanceBasicInfo.templateSettingVersion
+        )
+        val instanceSetting = TemplateInstanceUtil.instanceSetting(
+            setting = pipelineSettingWithoutVersion,
+            templateSetting = templateSetting,
+            overrideTemplateField = model.overrideTemplateField
+        )
+
         return PipelineVersionCreateContext(
             userId = userId,
             projectId = projectId,
@@ -189,7 +262,7 @@ class PipelineVersionCommonConvert @Autowired constructor(
             pipelineBasicInfo = pipelineBasicInfo,
             pipelineModelBasicInfo = pipelineModelBasicInfo,
             pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-            pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
+            pipelineSettingWithoutVersion = instanceSetting,
             templateInstanceBasicInfo = templateInstanceBasicInfo
         )
     }

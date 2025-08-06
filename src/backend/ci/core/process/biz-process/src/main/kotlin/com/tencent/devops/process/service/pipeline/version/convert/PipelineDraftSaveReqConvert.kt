@@ -40,7 +40,6 @@ import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.version.PipelineDraftSaveReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.pojo.template.TemplateRefType
@@ -51,7 +50,6 @@ import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedSer
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
 import com.tencent.devops.process.yaml.PipelineYamlService
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 /**
  * 流水线草稿保存转换器
@@ -122,20 +120,6 @@ class PipelineDraftSaveReqConvert(
                 pipelineId = newPipelineId
             )
 
-            val versionStatus = VersionStatus.COMMITTING
-            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
-                projectId = projectId,
-                pipelineId = newPipelineId,
-                model = modelAndSetting.model,
-                yaml = yamlWithVersion?.yamlStr,
-                yamlVersion = yamlWithVersion?.versionTag,
-                creator = userId,
-                createTime = LocalDateTime.now(),
-                updater = userId,
-                updateTime = LocalDateTime.now(),
-                status = versionStatus,
-                baseVersion = baseVersion
-            )
             // 通过路径引用的方式,模版yaml文件所属的仓库ID应与流水线相同
             val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
                 projectId = projectId,
@@ -146,9 +130,11 @@ class PipelineDraftSaveReqConvert(
                 projectId = projectId,
                 pipelineId = newPipelineId,
                 version = version,
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                model = modelAndSetting.model,
+                yaml = yamlWithVersion?.yamlStr,
+                baseVersion = baseVersion,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
-                versionStatus = versionStatus,
+                versionStatus = VersionStatus.COMMITTING,
                 versionAction = PipelineVersionAction.SAVE_DRAFT,
                 repoHashId = pipelineYamlInfo?.repoHashId
             )
@@ -161,23 +147,22 @@ class PipelineDraftSaveReqConvert(
     ): Model {
         // 前端传过来的model是完整的model,如果是模版实例化的,需要转换成引用的方式
         val model = modelAndSetting!!.model
-
+        val triggerContainer = model.getTriggerContainer()
+        val overrideTemplateField = model.overrideTemplateField
         // 前端传过来的参数是模版+流水线自定义的,templateVariables只需要流水线自定义的值
-        val overrideParamIds = model.overrideTemplateField?.paramIds
-        val templateVariables = model.getTriggerContainer().params.filter {
-            overrideParamIds?.contains(it.id) ?: false
+        val templateVariables = triggerContainer.params.filter {
+            overrideTemplateField?.overrideParam(it.id) ?: true
         }.map { TemplateVariable(it) }
 
-        // 前端传过来的是所有的触发器,triggerConfigs只需要流水线自定义的
-        val overrideTriggerStepIds = model.overrideTemplateField?.triggerStepIds
-        val triggerConfigs = model.getTriggerContainer().elements.filter { element ->
-            element.stepId?.let { overrideTriggerStepIds?.contains(it) } ?: false
+        // 前端传过来的是所有的模版+流水线自定义的,triggerConfigs只需要流水线自定义的
+        val triggerConfigs = triggerContainer.elements.filter { element ->
+            element.stepId != null && overrideTemplateField?.overrideTrigger(element.stepId!!) ?: false
         }.map { TemplateInstanceTriggerConfig(it) }
 
         val recommendedVersion = TemplateInstanceUtil.getRecommendedVersion(
-            buildNo = model.getTriggerContainer().buildNo,
-            params = model.getTriggerContainer().params,
-            overrideReCommendedVersion = model.overrideTemplateField?.recommendedVersion
+            buildNo = triggerContainer.buildNo,
+            params = triggerContainer.params,
+            overrideTemplateField = overrideTemplateField
         )
 
         return if (model.fromTemplate == true) {

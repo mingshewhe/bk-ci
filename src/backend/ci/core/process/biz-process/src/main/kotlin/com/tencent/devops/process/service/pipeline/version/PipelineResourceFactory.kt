@@ -30,7 +30,7 @@ package com.tencent.devops.process.service.pipeline.version
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
-import com.tencent.devops.common.pipeline.TemplateField
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.dialect.IPipelineDialect
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
@@ -150,7 +150,7 @@ class PipelineResourceFactory @Autowired constructor(
         templateVariables: List<TemplateVariable>? = null,
         triggerConfigs: List<TemplateInstanceTriggerConfig>? = null,
         recommendedVersion: TemplateInstanceRecommendedVersion? = null,
-        overrideTemplateField: TemplateField? = null
+        overrideTemplateField: TemplateInstanceField? = null
     ): Model {
         return if (refType == TemplateRefType.PATH) {
             if (templatePath.isNullOrEmpty()) {
@@ -219,6 +219,7 @@ class PipelineResourceFactory @Autowired constructor(
             templateName = templateInfo.name,
             templateVersion = templateResource.version,
             templateVersionName = templateResource.versionName,
+            templateSettingVersion = templateResource.settingVersion,
             instanceModel = instanceModel,
             instanceType = PipelineInstanceTypeEnum.CONSTRAINT
         )

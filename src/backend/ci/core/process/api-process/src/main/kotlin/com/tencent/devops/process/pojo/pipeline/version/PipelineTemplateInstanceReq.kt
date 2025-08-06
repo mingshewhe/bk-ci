@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.pojo.pipeline.version
 
-import com.tencent.devops.common.pipeline.TemplateField
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
@@ -52,7 +52,7 @@ data class PipelineTemplateInstanceReq(
     @get:Schema(title = "构建号（推荐版本号）", required = false)
     val buildNo: BuildNo?,
     @get:Schema(title = "覆盖模板字段", required = false)
-    var overrideTemplateField: TemplateField? = null,
+    var overrideTemplateField: TemplateInstanceField? = null,
     @get:Schema(title = "流水线变量列表", required = false)
     val params: List<BuildFormProperty>? = null,
     @get:Schema(title = "流水线触发器配置", required = false)

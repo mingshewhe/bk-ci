@@ -37,6 +37,7 @@ import com.tencent.devops.common.pipeline.container.VMBuildContainer
 import com.tencent.devops.common.pipeline.event.CallBackEvent
 import com.tencent.devops.common.pipeline.event.PipelineCallbackEvent
 import com.tencent.devops.common.pipeline.event.ProjectPipelineCallBack
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceRecommendedVersion
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceTriggerConfig
 import com.tencent.devops.common.pipeline.pojo.TemplateVariable
@@ -96,7 +97,7 @@ data class Model(
      * 流水线覆盖模版字段
      */
     @get:Schema(title = "覆盖模版字段", required = false)
-    var overrideTemplateField: TemplateField? = null,
+    var overrideTemplateField: TemplateInstanceField? = null,
     @get:Schema(title = "解析后的模版ID", required = false)
     override var parsedTemplateId: String? = null,
     @get:Schema(title = "解析后的模版版本", required = false)

@@ -37,7 +37,6 @@ import com.tencent.devops.process.constant.ProcessTemplateMessageCode
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.pojo.PipelineVersionReleaseRequest
-import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
@@ -132,10 +131,6 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                 targetBranch = targetBranch
             ).first
 
-            val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(draftResource).copy(
-                status = versionStatus
-            )
-
             val draftSetting = draftResource.settingVersion?.let {
                 pipelineSettingFacadeService.userGetSetting(
                     userId = userId,
@@ -160,7 +155,9 @@ class PipelineDraftReleaseReqConvert @Autowired constructor(
                 projectId = projectId,
                 pipelineId = pipelineId,
                 version = version,
-                pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
+                model = draftResource.model,
+                yaml = draftResource.yaml,
+                baseVersion = draftResource.baseVersion,
                 pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
                 versionStatus = versionStatus,
                 versionAction = PipelineVersionAction.RELEASE_DRAFT,

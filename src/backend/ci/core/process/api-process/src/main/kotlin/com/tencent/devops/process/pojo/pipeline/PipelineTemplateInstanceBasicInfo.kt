@@ -42,6 +42,8 @@ data class PipelineTemplateInstanceBasicInfo(
     val templateVersion: Long,
     @get:Schema(title = "模版版本名称")
     val templateVersionName: String?,
+    @get:Schema(title = "模版设置版本")
+    val templateSettingVersion: Int,
     @get:Schema(title = "实例化model,如果从模版实例化,有完整的编排内容", required = false)
     val instanceModel: Model,
     @get:Schema(title = "实例化类型")
