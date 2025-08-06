@@ -12,6 +12,7 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedErrors
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedMsg
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedReason
@@ -446,6 +447,9 @@ class PipelineTemplateInstanceService @Autowired constructor(
                 val pipelineId = it.key
                 val instanceModel = it.value
                 val instanceTriggerContainer = instanceModel.getTriggerContainer()
+                val overrideTemplateField = instanceModel.overrideTemplateField ?: run {
+                    TemplateInstanceField.initFromTrigger(triggerContainer = instanceTriggerContainer)
+                }
                 val instanceParams = paramService.filterParams(
                     userId = userId,
                     projectId = projectId,
@@ -463,7 +467,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
                     repoHashId = yamlPipelineMap[pipelineId]?.repoHashId,
                     filePath = yamlPipelineMap[pipelineId]?.filePath,
                     triggerElements = instanceModel.getTriggerContainer().elements,
-                    overrideTemplateField = instanceModel.overrideTemplateField
+                    overrideTemplateField = overrideTemplateField
                 )
             }.toMap()
         } catch (ignored: Throwable) {

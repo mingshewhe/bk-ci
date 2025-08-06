@@ -63,6 +63,7 @@ import com.tencent.devops.common.pipeline.extend.ModelCheckPlugin
 import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.BuildNo
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.element.atom.BeforeDeleteParam
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -1376,6 +1377,12 @@ class PipelineInfoFacadeService @Autowired constructor(
             // 部分老的模板实例没有templateId，需要手动加上
             if (model.instanceFromTemplate == true) {
                 model.templateId = templateService.getTemplateIdByPipeline(projectId, pipelineId)
+
+                // 老的模版实例参数和设置都是流水线自定义,不跟随模版
+                if (model.overrideTemplateField == null) {
+                    model.overrideTemplateField =
+                        TemplateInstanceField.initFromTrigger(triggerContainer = triggerContainer)
+                }
             }
             // 静态组
             model.staticViews = pipelineViewGroupService.listViewByPipelineId(

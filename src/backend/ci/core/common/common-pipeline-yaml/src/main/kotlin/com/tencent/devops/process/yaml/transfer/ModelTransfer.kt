@@ -201,10 +201,9 @@ class ModelTransfer @Autowired constructor(
         val template = input.yaml.formatExtends()?.template
         if (template != null) {
             model.overrideTemplateField = TemplateInstanceField(
-                overrideAllParamAndSetting = false,
-                excludeParamIds = template.variables?.keys?.toList(),
+                paramIds = template.variables?.keys?.toList(),
                 triggerStepIds = template.triggerConfig?.keys?.toList(),
-                excludeSettingGroups = input.yaml.settingGroups(),
+                settingGroups = input.yaml.settingGroups(),
             )
             model.fromTemplate = true
             model.templatePath = template.templatePath
