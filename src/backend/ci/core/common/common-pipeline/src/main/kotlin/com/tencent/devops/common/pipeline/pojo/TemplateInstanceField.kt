@@ -7,11 +7,11 @@ import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingGroupType
  * 模版实例化时的字段,当流水线从模版实例化时,表示哪些字段可以被实例化,实例化时可以选择跟随模版的值，还是流水线自定义
  */
 data class TemplateInstanceField(
-    // 需要排除的参数
+    // 流水线需要自定义的参数
     val paramIds: List<String>? = null,
     // 流水线指定的自定义的触发器,只能自定义启用/禁用,不能新增修改删除触发器
     val triggerStepIds: List<String>? = null,
-    // 需要排除的设置
+    // 流水线需要自定义的触发器组
     val settingGroups: List<PipelineSettingGroupType>? = null
 ) {
     companion object {

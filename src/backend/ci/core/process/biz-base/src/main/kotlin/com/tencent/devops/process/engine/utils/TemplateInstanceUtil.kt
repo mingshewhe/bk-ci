@@ -267,9 +267,9 @@ object TemplateInstanceUtil {
         }
         return when (triggerElement) {
             is TimerTriggerElement -> {
-                triggerConfig.cron?.let {
+                triggerConfig.cron?.let { c ->
                     triggerElement.copy(
-                        advanceExpression = listOf(triggerConfig.cron!!)
+                        advanceExpression = c
                     )
                 } ?: triggerElement
             }

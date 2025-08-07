@@ -33,14 +33,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "实例化-触发器配置")
 data class TemplateInstanceTriggerConfig(
-    @get:Schema(title = "插件标识,用于前端实例化时渲染")
-    val atomCode: String? = null,
     @get:Schema(title = "插件stepId")
     val stepId: String? = null,
     @get:Schema(title = "启用或禁用")
     val disabled: Boolean? = null,
 
-    val cron: String? = null,
+    val cron: List<String>? = null,
     @get:Schema(title = "触发器配置启动时启动的变量,目前仅定时触发支持")
     val variables: Map<String, Any>? = null,
 ) {
@@ -48,7 +46,7 @@ data class TemplateInstanceTriggerConfig(
         stepId = element.stepId,
         disabled = !element.elementEnabled(),
         cron = if (element is TimerTriggerElement) {
-            element.advanceExpression?.firstOrNull()
+            element.advanceExpression
         } else {
             null
         }

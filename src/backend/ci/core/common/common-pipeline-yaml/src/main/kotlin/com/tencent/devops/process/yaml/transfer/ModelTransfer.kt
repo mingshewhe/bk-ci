@@ -221,7 +221,7 @@ class ModelTransfer @Autowired constructor(
                 TemplateInstanceTriggerConfig(
                     stepId = it.key,
                     disabled = it.value.disabled,
-                    cron = it.value.cron,
+                    cron = it.value.cron?.let { c -> listOf(c) },
                     variables = it.value.variables
                 )
             }
@@ -377,7 +377,7 @@ class ModelTransfer @Autowired constructor(
                         {
                             ExtendsTriggerConfig(
                                 disabled = it.disabled,
-                                cron = it.cron,
+                                cron = it.cron?.firstOrNull(),
                                 variables = it.variables
                             )
                         }

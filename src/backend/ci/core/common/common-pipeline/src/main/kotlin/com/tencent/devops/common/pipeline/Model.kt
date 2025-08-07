@@ -256,12 +256,7 @@ data class Model(
     }
 
     @JsonIgnore
-    fun getTriggerContainer() = if (fromTemplate == true && stages.isEmpty()) {
-        // 如果来源于模版,这个触发器容器是动态的,需要考虑要怎么处理
-        TriggerContainer()
-    } else {
-        stages[0].containers[0] as TriggerContainer
-    }
+    fun getTriggerContainer() = stages[0].containers[0] as TriggerContainer
 
     companion object {
         const val classType = "model"
