@@ -51,6 +51,7 @@ import com.tencent.devops.common.pipeline.template.StepTemplateModel
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode.ERROR_TEMPLATE_TYPE_INVALID
 import com.tencent.devops.process.pojo.setting.PipelineSettingVersion
 import com.tencent.devops.process.pojo.template.v2.PTemplateModelTransferResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
@@ -92,7 +93,7 @@ class PipelineTemplateGenerator @Autowired constructor(
             PipelineTemplateType.JOB -> JobTemplateModel.defaultJobTemplate()
             PipelineTemplateType.STEP -> StepTemplateModel.defaultStepTemplate()
             else -> {
-                throw ErrorCodeException(errorCode = "")
+                throw ErrorCodeException(errorCode = ERROR_TEMPLATE_TYPE_INVALID)
             }
         }
     }

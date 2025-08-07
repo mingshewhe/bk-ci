@@ -34,6 +34,7 @@ import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
 import com.tencent.devops.process.constant.PipelineTemplateConstant
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode.ERROR_TEMPLATE_LATEST_VERSION_NOT_PUBLISHED
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceWithoutVersion
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateCopyCreateReq
@@ -82,7 +83,10 @@ class PipelineTemplateCopyCreateReqConverter @Autowired constructor(
                 templateId = srcTemplateId
             )
             if (srcTemplateInfo.latestVersionStatus != VersionStatus.RELEASED) {
-                throw ErrorCodeException(errorCode = "")
+                throw ErrorCodeException(
+                    errorCode = ERROR_TEMPLATE_LATEST_VERSION_NOT_PUBLISHED,
+                    params = arrayOf(srcTemplateId)
+                )
             }
             val newTemplateId = templateId ?: pipelineTemplateGenerator.generateTemplateId()
             pipelineTemplateCommonService.checkTemplateBasicInfo(

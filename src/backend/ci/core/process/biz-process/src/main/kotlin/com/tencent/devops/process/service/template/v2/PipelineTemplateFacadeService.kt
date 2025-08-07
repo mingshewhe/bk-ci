@@ -5,6 +5,7 @@ import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.devops.common.api.constant.CommonMessageCode.YAML_NOT_VALID
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.model.SQLLimit
 import com.tencent.devops.common.api.model.SQLPage
@@ -27,6 +28,9 @@ import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_TEMPLATE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessTemplateMessageCode
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode.ERROR_LATEST_PUBLISHED_TEMPLATE_NOT_EXIST
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode.ERROR_RECENTLY_INSTALL_TEMPLATE_NOT_EXIST
+import com.tencent.devops.process.constant.ProcessTemplateMessageCode.ERROR_TEMPLATE_TRANSFORM_TO_CUSTOM
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.permission.PipelinePermissionService
@@ -867,12 +871,18 @@ class PipelineTemplateFacadeService @Autowired constructor(
             }
             val recentlyInstalledVersion = client.get(ServiceTemplateResource::class).getRecentlyInstalledVersion(
                 templateCode = templateId
-            ).data ?: throw ErrorCodeException(errorCode = "")
+            ).data ?: throw ErrorCodeException(
+                errorCode = ERROR_RECENTLY_INSTALL_TEMPLATE_NOT_EXIST,
+                params = arrayOf(templateId)
+            )
 
             val srcTemplateLatestReleasedVersion =
                 client.get(ServiceTemplateResource::class).getLatestMarketPublishedVersion(
                     templateCode = it.srcTemplateId!!
-                ).data ?: throw ErrorCodeException(errorCode = "")
+                ).data ?: throw ErrorCodeException(
+                    errorCode = ERROR_LATEST_PUBLISHED_TEMPLATE_NOT_EXIST,
+                    params = arrayOf(it.srcTemplateId!!)
+                )
 
             val srcMarketTemplateInfo = pipelineTemplateInfoService.get(
                 projectId = it.srcTemplateProjectId!!,
@@ -1044,7 +1054,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
         } ?: pipelineTemplateResourceService.getLatestVersionResource(
             projectId = projectId,
             templateId = templateId
-        ) ?: throw ErrorCodeException(errorCode = "")
+        ) ?: throw ErrorCodeException(errorCode = ERROR_TEMPLATE_NOT_EXISTS)
         val setting = pipelineTemplateSettingService.get(
             projectId = projectId,
             templateId = templateId,
@@ -1062,7 +1072,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             yaml = templateResource.yaml
         ).yamlWithVersion?.yamlStr
         if (yamlStr == null) {
-            throw ErrorCodeException(errorCode = "")
+            throw ErrorCodeException(errorCode = YAML_NOT_VALID)
         }
         return FileExportUtil.exportStringToFile(
             content = yamlStr,
@@ -1091,7 +1101,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
             templateId = templateId
         )
         if (templateInfo.mode != TemplateType.CONSTRAINT) {
-            throw ErrorCodeException(errorCode = "")
+            throw ErrorCodeException(errorCode = ERROR_TEMPLATE_TRANSFORM_TO_CUSTOM)
         }
         pipelineTemplatePersistenceService.transformTemplateToCustom(
             userId = userId,

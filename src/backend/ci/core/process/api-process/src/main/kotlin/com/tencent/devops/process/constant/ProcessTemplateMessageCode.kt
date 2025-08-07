@@ -51,4 +51,10 @@ object ProcessTemplateMessageCode {
     const val ERROR_STATUS_NOT_MATCHED = "2101302" // 状态不匹配,预期状态为$0,实际状态为$1
 
     const val ERROR_PIPELINE_NOT_RELATED_TEMPLATE = "2101303" // 流水线没有关联模板
+
+    const val ERROR_TEMPLATE_LATEST_VERSION_NOT_PUBLISHED = "2101304" // 模板{0}的最新状态处于非发布状态
+    const val ERROR_TEMPLATE_TYPE_INVALID = "2101305" // 无效的模板类型
+    const val ERROR_RECENTLY_INSTALL_TEMPLATE_NOT_EXIST = "2101306" // 模板{0}的最近安装记录不存在
+    const val ERROR_LATEST_PUBLISHED_TEMPLATE_NOT_EXIST = "2101307" // 模板{0}的最新发布版本记录不存在
+    const val ERROR_TEMPLATE_TRANSFORM_TO_CUSTOM = "2101308" // 模板处于非约束状态，不允许转化自定义
 }
