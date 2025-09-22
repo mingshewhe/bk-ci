@@ -211,6 +211,28 @@ class UserPipelineTemplateInstanceV2ResourceImpl(
         )
     }
 
+    override fun compareTemplateAndPipelineYaml(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        templateVersion: Long,
+        pipelineId: String,
+        pipelineVersion: Int,
+        useTemplateSettings: Boolean
+    ): Result<PipelineTemplateInstanceCompareResponse> {
+        return Result(
+            instanceFacadeService.compareTemplateAndPipelineYaml(
+                userId = userId,
+                projectId = projectId,
+                templateId = templateId,
+                templateVersion = templateVersion,
+                pipelineId = pipelineId,
+                pipelineVersion = pipelineVersion,
+                useTemplateSettings = useTemplateSettings
+            )
+        )
+    }
+
     override fun getTemplateInstanceTaskResult(
         userId: String,
         projectId: String,

@@ -13,10 +13,13 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.PipelineInstanceTypeEnum
+import com.tencent.devops.common.pipeline.enums.PipelineStorageType
 import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedErrors
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedMsg
 import com.tencent.devops.common.pipeline.pojo.element.atom.PipelineCheckFailedReason
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferActionType
+import com.tencent.devops.common.pipeline.pojo.transfer.TransferBody
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_ELEMENT_CHECK_FAILED
@@ -46,6 +49,7 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateRelatedResp
 import com.tencent.devops.process.pojo.template.v2.TemplateInstanceType
 import com.tencent.devops.process.service.ParamFacadeService
 import com.tencent.devops.process.service.PipelineVersionFacadeService
+import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.PipelineYamlVersionResolver
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionGenerator
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
@@ -81,7 +85,10 @@ class PipelineTemplateInstanceService @Autowired constructor(
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val pipelineYamlVersionResolver: PipelineYamlVersionResolver,
     private val permissionService: PipelineTemplatePermissionService,
-    private val client: Client
+    private val client: Client,
+    private val transferService: PipelineTransferYamlService,
+    private val pipelineTemplateGenerator: PipelineTemplateGenerator,
+    private val pipelineTemplateSettingService: PipelineTemplateSettingService
 ) {
     /*同步创建模板实例*/
     fun createTemplateInstances(
@@ -761,6 +768,99 @@ class PipelineTemplateInstanceService @Autowired constructor(
             instanceType = instanceBase.type,
             version = instanceBase.templateVersion,
             request = request
+        )
+    }
+
+    /**
+     * 比较模板YAML和流水线实例YAML之间的差异
+     * 支持指定版本和是否使用模板设置
+     */
+    fun compareTemplateAndPipelineYaml(
+        userId: String,
+        projectId: String,
+        templateId: String,
+        templateVersion: Long,
+        pipelineId: String,
+        pipelineVersion: Int,
+        useTemplateSettings: Boolean
+    ): PipelineTemplateInstanceCompareResponse {
+        // 检查模板查看权限
+        permissionService.checkPipelineTemplatePermissionWithMessage(
+            userId = userId,
+            projectId = projectId,
+            permission = AuthPermission.VIEW,
+            templateId = templateId
+        )
+        val templateInfo = pipelineTemplateInfoService.get(projectId, templateId)
+        // 获取指定模板版本的资源
+        val templateResource = pipelineTemplateResourceService.get(
+            projectId = projectId,
+            templateId = templateId,
+            version = templateVersion
+        )
+
+        // 获取指定流水线版本的完整model和setting
+        val pipelineVersionWithModel = pipelineVersionFacadeService.getVersion(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            version = pipelineVersion
+        )
+
+        // 使用完整的modelAndSetting转换为YAML，而不是直接使用yamlPreview
+        val pipelineYaml = transferService.transfer(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            actionType = TransferActionType.FULL_MODEL2YAML,
+            data = TransferBody(
+                modelAndSetting = pipelineVersionWithModel.modelAndSetting
+            )
+        ).yamlWithVersion?.yamlStr ?: ""
+
+        // 获取模板YAML
+        val templateYaml = if (useTemplateSettings) {
+            // 如果使用模板设置，直接返回模板的完整YAML
+            templateResource.yaml ?: pipelineTemplateGenerator.transfer(
+                userId = userId,
+                projectId = projectId,
+                storageType = PipelineStorageType.MODEL,
+                templateType = templateResource.type,
+                templateModel = templateResource.model,
+                templateSetting = pipelineTemplateSettingService.get(
+                    projectId = projectId,
+                    templateId = templateId,
+                    settingVersion = templateResource.settingVersion
+                ),
+                params = templateResource.params,
+                yaml = null
+            ).yamlWithVersion?.yamlStr ?: ""
+        } else {
+            // 如果不使用模板设置，使用默认模板的setting拼凑模板的Model，然后转换
+            val defaultSetting = pipelineTemplateGenerator.getDefaultSetting(
+                type = templateResource.type,
+                projectId = projectId,
+                templateId = templateId,
+                templateName = templateInfo.name,
+                desc = templateInfo.desc,
+                creator = templateResource.creator
+            )
+
+            pipelineTemplateGenerator.transfer(
+                userId = userId,
+                projectId = projectId,
+                storageType = PipelineStorageType.MODEL,
+                templateType = templateResource.type,
+                templateModel = templateResource.model,
+                templateSetting = defaultSetting,
+                params = templateResource.params,
+                yaml = null
+            ).yamlWithVersion?.yamlStr ?: ""
+        }
+
+        return PipelineTemplateInstanceCompareResponse(
+            baseVersionYaml = pipelineYaml,
+            comparedVersionYaml = templateYaml
         )
     }
 

@@ -254,6 +254,33 @@ interface UserPipelineTemplateInstanceV2Resource {
         comparedVersion: Long?
     ): Result<PipelineTemplateInstanceCompareResponse>
 
+    @Operation(summary = "比较模板YAML和流水线实例YAML")
+    @GET
+    @Path("/{templateId}/compareYaml")
+    fun compareTemplateAndPipelineYaml(
+        @Parameter(description = "用户ID", required = true, example = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @HeaderParam(AUTH_HEADER_USER_ID)
+        userId: String,
+        @Parameter(description = "项目ID", required = true)
+        @PathParam("projectId")
+        projectId: String,
+        @Parameter(description = "模板ID", required = true)
+        @PathParam("templateId")
+        templateId: String,
+        @Parameter(description = "模板版本", required = true)
+        @QueryParam("templateVersion")
+        templateVersion: Long,
+        @Parameter(description = "流水线ID", required = true)
+        @QueryParam("pipelineId")
+        pipelineId: String,
+        @Parameter(description = "流水线版本", required = true)
+        @QueryParam("pipelineVersion")
+        pipelineVersion: Int,
+        @Parameter(description = "是否使用模板设置", required = false)
+        @QueryParam("useTemplateSettings")
+        useTemplateSettings: Boolean = false
+    ): Result<PipelineTemplateInstanceCompareResponse>
+
     @Operation(summary = "获取模版实例任务结果")
     @GET
     @Path("/task/{baseId}/result")
