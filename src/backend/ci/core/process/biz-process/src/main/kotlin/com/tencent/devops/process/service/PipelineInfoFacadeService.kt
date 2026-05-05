@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service
 
+import com.fasterxml.jackson.core.JsonParseException
 import com.google.common.cache.CacheBuilder
 import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
@@ -37,6 +38,7 @@ import com.tencent.devops.common.api.constant.CommonMessageCode.USER_NOT_PERMISS
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.exception.OperationException
 import com.tencent.devops.common.api.exception.PermissionForbiddenException
+import com.tencent.devops.common.api.exception.PipelineAlreadyExistException
 import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.api.util.MessageUtil
@@ -102,12 +104,10 @@ import com.tencent.devops.process.pojo.pipeline.DeletePipelineResult
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceVersion
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
-import com.tencent.devops.process.pojo.pipeline.version.PipelineCopyCreateReq
 import com.tencent.devops.process.pojo.template.TemplateType
 import com.tencent.devops.process.service.label.PipelineGroupService
 import com.tencent.devops.process.service.pipeline.PipelineSettingFacadeService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
-import com.tencent.devops.process.service.pipeline.version.PipelineVersionManager
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateRelatedService
 import com.tencent.devops.process.service.template.v2.PipelineTemplateResourceService
@@ -165,8 +165,7 @@ class PipelineInfoFacadeService @Autowired constructor(
     private val auditService: AuditService,
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineVersionManager: PipelineVersionManager
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService
 ) {
 
     @Value("\${process.deletedPipelineStoreDays:30}")
@@ -1067,8 +1066,14 @@ class PipelineInfoFacadeService @Autowired constructor(
         channelCode: ChannelCode,
         checkPermission: Boolean = true
     ): String {
+        val pipeline = pipelineRepositoryService.getPipelineInfo(projectId, pipelineId)
+            ?: throw ErrorCodeException(
+                statusCode = Response.Status.NOT_FOUND.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS
+            )
+
+        logger.info("Start to copy the pipeline $pipelineId")
         if (checkPermission) {
-            val language = I18nUtil.getLanguage(userId)
             val permission = AuthPermission.EDIT
             pipelinePermissionService.validPipelinePermission(
                 userId = userId,
@@ -1077,10 +1082,22 @@ class PipelineInfoFacadeService @Autowired constructor(
                 permission = permission,
                 message = MessageUtil.getMessageByLocale(
                     USER_NOT_PERMISSIONS_OPERATE_PIPELINE,
-                    language,
-                    arrayOf(userId, projectId, permission.getI18n(language), pipelineId)
+                    I18nUtil.getLanguage(userId),
+                    arrayOf(
+                        userId,
+                        projectId,
+                        permission.getI18n(I18nUtil.getLanguage(userId)),
+                        pipelineId
+                    )
                 )
             )
+//            pipelinePermissionService.validPipelinePermission(
+//                userId = userId,
+//                projectId = projectId,
+//                pipelineId = "*",
+//                permission = AuthPermission.CREATE,
+//                message = "用户($userId)无权限在工程($projectId)下创建流水线"
+//            )
             if (!pipelinePermissionService.checkPipelinePermission(
                     userId = userId,
                     projectId = projectId,
@@ -1090,22 +1107,71 @@ class PipelineInfoFacadeService @Autowired constructor(
                 throw PermissionForbiddenException(
                     MessageUtil.getMessageByLocale(
                         USER_NOT_PERMISSIONS_OPERATE_PIPELINE,
-                        language,
-                        arrayOf(userId, projectId, AuthPermission.CREATE.getI18n(language), "*")
+                        I18nUtil.getLanguage(userId),
+                        arrayOf(
+                            userId,
+                            projectId,
+                            AuthPermission.CREATE.getI18n(I18nUtil.getLanguage(userId)),
+                            "*"
+                        )
                     )
                 )
             }
         }
-        return pipelineVersionManager.deployPipeline(
-            userId = userId,
-            projectId = projectId,
-            request = PipelineCopyCreateReq(
-                pipelineId = pipelineId,
-                pipelineCopy = pipelineCopy,
-                channelCode = channelCode,
-                checkPermission = checkPermission
+
+        if (pipeline.channelCode != channelCode) {
+            throw ErrorCodeException(
+                statusCode = Response.Status.NOT_FOUND.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_CHANNEL_CODE,
+                params = arrayOf(pipeline.channelCode.name)
             )
-        ).pipelineId
+        }
+
+        val model = pipelineRepositoryService.getPipelineResourceVersion(projectId, pipelineId)?.model
+            ?: throw ErrorCodeException(
+                statusCode = Response.Status.NOT_FOUND.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NOT_EXISTS
+            )
+        try {
+            val copyMode = Model(
+                name = pipelineCopy.name,
+                desc = pipelineCopy.desc ?: model.desc,
+                stages = model.stages,
+                staticViews = pipelineCopy.staticViews,
+                labels = pipelineCopy.labels
+            )
+            modelCheckPlugin.clearUpModel(copyMode)
+            val settingInfo = pipelineSettingFacadeService.getSettingInfo(projectId, pipelineId)
+            val newPipelineId = createPipeline(
+                userId = userId,
+                projectId = projectId,
+                model = copyMode,
+                channelCode = channelCode,
+                setting = settingInfo?.copy(
+                    labels = pipelineCopy.labels
+                )
+            ).pipelineId
+            return newPipelineId
+        } catch (e: JsonParseException) {
+            logger.error("Parse process($pipelineId) fail", e)
+            throw ErrorCodeException(
+                statusCode = Response.Status.NOT_FOUND.statusCode,
+                errorCode = ILLEGAL_PIPELINE_MODEL_JSON
+            )
+        } catch (e: PipelineAlreadyExistException) {
+            throw ErrorCodeException(
+                statusCode = Response.Status.CONFLICT.statusCode,
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_NAME_EXISTS
+            )
+        } catch (e: ErrorCodeException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn("Fail to get the pipeline($pipelineId) definition of project($projectId)", e)
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.OPERATE_PIPELINE_FAIL,
+                params = arrayOf(e.message ?: "")
+            )
+        }
     }
 
     @ActionAuditRecord(
