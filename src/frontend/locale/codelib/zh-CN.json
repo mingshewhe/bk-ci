@@ -243,6 +243,7 @@
   "bkTimingStartEventDesc": "{user} 定时触发",
   "bkEventReplayDesc": "事件 [{event}] 由 {user} 重放",
   "bkRepoEnablePacEventDesc": "{user} 开启PAC",
+  "bkRepoDisablePacEventDesc": "{user} 关闭PAC",
   "bkArtifactFileArrivedEventDesc": "制品 [{name}] {size}到达，来源 {pipeline}, by {user}，{repo}",
   "bkArtifactFolderArrivedEventDesc": "制品目录 [{name}] {size}到达，来源 {pipeline}，by {user}，{repo}",
   "bkArtifactImageArrivedEventDesc": "镜像: [{name}] 到达，来源: {pipeline}, by {user}",
