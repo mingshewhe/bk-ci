@@ -31,7 +31,7 @@ package com.tencent.devops.process.dao.yaml
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.model.process.tables.TPipelineYamlVersion
 import com.tencent.devops.model.process.tables.records.TPipelineYamlVersionRecord
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlVersion
 import com.tencent.devops.process.pojo.pipeline.enums.YamlResourceType
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository

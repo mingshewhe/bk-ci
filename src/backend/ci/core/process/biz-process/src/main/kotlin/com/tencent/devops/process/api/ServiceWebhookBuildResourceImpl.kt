@@ -1,5 +1,6 @@
 package com.tencent.devops.process.api
 
+import com.tencent.devops.common.api.context.ChannelContext
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.StartType
@@ -49,17 +50,19 @@ class ServiceWebhookBuildResourceImpl @Autowired constructor(
         request: WebhookStartPipelineRequest
     ): Result<BuildId> {
         with(request) {
-            val buildId = pipelineBuildService.startPipeline(
-                userId = userId,
-                pipeline = pipelineInfo,
-                startType = startType,
-                pipelineParamMap = pipelineParamMap,
-                channelCode = channelCode,
-                isMobile = false,
-                resource = resource,
-                signPipelineVersion = resource.version,
-                frequencyLimit = frequencyLimit
-            )
+            val buildId = ChannelContext.withChannel(channelCode.name) {
+                pipelineBuildService.startPipeline(
+                    userId = userId,
+                    pipeline = pipelineInfo,
+                    startType = startType,
+                    pipelineParamMap = pipelineParamMap,
+                    channelCode = channelCode,
+                    isMobile = false,
+                    resource = resource,
+                    signPipelineVersion = resource.version,
+                    frequencyLimit = frequencyLimit
+                )
+            }
             return Result(buildId)
         }
     }

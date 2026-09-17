@@ -28,7 +28,7 @@
 package com.tencent.devops.process.pojo
 
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlVo
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlVo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
 import io.swagger.v3.oas.annotations.media.Schema
 

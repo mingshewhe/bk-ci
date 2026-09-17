@@ -6,8 +6,8 @@ import com.tencent.devops.common.api.exception.RemoteServiceException
 import com.tencent.devops.common.api.util.HashUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.process.api.service.ServicePipelineYamlResource
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacDisableReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacEnableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacDisableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacEnableReq
 import com.tencent.devops.repository.constant.RepositoryConstants
 import com.tencent.devops.repository.constant.RepositoryMessageCode
 import com.tencent.devops.repository.constant.RepositoryMessageCode.ERROR_AUTH_TYPE_ENABLED_PAC

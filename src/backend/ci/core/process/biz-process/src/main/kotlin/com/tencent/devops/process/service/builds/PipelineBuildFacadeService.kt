@@ -165,6 +165,7 @@ import com.tencent.devops.process.strategy.factory.HistoryConditionQueryStrategy
 import com.tencent.devops.process.strategy.factory.UserPipelinePermissionCheckStrategyFactory
 import com.tencent.devops.process.strategy.pojo.HistoryConditionQueryRequest
 import com.tencent.devops.process.trigger.PipelineTriggerEventService
+import com.tencent.devops.process.trigger.PipelineTriggerReplayService
 import com.tencent.devops.process.util.TaskUtils
 import com.tencent.devops.process.utils.BUILD_NO
 import com.tencent.devops.process.utils.FIXVERSION
@@ -218,6 +219,7 @@ class PipelineBuildFacadeService(
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val pipelineTemplatePermissionService: PipelineTemplatePermissionService,
     private val pipelineTriggerEventService: PipelineTriggerEventService,
+    private val pipelineTriggerReplayService: PipelineTriggerReplayService,
     private val pipelineRecordModelService: PipelineRecordModelService,
     private val historyConditionQueryStrategyFactory: HistoryConditionQueryStrategyFactory,
     private val createStreamService: CreateStreamTriggerSupportService,
@@ -3045,7 +3047,7 @@ class PipelineBuildFacadeService(
                 pipelineId = pipelineId,
                 buildId = buildId
             )?.let {
-                pipelineTriggerEventService.replay(
+                pipelineTriggerReplayService.replay(
                     userId = userId,
                     projectId = projectId,
                     detailId = it.detailId!!

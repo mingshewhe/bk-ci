@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.pojo.pipeline
 
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlVo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "配置流水线结果")

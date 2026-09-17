@@ -31,8 +31,8 @@ package com.tencent.devops.process.api.service
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID
 import com.tencent.devops.common.api.auth.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.devops.common.api.pojo.Result
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacDisableReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacEnableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacDisableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacEnableReq
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag

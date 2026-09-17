@@ -27,11 +27,16 @@
 
 package com.tencent.devops.process.api
 
+import com.tencent.devops.common.api.constant.CommonMessageCode.USER_NOT_PERMISSIONS_OPERATE_PIPELINE
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.api.util.MessageUtil
+import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.common.webhook.pojo.code.github.GithubWebhook
 import com.tencent.devops.process.api.service.ServiceScmWebhookResource
 import com.tencent.devops.process.engine.service.PipelineWebhookService
+import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.code.WebhookCommit
 import com.tencent.devops.process.pojo.webhook.PipelineWebhook
 import com.tencent.devops.process.service.webhook.PipelineBuildWebhookService
@@ -46,7 +51,8 @@ class ServiceScmWebhookResourceImpl @Autowired constructor(
     private val pipelineBuildWebhookService: PipelineBuildWebhookService,
     private val streamBridge: StreamBridge,
     private val pipelineWebhookService: PipelineWebhookService,
-    private val webhookGrayService: WebhookGrayService
+    private val webhookGrayService: WebhookGrayService,
+    private val pipelinePermissionService: PipelinePermissionService
 ) : ServiceScmWebhookResource {
     override fun webHookCodeGithubCommit(webhook: GithubWebhook): Result<Boolean> {
         return Result(
@@ -70,6 +76,19 @@ class ServiceScmWebhookResourceImpl @Autowired constructor(
         page: Int?,
         pageSize: Int?
     ): Result<List<PipelineWebhook>> {
+        val language = I18nUtil.getLanguage(userId)
+        val permission = AuthPermission.VIEW
+        pipelinePermissionService.validPipelinePermission(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            permission = permission,
+            message = MessageUtil.getMessageByLocale(
+                USER_NOT_PERMISSIONS_OPERATE_PIPELINE,
+                language,
+                arrayOf(userId, projectId, permission.getI18n(language), pipelineId)
+            )
+        )
         return Result(
             pipelineWebhookService.listWebhook(
                 userId = userId,

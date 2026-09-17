@@ -123,7 +123,7 @@ class PipelineTimerBuildListener @Autowired constructor(
         } finally {
             pipelineTriggerMeasureService.recordActualExecutionTime(
                 name = NAME_PIPELINE_CRON_EXECUTE_DELAY,
-                event = event
+                expectedStartTime = event.expectedStartTime
             )
         }
     }

@@ -34,7 +34,7 @@ import com.tencent.devops.common.pipeline.pojo.element.market.MarketEventAtomEle
 import com.tencent.devops.process.plugin.ElementBizPlugin
 import com.tencent.devops.process.plugin.annotation.ElementBiz
 import com.tencent.devops.process.plugin.trigger.service.PipelineTimerService
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileInfo
 import org.slf4j.LoggerFactory
 
 @ElementBiz

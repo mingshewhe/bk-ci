@@ -30,7 +30,7 @@ package com.tencent.devops.process.dao.yaml
 
 import com.tencent.devops.model.process.tables.TPipelineYamlView
 import com.tencent.devops.model.process.tables.records.TPipelineYamlViewRecord
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlView
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlView
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
 

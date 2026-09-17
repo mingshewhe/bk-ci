@@ -27,19 +27,25 @@
 
 package com.tencent.devops.process.api
 
+import com.tencent.devops.common.api.constant.CommonMessageCode.USER_NOT_PERMISSIONS_OPERATE_PIPELINE
 import com.tencent.devops.common.api.enums.ScmType
 import com.tencent.devops.common.api.pojo.Result
+import com.tencent.devops.common.api.util.MessageUtil
+import com.tencent.devops.common.auth.api.AuthPermission
 import com.tencent.devops.common.pipeline.pojo.element.trigger.enums.CodeEventType
 import com.tencent.devops.common.web.RestResource
+import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.api.user.UserScmWebhookResource
 import com.tencent.devops.process.engine.service.PipelineWebhookService
+import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.pojo.webhook.PipelineWebhook
 import com.tencent.devops.process.pojo.webhook.WebhookEventType
 import org.springframework.beans.factory.annotation.Autowired
 
 @RestResource
 class UserScmWebhookResourceImpl @Autowired constructor(
-    private val pipelineWebhookService: PipelineWebhookService
+    private val pipelineWebhookService: PipelineWebhookService,
+    private val pipelinePermissionService: PipelinePermissionService
 ) : UserScmWebhookResource {
     override fun getEventType(scmType: String): Result<List<WebhookEventType>> {
         val eventTypeList = when (scmType) {
@@ -77,6 +83,7 @@ class UserScmWebhookResourceImpl @Autowired constructor(
         page: Int?,
         pageSize: Int?
     ): Result<List<PipelineWebhook>> {
+        checkViewPermission(userId, projectId, pipelineId)
         return Result(
             pipelineWebhookService.listWebhook(
                 userId = userId,
@@ -84,6 +91,22 @@ class UserScmWebhookResourceImpl @Autowired constructor(
                 pipelineId = pipelineId,
                 page = page,
                 pageSize = pageSize
+            )
+        )
+    }
+
+    private fun checkViewPermission(userId: String, projectId: String, pipelineId: String) {
+        val language = I18nUtil.getLanguage(userId)
+        val permission = AuthPermission.VIEW
+        pipelinePermissionService.validPipelinePermission(
+            userId = userId,
+            projectId = projectId,
+            pipelineId = pipelineId,
+            permission = permission,
+            message = MessageUtil.getMessageByLocale(
+                USER_NOT_PERMISSIONS_OPERATE_PIPELINE,
+                language,
+                arrayOf(userId, projectId, permission.getI18n(language), pipelineId)
             )
         )
     }

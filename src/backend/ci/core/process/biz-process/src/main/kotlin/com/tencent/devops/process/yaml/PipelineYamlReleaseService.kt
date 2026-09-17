@@ -7,33 +7,57 @@ import com.tencent.devops.common.api.constant.HTTP_404
 import com.tencent.devops.common.api.enums.RepositoryType
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.api.exception.RemoteServiceException
+import com.tencent.devops.common.api.util.DateTimeUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
+import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceOnlyVersion
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseReqSource
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileReleaseResult
+import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileReleaseReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileReleaseReqSource
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileReleaseResult
 import com.tencent.devops.process.pojo.template.v2.PTemplateResourceOnlyVersion
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionCreateContext
-import com.tencent.devops.process.yaml.common.YamlFileUtils
+import com.tencent.devops.process.service.view.PipelineViewGroupService
 import com.tencent.devops.process.yaml.common.Constansts
+import com.tencent.devops.process.yaml.common.YamlFileUtils
+import com.tencent.devops.process.yaml.pojo.PipelineYamlTriggerLock
 import com.tencent.devops.repository.api.ServiceRepositoryResource
+import com.tencent.devops.repository.api.scm.ServiceScmFileApiResource
+import com.tencent.devops.repository.api.scm.ServiceScmPullRequestApiResource
 import com.tencent.devops.repository.api.scm.ServiceScmRepositoryApiResource
 import com.tencent.devops.repository.pojo.credential.AuthRepository
 import com.tencent.devops.repository.pojo.credential.UserOauthTokenAuthCred
+import com.tencent.devops.repository.pojo.hub.ScmFilePushReq
+import com.tencent.devops.repository.pojo.hub.ScmPullRequestCreateReq
+import com.tencent.devops.scm.api.pojo.Commit
+import com.tencent.devops.scm.api.pojo.Content
+import com.tencent.devops.scm.api.pojo.PullRequest
 import com.tencent.devops.scm.api.pojo.repository.git.GitScmServerRepository
-import org.springframework.context.annotation.Lazy
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
+/**
+ * 蓝盾侧发布草稿时校验并回写仓库 YAML，维护 PAC 绑定。
+ *
+ * webhook 消费导致的流水线变更见 [PipelineYamlFileManager]。
+ */
 @Service
 class PipelineYamlReleaseService(
     private val client: Client,
+    private val redisOperation: RedisOperation,
     private val pipelineYamlService: PipelineYamlService,
-    @Lazy
-    private val pipelineYamlFileManager: PipelineYamlFileManager
+    private val pipelineViewGroupService: PipelineViewGroupService,
+    private val pipelineYamlViewService: PipelineYamlViewService
 ) {
+    companion object {
+        private val logger = LoggerFactory.getLogger(PipelineYamlReleaseService::class.java)
+        private const val MAX_PULL_REQUEST_TITLE_LENGTH = 255
+    }
 
     fun validateReleaseYamlFile(
         context: PipelineVersionCreateContext,
@@ -177,8 +201,284 @@ class PipelineYamlReleaseService(
                 versionName = versionName,
                 targetBranch = targetBranch
             )
-            return pipelineYamlFileManager.releaseYamlFile(yamlFileReleaseReq = yamlFileReleaseReq)
+            return doReleaseYamlFile(yamlFileReleaseReq)
         }
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun doReleaseYamlFile(
+        yamlFileReleaseReq: PipelineYamlFileReleaseReq
+    ): PipelineYamlFileReleaseResult {
+        with(yamlFileReleaseReq) {
+            logger.info(
+                "[PAC_PIPELINE]|release pipeline yaml file|" +
+                    "$userId|$projectId|$pipelineId|$repoHashId|$version|$versionName"
+            )
+            val repository = client.get(ServiceRepositoryResource::class).get(
+                projectId = projectId,
+                repositoryId = repoHashId,
+                repositoryType = RepositoryType.ID
+            ).data ?: throw ErrorCodeException(
+                errorCode = ProcessMessageCode.GIT_NOT_FOUND,
+                params = arrayOf(repoHashId)
+            )
+            val lock = PipelineYamlTriggerLock(
+                redisOperation = redisOperation,
+                projectId = projectId,
+                repoHashId = repoHashId,
+                filePath = filePath,
+                expiredTimeInSeconds = 180
+            )
+            return try {
+                val authRepository = AuthRepository(repository)
+                val serverRepository = client.get(ServiceScmRepositoryApiResource::class).getServerRepository(
+                    projectId = projectId,
+                    authRepository = authRepository
+                ).data
+                if (serverRepository !is GitScmServerRepository) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_NOT_SUPPORT_REPOSITORY_TYPE_ENABLE_PAC
+                    )
+                }
+                pipelineYamlViewService.createYamlViews(
+                    userId = userId,
+                    projectId = projectId,
+                    repoHashId = repoHashId,
+                    aliasName = repository.aliasName,
+                    directoryList = setOf(YamlFileUtils.getCiDirectory(filePath))
+                )
+                lock.lock()
+                val defaultBranch = serverRepository.defaultBranch!!
+                val ref = when {
+                    targetAction == CodeTargetAction.COMMIT_TO_MASTER -> defaultBranch
+                    targetAction == CodeTargetAction.COMMIT_TO_BRANCH && targetBranch == defaultBranch -> defaultBranch
+                    else -> versionName!!
+                }
+                // 发布应该使用流水线更新人的身份,不能使用pac开启人的身份
+                val pushAuthRepository = authRepository.copy(
+                    auth = UserOauthTokenAuthCred(
+                        userId = userId
+                    )
+                )
+                val filePushResult = client.get(ServiceScmFileApiResource::class).pushFile(
+                    projectId = projectId,
+                    filePushReq = ScmFilePushReq(
+                        path = filePath,
+                        ref = ref,
+                        defaultBranch = defaultBranch,
+                        content = content,
+                        message = commitMessage,
+                        authRepository = pushAuthRepository
+                    )
+                ).data!!
+                val needCreatePullRequest = targetAction == CodeTargetAction.CHECKOUT_BRANCH_AND_REQUEST_MERGE ||
+                    targetAction == CodeTargetAction.COMMIT_TO_SOURCE_BRANCH_AND_REQUEST_MERGE
+                val pullRequest = if (needCreatePullRequest) {
+                    createPullRequest(
+                        ref = ref,
+                        targetBranch = defaultBranch,
+                        commitMessage = commitMessage,
+                        newFile = filePushResult.newFile,
+                        authRepository = pushAuthRepository
+                    )
+                } else {
+                    null
+                }
+
+                saveOrUpdateYamlBinding(
+                    ref = ref,
+                    defaultBranch = defaultBranch,
+                    content = filePushResult.content,
+                    commit = filePushResult.commit
+                )
+                PipelineYamlFileReleaseResult(
+                    projectId = projectId,
+                    repoHashId = repoHashId,
+                    filePath = filePath,
+                    branch = ref,
+                    pullRequestUrl = pullRequest?.link,
+                    pullRequestId = pullRequest?.id,
+                )
+            } catch (ignored: RemoteServiceException) {
+                throw when (ignored.httpStatus) {
+                    HTTP_404 -> ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_GIT_PROJECT_NOT_FOUND_OR_NOT_PERMISSION,
+                        params = arrayOf(repository.projectName)
+                    )
+
+                    HTTP_401, HTTP_403 -> ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_USER_NO_PUSH_PERMISSION,
+                        params = arrayOf(userId, repository.projectName)
+                    )
+
+                    else -> ignored
+                }
+            } catch (ignored: Exception) {
+                logger.error(
+                    "[PAC_PIPELINE]|Failed to release yaml pipeline|" +
+                        "$projectId|$pipelineId|$repoHashId|$version|$versionName",
+                    ignored
+                )
+                throw ignored
+            } finally {
+                lock.unlock()
+            }
+        }
+    }
+
+    private fun PipelineYamlFileReleaseReq.createPullRequest(
+        ref: String,
+        targetBranch: String,
+        commitMessage: String,
+        newFile: Boolean,
+        authRepository: AuthRepository
+    ): PullRequest? {
+        val title = buildPullRequestTitle(commitMessage = commitMessage, newFile = newFile)
+        return client.get(ServiceScmPullRequestApiResource::class).createPullRequestIfAbsent(
+            projectId = projectId,
+            pullRequestCreateReq = ScmPullRequestCreateReq(
+                title = title,
+                body = commitMessage,
+                sourceBranch = ref,
+                targetBranch = targetBranch,
+                authRepository = authRepository
+            )
+        ).data!!
+    }
+
+    private fun PipelineYamlFileReleaseReq.saveOrUpdateYamlBinding(
+        ref: String,
+        defaultBranch: String,
+        content: Content,
+        commit: Commit
+    ) {
+        val directory = YamlFileUtils.getCiDirectory(filePath)
+        val pipelineYamlInfo = pipelineYamlService.getPipelineYamlInfo(
+            projectId = projectId,
+            repoHashId = repoHashId,
+            filePath = filePath
+        )
+        val resourceType = YamlFileUtils.getYamlResourceType(
+            filePath = filePath,
+            fileContent = content.content
+        )
+        if (pipelineYamlInfo == null) {
+            pipelineYamlService.save(
+                projectId = projectId,
+                repoHashId = repoHashId,
+                filePath = filePath,
+                directory = directory,
+                defaultBranch = defaultBranch,
+                blobId = content.blobId!!,
+                ref = ref,
+                commitId = commit.sha,
+                commitTime = commit.commitTime ?: LocalDateTime.now(),
+                pipelineId = pipelineId,
+                status = if (ref == defaultBranch) {
+                    PipelineYamlStatus.OK.name
+                } else {
+                    PipelineYamlStatus.UN_MERGED.name
+                },
+                version = version,
+                userId = userId,
+                resourceType = resourceType
+            )
+            pipelineViewGroupService.updateGroupAfterPipelineUpdate(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                pipelineName = pipelineName,
+                creator = userId,
+                userId = userId
+            )
+        } else {
+            pipelineYamlService.update(
+                projectId = projectId,
+                repoHashId = repoHashId,
+                filePath = filePath,
+                blobId = content.blobId,
+                commitId = commit.sha,
+                commitTime = commit.commitTime ?: LocalDateTime.now(),
+                ref = ref,
+                defaultBranch = defaultBranch,
+                pipelineId = pipelineId,
+                version = version,
+                userId = userId,
+                resourceType = resourceType
+            )
+        }
+    }
+
+    private fun PipelineYamlFileReleaseReq.buildPullRequestTitle(
+        commitMessage: String,
+        newFile: Boolean
+    ): String {
+        val userTitle = commitMessage.substringBefore('\n').trim()
+        if (userTitle.isBlank()) {
+            return getPullRequestTitle(newFile = newFile)
+        }
+        return if (userTitle.length > MAX_PULL_REQUEST_TITLE_LENGTH) {
+            userTitle.take(MAX_PULL_REQUEST_TITLE_LENGTH - 3) + "..."
+        } else {
+            userTitle
+        }
+    }
+
+    private fun PipelineYamlFileReleaseReq.getPullRequestTitle(newFile: Boolean): String {
+        val dateStr = DateTimeUtil.toDateTime(LocalDateTime.now())
+        val title = if (newFile) {
+            when (source) {
+                PipelineYamlFileReleaseReqSource.PIPELINE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_PIPELINE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_YAML_CREATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_INSTANCE_YAML_TITLE,
+                        params = arrayOf(dateStr, templateName ?: ""),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+            }
+        } else {
+            when (source) {
+                PipelineYamlFileReleaseReqSource.PIPELINE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_PIPELINE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_YAML_UPDATE_TITLE,
+                        params = arrayOf(dateStr, pipelineName),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+
+                PipelineYamlFileReleaseReqSource.TEMPLATE_INSTANCE -> {
+                    I18nUtil.getCodeLanMessage(
+                        messageCode = ProcessMessageCode.BK_MERGE_TEMPLATE_INSTANCE_YAML_TITLE,
+                        params = arrayOf(dateStr, templateName ?: ""),
+                        language = I18nUtil.getDefaultLocaleLanguage()
+                    )
+                }
+            }
+        }
+        return title
     }
 
     private fun checkPushParam(

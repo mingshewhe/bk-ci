@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.pojo.template.v2
 
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "模版yaml文件推送请求")

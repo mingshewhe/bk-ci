@@ -27,7 +27,7 @@
 
 package com.tencent.devops.process.pojo.pipeline.version
 
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlFileInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "流水线yaml文件推送请求")

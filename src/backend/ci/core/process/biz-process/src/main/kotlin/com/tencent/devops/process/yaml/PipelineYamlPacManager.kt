@@ -5,9 +5,9 @@ import com.tencent.devops.common.event.dispatcher.SampleEventDispatcher
 import com.tencent.devops.common.service.trace.TraceTag
 import com.tencent.devops.common.webhook.enums.WebhookI18nConstants.DISABLE_PAC_EVENT_DESC
 import com.tencent.devops.common.webhook.enums.WebhookI18nConstants.ENABLE_PAC_EVENT_DESC
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlDiff
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacDisableReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacEnableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlDiff
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacDisableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacEnableReq
 import com.tencent.devops.process.pojo.pipeline.enums.YamlFileActionType
 import com.tencent.devops.process.pojo.pipeline.enums.YamlFileType
 import com.tencent.devops.process.pojo.trigger.PipelineTriggerEvent
@@ -101,7 +101,7 @@ class PipelineYamlPacManager @Autowired constructor(
                     YamlFileUtils.getCiDirectory(it.filePath)
                 }.toSet()
                 // 创建yaml流水线组
-                pipelineYamlViewService.createYamlViewIfAbsent(
+                pipelineYamlViewService.createYamlViews(
                     userId = userId,
                     projectId = projectId,
                     repoHashId = repoHashId,

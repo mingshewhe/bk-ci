@@ -11,7 +11,7 @@ import com.tencent.devops.process.pojo.classify.PipelineViewFilterByPacRepo
 import com.tencent.devops.process.pojo.classify.PipelineViewForm
 import com.tencent.devops.process.pojo.classify.enums.Condition
 import com.tencent.devops.process.pojo.classify.enums.Logic
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlView
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlView
 import com.tencent.devops.process.service.view.PipelineViewGroupService
 import com.tencent.devops.process.service.view.PipelineViewService
 import com.tencent.devops.process.yaml.common.Constansts
@@ -32,7 +32,7 @@ class PipelineYamlViewService(
     private val redisOperation: RedisOperation
 ) {
 
-    fun createYamlViewIfAbsent(
+    fun createYamlViews(
         userId: String,
         projectId: String,
         repoHashId: String,
@@ -70,7 +70,7 @@ class PipelineYamlViewService(
         }
     }
 
-    fun createYamlView(
+    private fun createYamlView(
         userId: String,
         projectId: String,
         repoHashId: String,

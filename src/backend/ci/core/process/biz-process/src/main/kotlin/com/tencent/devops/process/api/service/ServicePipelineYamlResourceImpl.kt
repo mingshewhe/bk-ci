@@ -7,7 +7,6 @@
  *
  * A copy of the MIT License is included in this file.
  *
- *
  * Terms of the MIT License:
  * ---------------------------------------------------
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
@@ -30,8 +29,8 @@ package com.tencent.devops.process.api.service
 
 import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacDisableReq
-import com.tencent.devops.process.pojo.pipeline.PipelineYamlPacEnableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacDisableReq
+import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPacEnableReq
 import com.tencent.devops.process.yaml.PipelineYamlPacManager
 import com.tencent.devops.process.yaml.PipelineYamlService
 import org.springframework.beans.factory.annotation.Autowired

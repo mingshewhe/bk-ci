@@ -5,6 +5,7 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.openapi.api.apigw.v4.ApigwMarketEventResourceV4
 import com.tencent.devops.process.api.service.ServiceMarketEventResource
+import com.tencent.devops.process.api.service.ServiceTriggerMarketEventResource
 import com.tencent.devops.process.pojo.BuildId
 import com.tencent.devops.process.pojo.trigger.GenericEventStartRequest
 import org.slf4j.LoggerFactory
@@ -52,7 +53,7 @@ class ApigwMarketEventResourceV4Impl @Autowired constructor(
         logger.info(
             "OPENAPI_MARKET_EVENT_V4|$userId|start|$projectId|$pipelineId|$eventCode"
         )
-        return client.get(ServiceMarketEventResource::class).start(
+        return client.get(ServiceTriggerMarketEventResource::class).start(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,
