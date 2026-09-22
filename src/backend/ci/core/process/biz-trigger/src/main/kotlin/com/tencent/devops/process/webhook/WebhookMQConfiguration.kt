@@ -83,101 +83,101 @@ class WebhookMQConfiguration @Autowired constructor() {
     )
 
     // 各类Commit事件监听
-    @EventConsumer
+    @EventConsumer(groupName = "process-githubWebhookConsumer")
     fun githubWebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<GithubWebhookEvent> { scmWebhookEventListener.handleGithubCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-gitlabWebhookConsumer")
     fun gitlabWebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<GitlabWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-gitWebhookConsumer")
     fun gitWebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<GitWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-p4WebhookConsumer")
     fun p4WebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<P4WebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-svnWebhookConsumer")
     fun svnWebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<SvnWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-tgitWebhookConsumer")
     fun tgitWebhookConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<TGitWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-replayEventConsumer")
     fun replayEventConsumer(
         @Autowired scmWebhookEventListener: ScmWebhookEventListener
     ) = ScsConsumerBuilder.build<ReplayWebhookEvent> { scmWebhookEventListener.handleReplayEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-scmWebhookRequestEventConsumer")
     fun scmWebhookRequestEventConsumer(
         @Autowired webhookManager: WebhookManager
     ) = ScsConsumerBuilder.build<ScmWebhookRequestEvent> { webhookManager.handleRequestEvent(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-scmWebhookTriggerEventConsumer")
     fun scmWebhookTriggerEventConsumer(
         @Autowired webhookTriggerBuildService: ScmWebhookTriggerBuildService
     ) = ScsConsumerBuilder.build<ScmWebhookTriggerEvent> { webhookTriggerBuildService.trigger(it) }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-remoteDevWebhookRequestEventConsumer")
     fun remoteDevWebhookRequestEventConsumer(
         @Autowired marketEventRequestService: MarketEventRequestService
     ) = ScsConsumerBuilder.build<CdsWebhookRequestEvent> {
         marketEventRequestService.handleCdsWebhookRequestEvent(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-remoteDevWebhookTriggerEventConsumer")
     fun remoteDevWebhookTriggerEventConsumer(
         @Autowired marketEventTriggerBuildService: MarketEventTriggerBuildService
     ) = ScsConsumerBuilder.build<CdsWebhookTriggerEvent> {
         marketEventTriggerBuildService.cdsWebhookTrigger(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-genericWebhookRequestEventConsumer")
     fun genericWebhookRequestEventConsumer(
         @Autowired marketEventRequestService: MarketEventRequestService
     ) = ScsConsumerBuilder.build<GenericWebhookRequestEvent> {
         marketEventRequestService.handleGenericWebhookRequestEvent(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-genericWebhookTriggerEventConsumer")
     fun genericWebhookTriggerEventConsumer(
         @Autowired marketEventTriggerBuildService: MarketEventTriggerBuildService
     ) = ScsConsumerBuilder.build<GenericWebhookTriggerEvent> {
         marketEventTriggerBuildService.genericWebhookTrigger(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-tapdWebhookRequestEventConsumer")
     fun tapdWebhookRequestEventConsumer(
         @Autowired tapdWebhookRequestService: TapdWebhookRequestService
     ) = ScsConsumerBuilder.build<TapdWebhookRequestEvent> {
         tapdWebhookRequestService.handleRequest(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-tapdWebhookTriggerEventConsumer")
     fun tapdWebhookTriggerEventConsumer(
         @Autowired tapdEventTriggerBuildService: TapdEventTriggerBuildService
     ) = ScsConsumerBuilder.build<TapdWebhookTriggerEvent> {
         tapdEventTriggerBuildService.tapdWebhookTrigger(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-artifactWebhookRequestEventConsumer")
     fun artifactWebhookRequestEventConsumer(
         @Autowired artifactWebhookRequestService: ArtifactWebhookRequestService
     ) = ScsConsumerBuilder.build<ArtifactWebhookRequestEvent> {
         artifactWebhookRequestService.handleRequest(it)
     }
 
-    @EventConsumer
+    @EventConsumer(groupName = "process-artifactWebhookTriggerEventConsumer")
     fun artifactWebhookTriggerEventConsumer(
         @Autowired artifactEventTriggerBuildService: ArtifactEventTriggerBuildService
     ) = ScsConsumerBuilder.build<ArtifactWebhookTriggerEvent> {

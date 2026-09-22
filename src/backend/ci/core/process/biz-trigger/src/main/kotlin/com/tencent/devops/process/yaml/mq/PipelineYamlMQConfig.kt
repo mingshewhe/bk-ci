@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Configuration
 class PipelineYamlMQConfig @Autowired constructor(
     private val pipelineYamlFileExecutor: PipelineYamlFileExecutor
 ) {
-    @EventConsumer
+    @EventConsumer(groupName = "process-pipelineYamlFileConsumer")
     fun pipelineYamlFileConsumer() =
         ScsConsumerBuilder.build<PipelineYamlFileEvent> { pipelineYamlFileExecutor.execute(it) }
 }

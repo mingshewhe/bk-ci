@@ -87,7 +87,7 @@ class TriggerConfiguration {
     /**
      * 定时构建队列--- 并发一般
      */
-    @EventConsumer
+    @EventConsumer(groupName = "process-timerTriggerConsumer")
     fun timerTriggerConsumer(
         @Autowired buildListener: PipelineTimerBuildListener
     ) = ScsConsumerBuilder.build<PipelineTimerBuildEvent> { buildListener.run(it) }
