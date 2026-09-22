@@ -1,7 +1,7 @@
 package com.tencent.devops.process.trigger
 
 import com.tencent.devops.common.api.util.JsonUtil
-import com.tencent.devops.process.trigger.market.MarketEventVariablesResolver
+import com.tencent.devops.process.webhook.market.MarketEventVariablesResolver
 import com.tencent.devops.store.pojo.trigger.EventFieldMappingItem
 import com.tencent.devops.store.pojo.trigger.enums.MappingSource
 import org.junit.jupiter.api.Assertions

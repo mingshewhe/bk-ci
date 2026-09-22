@@ -1,9 +1,9 @@
 package com.tencent.devops.process.yaml
 
 import com.tencent.devops.process.pojo.pipeline.enums.YamlFileActionType
-import com.tencent.devops.process.trigger.scm.ScmWebhookTriggerBuildService
-import com.tencent.devops.process.trigger.scm.listener.WebhookTriggerContext
-import com.tencent.devops.process.trigger.scm.listener.WebhookTriggerManager
+import com.tencent.devops.process.webhook.scm.ScmWebhookTriggerBuildService
+import com.tencent.devops.process.webhook.scm.listener.WebhookTriggerContext
+import com.tencent.devops.process.webhook.scm.listener.WebhookTriggerManager
 import com.tencent.devops.process.yaml.common.YamlExceptionUtil
 import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import org.slf4j.LoggerFactory

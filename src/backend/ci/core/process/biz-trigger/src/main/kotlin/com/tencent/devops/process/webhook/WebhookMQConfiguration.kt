@@ -30,24 +30,24 @@ package com.tencent.devops.process.webhook
 import com.tencent.devops.common.event.annotation.EventConsumer
 import com.tencent.devops.common.stream.ScsConsumerBuilder
 import com.tencent.devops.process.trigger.event.GenericWebhookRequestEvent
-import com.tencent.devops.process.trigger.event.GenericWebhookTriggerEvent
+import com.tencent.devops.process.webhook.event.GenericWebhookTriggerEvent
 import com.tencent.devops.process.trigger.event.CdsWebhookRequestEvent
-import com.tencent.devops.process.trigger.event.CdsWebhookTriggerEvent
+import com.tencent.devops.process.webhook.event.CdsWebhookTriggerEvent
 import com.tencent.devops.process.trigger.event.ScmWebhookRequestEvent
-import com.tencent.devops.process.trigger.event.ScmWebhookTriggerEvent
+import com.tencent.devops.process.webhook.event.ScmWebhookTriggerEvent
 import com.tencent.devops.process.trigger.event.TapdWebhookRequestEvent
-import com.tencent.devops.process.trigger.event.TapdWebhookTriggerEvent
+import com.tencent.devops.process.webhook.event.TapdWebhookTriggerEvent
 import com.tencent.devops.process.trigger.event.ArtifactWebhookRequestEvent
-import com.tencent.devops.process.trigger.event.ArtifactWebhookTriggerEvent
-import com.tencent.devops.process.trigger.market.MarketEventRequestService
-import com.tencent.devops.process.trigger.market.MarketEventTriggerBuildService
-import com.tencent.devops.process.trigger.scm.ScmWebhookTriggerBuildService
-import com.tencent.devops.process.trigger.scm.WebhookManager
-import com.tencent.devops.process.trigger.tapd.TapdEventTriggerBuildService
-import com.tencent.devops.process.trigger.tapd.TapdWebhookRequestService
-import com.tencent.devops.process.trigger.artifact.ArtifactEventTriggerBuildService
-import com.tencent.devops.process.trigger.artifact.ArtifactWebhookRequestService
-import com.tencent.devops.process.webhook.listener.WebhookEventListener
+import com.tencent.devops.process.webhook.event.ArtifactWebhookTriggerEvent
+import com.tencent.devops.process.webhook.market.MarketEventRequestService
+import com.tencent.devops.process.webhook.market.MarketEventTriggerBuildService
+import com.tencent.devops.process.webhook.scm.ScmWebhookTriggerBuildService
+import com.tencent.devops.process.webhook.scm.WebhookManager
+import com.tencent.devops.process.webhook.tapd.TapdEventTriggerBuildService
+import com.tencent.devops.process.webhook.tapd.TapdWebhookRequestService
+import com.tencent.devops.process.webhook.artifact.ArtifactEventTriggerBuildService
+import com.tencent.devops.process.webhook.artifact.ArtifactWebhookRequestService
+import com.tencent.devops.process.webhook.scm.ScmWebhookEventListener
 import com.tencent.devops.process.webhook.pojo.event.commit.GitWebhookEvent
 import com.tencent.devops.process.webhook.pojo.event.commit.GithubWebhookEvent
 import com.tencent.devops.process.webhook.pojo.event.commit.GitlabWebhookEvent
@@ -55,6 +55,7 @@ import com.tencent.devops.process.webhook.pojo.event.commit.P4WebhookEvent
 import com.tencent.devops.process.webhook.pojo.event.commit.ReplayWebhookEvent
 import com.tencent.devops.process.webhook.pojo.event.commit.SvnWebhookEvent
 import com.tencent.devops.process.webhook.pojo.event.commit.TGitWebhookEvent
+import com.tencent.devops.process.webhook.scm.ScmWebhookRequestService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -75,47 +76,47 @@ class WebhookMQConfiguration @Autowired constructor() {
     @Bean
     fun webhookEventListener(
         @Autowired streamBridge: StreamBridge,
-        @Autowired webhookRequestService: WebhookRequestService
-    ) = WebhookEventListener(
+        @Autowired scmWebhookRequestService: ScmWebhookRequestService
+    ) = ScmWebhookEventListener(
         streamBridge = streamBridge,
-        webhookRequestService = webhookRequestService
+        scmWebhookRequestService = scmWebhookRequestService
     )
 
     // 各类Commit事件监听
     @EventConsumer
     fun githubWebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<GithubWebhookEvent> { webhookEventListener.handleGithubCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<GithubWebhookEvent> { scmWebhookEventListener.handleGithubCommitEvent(it) }
 
     @EventConsumer
     fun gitlabWebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<GitlabWebhookEvent> { webhookEventListener.handleCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<GitlabWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
     @EventConsumer
     fun gitWebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<GitWebhookEvent> { webhookEventListener.handleCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<GitWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
     @EventConsumer
     fun p4WebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<P4WebhookEvent> { webhookEventListener.handleCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<P4WebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
     @EventConsumer
     fun svnWebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<SvnWebhookEvent> { webhookEventListener.handleCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<SvnWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
     @EventConsumer
     fun tgitWebhookConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<TGitWebhookEvent> { webhookEventListener.handleCommitEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<TGitWebhookEvent> { scmWebhookEventListener.handleCommitEvent(it) }
 
     @EventConsumer
     fun replayEventConsumer(
-        @Autowired webhookEventListener: WebhookEventListener
-    ) = ScsConsumerBuilder.build<ReplayWebhookEvent> { webhookEventListener.handleReplayEvent(it) }
+        @Autowired scmWebhookEventListener: ScmWebhookEventListener
+    ) = ScsConsumerBuilder.build<ReplayWebhookEvent> { scmWebhookEventListener.handleReplayEvent(it) }
 
     @EventConsumer
     fun scmWebhookRequestEventConsumer(

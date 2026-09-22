@@ -4,7 +4,7 @@ import com.tencent.devops.common.api.pojo.Result
 import com.tencent.devops.common.web.RestResource
 import com.tencent.devops.process.pojo.BuildId
 import com.tencent.devops.process.pojo.trigger.GenericEventStartRequest
-import com.tencent.devops.process.trigger.market.MarketEventTriggerBuildService
+import com.tencent.devops.process.webhook.market.MarketEventTriggerBuildService
 import org.springframework.beans.factory.annotation.Autowired
 
 @RestResource

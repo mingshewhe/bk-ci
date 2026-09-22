@@ -41,8 +41,8 @@ import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlInfo
 import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPullRequestReq
 import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
 import com.tencent.devops.process.pojo.pipeline.enums.YamlFileActionType
-import com.tencent.devops.process.trigger.scm.listener.PipelineYamlChangeContext
-import com.tencent.devops.process.trigger.scm.listener.WebhookTriggerManager
+import com.tencent.devops.process.yaml.listener.PipelineYamlChangeContext
+import com.tencent.devops.process.yaml.listener.PipelineYamlChangeManager
 import com.tencent.devops.process.yaml.common.YamlFileUtils
 import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import com.tencent.devops.process.yaml.pojo.PipelineYamlTriggerLock
@@ -62,7 +62,7 @@ class PipelineYamlFileManager @Autowired constructor(
     private val redisOperation: RedisOperation,
     private val pipelineYamlService: PipelineYamlService,
     private val pipelineYamlViewResourceClient: PipelineYamlViewResourceClient,
-    private val webhookTriggerManager: WebhookTriggerManager,
+    private val pipelineYamlChangeManager: PipelineYamlChangeManager,
     private val pipelineYamlFileService: PipelineYamlFileService,
     private val pipelineYamlResourceManager: PipelineYamlResourceManager
 ) {
@@ -92,7 +92,7 @@ class PipelineYamlFileManager @Autowired constructor(
             return try {
                 lock.lock()
                 createOrUpdateYamlPipeline(context = context)
-                webhookTriggerManager.fireChangeSuccess(context = context)
+                pipelineYamlChangeManager.fireChangeSuccess(context = context)
                 true
             } catch (ignored: Exception) {
                 logger.error(
@@ -101,7 +101,7 @@ class PipelineYamlFileManager @Autowired constructor(
                     ignored
                 )
                 handlePullRequestOnFailed(context = context, exception = ignored)
-                webhookTriggerManager.fireChangeError(context = context, exception = ignored)
+                pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
                 false
             } finally {
                 lock.unlock()
@@ -138,7 +138,7 @@ class PipelineYamlFileManager @Autowired constructor(
             return try {
                 lock.lock()
                 deletePipelineOrBranchVersion(context = context)
-                webhookTriggerManager.fireChangeSuccess(context = context)
+                pipelineYamlChangeManager.fireChangeSuccess(context = context)
                 true
             } catch (ignored: Exception) {
                 logger.error(
@@ -146,7 +146,7 @@ class PipelineYamlFileManager @Autowired constructor(
                             "$projectId|$repoHashId|$filePath|$ref",
                     ignored
                 )
-                webhookTriggerManager.fireChangeError(context = context, exception = ignored)
+                pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
                 false
             } finally {
                 lock.unlock()
@@ -191,7 +191,7 @@ class PipelineYamlFileManager @Autowired constructor(
                 lock1.lock()
                 lock2.lock()
                 renameYamlPipeline(context = context)
-                webhookTriggerManager.fireChangeSuccess(
+                pipelineYamlChangeManager.fireChangeSuccess(
                     context = context
                 )
             } catch (ignored: Exception) {
@@ -200,7 +200,7 @@ class PipelineYamlFileManager @Autowired constructor(
                         "|$eventId|$projectId|$repoHashId|$oldFilePath->$filePath|$ref",
                     ignored
                 )
-                webhookTriggerManager.fireChangeError(
+                pipelineYamlChangeManager.fireChangeError(
                     context = context, exception = ignored
                 )
             } finally {
@@ -274,7 +274,7 @@ class PipelineYamlFileManager @Autowired constructor(
                     isTemplate = isTemplate
                 )
             } catch (ignored: Exception) {
-                webhookTriggerManager.fireChangeError(context = context, exception = ignored)
+                pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
                 throw ignored
             } finally {
                 lock.unlock()
