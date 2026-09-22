@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.yaml
 
+import com.tencent.devops.common.api.constant.CommonMessageCode
 import com.tencent.devops.common.api.exception.ErrorCodeException
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.redis.RedisOperation
@@ -35,15 +36,15 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PAC_DEFAULT_
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_NOT_EXISTS
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_REF_YAML_FILE_NOT_FOUND
 import com.tencent.devops.process.pojo.pipeline.DeployPipelineResult
+import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
+import com.tencent.devops.process.pojo.pipeline.enums.YamlFileActionType
 import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlBranchActionReq
 import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlDeployReq
 import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlInfo
 import com.tencent.devops.process.pojo.pipeline.yaml.PipelineYamlPullRequestReq
-import com.tencent.devops.process.pojo.pipeline.enums.PipelineYamlStatus
-import com.tencent.devops.process.pojo.pipeline.enums.YamlFileActionType
+import com.tencent.devops.process.yaml.common.YamlFileUtils
 import com.tencent.devops.process.yaml.listener.PipelineYamlChangeContext
 import com.tencent.devops.process.yaml.listener.PipelineYamlChangeManager
-import com.tencent.devops.process.yaml.common.YamlFileUtils
 import com.tencent.devops.process.yaml.mq.PipelineYamlFileEvent
 import com.tencent.devops.process.yaml.pojo.PipelineYamlTriggerLock
 import com.tencent.devops.process.yaml.pojo.YamlPipelineActionType
@@ -72,40 +73,49 @@ class PipelineYamlFileManager @Autowired constructor(
 
     fun createOrUpdateYamlFile(event: PipelineYamlFileEvent): Boolean {
         with(event) {
-            checkParam()
-            logger.info(
-                "[PAC_PIPELINE]|create or update yaml pipeline|$eventId|" +
-                    "$projectId|$repoHashId|$filePath|$ref|${commit?.commitId}|$blobId"
-            )
             val lock = PipelineYamlTriggerLock(
                 redisOperation = redisOperation,
                 projectId = projectId,
                 repoHashId = repoHashId,
                 filePath = filePath
             )
-            val context = PipelineYamlChangeContext(
-                projectId = projectId,
-                filePath = filePath,
-                eventId = eventId,
-                actionType = YamlPipelineActionType.CREATE
-            )
             return try {
                 lock.lock()
-                createOrUpdateYamlPipeline(context = context)
-                pipelineYamlChangeManager.fireChangeSuccess(context = context)
-                true
-            } catch (ignored: Exception) {
-                logger.error(
-                    "[PAC_PIPELINE]|Failed to create or update yaml pipeline|$eventId|" +
-                            "$projectId|$repoHashId|$filePath|$ref|${commit?.commitId}|$blobId",
-                    ignored
-                )
-                handlePullRequestOnFailed(context = context, exception = ignored)
-                pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
-                false
+                doCreateOrUpdateYamlFile()
             } finally {
                 lock.unlock()
             }
+        }
+    }
+
+    /**
+     * 创建或更新yaml流水线,调用方必须已持有[filePath]对应的文件锁,锁不可重入,重复加锁会等待到锁过期
+     */
+    private fun PipelineYamlFileEvent.doCreateOrUpdateYamlFile(): Boolean {
+        logger.info(
+            "[PAC_PIPELINE]|create or update yaml pipeline|$eventId|" +
+                "$projectId|$repoHashId|$filePath|$ref|${commit?.commitId}|$blobId"
+        )
+        val context = PipelineYamlChangeContext(
+            projectId = projectId,
+            filePath = filePath,
+            eventId = eventId,
+            actionType = YamlPipelineActionType.CREATE
+        )
+        return try {
+            checkParam()
+            createOrUpdateYamlPipeline(context = context)
+            pipelineYamlChangeManager.fireChangeSuccess(context = context)
+            true
+        } catch (ignored: Exception) {
+            logger.error(
+                "[PAC_PIPELINE]|Failed to create or update yaml pipeline|$eventId|" +
+                        "$projectId$repoHashId|$filePath|$ref|${commit?.commitId}|$blobId",
+                ignored
+            )
+            handlePullRequestOnFailed(context = context, exception = ignored)
+            pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
+            false
         }
     }
 
@@ -154,7 +164,7 @@ class PipelineYamlFileManager @Autowired constructor(
         }
     }
 
-    fun renameYamlFile(event: PipelineYamlFileEvent) {
+    fun renameYamlFile(event: PipelineYamlFileEvent): Boolean {
         with(event) {
             logger.info(
                 "[PAC_PIPELINE]|rename pipeline yaml|$eventId|$projectId|$repoHashId|$filePath|$oldFilePath|$ref"
@@ -163,7 +173,7 @@ class PipelineYamlFileManager @Autowired constructor(
             val oldPath = oldFilePath
             if (oldPath.isNullOrBlank()) {
                 logger.error("old file path cannot be empty")
-                return
+                return false
             }
 
             // 按字典序排序后依次加锁，保证所有线程加锁顺序一致，避免死锁
@@ -187,22 +197,27 @@ class PipelineYamlFileManager @Autowired constructor(
                 eventId = eventId,
                 actionType = YamlPipelineActionType.RENAME
             )
-            try {
+            return try {
                 lock1.lock()
                 lock2.lock()
-                renameYamlPipeline(context = context)
-                pipelineYamlChangeManager.fireChangeSuccess(
-                    context = context
-                )
+                checkParam()
+                val success = renameYamlPipeline(context = context)
+                if (success) {
+                    pipelineYamlChangeManager.fireChangeSuccess(
+                        context = context
+                    )
+                }
+                success
             } catch (ignored: Exception) {
                 logger.error(
                     "[PAC_PIPELINE]|Failed to rename yaml" +
-                        "|$eventId|$projectId|$repoHashId|$oldFilePath->$filePath|$ref",
+                            "|$eventId|$projectId|$repoHashId|$oldFilePath->$filePath|$ref",
                     ignored
                 )
                 pipelineYamlChangeManager.fireChangeError(
                     context = context, exception = ignored
                 )
+                false
             } finally {
                 lock2.unlock()
                 lock1.unlock()
@@ -274,27 +289,33 @@ class PipelineYamlFileManager @Autowired constructor(
                     isTemplate = isTemplate
                 )
             } catch (ignored: Exception) {
+                logger.error(
+                    "[PAC_PIPELINE]|Failed to close pipeline yaml|$eventId|$projectId|$repoHashId|$filePath",
+                    ignored
+                )
                 pipelineYamlChangeManager.fireChangeError(context = context, exception = ignored)
-                throw ignored
             } finally {
                 lock.unlock()
             }
         }
     }
 
+
+
     private fun PipelineYamlFileEvent.checkParam() {
-        if (commit == null) {
-            logger.error("[PAC_PIPELINE]|commit cannot be empty")
-            return
+        val missingParam = when {
+            commit == null -> "commit"
+            authRepository == null -> "authRepository"
+            blobId == null -> "blobId"
+            else -> return
         }
-        if (authRepository == null) {
-            logger.error("[PAC_PIPELINE]|auth repository cannot be empty")
-            return
-        }
-        if (blobId == null) {
-            logger.error("[PAC_PIPELINE]|blobId cannot be empty")
-            return
-        }
+        logger.error(
+            "[PAC_PIPELINE]|$missingParam cannot be empty|$eventId|$projectId|$repoHashId|$filePath|$ref"
+        )
+        throw ErrorCodeException(
+            errorCode = CommonMessageCode.PARAMETER_IS_NULL,
+            params = arrayOf(missingParam)
+        )
     }
 
     private fun PipelineYamlFileEvent.createOrUpdateYamlPipeline(context: PipelineYamlChangeContext) {
@@ -876,7 +897,7 @@ class PipelineYamlFileManager @Autowired constructor(
      */
     private fun PipelineYamlFileEvent.renameYamlPipeline(
         context: PipelineYamlChangeContext
-    ) {
+    ): Boolean {
         val oldPath = oldFilePath!!
         val oldYamlInfo = pipelineYamlService.getPipelineYamlInfo(
             projectId = projectId,
@@ -894,8 +915,10 @@ class PipelineYamlFileManager @Autowired constructor(
                 "[PAC_PIPELINE]|rename yaml pipeline not found|" +
                     "$eventId|$projectId|$repoHashId|$filePath|$oldFilePath|$ref"
             )
-            createOrUpdateYamlFile(this)
-            return
+            // 变更事件已由doCreateOrUpdateYamlFile自行上报,重置为NO_CHANGE避免重复记录重命名结果
+            context.actionType = YamlPipelineActionType.NO_CHANGE
+            // 重命名已持有新旧文件路径的锁,这里不能再走加锁的createOrUpdateYamlFile
+            return doCreateOrUpdateYamlFile()
         }
         if (newYamlInfo != null && oldYamlInfo != null &&
             newYamlInfo.pipelineId != oldYamlInfo.pipelineId
@@ -934,6 +957,7 @@ class PipelineYamlFileManager @Autowired constructor(
             needDeleteOldInfo = needDeleteOldInfo
         )
         handlePullRequestOnSuccess(pipelineId = pipelineId)
+        return true
     }
 
     /**
