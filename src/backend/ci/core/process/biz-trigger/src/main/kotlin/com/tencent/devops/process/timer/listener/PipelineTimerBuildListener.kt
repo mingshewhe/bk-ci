@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer.listener
+package com.tencent.devops.process.timer.listener
 
 import com.tencent.devops.common.api.enums.RepositoryConfig
 import com.tencent.devops.common.api.enums.RepositoryType
@@ -34,6 +34,7 @@ import com.tencent.devops.common.api.exception.OperationException
 import com.tencent.devops.common.api.exception.PermissionForbiddenException
 import com.tencent.devops.common.api.pojo.I18Variable
 import com.tencent.devops.common.api.util.JsonUtil
+import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.event.listener.pipeline.PipelineEventListener
 import com.tencent.devops.common.pipeline.enums.ChannelCode
@@ -53,7 +54,7 @@ import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_TIM
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_PIPELINE_TIMER_BRANCH_UNKNOWN
 import com.tencent.devops.process.engine.pojo.PipelineTimer
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.plugin.trigger.pojo.event.PipelineTimerBuildEvent
+import com.tencent.devops.process.timer.pojo.PipelineTimerBuildEvent
 import com.tencent.devops.process.plugin.trigger.service.PipelineTimerService
 import com.tencent.devops.process.pojo.trigger.PipelineTriggerDetailBuilder
 import com.tencent.devops.process.pojo.trigger.PipelineTriggerEventBuilder
@@ -80,7 +81,7 @@ import java.time.LocalDateTime
 @Component
 class PipelineTimerBuildListener @Autowired constructor(
     pipelineEventDispatcher: PipelineEventDispatcher,
-    private val serviceTimerBuildResource: ServiceTimerBuildResource,
+    private val client: Client,
     private val pipelineTimerService: PipelineTimerService,
     private val scmProxyService: ScmProxyService,
     private val triggerEventService: PipelineTriggerEventService,
@@ -277,7 +278,7 @@ class PipelineTimerBuildListener @Autowired constructor(
         channelCode: ChannelCode,
         taskId: String
     ) {
-        val buildResult = serviceTimerBuildResource.timerTrigger(
+        val buildResult = client.getGateway(ServiceTimerBuildResource::class).timerTrigger(
             userId = userId,
             projectId = projectId,
             pipelineId = pipelineId,

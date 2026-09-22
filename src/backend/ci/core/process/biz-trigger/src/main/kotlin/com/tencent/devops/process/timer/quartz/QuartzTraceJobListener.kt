@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer.quartz
+package com.tencent.devops.process.timer.quartz
 
 import com.tencent.devops.common.service.trace.TraceTag
 import com.tencent.devops.process.constant.MeasureConstant.NAME_PIPELINE_CRON_SCHEDULE_DELAY

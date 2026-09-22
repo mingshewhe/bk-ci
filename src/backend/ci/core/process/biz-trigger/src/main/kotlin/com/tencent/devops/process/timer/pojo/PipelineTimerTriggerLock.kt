@@ -25,10 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.exception
+package com.tencent.devops.process.timer.pojo
 
-/**
- * 定时异常
- * @version 1.0
- */
-class InvalidTimerException : Exception()
+import com.tencent.devops.common.redis.RedisLock
+import com.tencent.devops.common.redis.RedisOperation
+
+class PipelineTimerTriggerLock(redisOperation: RedisOperation, pipelineId: String, scheduledFireTime: String) :
+    RedisLock(
+        redisOperation = redisOperation,
+        lockKey = "process:pipeline:timer:trigger:$pipelineId:$scheduledFireTime",
+        expiredTimeInSeconds = 30L
+    ) {
+    override fun decorateKey(key: String): String {
+        // pipelineId在各集群唯一，key无需加上集群信息前缀来区分
+        return key
+    }
+}

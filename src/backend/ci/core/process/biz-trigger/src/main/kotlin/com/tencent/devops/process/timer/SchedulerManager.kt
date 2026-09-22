@@ -25,13 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer
+package com.tencent.devops.process.timer
 
-import com.tencent.devops.process.plugin.trigger.exception.InvalidTimerException
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_MD5
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PIPELINE_ID
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PROJECT_ID
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_TASK_ID
+import com.tencent.devops.process.timer.exception.InvalidTimerException
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_MD5
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PIPELINE_ID
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PROJECT_ID
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_TASK_ID
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.CronTrigger
 import org.quartz.Job

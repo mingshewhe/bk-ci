@@ -25,19 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.lock
+package com.tencent.devops.process.timer.pojo
 
-import com.tencent.devops.common.redis.RedisLock
-import com.tencent.devops.common.redis.RedisOperation
+import com.tencent.devops.common.pipeline.enums.ChannelCode
+import com.tencent.devops.common.event.annotation.Event
+import com.tencent.devops.common.event.pojo.pipeline.IPipelineEvent
+import com.tencent.devops.common.stream.constants.StreamBinding
+import com.tencent.devops.common.event.enums.ActionType
 
-class PipelineTimerTriggerLock(redisOperation: RedisOperation, pipelineId: String, scheduledFireTime: String) :
-    RedisLock(
-        redisOperation = redisOperation,
-        lockKey = "process:pipeline:timer:trigger:$pipelineId:$scheduledFireTime",
-        expiredTimeInSeconds = 30L
-    ) {
-    override fun decorateKey(key: String): String {
-        // pipelineId在各集群唯一，key无需加上集群信息前缀来区分
-        return key
+/**
+ * 订阅流水线事件
+ *
+ * @version 1.0
+ */
+@Event(StreamBinding.PIPELINE_TIMER)
+data class PipelineTimerBuildEvent(
+    override val source: String,
+    override val projectId: String,
+    override val pipelineId: String,
+    override val userId: String,
+    val timerChannelCode: ChannelCode,
+    val taskId: String?,
+    val startParam: Map<String, String>?,
+    val expectedStartTime: Long? = null, // 任务预期开始时间(时间戳毫秒)
+    override var actionType: ActionType = ActionType.START,
+    override var delayMills: Int = 0
+) : IPipelineEvent(actionType, source, projectId, pipelineId, userId, delayMills) {
+    init {
+        // 将渠道标识同步到父类字段，确保MQ消费线程中ChannelContext能正确恢复
+        channelCode = timerChannelCode.name
     }
 }

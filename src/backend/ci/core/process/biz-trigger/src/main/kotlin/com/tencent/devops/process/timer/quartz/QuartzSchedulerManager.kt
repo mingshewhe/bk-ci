@@ -25,9 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer.quartz
+package com.tencent.devops.process.timer.quartz
 
-import com.tencent.devops.process.plugin.trigger.timer.SchedulerManager
+import com.tencent.devops.process.timer.SchedulerManager
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties

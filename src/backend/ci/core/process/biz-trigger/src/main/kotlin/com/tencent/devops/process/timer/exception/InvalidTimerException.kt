@@ -25,34 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.pojo.event
-
-import com.tencent.devops.common.pipeline.enums.ChannelCode
-import com.tencent.devops.common.event.annotation.Event
-import com.tencent.devops.common.event.pojo.pipeline.IPipelineEvent
-import com.tencent.devops.common.stream.constants.StreamBinding
-import com.tencent.devops.common.event.enums.ActionType
+package com.tencent.devops.process.timer.exception
 
 /**
- * 订阅流水线事件
- *
+ * 定时异常
  * @version 1.0
  */
-@Event(StreamBinding.PIPELINE_TIMER)
-data class PipelineTimerBuildEvent(
-    override val source: String,
-    override val projectId: String,
-    override val pipelineId: String,
-    override val userId: String,
-    val timerChannelCode: ChannelCode,
-    val taskId: String?,
-    val startParam: Map<String, String>?,
-    val expectedStartTime: Long? = null, // 任务预期开始时间(时间戳毫秒)
-    override var actionType: ActionType = ActionType.START,
-    override var delayMills: Int = 0
-) : IPipelineEvent(actionType, source, projectId, pipelineId, userId, delayMills) {
-    init {
-        // 将渠道标识同步到父类字段，确保MQ消费线程中ChannelContext能正确恢复
-        channelCode = timerChannelCode.name
-    }
-}
+class InvalidTimerException : Exception()

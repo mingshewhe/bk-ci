@@ -15,5 +15,6 @@ dependencies {
     api(project(":core:store:api-store"))
     api(project(":core:artifactory:api-artifactory"))
     api(project(":core:log:api-log"))
+    implementation("org.quartz-scheduler:quartz")
     testImplementation(project(":core:common:common-test"))
 }

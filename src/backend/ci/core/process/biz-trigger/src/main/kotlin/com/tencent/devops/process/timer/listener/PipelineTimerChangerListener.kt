@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer.listener
+package com.tencent.devops.process.timer.listener
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.tencent.devops.common.api.util.JsonUtil
@@ -33,8 +33,8 @@ import com.tencent.devops.common.event.enums.ActionType
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.event.listener.pipeline.PipelineEventListener
 import com.tencent.devops.process.plugin.trigger.pojo.event.PipelineTimerChangeEvent
-import com.tencent.devops.process.plugin.trigger.timer.SchedulerManager
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob
+import com.tencent.devops.process.timer.SchedulerManager
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob
 import org.apache.commons.codec.digest.DigestUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

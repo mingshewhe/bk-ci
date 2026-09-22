@@ -25,28 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.configuration
+package com.tencent.devops.process.timer.configuration
 
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.event.annotation.EventConsumer
-import com.tencent.devops.common.event.dispatcher.mq.MQEventDispatcher
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.stream.ScsConsumerBuilder
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.plugin.trigger.pojo.event.PipelineTimerBuildEvent
+import com.tencent.devops.process.timer.pojo.PipelineTimerBuildEvent
 import com.tencent.devops.process.plugin.trigger.pojo.event.PipelineTimerChangeEvent
 import com.tencent.devops.process.plugin.trigger.service.PipelineTimerService
-import com.tencent.devops.process.plugin.trigger.timer.SchedulerManager
-import com.tencent.devops.process.plugin.trigger.timer.listener.PipelineTimerBuildListener
-import com.tencent.devops.process.plugin.trigger.timer.listener.PipelineTimerChangerListener
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineJobBean
-import com.tencent.devops.process.plugin.trigger.timer.quartz.QuartzSchedulerManager
-import com.tencent.devops.process.plugin.trigger.timer.quartz.QuartzTraceJobListener
+import com.tencent.devops.process.timer.SchedulerManager
+import com.tencent.devops.process.timer.listener.PipelineTimerBuildListener
+import com.tencent.devops.process.timer.listener.PipelineTimerChangerListener
+import com.tencent.devops.process.timer.quartz.PipelineJobBean
+import com.tencent.devops.process.timer.quartz.QuartzSchedulerManager
+import com.tencent.devops.process.timer.quartz.QuartzTraceJobListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.function.StreamBridge
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -85,9 +83,6 @@ class TriggerConfiguration {
     ) = QuartzSchedulerManager(
         quartzProperties, quartzTraceJobListener
     )
-
-    @Bean
-    fun pipelineEventDispatcher(streamBridge: StreamBridge) = MQEventDispatcher(streamBridge)
 
     /**
      * 定时构建队列--- 并发一般

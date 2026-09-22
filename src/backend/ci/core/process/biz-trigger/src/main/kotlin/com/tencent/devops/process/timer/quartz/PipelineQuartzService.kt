@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.devops.process.plugin.trigger.timer.quartz
+package com.tencent.devops.process.timer.quartz
 
 import com.tencent.devops.common.api.util.Watcher
 import com.tencent.devops.common.client.Client
@@ -36,14 +36,14 @@ import com.tencent.devops.common.service.utils.LogUtils
 import com.tencent.devops.common.service.utils.SpringContextUtil
 import com.tencent.devops.common.web.utils.ApiAccessLimitCacheManager
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
-import com.tencent.devops.process.plugin.trigger.lock.PipelineTimerTriggerLock
-import com.tencent.devops.process.plugin.trigger.pojo.event.PipelineTimerBuildEvent
+import com.tencent.devops.process.timer.pojo.PipelineTimerTriggerLock
+import com.tencent.devops.process.timer.pojo.PipelineTimerBuildEvent
 import com.tencent.devops.process.plugin.trigger.service.PipelineTimerService
-import com.tencent.devops.process.plugin.trigger.timer.SchedulerManager
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_MD5
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PIPELINE_ID
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PROJECT_ID
-import com.tencent.devops.process.plugin.trigger.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_TASK_ID
+import com.tencent.devops.process.timer.SchedulerManager
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_MD5
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PIPELINE_ID
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_PROJECT_ID
+import com.tencent.devops.process.timer.quartz.PipelineQuartzJob.Companion.JOB_DATA_MAP_KEY_TASK_ID
 import com.tencent.devops.project.api.service.ServiceProjectTagResource
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.time.DateFormatUtils
