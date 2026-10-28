@@ -62,6 +62,7 @@ import com.tencent.devops.model.process.tables.TPipelineRecentUse
 import com.tencent.devops.model.process.tables.TPipelineRemoteAuth
 import com.tencent.devops.model.process.tables.TPipelineResource
 import com.tencent.devops.model.process.tables.TPipelineResourceDraftVersion
+import com.tencent.devops.model.process.tables.TPipelineResourceDynamicVersion
 import com.tencent.devops.model.process.tables.TPipelineResourceVersion
 import com.tencent.devops.model.process.tables.TPipelineSetting
 import com.tencent.devops.model.process.tables.TPipelineSettingDraftVersion
@@ -167,6 +168,7 @@ class ProcessDataDeleteDao {
         deletePipelineLabelPipeline(dslContext, projectId, pipelineIds)
         deletePipelineResource(dslContext, projectId, pipelineIds)
         deletePipelineResourceVersion(dslContext, projectId, pipelineIds)
+        deletePipelineResourceDynamicVersion(dslContext, projectId, pipelineIds)
         deleteTemplatePipeline(dslContext, projectId, pipelineIds)
         deletePipelineBuildSummary(dslContext, projectId, pipelineIds)
         deletePipelineBuildHistoryDebug(dslContext, projectId, pipelineIds)
@@ -386,6 +388,18 @@ class ProcessDataDeleteDao {
 
     fun deletePipelineResourceVersion(dslContext: DSLContext, projectId: String, pipelineIds: List<String>) {
         with(TPipelineResourceVersion.T_PIPELINE_RESOURCE_VERSION) {
+            dslContext.deleteFrom(this)
+                .where(PROJECT_ID.eq(projectId).and(PIPELINE_ID.`in`(pipelineIds)))
+                .execute()
+        }
+    }
+
+    fun deletePipelineResourceDynamicVersion(
+        dslContext: DSLContext,
+        projectId: String,
+        pipelineIds: List<String>
+    ) {
+        with(TPipelineResourceDynamicVersion.T_PIPELINE_RESOURCE_DYNAMIC_VERSION) {
             dslContext.deleteFrom(this)
                 .where(PROJECT_ID.eq(projectId).and(PIPELINE_ID.`in`(pipelineIds)))
                 .execute()

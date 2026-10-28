@@ -48,6 +48,7 @@ import com.tencent.devops.common.pipeline.pojo.time.BuildTimestampType
 import com.tencent.devops.common.pipeline.utils.ModelUtils
 import com.tencent.devops.common.redis.RedisOperation
 import com.tencent.devops.common.service.utils.LogUtils
+import com.tencent.devops.common.service.utils.SpringContextUtil
 import com.tencent.devops.common.web.utils.I18nUtil
 import com.tencent.devops.common.websocket.enum.RefreshType
 import com.tencent.devops.process.constant.ProcessMessageCode
@@ -56,9 +57,11 @@ import com.tencent.devops.process.engine.control.lock.PipelineBuildRecordLock
 import com.tencent.devops.process.engine.dao.PipelineBuildDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDraftVersionDao
+import com.tencent.devops.process.engine.dao.PipelineResourceDynamicVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.engine.pojo.BuildInfo
 import com.tencent.devops.process.engine.pojo.event.PipelineBuildWebSocketPushEvent
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.pojo.BuildStageStatus
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordModel
@@ -85,6 +88,10 @@ open class BaseBuildRecordService(
     private val pipelineResourceVersionDao: PipelineResourceVersionDao,
     private val pipelineResourceDraftVersionDao: PipelineResourceDraftVersionDao
 ) {
+
+    private val dynamicVersionDao: PipelineResourceDynamicVersionDao by lazy {
+        SpringContextUtil.getBean(PipelineResourceDynamicVersionDao::class.java)
+    }
 
     protected fun update(
         projectId: String,
@@ -231,9 +238,20 @@ open class BaseBuildRecordService(
         val watcher = Watcher(id = "getRecordModel#$buildId")
         watcher.start("getVersionModelString")
         val finalDSLContext = queryDslContext ?: dslContext
+        // 有动态版本时,用动态版本里解析好的嵌套 model 做底稿
+        val nestedModel = buildRecordModel.dynamicVersion?.let {
+            getDynamicVersionModel(
+                dslContext = finalDSLContext,
+                projectId = projectId,
+                buildId = buildId,
+                dynamicVersion = it
+            )
+        }
         // 当debug没有传的时候，从数据库中获取数据判断是否是调试产生的构建
         val debugFlag = debug ?: pipelineBuildDao.getDebugFlag(finalDSLContext, projectId, buildId)
-        val resourceStr = if (debugFlag) {
+        val resourceStr = if (nestedModel != null) {
+            ""
+        } else if (debugFlag) {
             getDebugResourceStr(
                 dslContext = finalDSLContext,
                 pipelineId = pipelineId,
@@ -259,7 +277,9 @@ open class BaseBuildRecordService(
         var recordMap: Map<String, Any>? = null
         return try {
             watcher.start("fillElementWhenNewBuild")
-            val fullModel = JsonUtil.to(resourceStr, Model::class.java)
+            // 构建记录按平铺后的节点写入,先用平铺 model 合并记录,再放回嵌套结构
+            val fullModel = nestedModel?.let { PipelineModelParseUtil.flatten(it) }
+                ?: JsonUtil.to(resourceStr, Model::class.java)
             fullModel.stages.forEach {
                 PipelineUtils.transformUserIllegalReviewParams(it.checkIn?.reviewParams)
             }
@@ -275,10 +295,14 @@ open class BaseBuildRecordService(
             watcher.start("generateFieldRecordModelMap")
             recordMap = recordModelService.generateFieldRecordModelMap(mergeBuildRecordParam, queryDslContext)
             watcher.start("generatePipelineBuildModel")
-            ModelUtils.generatePipelineBuildModel(
+            val recordModel = ModelUtils.generatePipelineBuildModel(
                 baseModelMap = baseModelMap,
                 modelFieldRecordMap = recordMap
             )
+            nestedModel?.let {
+                watcher.start("restoreNested")
+                PipelineModelParseUtil.restoreNested(nestedModel = it, flatModel = recordModel)
+            } ?: recordModel
         } catch (ignore: Throwable) {
             logger.warn(
                 "RECORD|parse record with error|$projectId|$pipelineId|$buildId|$fixedExecuteCount" +
@@ -394,6 +418,27 @@ open class BaseBuildRecordService(
                 }
             }
             return result
+        }
+    }
+
+    /**
+     * 动态版本取不到时返回空,回退到按流水线版本获取底稿
+     */
+    private fun getDynamicVersionModel(
+        dslContext: DSLContext,
+        projectId: String,
+        buildId: String,
+        dynamicVersion: String
+    ): Model? {
+        return try {
+            dynamicVersionDao.getModelString(
+                dslContext = dslContext,
+                projectId = projectId,
+                dynamicVersion = dynamicVersion
+            )?.let { JsonUtil.to(it, Model::class.java) }
+        } catch (ignored: Throwable) {
+            logger.warn("RECORD|get dynamic version model failed|$projectId|$buildId|$dynamicVersion", ignored)
+            null
         }
     }
 

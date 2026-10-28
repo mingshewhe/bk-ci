@@ -80,6 +80,7 @@ import com.tencent.devops.process.engine.service.PipelineTaskService
 import com.tencent.devops.process.engine.service.measure.MetricsService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
 import com.tencent.devops.process.engine.service.record.PipelineBuildRecordService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.utils.PIPELINE_MESSAGE_STRING_LENGTH_MAX
 import com.tencent.devops.process.utils.PIPELINE_START_PARENT_PROJECT_ID
@@ -178,7 +179,7 @@ class BuildEndControl @Autowired constructor(
         fixBuildInfo(buildInfo, buildTasks, buildStages)
 
         // 刷新详情页状态
-        val (model, allStageStatus, timeCost) = pipelineBuildRecordService.buildEnd(
+        val (recordModel, allStageStatus, timeCost) = pipelineBuildRecordService.buildEnd(
             projectId = projectId,
             pipelineId = pipelineId,
             buildId = buildId,
@@ -187,6 +188,7 @@ class BuildEndControl @Autowired constructor(
             errorMsg = errorMsg,
             executeCount = buildInfo.executeCount
         )
+        val model = PipelineModelParseUtil.flatten(recordModel)
 
         saveBuildEndInfo(
             context = BuildEndContext(

@@ -112,7 +112,9 @@ data class PipelineSetting(
     @get:Schema(title = "环境hashId", required = false)
     var envHashId: String? = null,
     @get:Schema(title = "环境名称", required = false)
-    var envName: String? = null
+    var envName: String? = null,
+    @get:Schema(title = "流水线模板设置引用,非空时构建时实时合并模板设置", required = false)
+    var template: PipelineSettingTemplateRef? = null
 ) {
 
     companion object {

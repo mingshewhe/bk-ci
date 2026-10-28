@@ -65,6 +65,7 @@ import com.tencent.devops.process.engine.service.PipelineRuntimeService
 import com.tencent.devops.process.engine.service.PipelineTaskService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
 import com.tencent.devops.process.engine.utils.ContainerUtils
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.pojo.mq.PipelineAgentShutdownEvent
 import com.tencent.devops.process.pojo.mq.PipelineAgentStartupEvent
 import com.tencent.devops.process.service.PipelineContextService
@@ -234,7 +235,7 @@ class DispatchVMStartupTaskAtom @Autowired constructor(
             version = buildRecordContainer.resourceVersion,
             buildId = buildId,
             executeCount = executeCount
-        )
+        )?.let { PipelineModelParseUtil.flatten(it) }
         val container = recordModel?.getContainer(vmSeqId) ?: throw BuildTaskException(
             errorType = ErrorType.SYSTEM,
             errorCode = ERROR_PIPELINE_NODEL_CONTAINER_NOT_EXISTS.toInt(),

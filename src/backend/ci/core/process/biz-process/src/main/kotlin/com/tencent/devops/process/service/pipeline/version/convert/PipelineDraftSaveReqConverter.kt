@@ -45,12 +45,12 @@ import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.engine.atom.AtomUtils
 import com.tencent.devops.process.engine.cfg.PipelineIdGenerator
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
 import com.tencent.devops.process.pojo.pipeline.version.PipelineDraftSaveReq
 import com.tencent.devops.process.pojo.pipeline.version.PipelineVersionCreateReq
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.pipeline.version.PipelineResourceFactory
 import com.tencent.devops.process.service.pipeline.version.PipelineRunEnvOsChangeResolver
 import com.tencent.devops.process.service.pipeline.version.PipelineVersionCreateContext
@@ -76,7 +76,6 @@ class PipelineDraftSaveReqConverter(
     private val pipelineRepositoryService: PipelineRepositoryService,
     private val pipelineTemplateResourceService: PipelineTemplateResourceService,
     private val client: Client,
-    private val pipelineModelParser: PipelineModelParser,
     private val pipelineRunEnvOsChangeResolver: PipelineRunEnvOsChangeResolver
 ) : PipelineVersionCreateReqConverter {
     override fun support(request: PipelineVersionCreateReq): Boolean {
@@ -262,7 +261,7 @@ class PipelineDraftSaveReqConverter(
                 }
             }
             val template = model.template!!
-            val templateResource = pipelineModelParser.parseTemplateDescriptor(
+            val templateResource = PipelineModelParseUtil.parseTemplateDescriptor(
                 projectId = projectId,
                 descriptor = model.template!!
             )

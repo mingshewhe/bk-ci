@@ -70,6 +70,7 @@ import com.tencent.devops.process.engine.service.PipelineSettingService
 import com.tencent.devops.process.engine.service.PipelineStageService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
 import com.tencent.devops.process.engine.service.record.PipelineBuildRecordService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.pojo.StageQualityRequest
 import com.tencent.devops.quality.api.v2.pojo.ControlPointPosition
 import org.slf4j.LoggerFactory
@@ -584,7 +585,7 @@ class BuildMonitorControl @Autowired constructor(
             buildId = container.buildId,
             executeCount = container.executeCount,
             debug = buildInfo.debug
-        ) ?: return emptyList()
+        )?.let { PipelineModelParseUtil.flatten(it) } ?: return emptyList()
         val fromModel = BuildEndPositionCollector.collectCancelPositions(model)
         if (fromModel.isNotEmpty()) return fromModel
         return EndPositionUtils.resolveEndPositions(

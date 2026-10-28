@@ -45,12 +45,12 @@ import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElem
 import com.tencent.devops.common.pipeline.template.PipelineTemplateType
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineModelBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineTemplateInstanceBasicInfo
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlFileInfo
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.template.v2.PipelineTemplateInfoService
 import com.tencent.devops.project.api.service.ServiceAllocIdResource
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,8 +60,7 @@ import org.springframework.stereotype.Service
 class PipelineResourceFactory @Autowired constructor(
     private val client: Client,
     private val pipelineRepositoryService: PipelineRepositoryService,
-    private val pipelineTemplateInfoService: PipelineTemplateInfoService,
-    private val pipelineModelParser: PipelineModelParser
+    private val pipelineTemplateInfoService: PipelineTemplateInfoService
 ) {
 
     fun createPipelineBasicInfo(
@@ -207,7 +206,7 @@ class PipelineResourceFactory @Autowired constructor(
         repoHashId: String? = null,
         branchName: String? = null
     ): PipelineTemplateInstanceBasicInfo {
-        val templateResource = pipelineModelParser.parseTemplateDescriptor(
+        val templateResource = PipelineModelParseUtil.parseTemplateDescriptor(
             projectId = projectId,
             descriptor = model.template!!,
             repoHashId = repoHashId,
@@ -238,6 +237,7 @@ class PipelineResourceFactory @Autowired constructor(
             instanceModel = instanceModel,
             instanceType = PipelineInstanceTypeEnum.CONSTRAINT,
             refType = model.template!!.templateRefType,
+            dynamic = templateResource.status == VersionStatus.BRANCH
         )
     }
 }

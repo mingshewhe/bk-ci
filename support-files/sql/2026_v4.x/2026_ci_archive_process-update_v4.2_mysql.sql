@@ -15,37 +15,11 @@ BEGIN
     IF NOT EXISTS(SELECT 1
                   FROM information_schema.COLUMNS
                   WHERE TABLE_SCHEMA = db
-                    AND TABLE_NAME = 'T_PIPELINE_SETTING'
-                    AND COLUMN_NAME = 'CONCURRENCY_SUB_GROUP') THEN
-        ALTER TABLE T_PIPELINE_SETTING
-            ADD COLUMN `CONCURRENCY_SUB_GROUP` varchar(255) DEFAULT NULL COMMENT '同一批标识表达式，取值相同的构建计为同一批';
-    END IF;
-
-    IF NOT EXISTS(SELECT 1
-                  FROM information_schema.COLUMNS
-                  WHERE TABLE_SCHEMA = db
-                    AND TABLE_NAME = 'T_PIPELINE_SETTING_VERSION'
-                    AND COLUMN_NAME = 'CONCURRENCY_SUB_GROUP') THEN
-        ALTER TABLE T_PIPELINE_SETTING_VERSION
-            ADD COLUMN `CONCURRENCY_SUB_GROUP` varchar(255) DEFAULT NULL COMMENT '同一批标识表达式，取值相同的构建计为同一批';
-    END IF;
-
-    IF NOT EXISTS(SELECT 1
-                  FROM information_schema.COLUMNS
-                  WHERE TABLE_SCHEMA = db
-                    AND TABLE_NAME = 'T_PIPELINE_BUILD_HISTORY'
-                    AND COLUMN_NAME = 'CONCURRENCY_SUB_GROUP') THEN
-        ALTER TABLE T_PIPELINE_BUILD_HISTORY
-            ADD COLUMN `CONCURRENCY_SUB_GROUP` varchar(255) DEFAULT NULL COMMENT '同一批标识，启动时解析后的值';
-    END IF;
-
-    IF NOT EXISTS(SELECT 1
-                  FROM information_schema.COLUMNS
-                  WHERE TABLE_SCHEMA = db
-                    AND TABLE_NAME = 'T_PIPELINE_BUILD_HISTORY_DEBUG'
-                    AND COLUMN_NAME = 'CONCURRENCY_SUB_GROUP') THEN
-        ALTER TABLE T_PIPELINE_BUILD_HISTORY_DEBUG
-            ADD COLUMN `CONCURRENCY_SUB_GROUP` varchar(255) DEFAULT NULL COMMENT '同一批标识，启动时解析后的值';
+                    AND TABLE_NAME = 'T_PIPELINE_BUILD_RECORD_MODEL'
+                    AND COLUMN_NAME = 'DYNAMIC_VERSION') THEN
+        ALTER TABLE T_PIPELINE_BUILD_RECORD_MODEL
+            ADD COLUMN `DYNAMIC_VERSION` varchar(32) NULL DEFAULT NULL COMMENT '动态版本号',
+            ALGORITHM=INSTANT;
     END IF;
 
 ## 以前缺失补刀 7edbb50: feat: 创作流-第三方机 #12354 --- START
@@ -63,3 +37,14 @@ END <CI_UBF>
 DELIMITER ;
 COMMIT;
 CALL ci_archive_process_schema_update();
+
+CREATE TABLE IF NOT EXISTS `T_PIPELINE_RESOURCE_DYNAMIC_VERSION` (
+    `DYNAMIC_VERSION` varchar(32) NOT NULL COMMENT '动态版本号',
+    `PROJECT_ID` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '项目ID',
+    `PIPELINE_ID` varchar(34) NOT NULL COMMENT '流水线ID',
+    `VERSION` int(11) NOT NULL COMMENT '流水线版本号',
+    `MODEL` mediumtext COMMENT '解析后的流水线模型',
+    `CREATE_TIME` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`DYNAMIC_VERSION`),
+    KEY `IDX_PROJECT_PIPELINE_VERSION` (`PROJECT_ID`,`PIPELINE_ID`,`VERSION`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='流水线动态版本表';

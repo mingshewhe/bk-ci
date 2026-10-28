@@ -27,6 +27,7 @@
 
 package com.tencent.devops.common.pipeline.container
 
+import com.tencent.devops.common.pipeline.ResolvedTemplate
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.option.StageControlOption
 import com.tencent.devops.common.pipeline.pojo.StagePauseCheck
@@ -72,7 +73,11 @@ data class Stage(
     @get:Schema(title = "各项耗时", required = true)
     var timeCost: BuildRecordTimeCost? = null,
     @get:Schema(title = "模版信息", required = false)
-    var template: TemplateDescriptor? = null
+    var template: TemplateDescriptor? = null,
+    @get:Schema(title = "模版引用解析结果,仅存在于解析后的模型", required = false, readOnly = true)
+    var resolvedTemplate: ResolvedTemplate? = null,
+    @get:Schema(title = "模版展开后的阶段集合,仅存在于解析后的模型", required = false, readOnly = true)
+    var templateStages: List<Stage>? = null
 ) {
     /**
      * 刷新stage的所有配置，如果是初始化则重置所有历史数据

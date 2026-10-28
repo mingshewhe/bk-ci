@@ -27,9 +27,13 @@
 
 package com.tencent.devops.process.service.pipeline.version.convert
 
+import com.tencent.devops.common.pipeline.TemplateInstanceDescriptor
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.pojo.TemplateInstanceField
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingTemplateRef
 import com.tencent.devops.process.engine.service.PipelineInfoService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.pojo.pipeline.PipelineResourceWithoutVersion
 import com.tencent.devops.process.service.PipelineAsCodeService
@@ -56,6 +60,8 @@ class PipelineVersionCreateContextFactory @Autowired constructor(
         contextParam: PipelineVersionCreateContextParam
     ): PipelineVersionCreateContext {
         with(contextParam) {
+            // 解析产物不落到流水线版本里,局部模板节点始终保持为引用
+            PipelineModelParseUtil.clearResolved(model)
             return if (model.template != null) {
                 createFromTemplate()
             } else {
@@ -122,7 +128,7 @@ class PipelineVersionCreateContextFactory @Autowired constructor(
             pipelineBasicInfo = pipelineBasicInfo,
             pipelineModelBasicInfo = pipelineModelBasicInfo,
             pipelineResourceWithoutVersion = pipelineResourceWithoutVersion,
-            pipelineSettingWithoutVersion = pipelineSettingWithoutVersion,
+            pipelineSettingWithoutVersion = pipelineSettingWithoutVersion.copy(template = null),
             branchName = branchName,
             yamlFileInfo = yamlFileInfo,
             baseDraftVersion = baseDraftVersion,
@@ -149,10 +155,17 @@ class PipelineVersionCreateContextFactory @Autowired constructor(
             branchName = branchName
         )
 
+        val dynamic = templateInstanceBasicInfo.dynamic
+        // 引用动态版本时只存引用,构建时再实时解析;引用固定版本时存完整编排
+        val storeModel = if (dynamic) {
+            model.copy(stages = emptyList(), resolvedTemplate = null)
+        } else {
+            templateInstanceBasicInfo.instanceModel
+        }
         val pipelineResourceWithoutVersion = PipelineResourceWithoutVersion(
             projectId = projectId,
             pipelineId = pipelineId,
-            model = templateInstanceBasicInfo.instanceModel,
+            model = storeModel,
             yaml = yaml,
             yamlVersion = YamlVersion.V3_0.tag,
             creator = userId,
@@ -186,16 +199,23 @@ class PipelineVersionCreateContextFactory @Autowired constructor(
             modelCarriedOver = modelCarriedOver
         )
 
-        val templateSetting = pipelineTemplateSettingService.get(
-            projectId = projectId,
-            templateId = templateInstanceBasicInfo.templateId,
-            settingVersion = templateInstanceBasicInfo.templateSettingVersion
-        )
-        val instanceSetting = TemplateInstanceUtil.instanceSetting(
-            setting = pipelineSettingWithoutVersion,
-            templateSetting = templateSetting,
-            overrideTemplateField = model.overrideTemplateField
-        )
+        val instanceSetting = if (dynamic) {
+            // 动态版本只存设置引用,构建时按引用实时合并模板设置
+            pipelineSettingWithoutVersion.copy(
+                template = createSettingTemplateRef(model.template!!, model.overrideTemplateField)
+            )
+        } else {
+            val templateSetting = pipelineTemplateSettingService.get(
+                projectId = projectId,
+                templateId = templateInstanceBasicInfo.templateId,
+                settingVersion = templateInstanceBasicInfo.templateSettingVersion
+            )
+            TemplateInstanceUtil.instanceSetting(
+                setting = pipelineSettingWithoutVersion,
+                templateSetting = templateSetting,
+                overrideTemplateField = model.overrideTemplateField
+            ).copy(template = null)
+        }
 
         return PipelineVersionCreateContext(
             userId = userId,
@@ -213,6 +233,20 @@ class PipelineVersionCreateContextFactory @Autowired constructor(
             yamlFileInfo = yamlFileInfo,
             baseDraftVersion = baseDraftVersion,
             overrideDraft = overrideDraft
+        )
+    }
+
+    private fun createSettingTemplateRef(
+        template: TemplateInstanceDescriptor,
+        overrideTemplateField: TemplateInstanceField?
+    ): PipelineSettingTemplateRef {
+        return PipelineSettingTemplateRef(
+            templateRefType = template.templateRefType,
+            templateId = template.templateId,
+            templateVersionName = template.templateVersionName,
+            templatePath = template.templatePath,
+            templateRef = template.templateRef,
+            settingGroups = overrideTemplateField?.settingGroups
         )
     }
 }

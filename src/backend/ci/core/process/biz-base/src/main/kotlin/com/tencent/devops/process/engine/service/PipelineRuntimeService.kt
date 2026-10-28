@@ -1406,7 +1406,7 @@ class PipelineRuntimeService @Autowired constructor(
                 timestamps = mapOf(
                     BuildTimestampType.BUILD_CONCURRENCY_QUEUE to
                         BuildRecordTimeStamp(context.now.timestampmilli(), null)
-                ), queueTime = context.now
+                ), queueTime = context.now, dynamicVersion = context.dynamicVersion
             )
         }
         // #8955 针对单独写入的插件记录可以覆盖根据build数据生成的记录

@@ -64,6 +64,13 @@ interface ModelCheckPlugin {
     ): Int
 
     /**
+     * 构建启动前检查模板展开并平铺后的[model],只做数量、结构等轻量校验
+     * @throws RuntimeException 子类  将检查失败或异常的以[ErrorCodeException]类抛出
+     */
+    @Throws(ErrorCodeException::class)
+    fun checkFlattenModelIntegrity(model: Model) = Unit
+
+    /**
      * 检查[setting]配置的完整性
      * @throws RuntimeException 子类  将检查失败或异常的以[ErrorCodeException]类抛出
      */

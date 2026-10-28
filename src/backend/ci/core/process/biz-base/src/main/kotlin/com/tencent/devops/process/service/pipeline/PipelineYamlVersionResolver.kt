@@ -9,6 +9,7 @@ import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.enums.BranchVersionAction
 import com.tencent.devops.process.constant.ProcessMessageCode
 import com.tencent.devops.process.constant.ProcessMessageCode.ERROR_NOT_FOUND_PIPELINE_VERSION_EXISTS_BY_BRANCH
+import com.tencent.devops.process.dao.yaml.PipelineYamlBranchFileDao
 import com.tencent.devops.process.dao.yaml.PipelineYamlVersionDao
 import com.tencent.devops.process.pojo.pipeline.PipelineYamlVersion
 import com.tencent.devops.process.service.scm.ScmProxyService
@@ -28,9 +29,60 @@ import org.springframework.stereotype.Service
 class PipelineYamlVersionResolver @Autowired constructor(
     private val dslContext: DSLContext,
     private val pipelineYamlVersionDao: PipelineYamlVersionDao,
+    private val pipelineYamlBranchFileDao: PipelineYamlBranchFileDao,
     private val client: Client,
     private val scmProxyService: ScmProxyService
 ) {
+    /**
+     * 只查数据库获取模版ref对应的模版版本,不调用代码库
+     *
+     * 通过(代码库,分支,文件路径)查分支文件表拿到 commitId/blobId,再按 blobId 找到模版版本
+     *
+     * @param ref 引用分支,如果为空,则使用默认分支
+     */
+    fun resolveTemplateRefVersionFromDb(
+        projectId: String,
+        repoHashId: String,
+        filePath: String,
+        defaultBranch: String,
+        ref: String? = null
+    ): PipelineYamlBranchVersion {
+        val finalRef = ref?.let { trimRef(it) } ?: defaultBranch
+        logger.info("resolve template yaml version from db|$projectId|$repoHashId|$filePath|$finalRef")
+        val branchFile = pipelineYamlBranchFileDao.get(
+            dslContext = dslContext,
+            projectId = projectId,
+            repoHashId = repoHashId,
+            branch = finalRef,
+            filePath = filePath
+        )?.takeIf { it.deleted != true } ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_PIPELINE_REF_TEMPLATE_YAML_FILE_NOT_FOUND,
+            params = arrayOf(filePath, finalRef)
+        )
+        val yamlVersion = getPipelineYamlVersion(
+            projectId = projectId,
+            repoHashId = repoHashId,
+            filePath = filePath,
+            ref = finalRef,
+            blobId = branchFile.blobId,
+            defaultBranch = defaultBranch
+        ) ?: throw ErrorCodeException(
+            errorCode = ProcessMessageCode.ERROR_TEMPLATE_YAML_VERSION_NOT_FOUND,
+            params = arrayOf(finalRef, filePath)
+        )
+        return PipelineYamlBranchVersion(
+            yamlVersion = yamlVersion,
+            commitId = branchFile.commitId,
+            blobId = branchFile.blobId
+        )
+    }
+
+    data class PipelineYamlBranchVersion(
+        val yamlVersion: PipelineYamlVersion,
+        val commitId: String?,
+        val blobId: String
+    )
+
     /**
      * 获取模版ref对应的模版版本
      *

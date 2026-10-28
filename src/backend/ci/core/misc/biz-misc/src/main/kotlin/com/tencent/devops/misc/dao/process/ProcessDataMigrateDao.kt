@@ -55,6 +55,7 @@ import com.tencent.devops.model.process.tables.TPipelineOperationLog
 import com.tencent.devops.model.process.tables.TPipelinePauseValue
 import com.tencent.devops.model.process.tables.TPipelineRecentUse
 import com.tencent.devops.model.process.tables.TPipelineResource
+import com.tencent.devops.model.process.tables.TPipelineResourceDynamicVersion
 import com.tencent.devops.model.process.tables.TPipelineResourceVersion
 import com.tencent.devops.model.process.tables.TPipelineSetting
 import com.tencent.devops.model.process.tables.TPipelineSettingVersion
@@ -106,6 +107,7 @@ import com.tencent.devops.model.process.tables.records.TPipelineOperationLogReco
 import com.tencent.devops.model.process.tables.records.TPipelinePauseValueRecord
 import com.tencent.devops.model.process.tables.records.TPipelineRecentUseRecord
 import com.tencent.devops.model.process.tables.records.TPipelineResourceRecord
+import com.tencent.devops.model.process.tables.records.TPipelineResourceDynamicVersionRecord
 import com.tencent.devops.model.process.tables.records.TPipelineResourceVersionRecord
 import com.tencent.devops.model.process.tables.records.TPipelineSettingRecord
 import com.tencent.devops.model.process.tables.records.TPipelineSettingVersionRecord
@@ -579,6 +581,33 @@ class ProcessDataMigrateDao {
     ) {
         with(TPipelineResourceVersion.T_PIPELINE_RESOURCE_VERSION) {
             val insertRecords = pipelineResourceVersionRecords.map { migratingShardingDslContext.newRecord(this, it) }
+            migratingShardingDslContext.batchInsert(insertRecords).execute()
+        }
+    }
+
+    fun getPipelineResourceDynamicVersionRecords(
+        dslContext: DSLContext,
+        projectId: String,
+        pipelineId: String,
+        limit: Int,
+        offset: Int
+    ): List<TPipelineResourceDynamicVersionRecord> {
+        with(TPipelineResourceDynamicVersion.T_PIPELINE_RESOURCE_DYNAMIC_VERSION) {
+            return dslContext.selectFrom(this)
+                .where(PROJECT_ID.eq(projectId).and(PIPELINE_ID.eq(pipelineId)))
+                .orderBy(VERSION.asc(), DYNAMIC_VERSION.asc())
+                .limit(limit).offset(offset).fetchInto(TPipelineResourceDynamicVersionRecord::class.java)
+        }
+    }
+
+    fun migratePipelineResourceDynamicVersionData(
+        migratingShardingDslContext: DSLContext,
+        pipelineResourceDynamicVersionRecords: List<TPipelineResourceDynamicVersionRecord>
+    ) {
+        with(TPipelineResourceDynamicVersion.T_PIPELINE_RESOURCE_DYNAMIC_VERSION) {
+            val insertRecords = pipelineResourceDynamicVersionRecords.map {
+                migratingShardingDslContext.newRecord(this, it)
+            }
             migratingShardingDslContext.batchInsert(insertRecords).execute()
         }
     }

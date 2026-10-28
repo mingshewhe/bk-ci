@@ -628,6 +628,9 @@ object ProcessMessageCode {
     const val ERROR_CREATIVE_FLOW_VARIABLE_OVERRIDE_INVALID = "2101692" // 变量{0}不存在或不允许覆盖
     const val ERROR_CREATIVE_FLOW_SHARE_TEAM_PROJECT_NOT_SUPPORT = "2101693" // 项目{0}不是个人项目，团队创作流分享暂未支持
     const val ERROR_CREATIVE_FLOW_SHARE_REVOKE_PARAM_INVALID = "2101694" // 撤销授权须提供 shareId+flowIds 或 talentCode
+    const val ERROR_TEMPLATE_REF_CYCLE = "2101695" // 模板[{0}]存在循环引用
+    const val ERROR_TEMPLATE_REF_DEPTH_EXCEED = "2101696" // 模板嵌套引用层数超过上限{0}
+    const val ERROR_TEMPLATE_REF_EMPTY = "2101697" // 模板[{0}]展开后内容为空
 
     const val BK_SUCCESSFULLY_DISTRIBUTED = "bkSuccessfullyDistributed" // 跨项目构件分发成功，共分发了{0}个文件
     const val BK_SUCCESSFULLY_FAILED = "bkSuccessfullyFailed" // 跨项目构件分发失败，

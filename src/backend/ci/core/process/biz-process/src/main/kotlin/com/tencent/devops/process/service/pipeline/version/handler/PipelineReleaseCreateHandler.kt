@@ -86,7 +86,7 @@ class PipelineReleaseCreateHandler @Autowired constructor(
             val resourceOnlyVersion = pipelineVersionGenerator.generateReleaseVersion(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newModel = pipelineResourceWithoutVersion.model
+                newModel = resolvedModel()
             )
             pipelineVersionPersistenceService.createReleaseVersion(
                 context = this, resourceOnlyVersion = resourceOnlyVersion

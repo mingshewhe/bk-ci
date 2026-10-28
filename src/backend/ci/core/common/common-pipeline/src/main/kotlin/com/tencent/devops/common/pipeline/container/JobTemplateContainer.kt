@@ -27,6 +27,7 @@
 
 package com.tencent.devops.common.pipeline.container
 
+import com.tencent.devops.common.pipeline.ResolvedTemplate
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.time.BuildRecordTimeCost
@@ -77,7 +78,11 @@ data class JobTemplateContainer(
     @get:Schema(title = "开机任务序号", required = false, readOnly = true)
     override var startVMTaskSeq: Int? = null,
     @get:Schema(title = "模版信息", required = false)
-    val template: TemplateDescriptor? = null
+    val template: TemplateDescriptor? = null,
+    @get:Schema(title = "模版引用解析结果,仅存在于解析后的模型", required = false, readOnly = true)
+    var resolvedTemplate: ResolvedTemplate? = null,
+    @get:Schema(title = "模版展开后的容器集合,仅存在于解析后的模型", required = false, readOnly = true)
+    var templateContainers: List<Container>? = null
 ) : Container {
     companion object {
         const val classType = "jobTemplate"

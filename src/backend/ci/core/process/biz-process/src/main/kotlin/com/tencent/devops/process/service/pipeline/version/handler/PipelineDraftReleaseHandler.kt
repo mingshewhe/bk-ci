@@ -159,7 +159,7 @@ class PipelineDraftReleaseHandler @Autowired constructor(
         )
         // 事务前校验，避免 releaseDraft2ReleaseVersion 内部事务提交后校验失败导致引用缺失。
         publicVarGroupReferManageService.validateVarGroupReferences(
-            model = pipelineResourceWithoutVersion.model,
+            model = resolvedModel(),
             projectId = projectId
         )
         if (pipelineResourceWithoutVersion.status == VersionStatus.RELEASED) {
@@ -179,7 +179,7 @@ class PipelineDraftReleaseHandler @Autowired constructor(
             PublicVarGroupReferDTO(
                 userId = userId,
                 projectId = projectId,
-                model = pipelineResourceWithoutVersion.model,
+                model = resolvedModel(),
                 referId = pipelineId,
                 referType = PublicVarGroupReferenceTypeEnum.PIPELINE,
                 referName = pipelineBasicInfo.pipelineName,

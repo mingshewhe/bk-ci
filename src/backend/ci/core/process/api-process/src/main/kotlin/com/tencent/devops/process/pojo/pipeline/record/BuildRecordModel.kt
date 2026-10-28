@@ -66,5 +66,7 @@ data class BuildRecordModel(
     @get:Schema(title = "流水线任务执行错误", required = false)
     var errorInfoList: List<ErrorInfo>? = null,
     @get:Schema(title = "业务时间戳集合", required = false)
-    var timestamps: Map<BuildTimestampType, BuildRecordTimeStamp>
+    var timestamps: Map<BuildTimestampType, BuildRecordTimeStamp>,
+    @get:Schema(title = "动态版本号,引用动态模板时才有值", required = false)
+    val dynamicVersion: String? = null
 )

@@ -63,6 +63,7 @@ import com.tencent.devops.process.engine.service.measure.MeasureService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
 import com.tencent.devops.process.engine.service.record.PipelineBuildRecordService
 import com.tencent.devops.process.engine.utils.BuildUtils
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.pojo.mq.PipelineAgentShutdownEvent
 import com.tencent.devops.process.pojo.mq.PipelineBuildLessShutdownEvent
 import com.tencent.devops.process.service.BuildVariableService
@@ -134,7 +135,7 @@ class BuildCancelControl @Autowired constructor(
             buildId = buildId,
             executeCount = buildInfo.executeCount,
             debug = buildInfo.debug
-        )
+        )?.let { PipelineModelParseUtil.flatten(it) }
         return if (model != null) {
             LOG.info("ENGINE|${event.buildId}|${event.source}|CANCEL|status=${event.status}")
             if (event.actionType != ActionType.TERMINATE) {

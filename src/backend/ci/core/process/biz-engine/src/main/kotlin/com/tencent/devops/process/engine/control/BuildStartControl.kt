@@ -92,6 +92,7 @@ import com.tencent.devops.process.engine.service.record.TaskBuildRecordService
 import com.tencent.devops.process.engine.utils.ConcurrencyCancelContext
 import com.tencent.devops.process.engine.utils.ConcurrencyCancelGuardUtils
 import com.tencent.devops.process.engine.utils.ContainerUtils
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.service.BuildVariableService
 import com.tencent.devops.process.service.scm.ScmProxyService
 import com.tencent.devops.process.utils.BUILD_NO
@@ -887,7 +888,7 @@ class BuildStartControl @Autowired constructor(
             buildId = buildId,
             executeCount = executeCount,
             debug = buildInfo.debug
-        ) ?: run {
+        )?.let { PipelineModelParseUtil.flatten(it) } ?: run {
             pipelineEventDispatcher.dispatch(
                 PipelineBuildCancelEvent(
                     source = TAG, projectId = projectId, pipelineId = pipelineId,

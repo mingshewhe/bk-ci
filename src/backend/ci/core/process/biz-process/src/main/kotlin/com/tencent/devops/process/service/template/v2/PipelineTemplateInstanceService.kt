@@ -42,6 +42,7 @@ import com.tencent.devops.process.engine.pojo.PipelineInfo
 import com.tencent.devops.process.engine.pojo.event.PipelineTemplateInstanceEvent
 import com.tencent.devops.process.engine.service.PipelineInfoService
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.TemplateInstanceUtil
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
@@ -70,7 +71,6 @@ import com.tencent.devops.process.service.ParamFacadeService
 import com.tencent.devops.process.service.PipelineInfoFacadeService
 import com.tencent.devops.process.service.PipelineVersionFacadeService
 import com.tencent.devops.process.service.StageTagService
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.pipeline.PipelineSettingVersionService
 import com.tencent.devops.process.service.pipeline.PipelineTransferYamlService
 import com.tencent.devops.process.service.pipeline.PipelineYamlVersionResolver
@@ -113,7 +113,6 @@ class PipelineTemplateInstanceService @Autowired constructor(
     private val transferService: PipelineTransferYamlService,
     private val pipelineTemplateSettingService: PipelineTemplateSettingService,
     private val pipelineInfoService: PipelineInfoService,
-    private val pipelineModelParser: PipelineModelParser,
     private val pipelineSettingVersionService: PipelineSettingVersionService,
     private val pipelineInfoFacadeService: PipelineInfoFacadeService,
     private val stageTagService: StageTagService,
@@ -904,7 +903,7 @@ class PipelineTemplateInstanceService @Autowired constructor(
         } else {
             val templateCacheKey = "${templateDescriptor.templatePath}_${templateDescriptor.templateRef}"
             val oldTemplateResource = templateResourceCache.getOrPut(templateCacheKey) {
-                pipelineModelParser.parseTemplateDescriptor(
+                PipelineModelParseUtil.parseTemplateDescriptor(
                     projectId = projectId,
                     descriptor = templateDescriptor
                 )

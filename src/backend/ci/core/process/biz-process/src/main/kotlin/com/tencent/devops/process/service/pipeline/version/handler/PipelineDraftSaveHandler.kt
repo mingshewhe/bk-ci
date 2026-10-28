@@ -79,7 +79,7 @@ class PipelineDraftSaveHandler @Autowired constructor(
 
     private fun PipelineVersionCreateContext.doHandle(): DeployPipelineResult {
         publicVarGroupReferManageService.validateVarGroupReferences(
-            model = pipelineResourceWithoutVersion.model, projectId = projectId
+            model = resolvedModel(), projectId = projectId
         )
         val resourceOnlyVersion = if (pipelineInfo == null) {
             val resourceOnlyVersion = pipelineVersionGenerator.getDefaultVersion(
@@ -150,7 +150,7 @@ class PipelineDraftSaveHandler @Autowired constructor(
             PublicVarGroupReferDTO(
                 userId = userId,
                 projectId = projectId,
-                model = pipelineResourceWithoutVersion.model,
+                model = resolvedModel(),
                 referId = pipelineId,
                 referType = PublicVarGroupReferenceTypeEnum.PIPELINE,
                 referName = pipelineBasicInfo.pipelineName,

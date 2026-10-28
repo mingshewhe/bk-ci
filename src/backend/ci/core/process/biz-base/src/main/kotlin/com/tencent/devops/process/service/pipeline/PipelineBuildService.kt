@@ -40,6 +40,8 @@ import com.tencent.devops.common.pipeline.dialect.PipelineDialectUtil
 import com.tencent.devops.common.pipeline.enums.BuildFormPropertyType
 import com.tencent.devops.common.pipeline.enums.ChannelCode
 import com.tencent.devops.common.pipeline.enums.StartType
+import com.tencent.devops.common.pipeline.enums.VersionStatus
+import com.tencent.devops.common.pipeline.extend.ModelCheckPlugin
 import com.tencent.devops.common.pipeline.pojo.BuildParameters
 import com.tencent.devops.common.redis.concurrent.SimpleRateLimiter
 import com.tencent.devops.common.service.trace.TraceTag
@@ -56,6 +58,7 @@ import com.tencent.devops.process.engine.service.PipelineElementService
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.service.PipelineRuntimeService
 import com.tencent.devops.process.engine.service.PipelineStartupPermissionExtService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.enums.PipelineCategory
 import com.tencent.devops.process.pojo.BuildId
 import com.tencent.devops.process.pojo.app.StartBuildContext
@@ -117,7 +120,8 @@ class PipelineBuildService(
     private val buildIdGenerator: BuildIdGenerator,
     private val pipelineAsCodeService: PipelineAsCodeService,
     private val pipelineStartupPermissionExtService: PipelineStartupPermissionExtService,
-    private val client: Client
+    private val client: Client,
+    private val modelCheckPlugin: ModelCheckPlugin
 ) {
     companion object {
         private val NO_LIMIT_CHANNEL = listOf(ChannelCode.CODECC)
@@ -190,8 +194,15 @@ class PipelineBuildService(
                 params = arrayOf(projectVO.englishName)
             )
         }
+        // 嵌套 model 用于动态版本和构建详情,引擎使用平铺后的 model
+        pipelineRepositoryService.parseBuildResource(resource)
+        val fullModel = PipelineModelParseUtil.flatten(resource.model)
+        if (resource.dynamicVersion != null) {
+            modelCheckPlugin.checkFlattenModelIntegrity(fullModel)
+        }
+        val branchName = resource.versionName.takeIf { resource.status == VersionStatus.BRANCH }
         // 如果调试出现了没有关联setting的老版本，则使用当前的配置
-        val setting = if (debug == true) {
+        val originSetting = if (debug == true) {
             pipelineRepositoryService.getDraftVersionResource(
                 pipeline.projectId, pipeline.pipelineId
             )?.settingVersion?.let {
@@ -210,6 +221,9 @@ class PipelineBuildService(
                 pipelineId = pipeline.pipelineId,
                 pipelineVersion = signPipelineVersion
             )
+        }
+        val setting = originSetting?.let {
+            PipelineModelParseUtil.parseSetting(projectId = pipeline.projectId, setting = it, branchName = branchName)
         }
         if (setting!!.failIfVariableInvalid == true) {
             failIfVariableInvalid(pipelineParamMap)
@@ -241,7 +255,7 @@ class PipelineBuildService(
             // 只有新构建才需要填充Post插件与质量红线插件
             if (!pipelineParamMap.containsKey(PIPELINE_RETRY_BUILD_ID)) {
                 pipelineElementService.fillElementWhenNewBuild(
-                    model = resource.model,
+                    model = fullModel,
                     projectId = pipeline.projectId,
                     pipelineId = pipeline.pipelineId,
                     startValues = startValues,
@@ -305,11 +319,12 @@ class PipelineBuildService(
                 yamlVersion = resource.yamlVersion,
                 draftVersion = resource.draftVersion
             )
+            context.dynamicVersion = resource.dynamicVersion
 
             val interceptResult = pipelineInterceptorChain.filter(
                 InterceptData(
                     pipelineInfo = pipeline,
-                    model = resource.model,
+                    model = fullModel,
                     startType = startType,
                     buildId = buildId,
                     runLockType = setting.runLockType,
@@ -331,7 +346,7 @@ class PipelineBuildService(
                 )
             }
 
-            return pipelineRuntimeService.startBuild(fullModel = resource.model, context = context)
+            return pipelineRuntimeService.startBuild(fullModel = fullModel, context = context)
         } finally {
             if (acquire) {
                 simpleRateLimiter.release(lockKey = lockKey)

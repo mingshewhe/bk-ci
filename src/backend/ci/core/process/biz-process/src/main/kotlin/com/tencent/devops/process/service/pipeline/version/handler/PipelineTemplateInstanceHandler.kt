@@ -115,7 +115,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             pipelineVersionGenerator.generateInstanceVersion(
                 projectId = projectId,
                 pipelineId = pipelineId,
-                newModel = pipelineResourceWithoutVersion.model,
+                newModel = resolvedModel(),
                 enablePac = enablePac,
                 repoHashId = yamlFileInfo?.repoHashId,
                 targetAction = targetAction,
@@ -126,7 +126,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
 
         // 在持久化之前校验公共变量组引用，极端场景下变量组可能在校验后被删除
         publicVarGroupReferManageService.validateVarGroupReferences(
-            model = pipelineResourceWithoutVersion.model,
+            model = resolvedModel(),
             projectId = projectId
         )
         pipelineYamlReleaseService.validateReleaseYamlFile(
@@ -144,7 +144,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
                         userId = userId,
                         projectId = projectId,
                         pipelineId = pipelineId,
-                        model = pipelineResourceWithoutVersion.model
+                        model = resolvedModel()
                     )
                 }
             }
@@ -169,7 +169,7 @@ class PipelineTemplateInstanceHandler @Autowired constructor(
             PublicVarGroupReferDTO(
                 userId = userId,
                 projectId = projectId,
-                model = pipelineResourceWithoutVersion.model,
+                model = resolvedModel(),
                 referId = pipelineId,
                 referType = PublicVarGroupReferenceTypeEnum.PIPELINE,
                 referName = pipelineSettingWithoutVersion.pipelineName,

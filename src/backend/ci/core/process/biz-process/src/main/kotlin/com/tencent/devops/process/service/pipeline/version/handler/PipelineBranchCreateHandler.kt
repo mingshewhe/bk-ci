@@ -118,13 +118,13 @@ class PipelineBranchCreateHandler @Autowired constructor(
             resourceOnlyVersion
         }
         publicVarGroupReferManageService.validateVarGroupReferences(
-            model = pipelineResourceWithoutVersion.model, projectId = projectId
+            model = resolvedModel(), projectId = projectId
         )
         publicVarGroupReferManageService.handleVarGroupReferBus(
             PublicVarGroupReferDTO(
                 userId = userId,
                 projectId = projectId,
-                model = pipelineResourceWithoutVersion.model,
+                model = resolvedModel(),
                 referId = pipelineId,
                 referType = PublicVarGroupReferenceTypeEnum.PIPELINE,
                 referName = pipelineBasicInfo.pipelineName,

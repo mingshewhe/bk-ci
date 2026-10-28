@@ -66,6 +66,7 @@ import com.tencent.devops.process.engine.pojo.PipelineBuildTask
 import com.tencent.devops.process.engine.service.PipelineContainerService
 import com.tencent.devops.process.engine.service.PipelineTaskService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.pojo.TemplateAcrossInfoType
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordContainer
 import com.tencent.devops.process.pojo.pipeline.record.BuildRecordTask
@@ -210,7 +211,8 @@ class InitializeMatrixGroupStageCmd(
             version = recordContainer?.resourceVersion ?: 1,
             buildId = parentContainer.buildId,
             executeCount = parentContainer.executeCount
-        )?.getStage(parentContainer.stageId) ?: throw DependNotFoundException(
+        )?.let { PipelineModelParseUtil.flatten(it) }
+            ?.getStage(parentContainer.stageId) ?: throw DependNotFoundException(
             "stage(${parentContainer.stageId}) cannot be found in model"
         )
         val modelContainer = modelStage.getContainer(

@@ -64,6 +64,7 @@ class BuildRecordModelDao {
                 .set(ERROR_INFO, record.errorInfoList?.let { JsonUtil.toJson(it, false) })
                 .set(CANCEL_USER, record.cancelUser)
                 .set(TIMESTAMPS, JsonUtil.toJson(record.timestamps, false))
+                .set(DYNAMIC_VERSION, record.dynamicVersion)
                 .execute()
         }
     }
@@ -202,7 +203,8 @@ class BuildRecordModelDao {
                     },
                     timestamps = timestamps?.let {
                         JsonUtil.to(it, object : TypeReference<Map<BuildTimestampType, BuildRecordTimeStamp>>() {})
-                    } ?: mapOf()
+                    } ?: mapOf(),
+                    dynamicVersion = dynamicVersion
                 )
             }
         }

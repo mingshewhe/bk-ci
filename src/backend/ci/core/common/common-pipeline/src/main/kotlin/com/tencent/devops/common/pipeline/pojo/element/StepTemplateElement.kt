@@ -1,5 +1,6 @@
 package com.tencent.devops.common.pipeline.pojo.element
 
+import com.tencent.devops.common.pipeline.ResolvedTemplate
 import com.tencent.devops.common.pipeline.TemplateDescriptor
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -12,7 +13,11 @@ data class StepTemplateElement(
     @get:Schema(title = "状态", required = false)
     override var status: String? = null,
     @get:Schema(title = "模版信息", required = false)
-    val template: TemplateDescriptor? = null
+    val template: TemplateDescriptor? = null,
+    @get:Schema(title = "模版引用解析结果,仅存在于解析后的模型", required = false, readOnly = true)
+    var resolvedTemplate: ResolvedTemplate? = null,
+    @get:Schema(title = "模版展开后的插件集合,仅存在于解析后的模型", required = false, readOnly = true)
+    var templateElements: List<Element>? = null
 ) : Element(name, id, status) {
     companion object {
         const val classType = "stepTemplate"

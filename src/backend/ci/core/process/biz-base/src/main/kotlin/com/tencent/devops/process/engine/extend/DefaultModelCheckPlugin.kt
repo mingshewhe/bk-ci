@@ -34,6 +34,7 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.client.Client
 import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.container.Container
+import com.tencent.devops.common.pipeline.container.JobTemplateContainer
 import com.tencent.devops.common.pipeline.container.NormalContainer
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
@@ -46,6 +47,7 @@ import com.tencent.devops.common.pipeline.pojo.BuildFormProperty
 import com.tencent.devops.common.pipeline.pojo.PipelineRunEnvOsCheckParam
 import com.tencent.devops.common.pipeline.pojo.element.Element
 import com.tencent.devops.common.pipeline.pojo.element.RunCondition
+import com.tencent.devops.common.pipeline.pojo.element.StepTemplateElement
 import com.tencent.devops.common.pipeline.pojo.element.atom.BeforeDeleteParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ElementBatchCheckParam
 import com.tencent.devops.common.pipeline.pojo.element.atom.ElementHolder
@@ -154,7 +156,8 @@ open class DefaultModelCheckPlugin constructor(
                     )
                 )
             }
-            if (containers.isEmpty()) {
+            // 引用 stage 模板时,stage 自身没有 job
+            if (containers.isEmpty() && stage.template == null) {
                 throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NEED_JOB)
             }
 
@@ -214,6 +217,54 @@ open class DefaultModelCheckPlugin constructor(
         batchCheckElement(param = param, elementHolders = elementHolders)
 
         return metaSize
+    }
+
+    override fun checkFlattenModelIntegrity(model: Model) {
+        val modelSize = JsonUtil.toJson(model, formatted = false).length
+        if (modelSize > pipelineCommonSettingConfig.maxModelSize.toLong()) {
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_TOO_LARGE,
+                params = arrayOf(pipelineCommonSettingConfig.maxModelSize.toString())
+            )
+        }
+        val stages = model.stages
+        if (stages.size > pipelineCommonSettingConfig.maxStageNum) {
+            throw ErrorCodeException(
+                errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_COMPONENT_NUM_TOO_LARGE,
+                params = arrayOf("", KEY_STAGE, pipelineCommonSettingConfig.maxStageNum.toString())
+            )
+        }
+        stages.forEachIndexed { index, stage ->
+            // 触发 stage 不会来自模板
+            if (index == 0) {
+                return@forEachIndexed
+            }
+            val containers = stage.containers
+            if (containers.isEmpty()) {
+                throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NEED_JOB)
+            }
+            if (containers.size > stageCommonSettingConfig.maxJobNum) {
+                throw ErrorCodeException(
+                    errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_COMPONENT_NUM_TOO_LARGE,
+                    params = arrayOf(
+                        stage.name ?: "stage_$index",
+                        KEY_JOB,
+                        stageCommonSettingConfig.maxJobNum.toString()
+                    )
+                )
+            }
+            if (stage.finally && index < stages.size - 1) {
+                throw ErrorCodeException(errorCode = ProcessMessageCode.ERROR_FINALLY_STAGE)
+            }
+            containers.forEach { container ->
+                if (container.elements.size > jobCommonSettingConfig.maxTaskNum) {
+                    throw ErrorCodeException(
+                        errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_COMPONENT_NUM_TOO_LARGE,
+                        params = arrayOf(container.name, KEY_TASK, jobCommonSettingConfig.maxTaskNum.toString())
+                    )
+                }
+            }
+        }
     }
 
     override fun checkSettingIntegrity(setting: PipelineSetting, projectId: String?) {
@@ -276,6 +327,10 @@ open class DefaultModelCheckPlugin constructor(
     ): Int /* MetaSize*/ {
         var metaSize = 0
         containers.forEachIndexed { containerIndex, container ->
+            // 引用 job 模板的节点在构建时才展开,保存时不校验
+            if (container is JobTemplateContainer) {
+                return@forEachIndexed
+            }
 
             checkMutexGroup(container = container, contextMap = contextMap)
 
@@ -311,6 +366,9 @@ open class DefaultModelCheckPlugin constructor(
             }
 
             container.elements.forEachIndexed { elementIndex, element ->
+                if (element is StepTemplateElement) {
+                    return@forEachIndexed
+                }
                 container.checkElement(
                     stage = this,
                     element = element,

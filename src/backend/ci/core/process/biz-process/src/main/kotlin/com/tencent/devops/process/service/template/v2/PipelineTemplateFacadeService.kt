@@ -40,6 +40,7 @@ import com.tencent.devops.process.dao.label.PipelineLabelPipelineDao
 import com.tencent.devops.process.engine.dao.PipelineOperationLogDao
 import com.tencent.devops.process.engine.pojo.PipelineInfo
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.permission.PipelinePermissionService
 import com.tencent.devops.process.permission.template.PipelineTemplatePermissionService
 import com.tencent.devops.process.pojo.PipelineOperationDetail
@@ -85,7 +86,6 @@ import com.tencent.devops.process.pojo.template.v2.PipelineTemplateStrategyUpdat
 import com.tencent.devops.process.pojo.template.v2.PipelineTemplateYamlWebhookReq
 import com.tencent.devops.process.pojo.template.v2.PreFetchTemplateReleaseResult
 import com.tencent.devops.process.pojo.template.v2.TemplateVersionPair
-import com.tencent.devops.process.service.pipeline.PipelineModelParser
 import com.tencent.devops.process.service.pipeline.PipelineYamlVersionResolver
 import com.tencent.devops.process.service.template.v2.version.PipelineTemplateVersionManager
 import com.tencent.devops.process.util.FileExportUtil
@@ -129,8 +129,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     private val pipelineTemplateRelatedService: PipelineTemplateRelatedService,
     private val config: CommonConfig,
     private val pipelineLabelDao: PipelineLabelDao,
-    private val pipelineLabelPipelineDao: PipelineLabelPipelineDao,
-    private val pipelineModelParser: PipelineModelParser
+    private val pipelineLabelPipelineDao: PipelineLabelPipelineDao
 ) {
 
     /**
@@ -2097,7 +2096,7 @@ class PipelineTemplateFacadeService @Autowired constructor(
     ): PipelineTemplateResource? {
         // 1. 如果有template字段，直接解析
         templateDescriptor?.let {
-            return pipelineModelParser.parseTemplateDescriptor(
+            return PipelineModelParseUtil.parseTemplateDescriptor(
                 projectId = projectId,
                 descriptor = it,
                 pipelineId = pipelineId

@@ -31,6 +31,7 @@ import com.tencent.devops.common.api.pojo.PipelineAsCodeSettings
 import com.tencent.devops.common.pipeline.pojo.setting.BuildCancelPolicy
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingTemplateRef
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.common.web.annotation.BkField
 import com.tencent.devops.common.web.constant.BkStyleEnum
@@ -87,7 +88,9 @@ data class PipelineSettingVersion(
     @get:Schema(title = "环境hashId", required = false)
     var envHashId: String? = null,
     @get:Schema(title = "环境名称", required = false)
-    var envName: String? = null
+    var envName: String? = null,
+    @get:Schema(title = "流水线模板设置引用", required = false)
+    var template: PipelineSettingTemplateRef? = null
 ) {
     companion object {
 
@@ -113,7 +116,8 @@ data class PipelineSettingVersion(
             failIfVariableInvalid = setting.failIfVariableInvalid,
             buildCancelPolicy = setting.buildCancelPolicy,
             envHashId = setting.envHashId,
-            envName = setting.envName
+            envName = setting.envName,
+            template = setting.template
         )
     }
 }

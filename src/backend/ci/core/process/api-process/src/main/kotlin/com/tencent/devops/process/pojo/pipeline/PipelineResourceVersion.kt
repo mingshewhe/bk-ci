@@ -86,7 +86,9 @@ data class PipelineResourceVersion(
     @get:Schema(title = "该版本来源的正式版本（空时一定为主路径）", required = false)
     val baseVersion: Int? = null,
     @get:Schema(title = "该版本来源的草稿版本,草稿保存时传入", required = false)
-    val draftVersion: Int? = null
+    val draftVersion: Int? = null,
+    @get:Schema(title = "动态版本号,构建时解析模板引用后生成", required = false)
+    var dynamicVersion: String? = null
 ) {
     constructor(
         pipelineResourceWithoutVersion: PipelineResourceWithoutVersion,

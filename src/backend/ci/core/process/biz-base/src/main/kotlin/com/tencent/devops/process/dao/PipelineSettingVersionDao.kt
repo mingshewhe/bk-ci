@@ -35,6 +35,7 @@ import com.tencent.devops.common.api.util.JsonUtil
 import com.tencent.devops.common.pipeline.pojo.setting.BuildCancelPolicy
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingTemplateRef
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.model.process.tables.TPipelineSettingVersion
 import com.tencent.devops.model.process.tables.records.TPipelineSettingVersionRecord
@@ -81,7 +82,8 @@ class PipelineSettingVersionDao {
                 FAIL_IF_VARIABLE_INVALID,
                 BUILD_CANCEL_POLICY,
                 ENV_HASH_ID,
-                ENV_NAME
+                ENV_NAME,
+                TEMPLATE
             ).values(
                 id,
                 setting.projectId,
@@ -109,7 +111,8 @@ class PipelineSettingVersionDao {
                 setting.failIfVariableInvalid,
                 setting.buildCancelPolicy.value,
                 setting.envHashId,
-                setting.envName
+                setting.envName,
+                setting.template?.let { self -> JsonUtil.toJson(self, false) }
             ).onDuplicateKeyUpdate()
                 .set(NAME, setting.pipelineName)
                 .set(DESC, setting.desc)
@@ -129,6 +132,7 @@ class PipelineSettingVersionDao {
                 })
                 .set(FAIL_IF_VARIABLE_INVALID, setting.failIfVariableInvalid)
                 .set(BUILD_CANCEL_POLICY, setting.buildCancelPolicy.value)
+                .set(TEMPLATE, setting.template?.let { self -> JsonUtil.toJson(self, false) })
 
             setting.envHashId?.let { envHashId ->
                 insert.set(ENV_HASH_ID, envHashId)
@@ -165,6 +169,7 @@ class PipelineSettingVersionDao {
                     JsonUtil.toJson(self, false)
                 })
                 .set(FAIL_IF_VARIABLE_INVALID, setting.failIfVariableInvalid)
+                .set(TEMPLATE, setting.template?.let { self -> JsonUtil.toJson(self, false) })
             setting.envHashId?.let { envHashId ->
                 updateStep.set(ENV_HASH_ID, envHashId)
             }
@@ -299,7 +304,10 @@ class PipelineSettingVersionDao {
                     failIfVariableInvalid = t.failIfVariableInvalid,
                     buildCancelPolicy = BuildCancelPolicy.parse(t.buildCancelPolicy),
                     envHashId = t.envHashId,
-                    envName = t.envName
+                    envName = t.envName,
+                    template = t.template?.let { self ->
+                        JsonUtil.to(self, PipelineSettingTemplateRef::class.java)
+                    }
                 )
             }
         }

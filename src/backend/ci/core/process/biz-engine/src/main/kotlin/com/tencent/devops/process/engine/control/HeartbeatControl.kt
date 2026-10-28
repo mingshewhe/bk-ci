@@ -48,6 +48,7 @@ import com.tencent.devops.process.engine.pojo.event.PipelineContainerAgentHeartB
 import com.tencent.devops.process.engine.service.PipelineContainerService
 import com.tencent.devops.process.engine.service.PipelineRuntimeService
 import com.tencent.devops.process.engine.service.record.PipelineBuildRecordService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -190,7 +191,7 @@ class HeartbeatControl @Autowired constructor(
             buildId = container.buildId,
             executeCount = container.executeCount,
             debug = buildInfo.debug
-        ) ?: return emptyList()
+        )?.let { PipelineModelParseUtil.flatten(it) } ?: return emptyList()
         return EndPositionUtils.resolveEndPositions(
             model = model,
             targetStageId = container.stageId,

@@ -44,6 +44,7 @@ import com.tencent.devops.common.db.utils.JooqUtils
 import com.tencent.devops.common.event.dispatcher.pipeline.PipelineEventDispatcher
 import com.tencent.devops.common.event.pojo.pipeline.PipelineModelAnalysisEvent
 import com.tencent.devops.common.pipeline.Model
+import com.tencent.devops.common.pipeline.container.JobTemplateContainer
 import com.tencent.devops.common.pipeline.container.NormalContainer
 import com.tencent.devops.common.pipeline.container.Stage
 import com.tencent.devops.common.pipeline.container.TriggerContainer
@@ -64,6 +65,7 @@ import com.tencent.devops.common.pipeline.pojo.MatrixPipelineInfo
 import com.tencent.devops.common.pipeline.pojo.PipelineModelAndSetting
 import com.tencent.devops.common.pipeline.pojo.PipelineRunEnvOsChange
 import com.tencent.devops.common.pipeline.pojo.PipelineRunEnvOsCheckParam
+import com.tencent.devops.common.pipeline.pojo.element.StepTemplateElement
 import com.tencent.devops.common.pipeline.pojo.element.trigger.ManualTriggerElement
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -103,6 +105,7 @@ import com.tencent.devops.process.engine.dao.PipelineInfoDao
 import com.tencent.devops.process.engine.dao.PipelineModelTaskDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDao
 import com.tencent.devops.process.engine.dao.PipelineResourceDraftVersionDao
+import com.tencent.devops.process.engine.dao.PipelineResourceDynamicVersionDao
 import com.tencent.devops.process.engine.dao.PipelineResourceVersionDao
 import com.tencent.devops.process.engine.dao.template.TemplateDao
 import com.tencent.devops.process.engine.dao.template.TemplatePipelineDao
@@ -112,6 +115,7 @@ import com.tencent.devops.process.engine.pojo.event.PipelineCreateEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineDeleteEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineRestoreEvent
 import com.tencent.devops.process.engine.pojo.event.PipelineUpdateEvent
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.enums.OperationLogType
 import com.tencent.devops.process.plugin.load.ElementBizRegistrar
@@ -196,7 +200,8 @@ class PipelineRepositoryService constructor(
     private val pipelineGroupService: PipelineGroupService,
     private val pipelineVisibilityService: PipelineVisibilityService,
     private val publicVarGroupReferManageService: PublicVarGroupReferManageService,
-    private val pipelineResourceDraftVersionDao: PipelineResourceDraftVersionDao
+    private val pipelineResourceDraftVersionDao: PipelineResourceDraftVersionDao,
+    private val pipelineResourceDynamicVersionDao: PipelineResourceDynamicVersionDao
 ) {
 
     companion object {
@@ -647,7 +652,8 @@ class PipelineRepositoryService constructor(
         randomSeed: AtomicInteger,
         jobIdSet: MutableSet<String>
     ) {
-        if (stage.containers.isEmpty()) {
+        // 引用 stage 模板时 stage 自身没有 job,构建时再展开
+        if (stage.containers.isEmpty() && stage.template == null) {
             throw ErrorCodeException(
                 errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NEED_JOB,
                 params = arrayOf(
@@ -658,6 +664,10 @@ class PipelineRepositoryService constructor(
         stage.containers.forEachIndexed { containerIndex, c ->
 
             if (c is TriggerContainer) {
+                return@forEachIndexed
+            }
+            if (c is JobTemplateContainer) {
+                initJobTemplateContainer(container = c, containerSeqId = containerSeqId, distIds = distIds)
                 return@forEachIndexed
             }
 
@@ -714,6 +724,10 @@ class PipelineRepositoryService constructor(
                 }
                 e.timeCost = null
                 distIds.add(e.id!!)
+                // 引用 step 模板的节点只保留自身 ID,作为构建时展开的 ID 种子
+                if (e is StepTemplateElement) {
+                    return@forEach
+                }
                 // 补偿动作--未来拆分出来，针对复杂的东西异步处理
                 if (versionStatus?.isReleasing() == true) {
                     ElementBizRegistrar.getPlugin(e)?.afterCreate(
@@ -750,6 +764,31 @@ class PipelineRepositoryService constructor(
                     )
                 )
             }
+        }
+    }
+
+    /**
+     * 引用 job 模板的节点:占用位置序号,生成自身的 containerHashId 和 element id,
+     * 不做矩阵/互斥组校验,不生成 modelTasks
+     */
+    private fun initJobTemplateContainer(
+        container: JobTemplateContainer,
+        containerSeqId: AtomicInteger,
+        distIds: HashSet<String>
+    ) {
+        container.id = containerSeqId.incrementAndGet().toString()
+        container.containerId = container.id
+        container.timeCost = null
+        if (container.containerHashId.isNullOrBlank() || distIds.contains(container.containerHashId)) {
+            container.containerHashId = modelContainerIdGenerator.getNextId()
+        }
+        distIds.add(container.containerHashId!!)
+        container.elements.forEach { e ->
+            if (e.id.isNullOrBlank() || distIds.contains(e.id)) {
+                e.id = modelTaskIdGenerator.getNextId()
+            }
+            e.timeCost = null
+            distIds.add(e.id!!)
         }
     }
 
@@ -1402,6 +1441,13 @@ class PipelineRepositoryService constructor(
                         currentVersion = version,
                         maxPipelineResNum = it
                     )
+                    pipelineResourceDynamicVersionDao.deleteEarlyVersion(
+                        dslContext = transactionContext,
+                        projectId = projectId,
+                        pipelineId = pipelineId,
+                        currentVersion = version,
+                        maxPipelineResNum = it
+                    )
                 }
             }
         } finally {
@@ -1550,7 +1596,11 @@ class PipelineRepositoryService constructor(
             dslContext = dslContext,
             projectId = projectId,
             pipelineIds = pipelineIds
-        ).map { it.key to str2model(it.value, it.key) }.toMap()
+        ).map { (pipelineId, modelString) ->
+            pipelineId to str2model(modelString, pipelineId)?.let {
+                expandPipelineTemplate(projectId = projectId, pipelineId = pipelineId, model = it)
+            }
+        }.toMap()
     }
 
     fun getLatestVersionNames(projectId: String, pipelineIds: List<String>): Map<String, String> {
@@ -1583,7 +1633,7 @@ class PipelineRepositoryService constructor(
                 val defaultVersion = getPipelineResourceVersion(
                     projectId = projectId,
                     pipelineId = pipelineId
-                ) ?: throw ErrorCodeException(
+                )?.let { parseBuildResource(it) } ?: throw ErrorCodeException(
                     statusCode = Response.Status.NOT_FOUND.statusCode,
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_EXISTS_BY_ID,
                     params = arrayOf(pipelineId)
@@ -1599,7 +1649,7 @@ class PipelineRepositoryService constructor(
                     projectId = projectId,
                     pipelineId = pipelineId,
                     version = version
-                ) ?: throw ErrorCodeException(
+                )?.let { parseBuildResource(it) } ?: throw ErrorCodeException(
                     statusCode = Response.Status.NOT_FOUND.statusCode,
                     errorCode = ProcessMessageCode.ERROR_NO_PIPELINE_VERSION_EXISTS_BY_ID,
                     params = arrayOf(version.toString())
@@ -1618,6 +1668,84 @@ class PipelineRepositoryService constructor(
     }
 
     /**
+     * 解析构建要用的 model:展开所有模板引用得到嵌套 model,有模板引用时保存动态版本,结果写回[resource]
+     *
+     * 已经解析过的[resource]直接返回,避免同一次触发重复解析
+     */
+    fun parseBuildResource(
+        resource: PipelineResourceVersion,
+        branchName: String? = null
+    ): PipelineResourceVersion {
+        if (resource.dynamicVersion != null) {
+            return resource
+        }
+        val parsedModel = PipelineModelParseUtil.parseModel(
+            projectId = resource.projectId,
+            pipelineId = resource.pipelineId,
+            model = resource.model,
+            branchName = branchName ?: resource.versionName.takeIf { resource.status == VersionStatus.BRANCH }
+        )
+        if (parsedModel === resource.model) {
+            return resource
+        }
+        resource.model = parsedModel
+        resource.dynamicVersion = saveDynamicVersion(
+            projectId = resource.projectId,
+            pipelineId = resource.pipelineId,
+            version = resource.version,
+            parsedModel = parsedModel
+        )
+        return resource
+    }
+
+    /**
+     * 保存动态版本,动态版本号由解析结果决定,相同的解析结果只保存一份
+     *
+     * @return 动态版本号,model 中没有模板引用时返回 null
+     */
+    fun saveDynamicVersion(
+        projectId: String,
+        pipelineId: String,
+        version: Int,
+        parsedModel: Model
+    ): String? {
+        val dynamicVersion = PipelineModelParseUtil.generateDynamicVersion(
+            pipelineId = pipelineId,
+            version = version,
+            model = parsedModel
+        ) ?: return null
+        val exists = pipelineResourceDynamicVersionDao.exists(
+            dslContext = dslContext,
+            projectId = projectId,
+            dynamicVersion = dynamicVersion
+        )
+        if (!exists) {
+            // 流水线级别回调带有密钥,且不属于编排,不写入动态版本
+            pipelineResourceDynamicVersionDao.createIgnore(
+                dslContext = dslContext,
+                projectId = projectId,
+                pipelineId = pipelineId,
+                version = version,
+                dynamicVersion = dynamicVersion,
+                model = JsonUtil.toJson(parsedModel.copy(events = null), formatted = false)
+            )
+        }
+        return dynamicVersion
+    }
+
+    fun getDynamicVersionModel(
+        projectId: String,
+        dynamicVersion: String,
+        queryDslContext: DSLContext? = null
+    ): Model? {
+        return pipelineResourceDynamicVersionDao.getModelString(
+            dslContext = queryDslContext ?: dslContext,
+            projectId = projectId,
+            dynamicVersion = dynamicVersion
+        )?.let { str2model(it, dynamicVersion) }
+    }
+
+    /**
      * 批量获取model
      */
     fun getModel(projectId: String, pipelineId: String): Model? {
@@ -1625,7 +1753,9 @@ class PipelineRepositoryService constructor(
             dslContext = dslContext,
             projectId = projectId,
             pipelineId = pipelineId
-        )?.let { str2model(it, pipelineId) }
+        )?.let { str2model(it, pipelineId) }?.let {
+            expandPipelineTemplate(projectId = projectId, pipelineId = pipelineId, model = it)
+        }
     }
 
     /**
@@ -1682,6 +1812,7 @@ class PipelineRepositoryService constructor(
         encryptedFlag: Boolean?,
         archiveFlag: Boolean?
     ) {
+        expandPipelineTemplate(resource)
         // 历史数据兼容：
         // 1 返回时将别名name补全为id
         // 2 填充所有job没有的job id
@@ -1752,8 +1883,9 @@ class PipelineRepositoryService constructor(
             projectId = projectId,
             pipelineId = pipelineId
         )
+        expandPipelineTemplate(resource)
         // 返回时将别名name补全为id
-        resource?.let {
+        resource?.takeIf { it.model.stages.isNotEmpty() }?.let {
             resource.model.getTriggerContainer().params.forEach { param ->
                 param.name = param.name ?: param.id
             }
@@ -1800,8 +1932,9 @@ class PipelineRepositoryService constructor(
             pipelineId = pipelineId,
             branchName = branchName
         )
+        expandPipelineTemplate(resource)
         // 返回时将别名name补全为id
-        resource?.let {
+        resource?.takeIf { it.model.stages.isNotEmpty() }?.let {
             resource.model.getTriggerContainer().params.forEach { param ->
                 param.name = param.name ?: param.id
             }
@@ -1902,6 +2035,41 @@ class PipelineRepositoryService constructor(
         ) ?: releaseResource
     }
 
+    /**
+     * 引用模板动态版本的流水线版本只存了引用,读取时展开流水线模板还原完整编排;展开失败时保留引用
+     */
+    private fun expandPipelineTemplate(
+        projectId: String,
+        pipelineId: String,
+        model: Model,
+        branchName: String? = null
+    ): Model {
+        if (!PipelineModelParseUtil.needExpandPipelineTemplate(model)) {
+            return model
+        }
+        return try {
+            PipelineModelParseUtil.expandPipelineTemplate(
+                projectId = projectId,
+                pipelineId = pipelineId,
+                model = model,
+                branchName = branchName
+            )
+        } catch (ignored: Throwable) {
+            logger.warn("[$projectId|$pipelineId] expand pipeline template failed", ignored)
+            model
+        }
+    }
+
+    private fun expandPipelineTemplate(resource: PipelineResourceVersion?) {
+        resource ?: return
+        resource.model = expandPipelineTemplate(
+            projectId = resource.projectId,
+            pipelineId = resource.pipelineId,
+            model = resource.model,
+            branchName = resource.versionName.takeIf { resource.status == VersionStatus.BRANCH }
+        )
+    }
+
     private fun str2model(
         modelString: String,
         pipelineId: String
@@ -1940,6 +2108,7 @@ class PipelineRepositoryService constructor(
                 if (delete) {
                     pipelineInfoDao.delete(transactionContext, projectId, pipelineId)
                     pipelineResourceVersionDao.deleteAllVersion(transactionContext, projectId, pipelineId)
+                    pipelineResourceDynamicVersionDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineSettingVersionDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineResourceDao.deleteAllVersion(transactionContext, projectId, pipelineId)
                     pipelineSettingDao.delete(transactionContext, projectId, pipelineId)

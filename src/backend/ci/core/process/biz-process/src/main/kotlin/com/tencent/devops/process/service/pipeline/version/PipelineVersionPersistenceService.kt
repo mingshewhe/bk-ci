@@ -747,10 +747,11 @@ class PipelineVersionPersistenceService @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
+        val resolvedResource = pipelineResourceVersion.withResolvedModel(context)
         versionCreatePostProcessors.forEach {
             it.postProcessBeforeVersionCreate(
                 context = context,
-                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineResourceVersion = resolvedResource,
                 pipelineSetting = pipelineSetting
             )
         }
@@ -762,11 +763,12 @@ class PipelineVersionPersistenceService @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
+        val resolvedResource = pipelineResourceVersion.withResolvedModel(context)
         versionCreatePostProcessors.forEach {
             it.postProcessInTransactionVersionCreate(
                 transactionContext = transactionContext,
                 context = context,
-                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineResourceVersion = resolvedResource,
                 pipelineSetting = pipelineSetting
             )
         }
@@ -777,15 +779,22 @@ class PipelineVersionPersistenceService @Autowired constructor(
         pipelineResourceVersion: PipelineResourceVersion,
         pipelineSetting: PipelineSetting
     ) {
+        val resolvedResource = pipelineResourceVersion.withResolvedModel(context)
         versionCreatePostProcessors.forEach {
             it.postProcessAfterVersionCreate(
                 context = context,
-                pipelineResourceVersion = pipelineResourceVersion,
+                pipelineResourceVersion = resolvedResource,
                 pipelineSetting = pipelineSetting
             )
         }
     }
 
+    private fun PipelineResourceVersion.withResolvedModel(
+        context: PipelineVersionCreateContext
+    ): PipelineResourceVersion {
+        val resolvedModel = context.resolvedModel()
+        return if (resolvedModel === model) this else copy(model = resolvedModel)
+    }
 
     companion object {
         private const val PIPELINE_SETTING_VERSION_BIZ_TAG_NAME = "PIPELINE_SETTING_VERSION"

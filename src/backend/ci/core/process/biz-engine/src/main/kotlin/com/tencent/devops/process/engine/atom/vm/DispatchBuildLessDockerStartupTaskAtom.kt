@@ -53,6 +53,7 @@ import com.tencent.devops.process.engine.pojo.PipelineBuildTask
 import com.tencent.devops.process.engine.pojo.PipelineInfo
 import com.tencent.devops.process.engine.service.PipelineRepositoryService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.pojo.mq.PipelineBuildLessShutdownEvent
 import com.tencent.devops.process.pojo.mq.PipelineBuildLessStartupEvent
 import org.slf4j.LoggerFactory
@@ -171,7 +172,7 @@ class DispatchBuildLessDockerStartupTaskAtom @Autowired constructor(
             version = buildRecordContainer.resourceVersion,
             buildId = buildId,
             executeCount = executeCount
-        )
+        )?.let { PipelineModelParseUtil.flatten(it) }
         val container = recordModel?.getContainer(vmSeqId) ?: throw BuildTaskException(
             errorType = ErrorType.SYSTEM,
             errorCode = ERROR_PIPELINE_NODEL_CONTAINER_NOT_EXISTS.toInt(),

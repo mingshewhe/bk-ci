@@ -15,6 +15,7 @@ import com.tencent.devops.misc.strategy.impl.pipeline.PipelineLabelPipelineMigra
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineModelTaskMigrationStrategy
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineOperationLogMigrationStrategy
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineRecentUseMigrationStrategy
+import com.tencent.devops.misc.strategy.impl.pipeline.PipelineResourceDynamicVersionMigrationStrategy
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineResourceMigrationStrategy
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineResourceVersionMigrationStrategy
 import com.tencent.devops.misc.strategy.impl.pipeline.PipelineSettingMigrationStrategy
@@ -73,6 +74,7 @@ class MigrationStrategyFactory(private val processDataMigrateDao: ProcessDataMig
         PipelineOperationLogMigrationStrategy(processDataMigrateDao),
         PipelineResourceMigrationStrategy(processDataMigrateDao),
         PipelineResourceVersionMigrationStrategy(processDataMigrateDao),
+        PipelineResourceDynamicVersionMigrationStrategy(processDataMigrateDao),
         PipelineSettingMigrationStrategy(processDataMigrateDao),
         PipelineSettingVersionMigrationStrategy(processDataMigrateDao),
         PipelineViewGroupMigrationStrategy(processDataMigrateDao),

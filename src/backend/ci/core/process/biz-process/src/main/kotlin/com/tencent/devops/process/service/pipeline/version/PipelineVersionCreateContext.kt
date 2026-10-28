@@ -27,6 +27,7 @@
 
 package com.tencent.devops.process.service.pipeline.version
 
+import com.tencent.devops.common.pipeline.Model
 import com.tencent.devops.common.pipeline.enums.CodeTargetAction
 import com.tencent.devops.common.pipeline.enums.PipelineVersionAction
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
@@ -93,4 +94,12 @@ data class PipelineVersionCreateContext(
     var operationLogType: OperationLogType = OperationLogType.NORMAL_SAVE_OPERATION,
     @get:Schema(title = "操作日志参数", required = false)
     var operationLogParams: String = ""
-)
+) {
+    /**
+     * 引用模板动态版本时,流水线版本只存引用编排,需要完整编排的地方使用实例化后的编排
+     */
+    fun resolvedModel(): Model {
+        return templateInstanceBasicInfo?.takeIf { it.dynamic }?.instanceModel
+            ?: pipelineResourceWithoutVersion.model
+    }
+}

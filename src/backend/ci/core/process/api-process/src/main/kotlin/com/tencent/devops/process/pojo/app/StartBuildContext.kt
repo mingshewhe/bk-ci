@@ -171,6 +171,11 @@ data class StartBuildContext(
     var reachedRetryTargetStage: Boolean = false
 
     /**
+     * 动态版本号,流水线有模板引用时由构建启动前的解析结果生成,写入 record_model
+     */
+    var dynamicVersion: String? = null
+
+    /**
      * 是否为矩阵组内的局部重试（子Job/子插件重试、跳过或矩阵级批量重试）
      */
     fun isMatrixPartialRetry(): Boolean = !retryMatrixGroupId.isNullOrBlank()

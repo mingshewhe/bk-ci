@@ -130,6 +130,34 @@ IF EXISTS (
 ALTER TABLE T_PIPELINE_FAVOR DROP INDEX `IDX_CREATE_USER` ;
 
 END IF;
+    IF NOT EXISTS(SELECT 1
+                  FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_PIPELINE_SETTING'
+                    AND COLUMN_NAME = 'TEMPLATE') THEN
+        ALTER TABLE T_PIPELINE_SETTING
+            ADD COLUMN `TEMPLATE` text DEFAULT NULL COMMENT '流水线模板设置引用';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                  FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_PIPELINE_SETTING_VERSION'
+                    AND COLUMN_NAME = 'TEMPLATE') THEN
+        ALTER TABLE T_PIPELINE_SETTING_VERSION
+            ADD COLUMN `TEMPLATE` text DEFAULT NULL COMMENT '流水线模板设置引用';
+    END IF;
+
+    IF NOT EXISTS(SELECT 1
+                  FROM information_schema.COLUMNS
+                  WHERE TABLE_SCHEMA = db
+                    AND TABLE_NAME = 'T_PIPELINE_BUILD_RECORD_MODEL'
+                    AND COLUMN_NAME = 'DYNAMIC_VERSION') THEN
+        ALTER TABLE T_PIPELINE_BUILD_RECORD_MODEL
+            ADD COLUMN `DYNAMIC_VERSION` varchar(32) NULL DEFAULT NULL COMMENT '动态版本号',
+            ALGORITHM=INSTANT;
+    END IF;
+
     COMMIT;
 END <CI_UBF>
 DELIMITER ;

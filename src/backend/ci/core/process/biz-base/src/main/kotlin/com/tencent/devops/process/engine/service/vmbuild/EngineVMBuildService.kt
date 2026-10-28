@@ -96,6 +96,7 @@ import com.tencent.devops.process.engine.service.measure.MeasureService
 import com.tencent.devops.process.engine.service.record.ContainerBuildRecordService
 import com.tencent.devops.process.engine.service.record.TaskBuildRecordService
 import com.tencent.devops.process.engine.utils.ContainerUtils
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.jmx.elements.JmxElements
 import com.tencent.devops.process.pojo.BuildJobResult
 import com.tencent.devops.process.pojo.BuildTask
@@ -219,7 +220,7 @@ class EngineVMBuildService @Autowired(required = false) constructor(
             buildId = buildId,
             executeCount = buildInfo.executeCount,
             debug = buildInfo.debug
-        )
+        )?.let { PipelineModelParseUtil.flatten(it) }
         // TODO 没有升级的worker还需要用到这个变量，下一版删除
         val asCodeSettings = pipelineAsCodeService.getPipelineAsCodeSettings(
             projectId = projectId, pipelineId = buildInfo.pipelineId

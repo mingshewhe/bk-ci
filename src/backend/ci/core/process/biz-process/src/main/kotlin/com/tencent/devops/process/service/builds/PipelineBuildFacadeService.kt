@@ -124,6 +124,7 @@ import com.tencent.devops.process.engine.service.record.ContainerBuildRecordServ
 import com.tencent.devops.process.engine.service.record.PipelineBuildRecordService
 import com.tencent.devops.process.engine.service.record.TaskBuildRecordService
 import com.tencent.devops.process.engine.utils.BuildUtils
+import com.tencent.devops.process.engine.utils.PipelineModelParseUtil
 import com.tencent.devops.process.engine.utils.PipelineUtils
 import com.tencent.devops.process.enums.BuildReplayStatus
 import com.tencent.devops.process.enums.HistorySearchType
@@ -920,7 +921,7 @@ class PipelineBuildFacadeService(
             buildId = buildId,
             executeCount = buildInfo.executeCount,
             debug = buildInfo.debug
-        ) ?: throw ErrorCodeException(
+        )?.let { PipelineModelParseUtil.flatten(it) } ?: throw ErrorCodeException(
             statusCode = Response.Status.NOT_FOUND.statusCode,
             errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NOT_EXISTS
         )
@@ -1336,7 +1337,7 @@ class PipelineBuildFacadeService(
             buildId = buildId,
             executeCount = buildInfo.executeCount,
             debug = buildInfo.debug
-        ) ?: throw ErrorCodeException(
+        )?.let { PipelineModelParseUtil.flatten(it) } ?: throw ErrorCodeException(
             statusCode = Response.Status.NOT_FOUND.statusCode,
             errorCode = ProcessMessageCode.ERROR_PIPELINE_MODEL_NOT_EXISTS
         )

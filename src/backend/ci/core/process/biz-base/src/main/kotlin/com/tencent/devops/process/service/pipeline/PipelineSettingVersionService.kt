@@ -268,6 +268,7 @@ class PipelineSettingVersionService @Autowired constructor(
         settingInfo.failIfVariableInvalid = settingVersion.failIfVariableInvalid
         settingInfo.buildCancelPolicy = settingVersion.buildCancelPolicy ?: settingInfo.buildCancelPolicy
         settingInfo.envHashId = settingVersion.envHashId
+        settingInfo.template = settingVersion.template
         if (settingInfo.labels.isNotEmpty() && settingInfo.labels != labels && userId != null) {
             labelNames.clear()
             pipelineGroupService.getGroups(userId, projectId).forEach { group ->

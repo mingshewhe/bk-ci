@@ -35,6 +35,7 @@ import com.tencent.devops.common.db.utils.JooqUtils
 import com.tencent.devops.common.pipeline.pojo.setting.BuildCancelPolicy
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineRunLockType
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSetting
+import com.tencent.devops.common.pipeline.pojo.setting.PipelineSettingTemplateRef
 import com.tencent.devops.common.pipeline.pojo.setting.PipelineSubscriptionType
 import com.tencent.devops.common.pipeline.pojo.setting.Subscription
 import com.tencent.devops.model.process.tables.TPipelineSetting
@@ -100,7 +101,8 @@ class PipelineSettingDao {
                 FAIL_IF_VARIABLE_INVALID,
                 BUILD_CANCEL_POLICY,
                 ENV_HASH_ID,
-                ENV_NAME
+                ENV_NAME,
+                TEMPLATE
             ).values(
                 setting.projectId,
                 setting.pipelineName,
@@ -140,7 +142,8 @@ class PipelineSettingDao {
                 setting.failIfVariableInvalid,
                 setting.buildCancelPolicy.value,
                 setting.envHashId,
-                setting.envName
+                setting.envName,
+                setting.template?.let { JsonUtil.toJson(it, false) }
             ).onDuplicateKeyUpdate()
                 .set(NAME, setting.pipelineName)
                 .set(DESC, setting.desc)
@@ -177,6 +180,7 @@ class PipelineSettingDao {
                 .set(MAX_CON_RUNNING_QUEUE_SIZE, setting.maxConRunningQueueSize)
                 .set(FAIL_IF_VARIABLE_INVALID, setting.failIfVariableInvalid)
                 .set(BUILD_CANCEL_POLICY, setting.buildCancelPolicy.value)
+                .set(TEMPLATE, setting.template?.let { JsonUtil.toJson(it, false) })
             // pipelineAsCodeSettings 默认传空不更新
             setting.pipelineAsCodeSettings?.let { self ->
                 insert.set(PIPELINE_AS_CODE_SETTINGS, JsonUtil.toJson(self, false))
@@ -496,7 +500,10 @@ class PipelineSettingDao {
                     buildCancelPolicy = BuildCancelPolicy.parse(t.buildCancelPolicy),
                     version = t.version ?: 1,
                     envHashId = t.envHashId,
-                    envName = t.envName
+                    envName = t.envName,
+                    template = t.template?.let { self ->
+                        JsonUtil.to(self, PipelineSettingTemplateRef::class.java)
+                    }
                 )
             }
         }

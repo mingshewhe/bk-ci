@@ -65,5 +65,7 @@ data class PipelineTemplateInstanceBasicInfo(
     @get:Schema(title = "模版实例化状态", required = false)
     val status: TemplatePipelineStatus = TemplatePipelineStatus.UPDATED,
     @get:Schema(title = "模版引用方式", required = false)
-    val refType: TemplateRefType? = TemplateRefType.ID
+    val refType: TemplateRefType? = TemplateRefType.ID,
+    @get:Schema(title = "是否引用模板的动态(分支)版本,动态版本只存引用,构建时实时解析", required = false)
+    val dynamic: Boolean = false
 )
